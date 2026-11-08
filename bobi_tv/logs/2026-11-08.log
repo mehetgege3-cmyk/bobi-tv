@@ -48,3 +48,12 @@
 [22:07:52] [INFO] 1 video YouTube'a yükleniyor...
 [22:08:09] [INFO] Yayınlandı: https://www.youtube.com/shorts/VyUvKnZYNr8
 [22:08:09] [INFO] === Pipeline tamamlandı. 1/1 video. Süre: 0dk ===
+[22:16:56] [INFO] === BOBİ TV Günlük Üretim Başladı ===
+[22:16:56] [INFO] Senaryo üretimi başlıyor. Hedef: 1
+[22:16:56] [INFO] 1 senaryo üretildi.
+[22:16:56] [INFO] Video #1/1: Google da bilmiyor 🐶
+[22:16:56] [INFO] [#1] TTS seslendirme...
+[22:16:59] [INFO] [#1] Video render...
+[22:17:02] [ERROR] Video #1 (20261108_0001_google_sorusu) üretim hatası: Command '['ffmpeg', '-y', '-i', 'bobi_tv/production/render/20261108_0001_google_sorusu_bg.mp4', '-i', 'bobi_tv/production/render/20261108_0001_google_sorusu_audio.wav', '-vf', "ass=bobi_tv/production/render/20261108_0001_google_sorusu.ass,drawtext=text='GOOGLE'A SORDUM':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontcolor=white:fontsize=72:x=(w-tw)/2:y=(h-th)/2:enable='between(t,0,1.0)':shadowcolor=black@0.7:shadowx=3:shadowy=3,drawtext=text='[İNSAN]':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontcolor=white@0.7:fontsize=36:x=40:y=50:enable='between(t,1.00,2.05)':shadowcolor=black@0.5:shadowx=2:shadowy=2,drawtext=text='[İNSAN]':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontcolor=white@0.7:fontsize=36:x=40:y=50:enable='between(t,2.05,2.90)':shadowcolor=black@0.5:shadowx=2:shadowy=2,drawtext=text='[İNSAN]':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontcolor=white@0.7:fontsize=36:x=40:y=50:enable='between(t,2.90,3.74)':shadowcolor=black@0.5:shadowx=2:shadowy=2,drawtext=text='[İNSAN]':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontcolor=white@0.7:fontsize=36:x=40:y=50:enable='between(t,3.74,4.83)':shadowcolor=black@0.5:shadowx=2:shadowy=2,drawtext=text='BOBI TV':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontcolor=white@0.25:fontsize=32:x=w-tw-30:y=30", '-c:v', 'libx264', '-preset', 'medium', '-b:v', '6M', '-c:a', 'aac', '-b:a', '192k', '-shortest', '-movflags', '+faststart', 'bobi_tv/output/20261108_0001_google_sorusu.mp4']' returned non-zero exit status 234.
+[22:17:03] [WARNING] Yüklenecek video yok.
+[22:17:03] [INFO] === Pipeline tamamlandı. 0/1 video. Süre: 0dk ===

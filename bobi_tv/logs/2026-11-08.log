@@ -1,0 +1,10 @@
+[20:44:31] [INFO] === BOBİ TV Günlük Üretim Başladı ===
+[20:44:32] [INFO] Senaryo üretimi başlıyor. Hedef: 1
+[20:44:32] [INFO] 1 senaryo üretildi.
+[20:44:32] [INFO] Video #1/1: BOBİ TV | Trafikteki iki sürücü ile Google'dan cevap arayan 
+[20:44:32] [INFO] [#1] TTS seslendirme...
+[20:44:32] [INFO] [#1] Video render...
+[20:44:56] [INFO] [#1] Video hazır: bobi_tv/output/20261108_0001_absurt_diyalog.mp4
+[20:44:56] [INFO] 1 video YouTube'a yükleniyor...
+[20:45:13] [INFO] Yayınlandı: https://www.youtube.com/shorts/urxQ4qym8KQ
+[20:45:13] [INFO] === Pipeline tamamlandı. 1/1 video. Süre: 0dk ===

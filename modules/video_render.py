@@ -171,23 +171,49 @@ def video_render(senaryo_paketi: dict) -> str:
             "-t", str(video_suresi), birlesik_ses
         ], capture_output=True, timeout=30)
 
-    # 2. Arka plan videosu oluştur (animasyon yoksa siyah arka plan)
+    # 2. Animasyonlu arka plan videosu oluştur
     arkaplan = str(RENDER_YOLU / f"{dosya_adi}_bg.mp4")
-    renk = "0x1a1a2e"  # BOBİ TV koyu lacivert
-    subprocess.run([
-        "ffmpeg", "-y",
-        "-f", "lavfi",
-        "-i", f"color=c={renk}:size={VIDEO_GENISLIK}x{VIDEO_YUKSEKLIK}:rate={VIDEO_FPS}",
-        "-t", str(video_suresi),
-        "-c:v", "libx264", "-preset", "fast",
-        arkaplan
-    ], capture_output=True, check=True, timeout=120)
+
+    # Gradient + hareketli parlaklık efektli arka plan
+    # BOBİ TV renkleri: koyu lacivert → mor gradient, yavaş hareket
+    gradient_filtresi = (
+        f"gradients=s={VIDEO_GENISLIK}x{VIDEO_YUKSEKLIK}:"
+        f"d={video_suresi}:"
+        f"c0=0x0a0a1e:c1=0x1a1a3e:c2=0x2a1a4e:"
+        f"x0=0:y0=0:x1={VIDEO_GENISLIK}:y1={VIDEO_YUKSEKLIK}:"
+        f"speed=0.01"
+    )
+
+    try:
+        subprocess.run([
+            "ffmpeg", "-y",
+            "-f", "lavfi",
+            "-i", gradient_filtresi,
+            "-t", str(video_suresi),
+            "-r", str(VIDEO_FPS),
+            "-c:v", "libx264", "-preset", "fast",
+            "-pix_fmt", "yuv420p",
+            arkaplan
+        ], capture_output=True, check=True, timeout=120)
+        print(f"[Render] Gradient arka plan oluşturuldu.")
+    except Exception:
+        # Fallback: düz renk
+        renk = "0x1a1a2e"
+        subprocess.run([
+            "ffmpeg", "-y",
+            "-f", "lavfi",
+            "-i", f"color=c={renk}:size={VIDEO_GENISLIK}x{VIDEO_YUKSEKLIK}:rate={VIDEO_FPS}",
+            "-t", str(video_suresi),
+            "-c:v", "libx264", "-preset", "fast",
+            arkaplan
+        ], capture_output=True, check=True, timeout=120)
+        print(f"[Render] Düz arka plan (fallback).")
 
     # 3. Altyazı oluştur
     altyazi_srt = str(RENDER_YOLU / f"{dosya_adi}.srt")
     altyazi_oluştur(ses_dosyalari, altyazi_srt)
 
-    # 4. Final video: arka plan + ses + altyazı
+    # 4. Final video: arka plan + ses + altyazı + BOBİ TV watermark
     final_video = str(OUTPUT_YOLU / f"{dosya_adi}.mp4")
 
     # Altyazı stilini ASS formatına çevir (daha iyi kontrol)
@@ -201,11 +227,23 @@ def video_render(senaryo_paketi: dict) -> str:
         f"MarginV=80'"
     )
 
+    # BOBİ TV watermark: sağ üst köşede yarı saydam
+    watermark_filtresi = (
+        f"drawtext=text='BOBİ TV':"
+        f"fontcolor=white@0.3:"
+        f"fontsize=36:"
+        f"x=w-tw-30:y=30:"
+        f"shadowcolor=black@0.5:shadowx=2:shadowy=2"
+    )
+
+    # Tüm filtreleri birleştir
+    komple_filtre = f"{altyazi_filtresi},{watermark_filtresi}"
+
     subprocess.run([
         "ffmpeg", "-y",
         "-i", arkaplan,
         "-i", birlesik_ses,
-        "-vf", altyazi_filtresi,
+        "-vf", komple_filtre,
         "-c:v", "libx264", "-preset", "medium",
         "-b:v", VIDEO_BITRATE,
         "-c:a", "aac", "-b:a", AUDIO_BITRATE,

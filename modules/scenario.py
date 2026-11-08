@@ -188,7 +188,8 @@ def senaryo_paketi_olustur(video_no: int) -> dict:
 
     # Başlık oluştur
     tarih = datetime.now().strftime("%Y%m%d")
-    baslik = f"BOBİ TV | {en_iyi['senaryo']['acilis'][:40].rstrip('.')}..."
+    acilis_kisa = en_iyi['senaryo']['acilis'][:50].rstrip('.').rstrip(',')
+    baslik = f"BOBİ TV | {acilis_kisa}"
     dosya_adi = f"{tarih}_{video_no:04d}_{sablon}"
 
     paket = {

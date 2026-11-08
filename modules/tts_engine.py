@@ -27,6 +27,14 @@ def piper_kurulu_mu() -> bool:
     return result.returncode == 0
 
 
+def piper_model_mevcut_mu(model_adi: str = None) -> bool:
+    """Piper Türkçe model dosyası mevcut mu kontrol et."""
+    if model_adi is None:
+        model_adi = PIPER_MODELLER[0]
+    model_dosyasi = PIPER_MODEL_YOLU / f"{model_adi}.onnx"
+    return model_dosyasi.exists() and model_dosyasi.stat().st_size > 1000
+
+
 def piper_model_indir(model_adi: str) -> bool:
     """Piper modelini indir."""
     PIPER_MODEL_YOLU.mkdir(parents=True, exist_ok=True)
@@ -75,7 +83,7 @@ def metin_sese_cevir(metin: str, dosya_adi: str, model_adi: str = None) -> dict:
     model_dosyasi = PIPER_MODEL_YOLU / f"{model_adi}.onnx"
 
     # Piper ile ses üret
-    if piper_kurulu_mu() and model_dosyasi.exists():
+    if piper_kurulu_mu() and piper_model_mevcut_mu(model_adi):
         try:
             result = subprocess.run(
                 ["piper", "--model", str(model_dosyasi), "--output_file", str(ses_dosyasi)],
@@ -85,11 +93,15 @@ def metin_sese_cevir(metin: str, dosya_adi: str, model_adi: str = None) -> dict:
             )
             if result.returncode != 0:
                 raise RuntimeError(f"Piper hata: {result.stderr.decode()}")
+            print(f"[TTS] Piper ile ses üretildi: {model_adi}")
         except Exception as e:
             print(f"[TTS] Piper hatası, fallback: {e}")
             ses_dosyasi = _espeak_fallback(metin, dosya_adi)
     else:
-        print(f"[TTS] Piper bulunamadı, espeak fallback kullanılıyor.")
+        if not piper_kurulu_mu():
+            print(f"[TTS] Piper binary bulunamadı, espeak-ng kullanılıyor.")
+        elif not piper_model_mevcut_mu(model_adi):
+            print(f"[TTS] Piper model bulunamadı ({model_adi}), espeak-ng kullanılıyor.")
         ses_dosyasi = _espeak_fallback(metin, dosya_adi)
 
     # Süre ve zamanlama hesapla

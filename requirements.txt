@@ -1,5 +1,6 @@
 # BOBİ TV — Python Bağımlılıkları
 edge-tts==7.0.0
+gTTS==2.5.4
 requests==2.32.3
 google-auth==2.35.0
 google-auth-httplib2==0.2.0

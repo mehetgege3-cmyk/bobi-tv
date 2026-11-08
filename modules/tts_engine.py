@@ -106,7 +106,7 @@ def metin_sese_cevir(metin: str, dosya_adi: str, ses_tipi: str = "normal") -> di
 
     word_timestamps = []
 
-    # Katman 1: edge-tts (en kaliteli)
+    # Katman 1: edge-tts (en kaliteli, ama GitHub Actions'ta 403 olabilir)
     if edge_tts_kurulu_mu():
         try:
             word_timestamps = asyncio.run(
@@ -117,15 +117,21 @@ def metin_sese_cevir(metin: str, dosya_adi: str, ses_tipi: str = "normal") -> di
             else:
                 raise RuntimeError("edge-tts çıktı boş")
         except Exception as e:
-            print(f"[TTS] edge-tts hatası, espeak-ng fallback: {e}")
-            ses_dosyasi = _espeak_fallback(metin, dosya_adi, ses_tipi)
+            if "403" in str(e) or "Invalid response" in str(e):
+                print(f"[TTS] edge-tts 403 (IP engeli), gTTS fallback")
+            else:
+                print(f"[TTS] edge-tts hatası, gTTS fallback: {e}")
+            # Katman 2: gTTS (Google Translate TTS — GitHub Actions'ta çalışır)
+            try:
+                ses_dosyasi = _gtts_uret(metin, dosya_adi, ses_tipi)
+            except Exception as e2:
+                print(f"[TTS] gTTS de başarısız: {e2}")
+                ses_dosyasi = _espeak_fallback(metin, dosya_adi, ses_tipi)
     else:
-        # Katman 2: Piper
-        if _piper_calisiyor_mu():
-            ses_dosyasi = _piper_uret(metin, dosya_adi, ses_tipi)
-        else:
-            # Katman 3: espeak-ng
-            print(f"[TTS] edge-tts yok, espeak-ng kullanılıyor.")
+        # edge-tts yoksa direkt gTTS dene
+        try:
+            ses_dosyasi = _gtts_uret(metin, dosya_adi, ses_tipi)
+        except Exception:
             ses_dosyasi = _espeak_fallback(metin, dosya_adi, ses_tipi)
 
     # Süre hesapla
@@ -166,6 +172,69 @@ def _sanitize_for_tts(metin: str) -> str:
 def _piper_calisiyor_mu() -> bool:
     result = subprocess.run(["which", "piper"], capture_output=True)
     return result.returncode == 0
+
+
+def _gtts_uret(metin: str, dosya_adi: str, ses_tipi: str) -> Path:
+    """
+    gTTS (Google Translate TTS) ile Türkçe ses üret.
+    GitHub Actions'ta çalışır (edge-tts 403 verdiğinde fallback).
+    Ses tonuna göre atempo (hız) ve pitch ayarı uygular.
+    """
+    from gtts import gTTS
+    import tempfile
+
+    TTS_YOLU.mkdir(parents=True, exist_ok=True)
+    ses_dosyasi = TTS_YOLU / f"{dosya_adi}.wav"
+    ton = ses_tonu_al(ses_tipi)
+
+    # gTTS ile MP3 üret
+    tmp_mp3 = str(ses_dosyasi).replace(".wav", ".mp3")
+    tts = gTTS(text=metin, lang="tr", slow=False)
+    tts.save(tmp_mp3)
+
+    # MP3 → WAV + pitch/speed ayarı (FFmpeg)
+    ton = ses_tonu_al(ses_tipi)
+    rate_str = ton.get("rate", "+0%")
+    pitch_str = ton.get("pitch", "+0Hz")
+
+    # Rate → atempo
+    try:
+        pct = int(rate_str.replace("%", "").replace("+", ""))
+        atempo = 1.0 + (pct / 100.0)
+    except Exception:
+        atempo = 1.0
+
+    # Pitch → asetrate (pitch değiştirme)
+    try:
+        hz_str = pitch_str.replace("Hz", "").replace("+", "")
+        pitch_hz = int(hz_str) if hz_str else 0
+        asetrate = 44100 * (1.0 + pitch_hz / 1000.0)
+    except Exception:
+        asetrate = 44100
+
+    # Volume
+    try:
+        vol_str = ton.get("volume", "+0%").replace("%", "").replace("+", "")
+        vol_pct = int(vol_str) if vol_str else 0
+        volume = 1.0 + (vol_pct / 100.0)
+    except Exception:
+        volume = 1.0
+
+    audio_filter = f"atempo={atempo},asetrate={asetrate},aresample=44100,volume={volume}"
+
+    subprocess.run([
+        "ffmpeg", "-y", "-i", tmp_mp3,
+        "-af", audio_filter,
+        "-ar", "44100", "-ac", "1",
+        str(ses_dosyasi)
+    ], capture_output=True, check=True, timeout=30)
+
+    # MP3'ü sil
+    if os.path.exists(tmp_mp3):
+        os.remove(tmp_mp3)
+
+    print(f"[TTS] gTTS: {metin[:40]}... (atempo: {atempo}, pitch: {pitch_str})")
+    return ses_dosyasi
 
 
 def _piper_uret(metin: str, dosya_adi: str, ses_tipi: str) -> Path:

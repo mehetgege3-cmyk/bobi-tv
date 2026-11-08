@@ -48,16 +48,30 @@ jobs:
 
       - name: Piper TTS kur ve Türkçe model indir
         run: |
+          # Piper binary ve shared library indir
           wget -q https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_linux_x86_64.tar.gz \
             -O /tmp/piper.tar.gz || true
           if [ -f /tmp/piper.tar.gz ]; then
             tar -xzf /tmp/piper.tar.gz -C /tmp/
+            # Binary
             sudo mv /tmp/piper/piper /usr/local/bin/piper
             chmod +x /usr/local/bin/piper
+            # Shared library — libpiper_phonemize.so
+            if [ -f /tmp/piper/lib/libpiper_phonemize.so.1 ]; then
+              sudo cp /tmp/piper/lib/libpiper_phonemize.so.1 /usr/local/lib/
+              sudo ldconfig
+              echo "Piper shared library kuruldu."
+            fi
+            # Tüm lib dosyalarını kopyala
+            sudo cp /tmp/piper/lib/*.so* /usr/local/lib/ 2>/dev/null || true
+            sudo ldconfig
             echo "Piper binary kuruldu."
           else
             echo "Piper indirilemedi, espeak-ng kullanılacak."
           fi
+
+          # Test
+          echo "Piper test:" && piper --help 2>&1 | head -3 || echo "Piper çalışmıyor"
 
           # Türkçe Piper modeli indir
           mkdir -p bobi_tv/config/piper_models

@@ -1,10 +1,9 @@
-# BOBİ TV — Modül Bağımlılıkları
-google-auth-oauthlib==1.2.1
+# BOBİ TV — Python Bağımlılıkları
+edge-tts==7.0.0
+requests==2.32.3
+google-auth==2.35.0
 google-auth-httplib2==0.2.0
 google-api-python-client==2.151.0
-requests==2.32.3
-piper-tts==1.2.0
 pydub==0.25.1
-ffmpeg-python==0.2.0
 Pillow==11.0.0
 numpy==2.1.3

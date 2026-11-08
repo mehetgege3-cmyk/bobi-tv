@@ -22,7 +22,11 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
+
+      - name: Node.js kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
       - name: Sistem bağımlılıklarını kur
         run: |
@@ -32,72 +36,27 @@ jobs:
             espeak-ng \
             wget \
             curl \
-            fonts-dejavu-core
+            fonts-dejavu-core \
+            fonts-liberation2 \
+            libass9 \
+            libvips
 
       - name: Python bağımlılıklarını kur
         run: |
           pip install --upgrade pip
           pip install \
+            edge-tts==7.0.0 \
             requests==2.32.3 \
             google-auth==2.35.0 \
             google-auth-httplib2==0.2.0 \
             google-api-python-client==2.151.0 \
             pydub==0.25.1 \
             Pillow==11.0.0 \
-            numpy==2.1.3 \
-            piper-tts==1.2.0
-
-      - name: Piper TTS kur ve Türkçe model indir
-        run: |
-          # Piper Python paketi zaten pip ile kuruldu
-          # Piper binary'yi pip paketinden kullan
-          echo "Piper Python paketi kontrol:"
-          python -c "import piper; print('Piper Python paketi OK')" 2>&1 || echo "Piper Python paketi yok"
-
-          # Piper binary indir (CLI için)
-          wget -q https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_linux_x86_64.tar.gz \
-            -O /tmp/piper.tar.gz || true
-          if [ -f /tmp/piper.tar.gz ]; then
-            tar -xzf /tmp/piper.tar.gz -C /tmp/
-            sudo mv /tmp/piper/piper /usr/local/bin/piper 2>/dev/null || true
-            chmod +x /usr/local/bin/piper 2>/dev/null || true
-
-            # Tüm shared library'leri kopyala
-            sudo mkdir -p /usr/local/lib
-            sudo cp -a /tmp/piper/lib/*.so* /usr/local/lib/ 2>/dev/null || true
-            sudo ldconfig
-          fi
-
-          # piper binary Python pip paketinden de çalışabilir
-          PIPER_BIN=$(python -c "import piper; import os; print(os.path.join(os.path.dirname(piper.__file__), 'piper'))" 2>/dev/null)
-          if [ -n "$PIPER_BIN" ] && [ -f "$PIPER_BIN" ]; then
-            sudo cp "$PIPER_BIN" /usr/local/bin/piper 2>/dev/null || true
-            chmod +x /usr/local/bin/piper 2>/dev/null || true
-            echo "Piper binary pip paketinden kuruldu."
-          fi
-
-          # Test
-          echo "Piper test:" && piper --help 2>&1 | head -5 || echo "Piper CLI çalışmıyor, Python API kullanılacak"
-
-          # Türkçe Piper modeli indir
-          mkdir -p bobi_tv/config/piper_models
-          MODEL_URL="https://huggingface.co/rhasspy/piper-voices/resolve/main/tr/tr_TR/dfki/medium/tr_TR-dfki-medium.onnx"
-          CONFIG_URL="https://huggingface.co/rhasspy/piper-voices/resolve/main/tr/tr_TR/dfki/medium/tr_TR-dfki-medium.onnx.json"
-
-          echo "Türkçe model indiriliyor..."
-          wget -q "$MODEL_URL" -O bobi_tv/config/piper_models/tr_TR-dfki-medium.onnx || echo "Model indirilemedi"
-          wget -q "$CONFIG_URL" -O bobi_tv/config/piper_models/tr_TR-dfki-medium.onnx.json || echo "Model config indirilemedi"
-
-          if [ -f bobi_tv/config/piper_models/tr_TR-dfki-medium.onnx ]; then
-            SIZE=$(stat -c%s bobi_tv/config/piper_models/tr_TR-dfki-medium.onnx 2>/dev/null || echo 0)
-            echo "Türkçe model indirildi: ${SIZE} bytes"
-          else
-            echo "Türkçe model mevcut değil, espeak-ng fallback kullanılacak."
-          fi
+            numpy==2.1.3
 
       - name: Klasör yapısını oluştur
         run: |
-          mkdir -p bobi_tv/{queue,production/{scripts,assets/{characters,backgrounds,sfx},tts,animation,render},output,archive/published,logs,config/piper_models}
+          mkdir -p bobi_tv/{queue,production/{scripts,assets/{characters,backgrounds,sfx},tts,animation,render},output,archive/published,logs,config}
 
       - name: Telegram test bildirimi gönder
         env:
@@ -112,7 +71,7 @@ jobs:
             f'https://api.telegram.org/bot{token}/sendMessage',
             json={
               'chat_id': chat_id,
-              'text': '🧪 <b>BOBİ TV Kurulum Testi Başladı</b>\n\nİlk uçtan uca test çalışıyor...\nSenaryo → TTS → Render → YouTube',
+              'text': '🧪 <b>BOBİ TV v3.0 Test Başladı</b>\n\nedge-tts + ASS altyazı + sinematik render\nSenaryo → TTS → Render → YouTube',
               'parse_mode': 'HTML'
             }
           )

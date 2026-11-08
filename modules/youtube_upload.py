@@ -116,19 +116,46 @@ def video_yukle(senaryo_paketi: dict) -> str:
     token_data = token_yukle()
     access_token = token_yenile(token_data)
 
-    # Video meta verileri
-    aciklama = (
-        f"{senaryo_paketi['senaryo'].get('acilis', '')}\n\n"
-        f"BOBİ TV'de her gün yeni absürt animasyon Shorts!\n"
-        f"Abone ol: @BOBİTİVİ\n\n"
-        f"#shorts #komedi #absürt #türkçe #bobitv #mizah #animasyon"
-    )
+    # Video meta verileri — viralite odaklı
+    senaryo = senaryo_paketi.get("senaryo", {})
+    etkilesim = senaryo.get("etkilesim", "")
+    sabit_yorum = senaryo.get("sabit_yorum", "")
+    kategori = senaryo.get("kategori", "")
+
+    # Kategoriye göre hashtag'ler
+    hashtag_haritasi = {
+        "kurumsal_hayat": ["#kurumsalhayat", "#beyazyaka", "#ofishalleri", "#varoluşkrizi", "#pazartesisendromu"],
+        "pazartesi_sendromu": ["#pazartesisendromu", "#pazartesi", "#mentalhealth", "#ofishalleri", "#kurumsalhayat"],
+        "ik_toplantisi": ["#ik", "#maaşpazarlığı", "#kurumsalhayat", "#işgörüşmesi", "#beyazyaka"],
+        "mesai_sonu": ["#mesai", "#kurumsalhayat", "#patron", "#ofishalleri", "#aciliş"],
+        "bar_fikrasi": ["#barfikrası", "#komedi", "#absürt", "#türkçemizah", "#shorts"],
+        "diyet_kavrami": ["#diyet", "#komedi", "#absürt", "#sağlık", "#shorts"],
+        "google_sorusu": ["#varoluşsal", "#komedi", "#absürt", "#felsefe", "#shorts"],
+        "trafik_kavgasi": ["#trafik", "#komedi", "#absürt", "#türkçemizah", "#shorts"]
+    }
+
+    etiketler = hashtag_haritasi.get(kategori, ["#shorts", "#komedi", "#absürt", "#türkçe", "#bobitv", "#mizah"])
+
+    # Açıklama — etkileşim odaklı
+    aciklama_parcalari = []
+    if sabit_yorum:
+        aciklama_parcalari.append(sabit_yorum + " 👇")
+    aciklama_parcalari.append("")
+    aciklama_parcalari.append("BOBİ TV'de her gün yeni absürt animasyon Shorts!")
+    aciklama_parcalari.append("Abone ol: @BOBİTİVİ")
+    if etkilesim:
+        aciklama_parcalari.append("")
+        aciklama_parcalari.append(etkilesim)
+    aciklama_parcalari.append("")
+    aciklama_parcalari.append(" ".join(etiketler))
+
+    aciklama = "\n".join(aciklama_parcalari)[:5000]
 
     metadata = {
         "snippet": {
             "title": baslik[:100],
-            "description": aciklama[:5000],
-            "tags": ["shorts", "komedi", "absürt", "türkçe", "bobitv", "mizah", "animasyon"],
+            "description": aciklama,
+            "tags": ["shorts", "komedi", "absürt", "türkçe", "bobitv", "mizah", "animasyon"] + etiketler,
             "categoryId": "23",  # Comedy
             "defaultLanguage": "tr",
             "defaultAudioLanguage": "tr",

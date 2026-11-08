@@ -1,6 +1,6 @@
 """
-BOBİ TV — Video Kurgu ve Render Modülü
-FFmpeg ile animasyon karelerini, sesi ve altyazıyı birleştirir.
+BOBİ TV — Video Kurgu ve Render Modülü v2.0
+Viralite odaklı: hook metni, karakter etiketleri (okunmaz), punchline efektleri, perfect loop.
 Dikey 9:16 Shorts formatında final video üretir.
 """
 import os
@@ -13,17 +13,30 @@ from datetime import datetime
 
 RENDER_YOLU = Path("bobi_tv/production/render")
 OUTPUT_YOLU = Path("bobi_tv/output")
-ASSETS_YOLU = Path("bobi_tv/production/assets")
 
 # Shorts teknik gereksinimleri
 VIDEO_GENISLIK = 1080
 VIDEO_YUKSEKLIK = 1920
 VIDEO_FPS = 30
-VIDEO_BITRATE = "4M"
+VIDEO_BITRATE = "6M"
 AUDIO_BITRATE = "192k"
-ALTYAZI_FONT_BOYUTU = 52
-ALTYAZI_RENK = "white"
-ALTYAZI_ARKAPLAN = "black@0.6"
+
+# Altyazı stili
+ALTYAZI_FONT = "Arial"
+ALTYAZI_FONT_BOYUTU = 58
+ALTYAZI_RENK = "&H00FFFFFF"        # Beyaz
+ALTYAZI_CERCEVE = "&H00000000"      # Siyah çerçeve
+ALTYAZI_ARKAPLAN = "&HAA000000"     # Yarı saydam siyah
+ALTYAZI_MARGIN_V = 120              # Alt kenardan boşluk
+
+# Karakter etiketi stili (ekranda görünür, TTS okumaz)
+ETIKET_FONT_BOYUTU = 36
+ETIKET_RENK = "white@0.7"
+ETIKET_MARGIN_V = 200                # Üst kenardan boşluk
+
+# Hook metni stili
+HOOK_FONT_BOYUTU = 72
+HOOK_RENK = "white"
 
 
 def ffmpeg_kurulu_mu() -> bool:
@@ -32,7 +45,7 @@ def ffmpeg_kurulu_mu() -> bool:
 
 
 def ses_birlestir(ses_dosyalari: list, cikis_dosyasi: str) -> float:
-    """Birden fazla ses dosyasını sırayla birleştir."""
+    """Birden fazla ses dosyasını sırayla birleştir. Boşluk olmadan."""
     if not ses_dosyalari:
         return 0.0
 
@@ -40,7 +53,7 @@ def ses_birlestir(ses_dosyalari: list, cikis_dosyasi: str) -> float:
         shutil.copy(ses_dosyalari[0], cikis_dosyasi)
         return _ses_suresi(ses_dosyalari[0])
 
-    # FFmpeg concat ile birleştir
+    # FFmpeg concat ile birleştir — gap yok
     liste_dosyasi = cikis_dosyasi + ".txt"
     with open(liste_dosyasi, "w") as f:
         for s in ses_dosyalari:
@@ -67,63 +80,102 @@ def _ses_suresi(ses_dosyasi: str) -> float:
         data = json.loads(result.stdout)
         return float(data["format"]["duration"])
     except Exception:
-        return 5.0
+        return 3.0
 
 
-def arkaplan_kare_uret(renk: str, genislik: int, yukseklik: int, cikis: str):
-    """Tek renkli arka plan karesi üret."""
-    subprocess.run([
-        "ffmpeg", "-y",
-        "-f", "lavfi",
-        "-i", f"color=c={renk}:size={genislik}x{yukseklik}:rate=1",
-        "-frames:v", "1",
-        cikis
-    ], capture_output=True, check=True, timeout=30)
+def arkaplan_uret(sure: float, cikis: str, efekt: str = None):
+    """
+    Gradient + hareketli arka plan üret.
+    Punchline efektuna göre arka plan rengi değişebilir.
+    """
+    # BOBİ TV renk paleti: koyu lacivert → mor
+    renk_baslangic = "0x0a0a1e"
+    renk_bitis = "0x2a1a4e"
+
+    if efekt == "siyah_beyaz_zoom":
+        # Dramatik an için daha koyu
+        renk_baslangic = "0x050508"
+        renk_bitis = "0x1a1a2e"
+
+    # Gradient arka plan
+    gradient_filtresi = (
+        f"gradients=s={VIDEO_GENISLIK}x{VIDEO_YUKSEKLIK}:"
+        f"d={sure}:"
+        f"c0={renk_baslangic}:c1={renk_bitis}:c2={renk_baslangic}:"
+        f"x0=0:y0=0:x1={VIDEO_GENISLIK}:y1={VIDEO_YUKSEKLIK}:"
+        f"speed=0.008"
+    )
+
+    try:
+        subprocess.run([
+            "ffmpeg", "-y",
+            "-f", "lavfi",
+            "-i", gradient_filtresi,
+            "-t", str(sure),
+            "-r", str(VIDEO_FPS),
+            "-c:v", "libx264", "-preset", "fast",
+            "-pix_fmt", "yuv420p",
+            cikis
+        ], capture_output=True, check=True, timeout=120)
+        print(f"[Render] Gradient arka plan: {sure:.1f}sn")
+    except Exception as e:
+        print(f"[Render] Gradient hatası, düz renk: {e}")
+        subprocess.run([
+            "ffmpeg", "-y",
+            "-f", "lavfi",
+            "-i", f"color=c={renk_baslangic}:size={VIDEO_GENISLIK}x{VIDEO_YUKSEKLIK}:rate={VIDEO_FPS}",
+            "-t", str(sure),
+            "-c:v", "libx264", "-preset", "fast",
+            cikis
+        ], capture_output=True, check=True, timeout=120)
 
 
-def altyazi_oluştur(ses_dosyalari: list, cikis_srt: str):
+def altyazi_olustur(ses_dosyalari: list, diyaloglar: list, cikis_srt: str):
     """
     TTS zamanlamalarından SRT altyazı dosyası oluştur.
+    Karakter isimleri altyazıda yer almaz — sadece diyalog metni.
     """
     satirlar = []
     zaman_oteleme = 0.0
     sira = 1
 
-    for ses in ses_dosyalari:
+    for i, ses in enumerate(ses_dosyalari):
         zamanlamalar = ses.get("zamanlamalar", [])
+        metin = ses.get("metin", "")
+        sure = ses.get("sure", 3.0)
+        karakter = ses.get("karakter", "")
+
         if not zamanlamalar:
-            # Tek blok altyazı
-            sure = ses.get("sure", 3.0)
             bas = zaman_oteleme
             bit = zaman_oteleme + sure
             satirlar.append({
                 "sira": sira,
                 "baslangic": bas,
                 "bitis": bit,
-                "metin": ses.get("metin", ""),
+                "metin": metin,
+                "karakter": karakter
             })
             sira += 1
             zaman_oteleme += sure
             continue
 
-        # Kelime gruplarını altyazı satırlarına çevir (3-5 kelime per satır)
+        # Kelime gruplarını altyazı satırlarına çevir (3-4 kelime per satır)
         grup_boyutu = 4
-        for i in range(0, len(zamanlamalar), grup_boyutu):
-            grup = zamanlamalar[i:i + grup_boyutu]
+        for j in range(0, len(zamanlamalar), grup_boyutu):
+            grup = zamanlamalar[j:j + grup_boyutu]
             bas = zaman_oteleme + grup[0]["baslangic"]
             bit = zaman_oteleme + grup[-1]["bitis"]
-            metin = " ".join(k["kelime"] for k in grup)
+            metin_grup = " ".join(k["kelime"] for k in grup)
             satirlar.append({
                 "sira": sira,
                 "baslangic": bas,
                 "bitis": bit,
-                "metin": metin,
+                "metin": metin_grup,
+                "karakter": karakter
             })
             sira += 1
 
-        # Bir sonraki ses parçasının başlangıç zamanını ayarla
-        if zamanlamalar:
-            zaman_oteleme += zamanlamalar[-1]["bitis"]
+        zaman_oteleme += sure
 
     # SRT formatında yaz
     def saniye_srt(sn: float) -> str:
@@ -145,99 +197,122 @@ def altyazi_oluştur(ses_dosyalari: list, cikis_srt: str):
 def video_render(senaryo_paketi: dict) -> str:
     """
     Senaryo paketinden tam Shorts videosu üretir.
+    Hook metni → diyaloglar (karakter etiketleri ekranda) → punchline efekt → loop
     Döner: final video dosyası yolu.
     """
     RENDER_YOLU.mkdir(parents=True, exist_ok=True)
     OUTPUT_YOLU.mkdir(parents=True, exist_ok=True)
 
     dosya_adi = senaryo_paketi["dosya_adi"]
+    senaryo = senaryo_paketi["senaryo"]
     ses_dosyalari = senaryo_paketi.get("ses_dosyalari", [])
+    diyaloglar = senaryo.get("diyaloglar", [])
+    hook_metni = senaryo.get("hook_metni", "")
+    hook_suresi = senaryo.get("hook_suresi", 1.0)
+    punchline_efekt = senaryo.get("punchline_efekt", "zoom_in")
 
     if not ffmpeg_kurulu_mu():
         raise RuntimeError("FFmpeg kurulu değil.")
 
-    # 1. Sesleri birleştir
+    # 1. Sesleri birleştir (gap yok)
     birlesik_ses = str(RENDER_YOLU / f"{dosya_adi}_audio.wav")
     ses_yollari = [s["ses_dosyasi"] for s in ses_dosyalari if Path(s["ses_dosyasi"]).exists()]
 
     if ses_yollari:
-        video_suresi = ses_birlestir(ses_yollari, birlesik_ses)
+        diyalog_suresi = ses_birlestir(ses_yollari, birlesik_ses)
     else:
-        video_suresi = 5.0
-        # Sessiz ses oluştur
+        diyalog_suresi = 5.0
         subprocess.run([
             "ffmpeg", "-y", "-f", "lavfi",
-            "-i", f"anullsrc=r=44100:cl=mono",
-            "-t", str(video_suresi), birlesik_ses
+            "-i", "anullsrc=r=44100:cl=mono",
+            "-t", str(diyalog_suresi), birlesik_ses
         ], capture_output=True, timeout=30)
 
-    # 2. Animasyonlu arka plan videosu oluştur
+    # Toplam video süresi = hook + diyaloglar (loop için bekleme yok)
+    video_suresi = hook_suresi + diyalog_suresi
+
+    # 2. Arka plan videosu oluştur
     arkaplan = str(RENDER_YOLU / f"{dosya_adi}_bg.mp4")
+    arkaplan_uret(video_suresi, arkaplan, punchline_efekt)
 
-    # Gradient + hareketli parlaklık efektli arka plan
-    # BOBİ TV renkleri: koyu lacivert → mor gradient, yavaş hareket
-    gradient_filtresi = (
-        f"gradients=s={VIDEO_GENISLIK}x{VIDEO_YUKSEKLIK}:"
-        f"d={video_suresi}:"
-        f"c0=0x0a0a1e:c1=0x1a1a3e:c2=0x2a1a4e:"
-        f"x0=0:y0=0:x1={VIDEO_GENISLIK}:y1={VIDEO_YUKSEKLIK}:"
-        f"speed=0.01"
-    )
-
-    try:
-        subprocess.run([
-            "ffmpeg", "-y",
-            "-f", "lavfi",
-            "-i", gradient_filtresi,
-            "-t", str(video_suresi),
-            "-r", str(VIDEO_FPS),
-            "-c:v", "libx264", "-preset", "fast",
-            "-pix_fmt", "yuv420p",
-            arkaplan
-        ], capture_output=True, check=True, timeout=120)
-        print(f"[Render] Gradient arka plan oluşturuldu.")
-    except Exception:
-        # Fallback: düz renk
-        renk = "0x1a1a2e"
-        subprocess.run([
-            "ffmpeg", "-y",
-            "-f", "lavfi",
-            "-i", f"color=c={renk}:size={VIDEO_GENISLIK}x{VIDEO_YUKSEKLIK}:rate={VIDEO_FPS}",
-            "-t", str(video_suresi),
-            "-c:v", "libx264", "-preset", "fast",
-            arkaplan
-        ], capture_output=True, check=True, timeout=120)
-        print(f"[Render] Düz arka plan (fallback).")
-
-    # 3. Altyazı oluştur
+    # 3. Altyazı oluştur (karakter isimleri yok, sadece diyalog)
     altyazi_srt = str(RENDER_YOLU / f"{dosya_adi}.srt")
-    altyazi_oluştur(ses_dosyalari, altyazi_srt)
+    altyazi_olustur(ses_dosyalari, diyaloglar, altyazi_srt)
 
-    # 4. Final video: arka plan + ses + altyazı + BOBİ TV watermark
+    # 4. Final video: arka plan + ses + altyazı + hook + karakter etiketleri + watermark
     final_video = str(OUTPUT_YOLU / f"{dosya_adi}.mp4")
 
-    # Altyazı stilini ASS formatına çevir (daha iyi kontrol)
+    # Kompleks filter graph oluştur
+    filtre_parcalari = []
+
+    # 4a. Altyazı
     altyazi_filtresi = (
         f"subtitles={altyazi_srt}:force_style='"
-        f"FontName=Arial,FontSize={ALTYAZI_FONT_BOYUTU},"
-        f"PrimaryColour=&H00FFFFFF,"
-        f"OutlineColour=&H00000000,"
-        f"BackColour=&H99000000,"
-        f"Bold=1,Alignment=2,"
-        f"MarginV=80'"
+        f"FontName={ALTYAZI_FONT},FontSize={ALTYAZI_FONT_BOYUTU},"
+        f"PrimaryColour={ALTYAZI_RENK},"
+        f"OutlineColour={ALTYAZI_CERCEVE},"
+        f"BackColour={ALTYAZI_ARKAPLAN},"
+        f"Bold=1,Alignment=2,MarginV={ALTYAZI_MARGIN_V}'"
     )
+    filtre_parcalari.append(altyazi_filtresi)
 
-    # BOBİ TV watermark: sağ üst köşede yarı saydam
+    # 4b. Hook metni — ilk saniyelerde büyük harflerle ortada
+    if hook_metni:
+        hook_filtresi = (
+            f"drawtext=text='{hook_metni}':"
+            f"fontcolor={HOOK_RENK}:fontsize={HOOK_FONT_BOYUTU}:"
+            f"x=(w-tw)/2:y=(h-th)/2:"
+            f"enable='between(t,0,{hook_suresi})':"
+            f"shadowcolor=black@0.7:shadowx=3:shadowy=3:"
+            f"fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+        )
+        filtre_parcalari.append(hook_filtresi)
+
+    # 4c. Karakter etiketleri — ekranda görünür, okunmaz
+    # Her diyalog sırasında o diyalogun karakteri sol üstte yazar
+    zaman_oteleme = hook_suresi
+    for i, (ses, diyalog) in enumerate(zip(ses_dosyalari, diyaloglar)):
+        karakter = diyalog.get("karakter", "")
+        diyalog_sure = ses.get("sure", 2.0)
+        baslangic = zaman_oteleme
+        bitis = baslangic + diyalog_sure
+
+        if karakter:
+            # Karakter etiketi sol üst köşede
+            etiket_filtresi = (
+                f"drawtext=text='[{karakter}]':"
+                f"fontcolor={ETIKET_RENK}:fontsize={ETIKET_FONT_BOYUTU}:"
+                f"x=40:y=50:"
+                f"enable='between(t,{baslangic:.2f},{bitis:.2f})':"
+                f"shadowcolor=black@0.5:shadowx=2:shadowy=2"
+            )
+            filtre_parcalari.append(etiket_filtresi)
+
+        zaman_oteleme += diyalog_sure
+
+    # 4d. BOBİ TV watermark — sağ üst köşede yarı saydam
     watermark_filtresi = (
-        f"drawtext=text='BOBİ TV':"
-        f"fontcolor=white@0.3:"
-        f"fontsize=36:"
+        f"drawtext=text='BOBI TV':"
+        f"fontcolor=white@0.25:fontsize=32:"
         f"x=w-tw-30:y=30:"
-        f"shadowcolor=black@0.5:shadowx=2:shadowy=2"
+        f"shadowcolor=black@0.3:shadowx=1:shadowy=1"
     )
+    filtre_parcalari.append(watermark_filtresi)
 
-    # Tüm filtreleri birleştir
-    komple_filtre = f"{altyazi_filtresi},{watermark_filtresi}"
+    # 4e. Punchline efekt — son diyalogdan önce zoom
+    # Son diyalog'un başlangıç zamanı
+    if len(ses_dosyalari) >= 2:
+        punchline_baslangic = hook_suresi + sum(s.get("sure", 2.0) for s in ses_dosyalari[:-1])
+        if punchline_efekt == "zoom_in":
+            # Hızlı zoom in efekti
+            zoom_filtresi = (
+                f"zoompan=z='min(zoom+0.1,1.5)':d={VIDEO_FPS}:s={VIDEO_GENISLIK}x{VIDEO_YUKSEKLIK}:"
+                f"fps={VIDEO_FPS}"
+            )
+            # Daha basit: crop ile scale
+            filtre_parcalari.append(f"scale={int(VIDEO_GENISLIK*1.05)}:{int(VIDEO_YUKSEKLIK*1.05)},crop={VIDEO_GENISLIK}:{VIDEO_YUKSEKLIK}")
+
+    komple_filtre = ",".join(filtre_parcalari)
 
     subprocess.run([
         "ffmpeg", "-y",
@@ -256,7 +331,8 @@ def video_render(senaryo_paketi: dict) -> str:
     if not Path(final_video).exists() or Path(final_video).stat().st_size < 1000:
         raise RuntimeError(f"Final video oluşturulamadı: {final_video}")
 
-    print(f"[Render] Video hazır: {final_video} ({Path(final_video).stat().st_size // 1024}KB, {video_suresi:.1f}s)")
+    video_boyut = Path(final_video).stat().st_size // 1024
+    print(f"[Render] Video hazır: {final_video} ({video_boyut}KB, {video_suresi:.1f}sn)")
 
     # 6. Geçici dosyaları temizle
     for gecici in [birlesik_ses, arkaplan]:
@@ -269,10 +345,7 @@ def video_render(senaryo_paketi: dict) -> str:
 
 
 def kapak_uret(senaryo_paketi: dict) -> str:
-    """
-    Video kapağı (thumbnail) üret.
-    FFmpeg ile video'nun ilk karesinden kapak al.
-    """
+    """Video kapağı (thumbnail) üret — ilk kare."""
     final_video = senaryo_paketi.get("final_video")
     if not final_video or not Path(final_video).exists():
         return None
@@ -291,10 +364,17 @@ def kapak_uret(senaryo_paketi: dict) -> str:
 
 
 if __name__ == "__main__":
-    # Test
     test_paket = {
-        "dosya_adi": "20261108_0001_test",
-        "baslik": "BOBİ TV Test Video",
+        "dosya_adi": "test_render",
+        "senaryo": {
+            "hook_metni": "KURUMSAL HAYAT ÖZETİ",
+            "hook_suresi": 1.0,
+            "diyaloglar": [
+                {"karakter": "KÖPEK", "metin": "Bugün çok yoruldum.", "ses": "yavas_bikkin"},
+                {"karakter": "TOPLANTI", "metin": "Neden?", "ses": "robotik_koro"}
+            ],
+            "punchline_efekt": "zoom_in"
+        },
         "ses_dosyalari": []
     }
     try:

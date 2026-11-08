@@ -31,7 +31,8 @@ jobs:
             ffmpeg \
             espeak-ng \
             wget \
-            curl
+            curl \
+            fonts-dejavu-core
 
       - name: Python bağımlılıklarını kur
         run: |

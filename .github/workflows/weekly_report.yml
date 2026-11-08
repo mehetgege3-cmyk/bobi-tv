@@ -1,0 +1,110 @@
+name: BOBİ TV — Haftalık Performans Raporu
+
+on:
+  schedule:
+    # Her Pazartesi UTC 07:00 (Türkiye 10:00)
+    - cron: '0 7 * * 1'
+  workflow_dispatch: {}
+
+jobs:
+  rapor:
+    name: Haftalık Rapor
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Repo'yu çek
+        uses: actions/checkout@v4
+
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Bağımlılıkları kur
+        run: pip install requests
+
+      - name: Haftalık rapor üret ve gönder
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
+        run: |
+          python -c "
+          import os, json, requests
+          from pathlib import Path
+          from datetime import datetime, timedelta
+
+          token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+          chat_id = os.environ.get('TELEGRAM_CHAT_ID', '')
+
+          # Arşivden son 7 günün verilerini al
+          arsiv_yolu = Path('bobi_tv/archive/videos.json')
+          arsiv = []
+          if arsiv_yolu.exists():
+              with open(arsiv_yolu) as f:
+                  arsiv = json.load(f)
+
+          hafta_once = datetime.now() - timedelta(days=7)
+          haftalik = [
+              v for v in arsiv
+              if datetime.fromisoformat(v.get('tarih', '2000-01-01')) > hafta_once
+          ]
+
+          # YouTube Analytics (temel)
+          yt_token_raw = os.environ.get('YOUTUBE_TOKEN', '')
+          goruntulenme = 'API verisi bekleniyor'
+          abone_degisim = 'API verisi bekleniyor'
+
+          if yt_token_raw:
+              try:
+                  yt_data = json.loads(yt_token_raw)
+                  # Token yenile
+                  resp = requests.post('https://oauth2.googleapis.com/token', data={
+                      'client_id': yt_data['client_id'],
+                      'client_secret': yt_data['client_secret'],
+                      'refresh_token': yt_data['refresh_token'],
+                      'grant_type': 'refresh_token'
+                  }, timeout=15)
+                  if resp.status_code == 200:
+                      access_token = resp.json()['access_token']
+                      # Kanal istatistikleri
+                      ch_resp = requests.get(
+                          'https://www.googleapis.com/youtube/v3/channels',
+                          params={'part': 'statistics', 'mine': 'true'},
+                          headers={'Authorization': f'Bearer {access_token}'},
+                          timeout=10
+                      )
+                      if ch_resp.status_code == 200:
+                          items = ch_resp.json().get('items', [])
+                          if items:
+                              stats = items[0].get('statistics', {})
+                              abone_degisim = stats.get('subscriberCount', '?') + ' toplam abone'
+                              goruntulenme = stats.get('viewCount', '?') + ' toplam görüntülenme'
+              except Exception as e:
+                  print(f'Analytics hatası: {e}')
+
+          mesaj = (
+              f'📊 <b>BOBİ TV Haftalık Rapor</b>\n'
+              f'📅 {hafta_once.strftime(\"%d.%m\")} - {datetime.now().strftime(\"%d.%m.%Y\")}\n\n'
+              f'🎬 Bu hafta yayınlanan: <b>{len(haftalik)} video</b>\n'
+              f'👁 Görüntülenme: {goruntulenme}\n'
+              f'👥 Abone: {abone_degisim}\n\n'
+          )
+
+          if haftalik:
+              mesaj += '<b>Bu haftanın videoları:</b>\n'
+              for v in haftalik[-5:]:
+                  mesaj += f'• {v[\"baslik\"][:50]}...\n'
+          else:
+              mesaj += 'Bu hafta yayınlanan video yok.\n'
+
+          mesaj += f'\n🔗 Kanal: https://www.youtube.com/@BOBİTİVİ'
+
+          requests.post(
+              f'https://api.telegram.org/bot{token}/sendMessage',
+              json={'chat_id': chat_id, 'text': mesaj, 'parse_mode': 'HTML'},
+              timeout=10
+          )
+          print('Haftalık rapor gönderildi.')
+          "

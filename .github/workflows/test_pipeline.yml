@@ -1,0 +1,123 @@
+name: BOBİ TV — İlk Kurulum Testi
+
+on:
+  workflow_dispatch:
+    inputs:
+      hedef:
+        description: 'Test için kaç video üretilsin? (varsayılan: 1)'
+        required: false
+        default: '1'
+
+jobs:
+  test:
+    name: İlk Uçtan Uca Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Repo'yu çek
+        uses: actions/checkout@v4
+
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Sistem bağımlılıklarını kur
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq \
+            ffmpeg \
+            espeak-ng \
+            wget \
+            curl
+
+      - name: Python bağımlılıklarını kur
+        run: |
+          pip install --upgrade pip
+          pip install \
+            requests==2.32.3 \
+            google-auth==2.35.0 \
+            google-auth-httplib2==0.2.0 \
+            google-api-python-client==2.151.0 \
+            pydub==0.25.1 \
+            Pillow==11.0.0 \
+            numpy==2.1.3
+
+      - name: Piper TTS kur
+        run: |
+          wget -q https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_linux_x86_64.tar.gz \
+            -O /tmp/piper.tar.gz || true
+          if [ -f /tmp/piper.tar.gz ]; then
+            tar -xzf /tmp/piper.tar.gz -C /tmp/
+            sudo mv /tmp/piper/piper /usr/local/bin/piper
+            chmod +x /usr/local/bin/piper
+            echo "Piper kuruldu."
+          else
+            echo "Piper indirilemedi, espeak-ng kullanılacak."
+          fi
+
+      - name: Klasör yapısını oluştur
+        run: |
+          mkdir -p bobi_tv/{queue,production/{scripts,assets/{characters,backgrounds,sfx},tts,animation,render},output,archive/published,logs,config/piper_models}
+
+      - name: Telegram test bildirimi gönder
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python -c "
+          import os, requests
+          token = os.environ['TELEGRAM_BOT_TOKEN']
+          chat_id = os.environ['TELEGRAM_CHAT_ID']
+          resp = requests.post(
+            f'https://api.telegram.org/bot{token}/sendMessage',
+            json={
+              'chat_id': chat_id,
+              'text': '🧪 <b>BOBİ TV Kurulum Testi Başladı</b>\n\nİlk uçtan uca test çalışıyor...\nSenaryo → TTS → Render → YouTube',
+              'parse_mode': 'HTML'
+            }
+          )
+          print('Telegram test:', 'OK' if resp.status_code == 200 else f'HATA {resp.status_code}')
+          "
+
+      - name: Pipeline'ı çalıştır
+        env:
+          YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GUNLUK_HEDEF: ${{ github.event.inputs.hedef }}
+        run: |
+          python main_pipeline.py
+
+      - name: Sonuç bildir
+        if: always()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python -c "
+          import os, requests
+          token = os.environ['TELEGRAM_BOT_TOKEN']
+          chat_id = os.environ['TELEGRAM_CHAT_ID']
+          durum = '✅ Başarılı' if '${{ job.status }}' == 'success' else '❌ Başarısız'
+          requests.post(
+            f'https://api.telegram.org/bot{token}/sendMessage',
+            json={
+              'chat_id': chat_id,
+              'text': f'🧪 <b>BOBİ TV Test Tamamlandı</b>\nDurum: {durum}\nDetay: https://github.com/mehetgege3-cmyk/bobi-tv/actions',
+              'parse_mode': 'HTML'
+            }
+          )
+          "
+
+      - name: Arşivi commit et
+        if: always()
+        run: |
+          git config user.name "BOBİ TV Bot"
+          git config user.email "bobi-tv-bot@users.noreply.github.com"
+          git add bobi_tv/archive/ bobi_tv/logs/ || true
+          git diff --staged --quiet || git commit -m "🧪 Test arşiv güncellendi [$(date +%Y-%m-%d)]"
+          git push || true

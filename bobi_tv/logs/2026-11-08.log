@@ -18,3 +18,13 @@
 [21:05:23] [INFO] 1 video YouTube'a yükleniyor...
 [21:05:41] [INFO] Yayınlandı: https://www.youtube.com/shorts/MbFmb8sLpxk
 [21:05:41] [INFO] === Pipeline tamamlandı. 1/1 video. Süre: 0dk ===
+[21:11:33] [INFO] === BOBİ TV Günlük Üretim Başladı ===
+[21:11:33] [INFO] Senaryo üretimi başlıyor. Hedef: 1
+[21:11:33] [INFO] 1 senaryo üretildi.
+[21:11:33] [INFO] Video #1/1: Kurumsal hayatı 5 saniyede özetledik 🥲
+[21:11:33] [INFO] [#1] TTS seslendirme...
+[21:11:34] [INFO] [#1] Video render...
+[21:11:40] [INFO] [#1] Video hazır: bobi_tv/output/20261108_0001_kurumsal_hayat.mp4
+[21:11:40] [INFO] 1 video YouTube'a yükleniyor...
+[21:11:58] [INFO] Yayınlandı: https://www.youtube.com/shorts/wcFRQyi27ks
+[21:11:58] [INFO] === Pipeline tamamlandı. 1/1 video. Süre: 0dk ===

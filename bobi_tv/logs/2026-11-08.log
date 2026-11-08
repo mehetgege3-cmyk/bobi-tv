@@ -8,3 +8,13 @@
 [20:44:56] [INFO] 1 video YouTube'a yükleniyor...
 [20:45:13] [INFO] Yayınlandı: https://www.youtube.com/shorts/urxQ4qym8KQ
 [20:45:13] [INFO] === Pipeline tamamlandı. 1/1 video. Süre: 0dk ===
+[21:05:07] [INFO] === BOBİ TV Günlük Üretim Başladı ===
+[21:05:08] [INFO] Senaryo üretimi başlıyor. Hedef: 1
+[21:05:08] [INFO] 1 senaryo üretildi.
+[21:05:08] [INFO] Video #1/1: En zor içki #shorts
+[21:05:08] [INFO] [#1] TTS seslendirme...
+[21:05:08] [INFO] [#1] Video render...
+[21:05:23] [INFO] [#1] Video hazır: bobi_tv/output/20261108_0001_bar_fikrasi.mp4
+[21:05:23] [INFO] 1 video YouTube'a yükleniyor...
+[21:05:41] [INFO] Yayınlandı: https://www.youtube.com/shorts/MbFmb8sLpxk
+[21:05:41] [INFO] === Pipeline tamamlandı. 1/1 video. Süre: 0dk ===

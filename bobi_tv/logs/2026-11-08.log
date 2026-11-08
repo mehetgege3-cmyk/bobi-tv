@@ -28,3 +28,13 @@
 [21:11:40] [INFO] 1 video YouTube'a yükleniyor...
 [21:11:58] [INFO] Yayınlandı: https://www.youtube.com/shorts/wcFRQyi27ks
 [21:11:58] [INFO] === Pipeline tamamlandı. 1/1 video. Süre: 0dk ===
+[21:20:08] [INFO] === BOBİ TV Günlük Üretim Başladı ===
+[21:20:09] [INFO] Senaryo üretimi başlıyor. Hedef: 1
+[21:20:09] [INFO] 1 senaryo üretildi.
+[21:20:09] [INFO] Video #1/1: Pazartesi sabahı mental sağlık 🐶
+[21:20:09] [INFO] [#1] TTS seslendirme...
+[21:20:16] [INFO] [#1] Video render...
+[21:20:21] [INFO] [#1] Video hazır: bobi_tv/output/20261108_0001_pazartesi_sendromu.mp4
+[21:20:21] [INFO] 1 video YouTube'a yükleniyor...
+[21:20:39] [INFO] Yayınlandı: https://www.youtube.com/shorts/6SjyFL6RZcE
+[21:20:39] [INFO] === Pipeline tamamlandı. 1/1 video. Süre: 0dk ===

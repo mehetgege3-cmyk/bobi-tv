@@ -220,8 +220,12 @@ def video_render(senaryo_paketi: dict) -> str:
     # Hook metni — ilk saniyede büyük harflerle ortada
     if hook_metni:
         fontfile = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+        # Hook metnini dosyaya yaz (apostrof/özel karakter sorununu çöz)
+        hook_dosyasi = str(RENDER_YOLU / f"{dosya_adi}_hook.txt")
+        with open(hook_dosyasi, "w", encoding="utf-8") as hf:
+            hf.write(hook_metni)
         hook_filtresi = (
-            f"drawtext=text='{hook_metni}':fontfile={fontfile}:"
+            f"drawtext=textfile={hook_dosyasi}:fontfile={fontfile}:"
             f"fontcolor=white:fontsize=72:"
             f"x=(w-tw)/2:y=(h-th)/2:"
             f"enable='between(t,0,{hook_suresi})':"
@@ -238,8 +242,12 @@ def video_render(senaryo_paketi: dict) -> str:
         bitis = baslangic + diyalog_sure
 
         if karakter:
+            # Karakter etiketini dosyaya yaz
+            etiket_dosyasi = str(RENDER_YOLU / f"{dosya_adi}_etiket_{int(baslangic*100)}.txt")
+            with open(etiket_dosyasi, "w", encoding="utf-8") as ef:
+                ef.write(f"[{karakter}]")
             etiket = (
-                f"drawtext=text='[{karakter}]':fontfile={fontfile}:"
+                f"drawtext=textfile={etiket_dosyasi}:fontfile={fontfile}:"
                 f"fontcolor=white@0.7:fontsize=36:"
                 f"x=40:y=50:"
                 f"enable='between(t,{baslangic:.2f},{bitis:.2f})':"

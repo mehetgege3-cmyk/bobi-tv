@@ -108,19 +108,24 @@ export async function askArenaAgent({
     if (page.url() !== 'https://arena.ai/agent/') break;
   }
 
-  let lastText = '';
+  // Cevabı polling ile bekle — sabit timeout yok, stable olana kadar bekle
+  let lastLen = 0;
   let stableTicks = 0;
-  for (let i = 0; i < 45; i++) {
-    await page.waitForTimeout(2000);
-    const currentText = await page.locator('body').innerText().catch(() => '');
-    const isThinking = currentText.includes('orchestrating..');
+  const MAX_POLLS = 90; // max 3 dakika (2sn x 90)
 
-    if (currentText.length !== lastText.length || isThinking) {
-      lastText = currentText;
+  for (let i = 0; i < MAX_POLLS; i++) {
+    await page.waitForTimeout(2000);
+
+    const bodyText = await page.locator('body').innerText().catch(() => '');
+    const isThinking = bodyText.includes('orchestrating') || bodyText.includes('thinking') || bodyText.includes('...');
+
+    if (bodyText.length > lastLen || isThinking) {
+      lastLen = bodyText.length;
       stableTicks = 0;
     } else {
       stableTicks++;
-      if (stableTicks >= 4 && currentText.length > promptText.length + 120) {
+      // 4 ardışık poll'da değişim yok + yeterli içerik var = tamamlandı
+      if (stableTicks >= 4 && bodyText.length > promptText.length + 100) {
         break;
       }
     }

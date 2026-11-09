@@ -1,0 +1,161 @@
+name: BOBİ TV — Saatlik Video Üretimi (24/7)
+
+on:
+  schedule:
+    # Her saat başı — asal olmayan dakikalar (GitHub throttle önleme)
+    - cron: '3 * * * *'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Zorla çalıştır (günlük limit kontrolünü atla)'
+        required: false
+        default: 'false'
+
+concurrency:
+  group: hourly-production
+  cancel-in-progress: false
+
+jobs:
+  uret-ve-yayinla:
+    name: Saatlik Video Üretimi
+    runs-on: ubuntu-latest
+    timeout-minutes: 55  # 60 dakikadan az — bir sonraki saat başıyla çakışmasın
+
+    steps:
+      - name: Repo'yu çek
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT || github.token }}
+
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Node.js kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Sistem bağımlılıklarını kur
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq \
+            ffmpeg \
+            espeak-ng \
+            fonts-dejavu-core \
+            fonts-liberation2 \
+            libass9
+
+      - name: Python bağımlılıklarını kur
+        run: |
+          pip install --upgrade pip -q
+          pip install -q \
+            edge-tts==7.0.0 \
+            gTTS==2.5.4 \
+            requests==2.32.3 \
+            google-auth==2.35.0 \
+            google-auth-httplib2==0.2.0 \
+            google-api-python-client==2.151.0 \
+            Pillow==11.0.0 \
+            numpy==2.1.3
+
+      - name: Playwright kur (Arena AI için)
+        run: |
+          npm install playwright -q 2>/dev/null || true
+          npx playwright install --with-deps chromium 2>/dev/null || true
+
+      - name: Günlük video sayısını kontrol et
+        id: kapasite
+        run: |
+          python3 - << 'PYEOF'
+          import json, os
+          from pathlib import Path
+          from datetime import datetime, timezone
+
+          arsiv = Path("bobi_tv/archive/videos.json")
+          bugun = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+          hedef = 24
+
+          # Bugün yayınlanan video sayısı
+          bugunki = 0
+          if arsiv.exists():
+              try:
+                  kayitlar = json.loads(arsiv.read_text())
+                  bugunki = sum(1 for k in kayitlar if k.get("tarih","")[:10] == bugun)
+              except: pass
+
+          kalan = max(0, hedef - bugunki)
+          devam = "true" if kalan > 0 else "false"
+
+          print(f"Bugün yayınlanan: {bugunki}/{hedef}")
+          print(f"Kalan: {kalan}")
+          print(f"Devam: {devam}")
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"bugunki={bugunki}\n")
+              f.write(f"kalan={kalan}\n")
+              f.write(f"devam={devam}\n")
+          PYEOF
+
+      - name: Klasör yapısını oluştur
+        if: steps.kapasite.outputs.devam == 'true' || github.event.inputs.force == 'true'
+        run: |
+          mkdir -p bobi_tv/{queue,production/{scripts/{arena},assets/{characters,backgrounds,sfx},tts,animation,render},output,archive/published,logs,config}
+
+      - name: Pipeline'ı çalıştır (1 video)
+        if: steps.kapasite.outputs.devam == 'true' || github.event.inputs.force == 'true'
+        env:
+          YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ARENA_COOKIES_JSON: ${{ secrets.ARENA_COOKIES_JSON }}
+          GUNLUK_HEDEF: '1'
+          MOD: 'saatlik'
+        run: |
+          python main_pipeline.py
+
+      - name: Arşivi commit et
+        if: always()
+        run: |
+          git config user.name "BOBİ TV Bot"
+          git config user.email "bobi-tv-bot@users.noreply.github.com"
+          git add bobi_tv/archive/ bobi_tv/logs/ || true
+          git diff --staged --quiet || git commit -m "📺 Saatlik arşiv [$(date +%Y-%m-%dT%H:%M)] [skip ci]"
+          git push || true
+
+      - name: Limit doldu bildirimi
+        if: steps.kapasite.outputs.devam == 'false' && github.event.inputs.force != 'true'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python3 -c "
+          import os, requests
+          token = os.environ.get('TELEGRAM_BOT_TOKEN','')
+          chat_id = os.environ.get('TELEGRAM_CHAT_ID','')
+          if token and chat_id:
+              requests.post(f'https://api.telegram.org/bot{token}/sendMessage',
+                json={'chat_id': chat_id,
+                      'text': '✅ <b>BOBİ TV</b> Günlük 24 video hedefine ulaşıldı!',
+                      'parse_mode': 'HTML'}, timeout=10)
+          "
+
+      - name: Hata bildirimi
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python3 -c "
+          import os, requests
+          token = os.environ.get('TELEGRAM_BOT_TOKEN','')
+          chat_id = os.environ.get('TELEGRAM_CHAT_ID','')
+          saat = __import__('datetime').datetime.utcnow().strftime('%H:00')
+          if token and chat_id:
+              requests.post(f'https://api.telegram.org/bot{token}/sendMessage',
+                json={'chat_id': chat_id,
+                      'text': f'🔴 <b>BOBİ TV {saat} üretimi başarısız</b>\nhttps://github.com/mehetgege3-cmyk/bobi-tv/actions',
+                      'parse_mode': 'HTML'}, timeout=10)
+          "

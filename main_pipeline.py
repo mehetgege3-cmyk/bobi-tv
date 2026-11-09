@@ -18,7 +18,8 @@ from modules.telegram_notify import (
 )
 from modules.scenario import gun_senaryolari_uret
 from modules.tts_engine import senaryo_seslendir
-from modules.video_render import video_render, kapak_uret
+from modules.video_render import video_render
+from modules.kapak_uret import kapak_uret as kapak_uret_pil
 from modules.youtube_upload import toplu_yukle
 
 GUNLUK_HEDEF = int(os.environ.get("GUNLUK_HEDEF", "5"))
@@ -74,7 +75,12 @@ def pipeline_calistir():
             # Render
             log_yaz(f"[#{i}] Video render...")
             video_render(paket)
-            kapak_uret(paket)
+
+            # Kapak üret (PIL tabanlı, infu projesinden transfer)
+            log_yaz(f"[#{i}] Kapak üretimi...")
+            kapak = kapak_uret_pil(paket)
+            if kapak:
+                paket["kapak_dosyasi"] = kapak
 
             notify_video_ready(baslik, i, uretilen)
             hazir_paketler.append(paket)

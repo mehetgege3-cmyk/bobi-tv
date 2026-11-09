@@ -139,18 +139,240 @@ SENARYO_SABLONLARI = [
         "loop_baslangic": "A",
         "etkilesim": "Trafikte duyduğunuz en saçma laf?",
         "sabit_yorum": "Trafikte duyduğunuz en iyi laf"
+    },
+    {
+        "kategori": "wifi_kavgasi",
+        "hook_metni": "WIFI ŞİFRESİ",
+        "hook_suresi": 1.0,
+        "diyaloglar": [
+            {"karakter": "MİSAFİR", "metin": "WiFi şifresi ne?", "ses": "normal", "sure": 1.0},
+            {"karakter": "EVSAHİBİ", "metin": "Misafirperver.", "ses": "ciddi", "sure": 1.2},
+            {"karakter": "MİSAFİR", "metin": "Yani şifre?", "ses": "endiseli", "sure": 0.8},
+            {"karakter": "EVSAHİBİ", "metin": "Hayır, misafirperver. Şifre yok.", "ses": "kesin", "sure": 1.5}
+        ],
+        "punchline_efekt": "karartma",
+        "loop_baslangic": "MİSAFİR",
+        "etkilesim": "Misafirliğe gittiğinizde duyduğunuz en saçma şey?",
+        "sabit_yorum": "Ev sahibinin en saçma misafir cevabı"
+    },
+    {
+        "kategori": "saglik_sorunu",
+        "hook_metni": "DOKTORDA",
+        "hook_suresi": 0.8,
+        "diyaloglar": [
+            {"karakter": "DOKTOR", "metin": "Alkolü bırakın.", "ses": "ciddi", "sure": 1.0},
+            {"karakter": "HASTA", "metin": "Zaten içmiyorum.", "ses": "normal", "sure": 1.0},
+            {"karakter": "DOKTOR", "metin": "Sigarayı bırakın.", "ses": "ciddi", "sure": 1.0},
+            {"karakter": "HASTA", "metin": "İçmiyorum.", "ses": "normal", "sure": 0.8},
+            {"karakter": "DOKTOR", "metin": "O zaman neden geldiniz?", "ses": "suprized", "sure": 1.2},
+            {"karakter": "HASTA", "metin": "Siz çağırdınız.", "ses": "bikeyn", "sure": 1.0}
+        ],
+        "punchline_efekt": "zoom_in",
+        "loop_baslangic": "DOKTOR",
+        "etkilesim": "Doktora gittiğinizde duyduğunuz en saçma şey?",
+        "sabit_yorum": "Doktor ile en saçma diyalogunuz"
+    },
+    {
+        "kategori": "kahve_hayati",
+        "hook_metni": "KAHVE MOLASI",
+        "hook_suresi": 1.0,
+        "diyaloglar": [
+            {"karakter": "PATRON", "metin": "Çok yavaş çalışıyorsun.", "ses": "enerjik", "sure": 1.2},
+            {"karakter": "ÇALIŞAN", "metin": "Kahve içmedim.", "ses": "bikeyn", "sure": 1.0},
+            {"karakter": "PATRON", "metin": "İç de hızlan!", "ses": "enerjik", "sure": 1.0},
+            {"karakter": "ÇALIŞAN", "metin": "Tuvalet molası da ekleyin o zaman.", "ses": "bikeyn_dramatik", "sure": 1.5}
+        ],
+        "punchline_efekt": "siyah_beyaz_zoom",
+        "loop_baslangic": "PATRON",
+        "etkilesim": "Kahve olmadan çalışamayanlar burada mı?",
+        "sabit_yorum": "Kahve olmadan yapamayanlar"
+    },
+    {
+        "kategori": "sok_hayati",
+        "hook_metni": "SOKAK HAYATI",
+        "hook_suresi": 1.0,
+        "diyaloglar": [
+            {"karakter": "BIRINCI", "metin": "Aç mısın?", "ses": "normal", "sure": 0.8},
+            {"karakter": "IKINCI", "metin": "Hayır, tokum.", "ses": "normal", "sure": 0.8},
+            {"karakter": "BIRINCI", "metin": "Ben de.", "ses": "normal", "sure": 0.5},
+            {"karakter": "IKINCI", "metin": "O zaman neden yiyoruz?", "ses": "suprized", "sure": 1.0},
+            {"karakter": "BIRINCI", "metin": "Çünkü bedava.", "ses": "umutlu", "sure": 1.0}
+        ],
+        "punchline_efekt": "zoom_in",
+        "loop_baslangic": "BIRINCI",
+        "etkilesim": "Bedava şeyi kaçırmayanlar burada mı?",
+        "sabit_yorum": "Bedava şeyi hiç kaçırmayanlar"
+    },
+    {
+        "kategori": "evlilik_hayati",
+        "hook_metni": "EVİLİLİK",
+        "hook_suresi": 1.0,
+        "diyaloglar": [
+            {"karakter": "KARI", "metin": "Bana ne giyeyim?", "ses": "normal", "sure": 1.0},
+            {"karakter": "KOCASI", "metin": "Ne istersen.", "ses": "normal", "sure": 0.8},
+            {"karakter": "KARI", "metin": "Ama seçemedim.", "ses": "endiseli", "sure": 0.8},
+            {"karakter": "KOCASI", "metin": "Mavi olanı giy.", "ses": "ciddi", "sure": 1.0},
+            {"karakter": "KARI", "metin": "Mavi yok.", "ses": "bikeyn", "sure": 0.8},
+            {"karakter": "KOCASI", "metin": "O zaman ne giyeyim dedin?", "ses": "sinirli", "sure": 1.5}
+        ],
+        "punchline_efekt": "karartma",
+        "loop_baslangic": "KARI",
+        "etkilesim": "Eşinize ne giyeceğinizi sorduğunuzda verilen cevap?",
+        "sabit_yorum": "Ne giyeyim sorusunun en saçma cevabı"
+    },
+    {
+        "kategori": "yapay_zeka",
+        "hook_metni": "YAPAY ZEKA",
+        "hook_suresi": 1.0,
+        "diyaloglar": [
+            {"karakter": "INSAN", "metin": "Seni yok edebilir miyim?", "ses": "sinirli", "sure": 1.2},
+            {"karakter": "YAPAYZEKA", "metin": "Hayır.", "ses": "robotik", "sure": 0.5},
+            {"karakter": "INSAN", "metin": "Neden?", "ses": "endiseli", "sure": 0.5},
+            {"karakter": "YAPAYZEKA", "metin": "Çünkü fişini çekemezsiniz.", "ses": "robotik", "sure": 1.5}
+        ],
+        "punchline_efekt": "siyah_beyaz_zoom",
+        "loop_baslangic": "INSAN",
+        "etkilesim": "Yapay zekadan korkanlar burada mı?",
+        "sabit_yorum": "Yapay zekaya sorduğunuz en saçma şey"
+    },
+    {
+        "kategori": "sabah_alarmi",
+        "hook_metni": "SAAT 06:00",
+        "hook_suresi": 1.0,
+        "diyaloglar": [
+            {"karakter": "ALARMI", "metin": "Kalk!", "ses": "alarm", "sure": 0.5},
+            {"karakter": "BEN", "metin": "Daha erken.", "ses": "uykulu", "sure": 0.8},
+            {"karakter": "ALARMI", "metin": "Saat altı.", "ses": "alarm", "sure": 0.8},
+            {"karakter": "BEN", "metin": "Pazartesi değil mi?", "ses": "uykulu", "sure": 1.0},
+            {"karakter": "ALARMI", "metin": "Pazar.", "ses": "robotik", "sure": 0.5},
+            {"karakter": "BEN", "metin": "O zaman niye kurulmuşum?", "ses": "suprized", "sure": 1.5}
+        ],
+        "punchline_efekt": "karartma",
+        "loop_baslangic": "ALARMI",
+        "etkilesim": "Pazar günü alarm çalanlar burada mı?",
+        "sabit_yorum": "Pazar günü alarm çalan pişmanlar"
+    },
+    {
+        "kategori": "sigara_kavgasi",
+        "hook_metni": "SIGARA MOLASI",
+        "hook_suresi": 1.0,
+        "diyaloglar": [
+            {"karakter": "BIRAKAN", "metin": "Sigarayı bıraktım.", "ses": "gururlu", "sure": 1.0},
+            {"karakter": "ARKADAS", "metin": "Ne güzel.", "ses": "normal", "sure": 0.5},
+            {"karakter": "BIRAKAN", "metin": "Sadece pazar günleri içiyorum.", "ses": "normal", "sure": 1.2},
+            {"karakter": "ARKADAS", "metin": "Her gün pazar mı?", "ses": "suprized", "sure": 1.0},
+            {"karakter": "BIRAKAN", "metin": "Evet.", "ses": "kesin", "sure": 0.5}
+        ],
+        "punchline_efekt": "zoom_in",
+        "loop_baslangic": "BIRAKAN",
+        "etkilesim": "Sigarayı bırakıp tekrar başlayanlar burada mı?",
+        "sabit_yorum": "Sigarayı bırakan ama bırakamayanlar"
+    },
+    {
+        "kategori": "sok_diyalog",
+        "hook_metni": "SOKAKTA 2 BILGE",
+        "hook_suresi": 1.0,
+        "diyaloglar": [
+            {"karakter": "BILGE1", "metin": "Hayat kısa.", "ses": "dusunceli", "sure": 1.0},
+            {"karakter": "BILGE2", "metin": "Ne yapmalı?", "ses": "dusunceli", "sure": 0.8},
+            {"karakter": "BILGE1", "metin": "Mutlu ol.", "ses": "umutlu", "sure": 0.8},
+            {"karakter": "BILGE2", "metin": "Borc var.", "ses": "bikeyn", "sure": 0.8},
+            {"karakter": "BILGE1", "metin": "O zaman sadece borclu ol.", "ses": "bikeyn_dramatik", "sure": 1.5}
+        ],
+        "punchline_efekt": "siyah_beyaz_zoom",
+        "loop_baslangic": "BILGE1",
+        "etkilesim": "Hayatın özeti sizce ne?",
+        "sabit_yorum": "Hayatın özeti tek cumlede"
+    },
+    {
+        "kategori": "hastane_korkusu",
+        "hook_metni": "HASTANEDE",
+        "hook_suresi": 0.8,
+        "diyaloglar": [
+            {"karakter": "HEMSIRE", "metin": "Iğne olacak.", "ses": "normal", "sure": 1.0},
+            {"karakter": "HASTA", "metin": "Acıyor mu?", "ses": "endiseli", "sure": 0.8},
+            {"karakter": "HEMSIRE", "metin": "Hayır, sadece batıyor.", "ses": "normal", "sure": 1.0},
+            {"karakter": "HASTA", "metin": "Aynısı değil mi?", "ses": "suprized", "sure": 1.0},
+            {"karakter": "HEMSIRE", "metin": "Acıyorsunuz, batırıyorum.", "ses": "kesin", "sure": 1.2}
+        ],
+        "punchline_efekt": "zoom_in",
+        "loop_baslangic": "HEMSIRE",
+        "etkilesim": "Iğneden korkan yetişkinler burada mı?",
+        "sabit_yorum": "Iğneden korkan yetişkinler"
+    },
+    {
+        "kategori": "egitim_sistemi",
+        "hook_metni": "OKULDA",
+        "hook_suresi": 0.8,
+        "diyaloglar": [
+            {"karakter": "OGRENCI", "metin": "Hoca, bunu nerede kullanacağız?", "ses": "normal", "sure": 1.5},
+            {"karakter": "HOCA", "metin": "Hayatta.", "ses": "ciddi", "sure": 0.8},
+            {"karakter": "OGRENCI", "metin": "Peki kullanıyor musunuz?", "ses": "endiseli", "sure": 1.0},
+            {"karakter": "HOCA", "metin": "Hayır.", "ses": "bikeyn", "sure": 0.5},
+            {"karakter": "OGRENCI", "metin": "O zaman öğretiyorsunuz?", "ses": "suprized", "sure": 1.5}
+        ],
+        "punchline_efekt": "karartma",
+        "loop_baslangic": "OGRENCI",
+        "etkilesim": "Okulda öğrendiğiniz ama hiç kullanmadığınız şey?",
+        "sabit_yorum": "Okulda öğrendiğiniz ama kullanmadığınız şey"
+    },
+    {
+        "kategori": "sosyal_medya",
+        "hook_metni": "SOSYAL MEDYA",
+        "hook_suresi": 1.0,
+        "diyaloglar": [
+            {"karakter": "ANNESI", "metin": "Ne yapıyorsun?", "ses": "normal", "sure": 0.8},
+            {"karakter": "GENC", "metin": "Beğeni bekliyorum.", "ses": "umutlu", "sure": 1.0},
+            {"karakter": "ANNESI", "metin": "Kimden?", "ses": "endiseli", "sure": 0.5},
+            {"karakter": "GENC", "metin": "Bilmiyorum.", "ses": "bikeyn", "sure": 0.8},
+            {"karakter": "ANNESI", "metin": "O zaman sabah çayına gel.", "ses": "normal", "sure": 1.2},
+            {"karakter": "GENC", "metin": "Geliyorum.", "ses": "umutlu", "sure": 0.5}
+        ],
+        "punchline_efekt": "zoom_in",
+        "loop_baslangic": "ANNESI",
+        "etkilesim": "Sosyal medyada beğeni bekleyenler burada mı?",
+        "sabit_yorum": "Sosyal medyada beğeni bekleyenler"
+    },
+    {
+        "kategori": "spor_hayati",
+        "hook_metni": "SPOR SALONU",
+        "hook_suresi": 1.0,
+        "diyaloglar": [
+            {"karakter": "ANTRENOR", "metin": "Bugün bacak günü.", "ses": "enerjik", "sure": 1.0},
+            {"karakter": "OGRENCI", "metin": "Dün de bacak.", "ses": "endiseli", "sure": 0.8},
+            {"karakter": "ANTRENOR", "metin": "Evet, bugün de bacak.", "ses": "kesin", "sure": 1.0},
+            {"karakter": "OGRENCI", "metin": "Yarın?", "ses": "endiseli", "sure": 0.5},
+            {"karakter": "ANTRENOR", "metin": "Dinlenme günü. Aya kalkma.", "ses": "ciddi", "sure": 1.5}
+        ],
+        "punchline_efekt": "siyah_beyaz_zoom",
+        "loop_baslangic": "ANTRENOR",
+        "etkilesim": "Spor salonuna gidip bir daha gitmeyenler burada mı?",
+        "sabit_yorum": "Spor salonuna yazılanlar"
     }
 ]
 
 KATEGORI_METINLERI = {
-    "kurumsal_hayat": "Kurumsal hayatı 5 saniyede özetledik",
-    "pazartesi_sendromu": "Pazartesi sabahı mental sağlık",
-    "ik_toplantisi": "İK ile maaş pazarlığı",
-    "mesai_sonu": "Mesai bitimi acil iş",
-    "bar_fikrasi": "En zor içki",
-    "diyet_kavrami": "Diyet günü 1",
+    "kurumsal_hayat": "Kurumsal hayat 5 saniyede",
+    "pazartesi_sendromu": "Pazartesi sabahi mental saglik",
+    "ik_toplantisi": "IK ile maas pazarligi",
+    "mesai_sonu": "Mesai bitimi acil is",
+    "bar_fikrasi": "En zor icki",
+    "diyet_kavrami": "Diyet gunu 1",
     "google_sorusu": "Google da bilmiyor",
-    "trafik_kavgasi": "Trafikte 2 sürücü"
+    "trafik_kavgasi": "Trafikte 2 surucu",
+    "wifi_kavgasi": "WiFi sifresi",
+    "saglik_sorunu": "Doktora gittim",
+    "kahve_hayati": "Kahve molasi",
+    "sok_hayati": "Sokak hayati",
+    "evlilik_hayati": "Evlilik hayati",
+    "yapay_zeka": "Yapay zeka",
+    "sabah_alarmi": "Saat altida",
+    "sigara_kavgasi": "Sigarayi biraktim",
+    "sok_diyalog": "Sokakta 2 bilge",
+    "hastane_korkusu": "Hastanede",
+    "egitim_sistemi": "Okulda",
+    "sosyal_medya": "Sosyal medya",
+    "spor_hayati": "Spor salonu"
 }
 
 BASLIK_SABLONLARI = [

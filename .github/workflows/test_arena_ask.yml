@@ -1,0 +1,100 @@
+name: 🤖 Arena AI Test — Saat Sorgusu
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-arena:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Python Kurulumu
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Playwright Kurulumu
+        run: |
+          pip install playwright > /dev/null 2>&1
+          playwright install chromium > /dev/null 2>&1
+
+      - name: Arena AI'ye Saat Sor
+        env:
+          ARENA_COOKIES_JSON: ${{ secrets.ARENA_COOKIES_JSON }}
+        run: |
+          python << 'SCRIPT'
+          import asyncio
+          import json
+          import os
+          from playwright.async_api import async_playwright
+          
+          cookies_json = os.getenv("ARENA_COOKIES_JSON", "")
+          if not cookies_json:
+              print("❌ ARENA_COOKIES_JSON secret ayarlanmamış")
+              exit(1)
+          
+          try:
+              cookies_data = json.loads(cookies_json)
+          except json.JSONDecodeError:
+              print("❌ ARENA_COOKIES_JSON geçerli JSON değil")
+              exit(1)
+          
+          async def ask_arena():
+              async with async_playwright() as p:
+                  browser = await p.chromium.launch(headless=True)
+                  context = await browser.new_context()
+                  page = await context.new_page()
+                  
+                  # Cookies ekle
+                  await context.add_cookies(cookies_data)
+                  
+                  print("📡 Arena.ai açılıyor...")
+                  await page.goto("https://arena.ai/", wait_until="networkidle", timeout=30000)
+                  
+                  # Input'a soruyu yaz
+                  print("⌨️  'Şu an saat kaç?' sorusu yazılıyor...")
+                  try:
+                      await page.fill('textarea', "Şu an saat kaç?", timeout=5000)
+                  except:
+                      await page.fill('[contenteditable="true"]', "Şu an saat kaç?", timeout=5000)
+                  
+                  # Enter tuşu veya gönder butonu
+                  print("✅ Mesaj gönderiliyor...")
+                  try:
+                      await page.press('textarea', 'Enter')
+                  except:
+                      btn = await page.query_selector('button:has-text("Gönder")')
+                      if btn:
+                          await btn.click()
+                  
+                  # Yanıt bekle (max 10 saniye)
+                  print("⏳ Yanıt bekleniyor...")
+                  await page.wait_for_timeout(3000)  # AI'ın düşünme zamanı
+                  
+                  # Sayfadaki metni al
+                  page_text = await page.text_content('body')
+                  
+                  # Saat bilgisini ara
+                  if "saat" in page_text.lower() or "time" in page_text.lower():
+                      print(f"\n🤖 Arena AI Cevabı:\n{page_text[:800]}")
+                  else:
+                      print(f"\n📝 Arena Yanıtı (ilk 500 char):\n{page_text[:500]}")
+                  
+                  await browser.close()
+          
+          try:
+              asyncio.run(ask_arena())
+          except Exception as e:
+              print(f"❌ Hata: {e}")
+              import traceback
+              traceback.print_exc()
+              exit(1)
+          SCRIPT

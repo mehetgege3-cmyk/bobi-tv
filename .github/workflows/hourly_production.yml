@@ -9,7 +9,11 @@ on:
       force:
         description: 'Zorla çalıştır (günlük limit kontrolünü atla)'
         required: false
-        default: 'true'
+        default: 'false'
+
+permissions:
+  contents: write
+  actions: read
 
 concurrency:
   group: hourly-production
@@ -133,8 +137,9 @@ jobs:
           git add bobi_tv/archive/ bobi_tv/queue/*.json bobi_tv/production/scripts/arena/ 2>/dev/null || git add -u bobi_tv/archive/ bobi_tv/queue/ bobi_tv/production/scripts/arena/ || true
           if ! git diff --staged --quiet; then
             git commit -m "📺 BOBİ TV v6.2 arşiv/kuyruk [$(date +%Y-%m-%dT%H:%M)] [skip ci]"
-            git pull --rebase origin main || true
-            git push || true
+            git pull --rebase origin main || exit 1
+            git push || exit 1
+            echo "✅ Arşiv push başarılı"
           fi
 
       - name: Hata bildirimi
@@ -144,13 +149,20 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           python -c "
-          import os, requests
+          import os, requests, sys
           token = os.environ.get('TELEGRAM_BOT_TOKEN','')
           chat_id = os.environ.get('TELEGRAM_CHAT_ID','')
           saat = __import__('datetime').datetime.utcnow().strftime('%H:%M')
           if token and chat_id:
-              requests.post(f'https://api.telegram.org/bot{token}/sendMessage',
-                json={'chat_id': chat_id,
-                      'text': f'🔴 <b>BOBİ TV v6.2 ({saat} UTC) başarısız</b>\nhttps://github.com/mehetgege3-cmyk/bobi-tv/actions',
-                      'parse_mode': 'HTML'}, timeout=10)
+              try:
+                  resp = requests.post(f'https://api.telegram.org/bot{token}/sendMessage',
+                    json={'chat_id': chat_id,
+                          'text': f'🔴 <b>BOBİ TV v6.2 ({saat} UTC) başarısız</b>\nhttps://github.com/mehetgege3-cmyk/bobi-tv/actions',
+                          'parse_mode': 'HTML'}, timeout=10)
+                  if resp.status_code >= 400:
+                      print(f'Telegram HTTP {resp.status_code}: {resp.text}', file=sys.stderr)
+                      sys.exit(1)
+              except Exception as e:
+                  print(f'Telegram hatası: {e}', file=sys.stderr)
+                  sys.exit(1)
           "

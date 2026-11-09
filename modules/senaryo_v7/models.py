@@ -82,16 +82,21 @@ _DUYGU_ALIASES = {
 
 
 def duyguyu_normalize_et(raw: object) -> Duygu:
-    """Yazım varyantını kanonik enum'a çevirir; bilinmeyen etikette uyarıp en yakını seçer."""
+    """Yazım varyantını kanonik enum'a çevirir; bilinmeyen etikette güvenli fallback kullanır."""
     value = str(raw or Duygu.NORMAL.value).strip().lower().replace(" ", "_")
     canonical = _DUYGU_ALIASES.get(value, value)
     try:
         return Duygu(canonical)
     except ValueError:
-        match = get_close_matches(canonical, [item.value for item in Duygu], n=1, cutoff=0.0)
-        nearest = Duygu(match[0]) if match else Duygu.NORMAL
-        _LOG.warning("Bilinmeyen duygu etiketi %r; en yakın %r seçildi.", raw, nearest.value)
-        return nearest
+        # Yalnızca yüksek benzerlik eşiğini geçen eşleşmeleri kabul et; yoksa NORMAL fallback
+        match = get_close_matches(canonical, [item.value for item in Duygu], n=1, cutoff=0.6)
+        if match:
+            nearest = Duygu(match[0])
+            _LOG.warning("Bilinmeyen duygu etiketi %r; %r seçildi.", raw, nearest.value)
+            return nearest
+        else:
+            _LOG.warning("Bilinmeyen duygu etiketi %r; NORMAL fallback'i kullanıldı.", raw)
+            return Duygu.NORMAL
 
 
 _EnumValue = TypeVar("_EnumValue", bound=Enum)

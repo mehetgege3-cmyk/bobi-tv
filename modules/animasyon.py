@@ -382,7 +382,7 @@ def _karaoke_altyazi_katmani(
 
     if toplam_g > kat_g - 56:
         bosluk = 18
-        parcalar, toplam_g = _satir_olc(45, 50)
+        parcalar, toplam_g = _satir_olc(45, 50, bosluk)
 
     x_imlec = (kat_g - toplam_g) // 2
     merkez_y = kat_y // 2

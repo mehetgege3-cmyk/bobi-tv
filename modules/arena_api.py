@@ -227,7 +227,7 @@ async def _arena_senaryo_uret(page, video_no: int) -> str | None:
 
 async def _arena_kod_uret(page, senaryo: str, video_cikti: str) -> str | None:
     prompt = f"""Aşağıdaki Türkçe YouTube Shorts senaryosu için tek başına çalıştırılabilir Python 3 kodu yaz.
-Hiçbir araç (bash/write_file) ÇAĞIRMA! Doğrudan mesajının içinde tek bir ```python kod bloğu olarak yaz.
+Hiçbir araç (bash/write_file) ÇAĞIRMA! Doğrudan mesajının içinde tek bir python kod bloğu olarak yaz.
 
 Gereksinimler:
 - 1080x1920 px (9:16), 24 FPS, ~8 saniye MP4 (`{video_cikti}`)
@@ -323,12 +323,18 @@ async def _arena_sorgusu_yap(page, prompt: str, min_cevap_uzunlugu: int = 60, ti
 
 
 def _cevabi_ayikla(full_body: str, prompt: str, prompt_ilk_satir: str) -> str:
+    # Prompt'un son satirini referans alarak prompt govdesinin tamamen sonrasina gec
+    prompt_son_satir = [s.strip() for s in prompt.splitlines() if s.strip()][-1][:60]
     idx = full_body.rfind(prompt)
     if idx != -1:
         slice_text = full_body[idx + len(prompt):].strip()
     else:
-        idx2 = full_body.rfind(prompt_ilk_satir)
-        slice_text = full_body[idx2 + len(prompt_ilk_satir):].strip() if idx2 != -1 else ""
+        idx_end = full_body.rfind(prompt_son_satir)
+        if idx_end != -1:
+            slice_text = full_body[idx_end + len(prompt_son_satir):].strip()
+        else:
+            idx2 = full_body.rfind(prompt_ilk_satir)
+            slice_text = full_body[idx2 + len(prompt_ilk_satir):].strip() if idx2 != -1 else ""
 
     for marker in ("\nWas this task successful?", "\nWorkspace\n", "\nConnectors\n"):
         m_idx = slice_text.find(marker)
@@ -336,7 +342,17 @@ def _cevabi_ayikla(full_body: str, prompt: str, prompt_ilk_satir: str) -> str:
             slice_text = slice_text[:m_idx].strip()
 
     slice_text = re.sub(r"\n\d+s\s*\|\s*just now[\s\S]*$", "", slice_text, flags=re.IGNORECASE).strip()
-    return slice_text
+
+    # "Thought for X second(s)" dusunce blogu basligini ve ilk dusunce satirini temizle
+    lines = [l for l in slice_text.splitlines()]
+    if lines and re.match(r"^Thought for \d+", lines[0].strip(), re.IGNORECASE):
+        lines = lines[1:]
+        while lines and not lines[0].strip():
+            lines.pop(0)
+        # Eger bir sonraki satir tek cumlelik ic dusunce ozeti ise ("Kullanıcı ... istiyor.") ve altinda bos satir varsa atla
+        if len(lines) >= 3 and not lines[1].strip() and re.match(r"^(Kullanıcı|The user)\b", lines[0].strip(), re.IGNORECASE):
+            lines = lines[2:]
+    return "\n".join(lines).strip()
 
 
 def _kodu_calistir(kod: str, video_cikti: str) -> tuple:

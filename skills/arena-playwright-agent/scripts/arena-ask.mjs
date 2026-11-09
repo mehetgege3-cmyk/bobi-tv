@@ -36,35 +36,87 @@ export function buildCleanArenaCookie(cookiesArray) {
   }
 
   const combinedRaw = chunks.join('').replace(/^base64-/, '');
-  const sessionObj = JSON.parse(Buffer.from(combinedRaw, 'base64').toString('utf-8'));
+  let minimalSession = null;
 
-  const minimalSession = {
-    access_token: sessionObj.access_token,
-    token_type: sessionObj.token_type || 'bearer',
-    expires_in: sessionObj.expires_in || 3600,
-    expires_at: sessionObj.expires_at,
-    refresh_token: sessionObj.refresh_token,
-    user: {
-      id: sessionObj.user?.id,
-      email: sessionObj.user?.email,
-    },
-  };
+  try {
+    const pad = combinedRaw + '='.repeat((4 - (combinedRaw.length % 4)) % 4);
+    const sessionObj = JSON.parse(Buffer.from(pad, 'base64').toString('utf-8'));
+    if (sessionObj.access_token) {
+      minimalSession = {
+        access_token: sessionObj.access_token,
+        token_type: sessionObj.token_type || 'bearer',
+        expires_in: sessionObj.expires_in || 3600,
+        expires_at: sessionObj.expires_at,
+        refresh_token: sessionObj.refresh_token,
+        user: {
+          id: sessionObj.user?.id,
+          aud: sessionObj.user?.aud || 'authenticated',
+          role: sessionObj.user?.role || 'authenticated',
+          email: sessionObj.user?.email,
+        },
+      };
+    }
+  } catch (_) {
+    // Parça sınırında kesilme varsa ilk parçadan regex ile kurtar
+  }
+
+  if (!minimalSession) {
+    let first = chunks[0].replace(/^base64-/, '');
+    first = first.slice(0, first.length - (first.length % 4));
+    const text = Buffer.from(first, 'base64').toString('utf-8');
+    const at = text.match(/"access_token"\s*:\s*"([^"]+)"/);
+    const rt = text.match(/"refresh_token"\s*:\s*"([^"]+)"/);
+    const exp = text.match(/"expires_at"\s*:\s*(\d+)/);
+    const uid = text.match(/"user"\s*:\s*\{\s*"id"\s*:\s*"([^"]+)"/);
+    const em = text.match(/"email"\s*:\s*"([^"]+)"/);
+    if (!at) throw new Error('Çerez içinde access_token çözümlenemedi.');
+    minimalSession = {
+      access_token: at[1],
+      token_type: 'bearer',
+      expires_in: 3600,
+      expires_at: exp ? Number(exp[1]) : 1794150284,
+      refresh_token: rt ? rt[1] : '',
+      user: {
+        id: uid ? uid[1] : '',
+        aud: 'authenticated',
+        role: 'authenticated',
+        email: em ? em[1] : '',
+      },
+    };
+  }
 
   return `base64-${Buffer.from(JSON.stringify(minimalSession)).toString('base64')}`;
 }
 
 export function extractCleanAnswer(fullBody, promptText) {
-  const lastPromptIdx = fullBody.lastIndexOf(promptText);
-  let slice = lastPromptIdx !== -1
-    ? fullBody.slice(lastPromptIdx + promptText.length).trim()
-    : fullBody;
+  const promptLines = promptText.split('\n').map(s => s.trim()).filter(Boolean);
+  const lastLine = promptLines[promptLines.length - 1] || promptText;
+  let lastPromptIdx = fullBody.lastIndexOf(promptText);
+  let slice = '';
+  if (lastPromptIdx !== -1) {
+    slice = fullBody.slice(lastPromptIdx + promptText.length).trim();
+  } else {
+    const endIdx = fullBody.lastIndexOf(lastLine);
+    slice = endIdx !== -1 ? fullBody.slice(endIdx + lastLine.length).trim() : fullBody;
+  }
 
   for (const marker of ['\nWas this task successful?', '\nWorkspace\n', '\nConnectors\n']) {
     const idx = slice.indexOf(marker);
     if (idx !== -1) slice = slice.slice(0, idx).trim();
   }
 
-  return slice.replace(/\n\d+s\s*\|\s*just now[\s\S]*$/i, '').trim();
+  slice = slice.replace(/\n\d+s\s*\|\s*just now[\s\S]*$/i, '').trim();
+
+  // "Thought for X second(s)" başlığını temizle
+  const lines = slice.split('\n');
+  if (lines.length > 0 && /^Thought for \d+/i.test(lines[0].trim())) {
+    lines.shift();
+    while (lines.length > 0 && !lines[0].trim()) lines.shift();
+    if (lines.length >= 3 && !lines[1].trim() && /^(Kullanıcı|The user)\b/i.test(lines[0].trim())) {
+      lines.splice(0, 2);
+    }
+  }
+  return lines.join('\n').trim();
 }
 
 export async function askArenaAgent({

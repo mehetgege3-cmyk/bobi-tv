@@ -1,0 +1,11 @@
+node_modules/
+*.png
+test-cookie.mjs
+arena-cevap.png
+arena-error*.log
+bobi_tv/production/tts/
+bobi_tv/production/render/
+bobi_tv/production/animation/
+bobi_tv/output/
+bobi_tv/logs/
+bobi_tv/queue/

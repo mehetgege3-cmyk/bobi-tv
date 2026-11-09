@@ -1,0 +1,59 @@
+name: Arena AI Playwright Agent
+
+on:
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: "Arena Agent'a sorulacak soru"
+        required: true
+        default: "merhaba kanka bana kendini tanıt."
+  # İstersen oturumun düşmemesi için her 45 dakikada veya günde birkaç kez otomatik tetikleyebilirsin:
+  # schedule:
+  #   - cron: '0 */6 * * *'
+
+jobs:
+  ask-arena:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Repoyu çek
+        uses: actions/checkout@v4
+
+      - name: Node.js kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Bağımlılıkları ve Chromium'u kur
+        run: |
+          npm install
+          npx playwright install --with-deps chromium
+
+      - name: Arena Agent'a soruyu gönder ve cevabı al
+        env:
+          ARENA_COOKIES_JSON: ${{ secrets.ARENA_COOKIES_JSON }}
+          SAVE_UPDATED_COOKIES: /tmp/updated-cookies.json
+        run: |
+          node skills/arena-playwright-agent/scripts/arena-ask.mjs "${{ inputs.prompt || 'merhaba kanka bana kendini tanıt.' }}" | tee yanit.txt
+
+      # OPSİYONEL AMA ÖNERİLİR: Supabase refresh_token yenilendiğinde yeni çerezi Secret'a geri yazar.
+      # Bunun çalışması için repo secret'larına Actions/Secrets yazma izinli bir `GH_PAT` (Personal Access Token) eklemen yeterli.
+      - name: Yenilenen oturum çerezini GitHub Secret'a geri kaydet (Opsiyonel)
+        if: always() && env.GH_PAT != ''
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          if [ -s /tmp/updated-cookies.json ]; then
+            gh secret set ARENA_COOKIES_JSON --repo "${{ github.repository }}" < /tmp/updated-cookies.json
+            shred -u /tmp/updated-cookies.json
+            echo "ARENA_COOKIES_JSON secret başarıyla güncellendi."
+          fi
+
+      - name: Ekran görüntüsü ve yanıtı Artifact olarak yükle
+        uses: actions/upload-artifact@v4
+        with:
+          name: arena-agent-sonuc
+          path: |
+            arena-cevap.png
+            yanit.txt

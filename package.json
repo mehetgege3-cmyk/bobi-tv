@@ -1,1 +1,12 @@
-{"name":"bobi-tv","version":"1.0.0","description":"BOBİ TV — Otonom YouTube Shorts Üretim Sistemi","scripts":{"arena:senaryo":"node arena-senaryo.mjs"},"dependencies":{"playwright":"^1.65.0"}}
+{
+  "name": "bobi-tv",
+  "version": "1.0.0",
+  "description": "BOBİ TV — Otonom YouTube Shorts Üretim Sistemi",
+  "scripts": {
+    "arena:senaryo": "node arena-senaryo.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.65.0"
+  },
+  "type": "module"
+}

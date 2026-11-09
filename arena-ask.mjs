@@ -36,7 +36,11 @@ export function buildCleanArenaCookie(cookiesArray) {
   }
 
   const combinedRaw = chunks.join('').replace(/^base64-/, '');
-  const sessionObj = JSON.parse(Buffer.from(combinedRaw, 'base64').toString('utf-8'));
+  // Base64 decode
+  const decoded = Buffer.from(combinedRaw, 'base64').toString('utf-8');
+  // Kontrol karakterlerini temizle (JSON içinde geçersiz olan 0x00-0x1F arası)
+  const cleanDecoded = decoded.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, '');
+  const sessionObj = JSON.parse(cleanDecoded);
 
   const minimalSession = {
     access_token: sessionObj.access_token,
@@ -74,7 +78,7 @@ export async function askArenaAgent({
   saveUpdatedCookiesPath = process.env.SAVE_UPDATED_COOKIES,
 }) {
   const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({ viewport: { width: 1366, height: 900 } });
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1024 } });
 
   await context.addCookies([
     { name: 'arena-auth-prod-v1.0', value: cleanAuthCookie, domain: 'arena.ai', path: '/' },
@@ -84,15 +88,19 @@ export async function askArenaAgent({
 
   const page = await context.newPage();
   await page.goto('https://arena.ai/agent/', { waitUntil: 'domcontentloaded', timeout: 30000 });
+  // Sayfanın tam yüklenmesi için bekle
+  await page.waitForTimeout(3000);
 
   const editor = page.locator('div.tiptap[contenteditable="true"]');
   await editor.waitFor({ state: 'visible', timeout: 15000 });
   await editor.click();
-  await page.waitForTimeout(300);
-  await page.keyboard.type(promptText, { delay: 12 });
-  await page.waitForTimeout(400);
+  await page.waitForTimeout(500);
+  await page.keyboard.type(promptText, { delay: 15 });
+  await page.waitForTimeout(1000);
 
   const sendBtn = page.locator('button[aria-label="Send message"]');
+  // Buton hidden olsa bile force ile tıkla
+  await page.waitForTimeout(500);
   await sendBtn.click({ force: true });
 
   for (let i = 0; i < 15; i++) {
@@ -122,6 +130,18 @@ export async function askArenaAgent({
     await page.screenshot({ path: screenshotPath, fullPage: true });
   }
 
+  // "Was this task successful?" diyaloğunu kapat
+  try {
+    const escBtn = page.locator('button:has-text("Esc"), [aria-label="Esc"], button.close').first();
+    if (await escBtn.isVisible({ timeout: 2000 })) {
+      await escBtn.click({ force: true });
+      await page.waitForTimeout(300);
+    }
+  } catch(e) {}
+  // ESC tuşu ile de kapat
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+
   // Eğer Supabase oturumu yenilediyse güncel arena-auth çerezlerini kaydet
   if (saveUpdatedCookiesPath) {
     const latestCookies = await context.cookies('https://arena.ai');
@@ -133,11 +153,27 @@ export async function askArenaAgent({
 
   const fullBody = await page.locator('body').innerText();
   const chatUrl = page.url();
+
+  // Cevabı daha doğru çıkar — AI mesaj bloğunu direkt al
+  let answer = '';
+  try {
+    // Arena AI cevap mesajları genellikle kullanıcı mesajından sonra gelen paragraflar
+    const msgBlocks = await page.locator('[data-message-role="assistant"], .assistant-message, .prose').allInnerTexts();
+    if (msgBlocks.length > 0) {
+      answer = msgBlocks[msgBlocks.length - 1].trim();
+    }
+  } catch(e) {}
+
+  // Fallback: extractCleanAnswer
+  if (!answer) {
+    answer = extractCleanAnswer(fullBody, promptText);
+  }
+
   await browser.close();
 
   return {
     chatUrl,
-    answer: extractCleanAnswer(fullBody, promptText),
+    answer,
     fullBody,
   };
 }

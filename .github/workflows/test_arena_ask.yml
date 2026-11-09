@@ -63,34 +63,63 @@ jobs:
                       print("⚠️  load timeout, domcontentloaded ile deneniyor...")
                       await page.goto("https://arena.ai/", wait_until="domcontentloaded", timeout=45000)
                   
+                  # Screenshot al
+                  print("📸 Screenshot alınıyor...")
+                  await page.screenshot(path="/tmp/arena_ui.png", full_page=False)
+                  
+                  # Input selector'larını tara
+                  print("🔍 Input selector'ları taranıyor...")
+                  selectors = [
+                      'textarea',
+                      'input[type="text"]',
+                      '[contenteditable="true"]',
+                      '[role="textbox"]',
+                      'input',
+                      '.chat-input',
+                      '#message-input'
+                  ]
+                  
+                  input_elem = None
+                  for sel in selectors:
+                      try:
+                          elem = await page.query_selector(sel)
+                          if elem:
+                              print(f"✅ Input bulundu: {sel}")
+                              input_elem = elem
+                              break
+                      except:
+                          pass
+                  
+                  if not input_elem:
+                      print("❌ Input alanı bulunamadı")
+                      print("📝 Sayfa metni (ilk 2000 char):")
+                      page_text = await page.text_content('body')
+                      if page_text:
+                          print(page_text[:2000])
+                      else:
+                          print("Sayfa metni boş")
+                      return
+                  
                   # Input'a soruyu yaz
                   print("⌨️  'Şu an saat kaç?' sorusu yazılıyor...")
-                  try:
-                      await page.fill('textarea', "Şu an saat kaç?", timeout=5000)
-                  except:
-                      await page.fill('[contenteditable="true"]', "Şu an saat kaç?", timeout=5000)
+                  await input_elem.fill("Şu an saat kaç?", timeout=10000)
                   
-                  # Enter tuşu veya gönder butonu
+                  # Gönder
                   print("✅ Mesaj gönderiliyor...")
                   try:
-                      await page.press('textarea', 'Enter')
+                      await page.press('input, textarea', 'Enter')
                   except:
-                      btn = await page.query_selector('button:has-text("Gönder")')
+                      btn = await page.query_selector('button:has-text("Gönder"), button:has-text("Send")')
                       if btn:
                           await btn.click()
                   
-                  # Yanıt bekle (max 10 saniye)
+                  # Yanıt bekle
                   print("⏳ Yanıt bekleniyor...")
-                  await page.wait_for_timeout(3000)  # AI'ın düşünme zamanı
+                  await page.wait_for_timeout(5000)
                   
-                  # Sayfadaki metni al
+                  # Sonuç
                   page_text = await page.text_content('body')
-                  
-                  # Saat bilgisini ara
-                  if "saat" in page_text.lower() or "time" in page_text.lower():
-                      print(f"\n🤖 Arena AI Cevabı:\n{page_text[:800]}")
-                  else:
-                      print(f"\n📝 Arena Yanıtı (ilk 500 char):\n{page_text[:500]}")
+                  print(f"\n🤖 Arena AI Yanıtı (ilk 1000 char):\n{page_text[:1000]}")
                   
                   await browser.close()
           

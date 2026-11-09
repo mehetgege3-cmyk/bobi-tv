@@ -39,14 +39,14 @@ jobs:
 
       # OPSİYONEL AMA ÖNERİLİR: Supabase refresh_token yenilendiğinde yeni çerezi Secret'a geri yazar.
       # Bunun çalışması için repo secret'larına Actions/Secrets yazma izinli bir `GH_PAT` (Personal Access Token) eklemen yeterli.
-      - name: Yenilenen oturum çerezini GitHub Secret'a geri kaydet (Opsiyonel)
-        if: always() && env.GH_PAT != ''
+      - name: Yenilenen oturum çerezini GitHub Secret'a geri kaydet
+        if: always()
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          if [ -s /tmp/updated-cookies.json ]; then
-            gh secret set ARENA_COOKIES_JSON --repo "${{ github.repository }}" < /tmp/updated-cookies.json
-            shred -u /tmp/updated-cookies.json
+          if [ -n "$GH_TOKEN" ] && [ -s /tmp/updated-cookies.json ]; then
+            gh secret set ARENA_COOKIES_JSON --repo "${{ github.repository }}" < /tmp/updated-cookies.json || true
+            shred -u /tmp/updated-cookies.json || rm -f /tmp/updated-cookies.json
             echo "ARENA_COOKIES_JSON secret başarıyla güncellendi."
           fi
 

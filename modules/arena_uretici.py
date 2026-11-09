@@ -1,7 +1,6 @@
 """
-BOBİ TV — Arena AI Tam Üretim Modülü v1.0
-Arena AI'ya senaryo, ses, animasyon, kapak ve metadata ürettirir.
-Tek bir Arena oturumunda tüm video üretilir.
+BOBİ TV — Arena AI Tam Üretim Modülü v2.0
+Prompt MD dosya path'i ile geçer (env değil) — timeout sorunları çözer
 """
 import os
 import json
@@ -18,16 +17,17 @@ ARENA_SCRIPT = Path("arena-ask.mjs")
 
 def arena_tam_uretim(video_no: int) -> dict | None:
     """
-    Arena AI'ya tek seferde şunları ürettir:
-    1. Absürt senaryo (diyaloglar)
-    2. Python animasyon kodu (PIL + FFmpeg)
-    3. Metadata (başlık, açıklama, hashtag)
-    
-    Döner: senaryo_paketi veya None
+    Arena AI'ya senaryo + animasyon Python kodu üretime ister.
+    Prompt MD dosya path'i ile geçer (env değişkeni değil → timeout fix).
     """
     cookies_json = os.environ.get("ARENA_COOKIES_JSON", "")
     if not cookies_json:
         print("[Arena Tam] ARENA_COOKIES_JSON yok.")
+        return None
+
+    PROMPT_DOSYA = Path("bobi_tv/production/scripts/arena/prompt_template.md")
+    if not PROMPT_DOSYA.exists():
+        print(f"[Arena Tam] Prompt dosyası yok: {PROMPT_DOSYA}")
         return None
 
     # Cookie'yi geçici dosyaya yaz
@@ -35,12 +35,11 @@ def arena_tam_uretim(video_no: int) -> dict | None:
     cookie_tmp = None
     try:
         with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False, encoding='utf-8') as f:
-            # GitHub Secret'ın raw JSON olması gerekir
             f.write(cookies_json)
             cookie_tmp = f.name
-            print(f"[Arena Tam] Cookie dosyası: {cookie_tmp}")
+            print(f"[Arena Tam] Cookie: {cookie_tmp}")
     except Exception as e:
-        print(f"[Arena Tam] Cookie dosyası yazılamadı: {e}")
+        print(f"[Arena Tam] Cookie hatası: {e}")
         return None
 
     tarih = datetime.now().strftime("%Y%m%d")
@@ -51,24 +50,12 @@ def arena_tam_uretim(video_no: int) -> dict | None:
 
     video_cikti = str(OUTPUT_YOLU / f"{dosya_adi}.mp4")
 
-    # Arena'ya gönderilecek prompt
-    prompt = f"""Türkçe absürt YouTube Shorts videosu için Python kodu yaz.
-
-Görev:
-1. Kısa absürt Türkçe diyalog senaryo yaz (4-5 satır, komik twist)
-2. Bu senaryoyu animasyona çeviren Python kodu yaz:
-   - PIL ile 1080x1920 px, 30fps, ~8 saniye
-   - Koyu gradient arka plan (lacivert-mor)
-   - Büyük sarı hook metni (ilk 1.5sn)
-   - Her diyalog satırı beyaz metinle ortada göster
-   - Alt köşe: küçük "BOBI TV" watermark
-   - FFmpeg ile {video_cikti} olarak kaydet
-3. Çalıştırılabilir tek Python scripti döndür (import dahil)
-4. Scriptin sonunda JSON olarak metadata: baslik, aciklama, hashtag
-
-Sadece Python kodu döndür, markdown yok."""
+    # Prompt dosyayı oku ve video_cikti path'ini ekle
+    prompt_template = PROMPT_DOSYA.read_text(encoding='utf-8')
+    prompt = f"{prompt_template}\n\n## Video Çıktı Path\n\n{video_cikti}"
 
     print(f"[Arena Tam] Video #{video_no} üretimi başlıyor...")
+    print(f"[Arena Tam] Prompt dosya: {PROMPT_DOSYA}")
 
     try:
         result = subprocess.run(
@@ -88,7 +75,7 @@ Sadece Python kodu döndür, markdown yok."""
 
         # Python kodunu çıkar
         kod = _kod_cikar(output)
-        if not kod or len(kod) < 100:
+        if not kod or len(kod) < 50:
             print("[Arena Tam] Yeterli Python kodu bulunamadı.")
             return None
 
@@ -105,7 +92,7 @@ Sadece Python kodu döndür, markdown yok."""
                 "dosya_adi": dosya_adi,
                 "baslik": metadata.get("baslik", f"BOBİ TV #{video_no} 🎬"),
                 "final_video": video_cikti,
-                "senaryo": {"kategori": "arena_ai", "acilis": metadata.get("acilis", "")},
+                "senaryo": {"kategori": "arena_ai", "acilis": metadata.get("aciklama", "")},
                 "arena_metadata": metadata,
                 "olusturuldu": datetime.now().isoformat(),
                 "hash": f"arena_{video_no}_{tarih}"
@@ -125,72 +112,11 @@ Sadece Python kodu döndür, markdown yok."""
             Path(cookie_tmp).unlink(missing_ok=True)
 
 
-def _cookie_temizle(cookies_json: str) -> str | None:
-    """
-    ARENA_COOKIES_JSON'dan Arena auth cookie'sini çıkar.
-    Regex ile access_token'ı direkt yakalar — JSON parse sorununu bypass eder.
-    """
-    import re, base64
-    try:
-        cookies = json.loads(cookies_json)
-
-        # Tüm arena-auth parçalarını birleştir
-        parts = sorted(
-            [(c['name'], c['value']) for c in cookies
-             if c.get('name', '').startswith('arena-auth-prod-v1.') and c.get('value')],
-            key=lambda x: x[0]
-        )
-        if not parts:
-            return None
-
-        # Her parçayı decode edip access_token ara
-        access_token = None
-        refresh_token = ""
-
-        for name, value in parts:
-            b64 = value.replace('base64-', '', 1)
-            valid = re.sub(r'[^A-Za-z0-9+/]', '', b64)
-            trim = valid[:len(valid) - len(valid) % 4]
-            try:
-                decoded = base64.b64decode(trim + '==').decode('utf-8', errors='replace')
-                clean = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f\ufffd]', '', decoded)
-
-                # access_token regex ile yakala
-                m = re.search(r'"access_token"\s*:\s*"([^"]+)"', clean)
-                if m and not access_token:
-                    access_token = m.group(1)
-
-                # refresh_token regex ile yakala
-                m2 = re.search(r'"refresh_token"\s*:\s*"([^"]+)"', clean)
-                if m2 and not refresh_token:
-                    refresh_token = m2.group(1)
-            except Exception:
-                continue
-
-        if not access_token:
-            print("[Arena] access_token bulunamadı.")
-            return None
-
-        print(f"[Arena] access_token: {access_token[:30]}... refresh: {refresh_token}")
-
-        # Arena auth cookie formatında döndür
-        minimal = {
-            'access_token': access_token,
-            'token_type': 'bearer',
-            'expires_in': 3600,
-            'refresh_token': refresh_token,
-            'user': {}
-        }
-        return f"base64-{base64.b64encode(json.dumps(minimal).encode()).decode()}"
-
-    except Exception as e:
-        print(f"[Arena] Cookie temizleme hatası: {e}")
-        return None
+def _kod_cikar(metin: str) -> str:
     """Arena cevabından Python kodunu çıkar."""
     if "```python" in metin:
         return metin.split("```python")[1].split("```")[0].strip()
     if "```" in metin:
-        # İlk kod bloğunu al
         parcalar = metin.split("```")
         if len(parcalar) >= 3:
             return parcalar[1].strip()
@@ -199,7 +125,7 @@ def _cookie_temizle(cookies_json: str) -> str | None:
     kod_satirlari = []
     basladi = False
     for satir in satirlar:
-        if satir.strip().startswith(("import ", "from ", "def ", "class ", "#")):
+        if satir.strip().startswith(("#!/", "import ", "from ", "def ", "class ", "#")):
             basladi = True
         if basladi:
             kod_satirlari.append(satir)
@@ -208,7 +134,7 @@ def _cookie_temizle(cookies_json: str) -> str | None:
 
 def _kodu_calistir_ve_meta(kod: str, beklenen_cikti: str) -> tuple:
     """
-    Python kodunu çalıştır.
+    Python kodunu çalıştır ve metadata JSON'ı parse et.
     Döner: (basari: bool, metadata: dict)
     """
     metadata = {

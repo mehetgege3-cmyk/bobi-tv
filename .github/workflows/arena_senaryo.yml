@@ -44,10 +44,11 @@ jobs:
         env:
           ARENA_COOKIES_JSON: ${{ secrets.ARENA_COOKIES_JSON }}
         run: |
+          set +e
           SAYI=${{ github.event.inputs.sayi || '5' }}
           KATEGORI="${{ github.event.inputs.kategori }}"
           
-          KATEGORILER=("kurumsal_hayat" "pazartesi_sendromu" "ik_toplantisi" "mesai_sonu" "bar_fikrasi" "diyet_kavrami" "google_sorusu" "trafik_kaggasi" "wifi_kavgasi" "saglik_sorunu" "kahve_hayati" "evlilik_hayati" "yapay_zeka" "sabah_alarmi" "sigara_kavgasi" "sok_diyalog" "hastane_korkusu" "egitim_sistemi" "sosyal_medya" "spor_hayati" "sok_hayati")
+          KATEGORILER=("kurumsal_hayat" "pazartesi_sendromu" "ik_toplantisi" "mesai_sonu" "bar_fikrasi" "diyet_kavrami" "google_sorusu" "trafik_kavgasi" "wifi_kavgasi" "saglik_sorunu" "kahve_hayati" "evlilik_hayati" "yapay_zeka" "sabah_alarmi" "sigara_kavgasi" "sok_diyalog" "hastane_korkusu" "egitim_sistemi" "sosyal_medya" "spor_hayati" "sok_hayati")
           
           BASARI=0
           for i in $(seq 1 $SAYI); do
@@ -61,19 +62,22 @@ jobs:
             TIMESTAMPH=$(date +%Y%m%d_%H%M%S)
             OUTPUT="bobi_tv/production/scripts/arena/arena_${TIMESTAMPH}_${i}.json"
             
-            node arena-senaryo.mjs "$KAT" > "$OUTPUT" 2>arena-error.log
-            if [ $? -eq 0 ] && [ -s "$OUTPUT" ]; then
+            node arena-senaryo.mjs "$KAT" > "$OUTPUT" 2>arena-error-$i.log
+            EXIT_CODE=$?
+            if [ $EXIT_CODE -eq 0 ] && [ -s "$OUTPUT" ]; then
               echo "✅ Senaryo $i üretildi: $OUTPUT"
               BASARI=$((BASARI + 1))
             else
-              echo "❌ Senaryo $i başarısız"
-              cat arena-error.log
+              echo "❌ Senaryo $i başarısız (exit: $EXIT_CODE)"
+              cat arena-error-$i.log
+              rm -f "$OUTPUT"
             fi
             
             sleep 5
           done
           
           echo "Toplam: $BASARI/$SAYI senaryo üretildi"
+          exit 0
 
       - name: Telegram bildirim
         if: always()

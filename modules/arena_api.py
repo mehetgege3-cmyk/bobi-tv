@@ -167,14 +167,18 @@ async def _arena_sorgusu_yap(page, prompt: str, beklenen_uzunluk: int = 100, tim
         await page.wait_for_timeout(1000)
 
         # Input alanını bul
-        input_selector = 'div.tiptap[contenteditable="true"], textarea[placeholder*="Ask"], input[placeholder*="Ask"]'
+        input_selector = 'input[type="text"], textarea, [contenteditable="true"], input:not([type="hidden"])'
         try:
             await page.wait_for_selector(input_selector, timeout=5000)
         except:
             print("[Arena] Input alanı bulunamadı, deneme 2...")
-            # Fallback
-            input_selector = '[contenteditable="true"]'
-            await page.wait_for_selector(input_selector, timeout=5000)
+            # Fallback — genelleş selector
+            input_selector = 'input, textarea'
+            try:
+                await page.wait_for_selector(input_selector, timeout=3000)
+            except:
+                print("[Arena] Kritik: input bulunmuyor!")
+                raise
 
         # Prompt yaz
         input_elem = page.locator(input_selector).first

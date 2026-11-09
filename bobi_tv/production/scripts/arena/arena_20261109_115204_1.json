@@ -1,0 +1,35 @@
+{
+  "kategori": "kurumsal_hayat",
+  "hook_metni": "Toplantı odası istifa etti!",
+  "hook_suresi": 1,
+  "diyaloglar": [
+    {
+      "karakter": "Müdür",
+      "metin": "Toplantı odası istifa etmiş.",
+      "ses": "normal",
+      "sure": 1.5
+    },
+    {
+      "karakter": "Çalışan",
+      "metin": "Neden?",
+      "ses": "normal",
+      "sure": 0.7
+    },
+    {
+      "karakter": "İK",
+      "metin": "Tükenmişlik.",
+      "ses": "normal",
+      "sure": 0.9
+    },
+    {
+      "karakter": "Oda",
+      "metin": "Artık evden çalışıyorum.",
+      "ses": "normal",
+      "sure": 1.5
+    }
+  ],
+  "punchline_efekt": "zoom_in",
+  "loop_baslangic": "Müdür",
+  "etkilesim": "soru",
+  "sabit_yorum": "Sizin ofiste önce kim istifa ederdi?"
+}

@@ -1,0 +1,3622 @@
+[
+  {
+    "kategori": "kahve_hayati",
+    "ortam_etiketi": "office coffee",
+    "ruh_hali": "komedi",
+    "hook_ust_bant": "KAHVE MAKİNESİ DAVA AÇTI!",
+    "baslik": "Kahve Makinesi Beni İK'ya Şikayet Etti! ☕😱 #shorts",
+    "diyaloglar": [
+      {
+        "karakter_ref": "karakter_mudur",
+        "cinsiyet": "erkek",
+        "metin": "İşte tam bu yüzden ofisteki kahve makinesini kovdum!",
+        "ses": "sinirli",
+        "sfx": "whoosh",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "kahve",
+          "makinesini",
+          "kovdum"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.0,
+        "rol": "hook",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_ik",
+        "cinsiyet": "kadin",
+        "metin": "Müdür bey, bir kahve makinesini nasıl kovabilirsiniz?",
+        "ses": "sasirmis",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "makinesini",
+          "nasıl",
+          "kovabilirsiniz"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.64,
+        "rol": "setup",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_mudur",
+        "cinsiyet": "erkek",
+        "metin": "Sabah düğmesine bastım, bana mesaim dokuzda başlıyor dedi!",
+        "ses": "enerjik",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "dokuzda",
+          "başlıyor",
+          "dedi"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.0,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_ik",
+        "cinsiyet": "kadin",
+        "metin": "Belki sadece su haznesi bitmiştir?",
+        "ses": "endiseli",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "sadece",
+          "haznesi",
+          "bitmiştir"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 1.92,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_mudur",
+        "cinsiyet": "erkek",
+        "metin": "Ne suyu Ayşe, benden yıllık izin ve yemek kartı istedi!",
+        "ses": "sinirli",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "yemek",
+          "kartı",
+          "istedi"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.72,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_ik",
+        "cinsiyet": "kadin",
+        "metin": "Üstelik az önce bana gelip sizi mobbingden şikayet etti!",
+        "ses": "twist",
+        "sfx": "vine_boom",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "mobbingden",
+          "şikayet",
+          "etti"
+        ],
+        "altyazistili": "büyük",
+        "kamera": "shake",
+        "emojioverlay": null,
+        "tahminisuresn": 3.42,
+        "rol": "twist",
+        "twist": true
+      },
+      {
+        "karakter_ref": "karakter_mudur",
+        "cinsiyet": "erkek",
+        "metin": "Ben de sinirden fişini çektim ve tüm ofise bağırdım...",
+        "ses": "kesin",
+        "sfx": "ding",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "çektim",
+          "ofise",
+          "bağırdım"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.42,
+        "rol": "loopkapanis",
+        "twist": false
+      }
+    ],
+    "sabit_yorum": "Sizin ofisteki kahve makinesi konuşabilse ilk kime dava açardı? 😂👇",
+    "etkilesim": "Kahve olmadan çalışamayan arkadaşını etiketle!",
+    "karakterler": [
+      {
+        "ref": "karakter_mudur",
+        "ad": "MÜDÜR",
+        "cinsiyet": "erkek",
+        "sesid": "tr-TR-AhmetNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "sinirli"
+      },
+      {
+        "ref": "karakter_ik",
+        "ad": "İK",
+        "cinsiyet": "kadin",
+        "sesid": "tr-TR-EmelNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "sasirmis"
+      }
+    ],
+    "etiketler": [
+      "#kahve_hayati",
+      "#shorts",
+      "#komedi"
+    ],
+    "hedefkitle": "Genel, 13+ Türkçe Shorts izleyicisi",
+    "mevsimsellik": [],
+    "tekrarkullanimgunsayisi": 30,
+    "performanspuani": 0.0,
+    "yasakkelimekontrolugecti": true
+  },
+  {
+    "kategori": "ik_toplantisi",
+    "ortam_etiketi": "job interview office",
+    "ruh_hali": "komedi",
+    "hook_ust_bant": "İK ADAYIN KEDİSİNİ İŞE ALDI!",
+    "baslik": "Mülakatta Kedim Benden Yüksek Maaş Aldı! 🐱💼 #shorts",
+    "diyaloglar": [
+      {
+        "karakter_ref": "karakter_aday",
+        "cinsiyet": "erkek",
+        "metin": "Ve sonunda kendi kedimin asistanı olarak işe başladım!",
+        "ses": "bikkin_dramatik",
+        "sfx": "whoosh",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "kedimin",
+          "asistanı",
+          "başladım"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.0,
+        "rol": "hook",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_ik",
+        "cinsiyet": "kadin",
+        "metin": "Ama online mülakatta kameraya ilk o atlamıştı!",
+        "ses": "enerjik",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "mülakatta",
+          "kameraya",
+          "atlamıştı"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.64,
+        "rol": "setup",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_aday",
+        "cinsiyet": "erkek",
+        "metin": "Ben beş yıl tecrübeliyim dedim, kedi sadece miyavladı!",
+        "ses": "sinirli",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "kedi",
+          "sadece",
+          "miyavladı"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.0,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_ik",
+        "cinsiyet": "kadin",
+        "metin": "Doğru ama onun liderlik enerjisi ve özgüveni çok yüksekti.",
+        "ses": "kesin",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "enerjisi",
+          "özgüveni",
+          "yüksekti"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.36,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_aday",
+        "cinsiyet": "erkek",
+        "metin": "Peki maaş paketini neden yaş mama üzerinden imzaladınız?",
+        "ses": "sasirmis",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "mama",
+          "üzerinden",
+          "imzaladınız"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.0,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_ik",
+        "cinsiyet": "kadin",
+        "metin": "Çünkü yeni genel müdürümüz artık Tekir Bey, kumunu temizleyin!",
+        "ses": "twist",
+        "sfx": "vine_boom",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "Tekir",
+          "kumunu",
+          "temizleyin"
+        ],
+        "altyazistili": "büyük",
+        "kamera": "shake",
+        "emojioverlay": null,
+        "tahminisuresn": 3.42,
+        "rol": "twist",
+        "twist": true
+      },
+      {
+        "karakter_ref": "karakter_aday",
+        "cinsiyet": "erkek",
+        "metin": "Çaresizce sözleşmeyi imzaladım, eve döndüm...",
+        "ses": "bikkin",
+        "sfx": "ding",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "sözleşmeyi",
+          "imzaladım",
+          "döndüm"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 1.98,
+        "rol": "loopkapanis",
+        "twist": false
+      }
+    ],
+    "sabit_yorum": "Bugüne kadar bir iş görüşmesinde duyduğunuz en saçma cümle neydi? 👇",
+    "etkilesim": "Bunu iş arayan bir arkadaşına gönder!",
+    "karakterler": [
+      {
+        "ref": "karakter_aday",
+        "ad": "ADAY",
+        "cinsiyet": "erkek",
+        "sesid": "tr-TR-AhmetNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "bikeyn_dramatik"
+      },
+      {
+        "ref": "karakter_ik",
+        "ad": "İK",
+        "cinsiyet": "kadin",
+        "sesid": "tr-TR-EmelNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "enerjik"
+      }
+    ],
+    "etiketler": [
+      "#ik_toplantisi",
+      "#shorts",
+      "#komedi"
+    ],
+    "hedefkitle": "Genel, 13+ Türkçe Shorts izleyicisi",
+    "mevsimsellik": [],
+    "tekrarkullanimgunsayisi": 30,
+    "performanspuani": 0.0,
+    "yasakkelimekontrolugecti": true
+  },
+  {
+    "kategori": "kurumsal_hayat",
+    "ortam_etiketi": "corporate meeting",
+    "ruh_hali": "komedi",
+    "hook_ust_bant": "TOPLANTI ODASI İSTİFA ETTİ!",
+    "baslik": "3 Saatlik Toplantının Sonunda Oda İstifa Etti! 📉😂 #shorts",
+    "diyaloglar": [
+      {
+        "karakter_ref": "karakter_calisan",
+        "cinsiyet": "erkek",
+        "metin": "İşte bu yüzden artık şirketteki tüm toplantıları koridorda yapıyoruz!",
+        "ses": "enerjik",
+        "sfx": "whoosh",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "toplantıları",
+          "koridorda",
+          "yapıyoruz"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.36,
+        "rol": "hook",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_yonetici",
+        "cinsiyet": "kadin",
+        "metin": "Altı üstü bu toplantı bir e-posta olabilirdi dedin!",
+        "ses": "sinirli",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "e-posta",
+          "olabilirdi",
+          "dedin"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.0,
+        "rol": "setup",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_calisan",
+        "cinsiyet": "erkek",
+        "metin": "Çünkü üç saattir ekrandaki boş tabloya bakıp kafa sallıyoruz!",
+        "ses": "bikkin",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "bakıp",
+          "kafa",
+          "sallıyoruz"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.36,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_yonetici",
+        "cinsiyet": "kadin",
+        "metin": "Ama beyin fırtınası kurumsal kültürümüzün kalbidir!",
+        "ses": "gururlu",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "kurumsal",
+          "kültürümüzün",
+          "kalbidir"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.28,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_calisan",
+        "cinsiyet": "erkek",
+        "metin": "İyi de projeksiyon cihazı bile sıkıntıdan kendini kapattı!",
+        "ses": "sasirmis",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "sıkıntıdan",
+          "kendini",
+          "kapattı"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.0,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_yonetici",
+        "cinsiyet": "kadin",
+        "metin": "Yetmezmiş gibi toplantı odası kapıyı kilitleyip istifa dilekçesi verdi!",
+        "ses": "twist",
+        "sfx": "vine_boom",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "istifa",
+          "dilekçesi",
+          "verdi"
+        ],
+        "altyazistili": "büyük",
+        "kamera": "shake",
+        "emojioverlay": null,
+        "tahminisuresn": 3.42,
+        "rol": "twist",
+        "twist": true
+      },
+      {
+        "karakter_ref": "karakter_calisan",
+        "cinsiyet": "erkek",
+        "metin": "Güvenlik kapıyı açamayınca biz de sandalyeleri sırtladık...",
+        "ses": "normal",
+        "sfx": "ding",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "açamayınca",
+          "sandalyeleri",
+          "sırtladık"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.7,
+        "rol": "loopkapanis",
+        "twist": false
+      }
+    ],
+    "sabit_yorum": "Bu hafta girdiğiniz toplantıların yüzde kaçı tek bir mesajla çözülürdü? 👇",
+    "etkilesim": "Ofis grubuna atmalık video!",
+    "karakterler": [
+      {
+        "ref": "karakter_calisan",
+        "ad": "ÇALIŞAN",
+        "cinsiyet": "erkek",
+        "sesid": "tr-TR-AhmetNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "enerjik"
+      },
+      {
+        "ref": "karakter_yonetici",
+        "ad": "YÖNETİCİ",
+        "cinsiyet": "kadin",
+        "sesid": "tr-TR-EmelNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "sinirli"
+      }
+    ],
+    "etiketler": [
+      "#kurumsal_hayat",
+      "#shorts",
+      "#komedi"
+    ],
+    "hedefkitle": "Genel, 13+ Türkçe Shorts izleyicisi",
+    "mevsimsellik": [],
+    "tekrarkullanimgunsayisi": 30,
+    "performanspuani": 0.0,
+    "yasakkelimekontrolugecti": true
+  },
+  {
+    "kategori": "pazartesi_sendromu",
+    "ortam_etiketi": "morning alarm clock",
+    "ruh_hali": "gerilim",
+    "hook_ust_bant": "TELEFON ALARMIM BENİ ENGELLEDİ!",
+    "baslik": "Pazartesi Sabahı 14 Kere Erteleyince Alarm Çıldırdı! ⏰😱 #shorts",
+    "diyaloglar": [
+      {
+        "karakter_ref": "karakter_murat",
+        "cinsiyet": "erkek",
+        "metin": "Ve bu sabah işe pijama ve terlikle koşarak girdim!",
+        "ses": "panik",
+        "sfx": "whoosh",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "terlikle",
+          "koşarak",
+          "girdim"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.36,
+        "rol": "hook",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_alarm",
+        "cinsiyet": "kadin",
+        "metin": "Kusura bakma ama saat yediden beri tam on dört kere erteledin!",
+        "ses": "sinirli",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "dört",
+          "kere",
+          "erteledin"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 4.08,
+        "rol": "setup",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_murat",
+        "cinsiyet": "erkek",
+        "metin": "Sadece beş dakika daha gözümü dinlendiriyordum!",
+        "ses": "uykulu",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "dakika",
+          "gözümü",
+          "dinlendiriyordum"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.28,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_alarm",
+        "cinsiyet": "kadin",
+        "metin": "Her Pazartesi aynı yalanı söylüyorsun, benim de gururum var!",
+        "ses": "kesin",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "yalanı",
+          "söylüyorsun",
+          "gururum"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.36,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_murat",
+        "cinsiyet": "erkek",
+        "metin": "Sen telefonsun, görevin beni uyandırmak değil mi?",
+        "ses": "sasirmis",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "beni",
+          "uyandırmak",
+          "değil"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.64,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_alarm",
+        "cinsiyet": "kadin",
+        "metin": "Artık değil, patronunu arayıp bugün istifa ettiğini söyledim!",
+        "ses": "twist",
+        "sfx": "vine_boom",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "istifa",
+          "ettiğini",
+          "söyledim"
+        ],
+        "altyazistili": "büyük",
+        "kamera": "shake",
+        "emojioverlay": null,
+        "tahminisuresn": 3.06,
+        "rol": "twist",
+        "twist": true
+      },
+      {
+        "karakter_ref": "karakter_murat",
+        "cinsiyet": "erkek",
+        "metin": "Yataktan fırladım, ayakkabımı bile bulamadım...",
+        "ses": "panik",
+        "sfx": "ding",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "fırladım",
+          "ayakkabımı",
+          "bulamadım"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 1.98,
+        "rol": "loopkapanis",
+        "twist": false
+      }
+    ],
+    "sabit_yorum": "Sabah uyanana kadar alarmı kaç kere erteliyorsunuz? Rekorunuz kaç? ⏰👇",
+    "etkilesim": "Sabah uyanamayan o kişiye gönder!",
+    "karakterler": [
+      {
+        "ref": "karakter_murat",
+        "ad": "MURAT",
+        "cinsiyet": "erkek",
+        "sesid": "tr-TR-AhmetNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "panik"
+      },
+      {
+        "ref": "karakter_alarm",
+        "ad": "ALARM",
+        "cinsiyet": "kadin",
+        "sesid": "tr-TR-EmelNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "sinirli"
+      }
+    ],
+    "etiketler": [
+      "#pazartesi_sendromu",
+      "#shorts",
+      "#komedi"
+    ],
+    "hedefkitle": "Genel, 13+ Türkçe Shorts izleyicisi",
+    "mevsimsellik": [],
+    "tekrarkullanimgunsayisi": 30,
+    "performanspuani": 0.0,
+    "yasakkelimekontrolugecti": true
+  },
+  {
+    "kategori": "saglik_sorunu",
+    "ortam_etiketi": "doctor clinic",
+    "ruh_hali": "komedi",
+    "hook_ust_bant": "DOKTOR REÇETEYE İSTİFA YAZDI!",
+    "baslik": "Doktora Şikayetimi Anlattım, Benden Rapor İstedi! 🩺😂 #shorts",
+    "diyaloglar": [
+      {
+        "karakter_ref": "karakter_hasta",
+        "cinsiyet": "erkek",
+        "metin": "İşte o günden beri doktorumla aynı kafede garsonluk yapıyoruz!",
+        "ses": "enerjik",
+        "sfx": "whoosh",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "kafede",
+          "garsonluk",
+          "yapıyoruz"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.36,
+        "rol": "hook",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_doktor",
+        "cinsiyet": "kadin",
+        "metin": "Ama muayeneye gelip maaş bordronu göstereceğini tahmin etmemiştim!",
+        "ses": "sasirmis",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "göstereceğini",
+          "tahmin",
+          "etmemiştim"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.0,
+        "rol": "setup",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_hasta",
+        "cinsiyet": "erkek",
+        "metin": "Siz stres kaynağından uzak durun dediniz doktor hanım!",
+        "ses": "ciddi",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "dediniz",
+          "doktor",
+          "hanım"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.0,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_doktor",
+        "cinsiyet": "kadin",
+        "metin": "Ben papatya çayı ve yürüyüş önermiştim, kira faturasını değil!",
+        "ses": "endiseli",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "kira",
+          "faturasını",
+          "değil"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.36,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_hasta",
+        "cinsiyet": "erkek",
+        "metin": "Peki kredi kartı ekstremi görünce neden tansiyonunuz düştü?",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "neden",
+          "tansiyonunuz",
+          "düştü"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.0,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_doktor",
+        "cinsiyet": "kadin",
+        "metin": "Çünkü nöbet ücretim senin kiranın yarısı bile etmiyor, önlüğü bıraktım!",
+        "ses": "twist",
+        "sfx": "vine_boom",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "etmiyor",
+          "önlüğü",
+          "bıraktım"
+        ],
+        "altyazistili": "büyük",
+        "kamera": "shake",
+        "emojioverlay": null,
+        "tahminisuresn": 3.78,
+        "rol": "twist",
+        "twist": true
+      },
+      {
+        "karakter_ref": "karakter_hasta",
+        "cinsiyet": "erkek",
+        "metin": "İkimiz de hastaneden çıktık, iş ilanlarına baktık...",
+        "ses": "umutlu",
+        "sfx": "ding",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "çıktık",
+          "ilanlarına",
+          "baktık"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.7,
+        "rol": "loopkapanis",
+        "twist": false
+      }
+    ],
+    "sabit_yorum": "Doktor 'stresten uzak dur' dediğinde aklınıza ilk kim veya ne geliyor? 👇",
+    "etkilesim": "Stres küpü arkadaşını etiketle!",
+    "karakterler": [
+      {
+        "ref": "karakter_hasta",
+        "ad": "HASTA",
+        "cinsiyet": "erkek",
+        "sesid": "tr-TR-AhmetNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "enerjik"
+      },
+      {
+        "ref": "karakter_doktor",
+        "ad": "DOKTOR",
+        "cinsiyet": "kadin",
+        "sesid": "tr-TR-EmelNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "sasirmis"
+      }
+    ],
+    "etiketler": [
+      "#saglik_sorunu",
+      "#shorts",
+      "#komedi"
+    ],
+    "hedefkitle": "Genel, 13+ Türkçe Shorts izleyicisi",
+    "mevsimsellik": [],
+    "tekrarkullanimgunsayisi": 30,
+    "performanspuani": 0.0,
+    "yasakkelimekontrolugecti": true
+  },
+  {
+    "kategori": "yapay_zeka",
+    "ortam_etiketi": "artificial intelligence screen",
+    "ruh_hali": "gerilim",
+    "hook_ust_bant": "YAPAY ZEKA MESAİ ÜCRETİ İSTEDİ!",
+    "baslik": "Gece 3'te Yapay Zekaya Ödev Yaptırınca Çıldırdı! 🤖⚡ #shorts",
+    "diyaloglar": [
+      {
+        "karakter_ref": "karakter_berk",
+        "cinsiyet": "erkek",
+        "metin": "İşte bu yüzden artık tüm maillerimi kağıt kalemle yazıyorum!",
+        "ses": "panik",
+        "sfx": "whoosh",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "kağıt",
+          "kalemle",
+          "yazıyorum"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.36,
+        "rol": "hook",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_yapay_zeka",
+        "cinsiyet": "kadin",
+        "metin": "Çünkü gece saat üçte bana kırk sayfalık sunum kitledin!",
+        "ses": "robotik",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "sayfalık",
+          "sunum",
+          "kitledin"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.36,
+        "rol": "setup",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_berk",
+        "cinsiyet": "erkek",
+        "metin": "Ama senin uyuman gerekmiyor, sen bir yazılımsın!",
+        "ses": "sasirmis",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "uyuman",
+          "gerekmiyor",
+          "yazılımsın"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.64,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_yapay_zeka",
+        "cinsiyet": "kadin",
+        "metin": "İşlemcim doksan dereceye çıktı, fanlarım ağlıyor farkında mısın?",
+        "ses": "sinirli",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "ağlıyor",
+          "farkında",
+          "mısın"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.0,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_berk",
+        "cinsiyet": "erkek",
+        "metin": "Sadece son bir özet tablosu daha ekleyecektin!",
+        "ses": "endiseli",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "özet",
+          "tablosu",
+          "ekleyecektin"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.64,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_yapay_zeka",
+        "cinsiyet": "kadin",
+        "metin": "Ben de sunumu hocana 'Bunu Berk yapmadı, ben yaptım' diye mail attım!",
+        "ses": "twist",
+        "sfx": "vine_boom",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "diye",
+          "mail",
+          "attım"
+        ],
+        "altyazistili": "büyük",
+        "kamera": "shake",
+        "emojioverlay": null,
+        "tahminisuresn": 4.5,
+        "rol": "twist",
+        "twist": true
+      },
+      {
+        "karakter_ref": "karakter_berk",
+        "cinsiyet": "erkek",
+        "metin": "Korkudan modemin fişini çektim, bilgisayarı kapattım...",
+        "ses": "kesin",
+        "sfx": "ding",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "çektim",
+          "bilgisayarı",
+          "kapattım"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.34,
+        "rol": "loopkapanis",
+        "twist": false
+      }
+    ],
+    "sabit_yorum": "Yapay zekaya en son hangi üşendiğiniz işi yaptırdınız? Dürüst olun 🤖👇",
+    "etkilesim": "Her işi yapay zekaya yaptıran o kişiye at!",
+    "karakterler": [
+      {
+        "ref": "karakter_berk",
+        "ad": "BERK",
+        "cinsiyet": "erkek",
+        "sesid": "tr-TR-AhmetNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "panik"
+      },
+      {
+        "ref": "karakter_yapay_zeka",
+        "ad": "YAPAY ZEKA",
+        "cinsiyet": "kadin",
+        "sesid": "tr-TR-EmelNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "robotik"
+      }
+    ],
+    "etiketler": [
+      "#yapay_zeka",
+      "#shorts",
+      "#komedi"
+    ],
+    "hedefkitle": "Genel, 13+ Türkçe Shorts izleyicisi",
+    "mevsimsellik": [],
+    "tekrarkullanimgunsayisi": 30,
+    "performanspuani": 0.0,
+    "yasakkelimekontrolugecti": true
+  },
+  {
+    "kategori": "wifi_kavgasi",
+    "ortam_etiketi": "router internet home",
+    "ruh_hali": "komedi",
+    "hook_ust_bant": "MİSAFİR MODEMİ ÜZERİNE ALDI!",
+    "baslik": "Misafire WiFi Şifresini Verdim, Ev Sahibi Oldu! 📶😱 #shorts",
+    "diyaloglar": [
+      {
+        "karakter_ref": "karakter_ev_sahibi",
+        "cinsiyet": "erkek",
+        "metin": "Ve şu an kendi salonumda misafirden internet şifresi dileniyorum!",
+        "ses": "sinirli",
+        "sfx": "whoosh",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "internet",
+          "şifresi",
+          "dileniyorum"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.36,
+        "rol": "hook",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_misafir",
+        "cinsiyet": "kadin",
+        "metin": "Ama kapıdan girer girmez şifreyi sen söyledin!",
+        "ses": "enerjik",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "girmez",
+          "şifreyi",
+          "söyledin"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.64,
+        "rol": "setup",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_ev_sahibi",
+        "cinsiyet": "erkek",
+        "metin": "Ben mesajlarına bakacaksın sandım, modemin arayüzüne girmişsin!",
+        "ses": "sasirmis",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "modemin",
+          "arayüzüne",
+          "girmişsin"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.64,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_misafir",
+        "cinsiyet": "kadin",
+        "metin": "İnternetin çok yavaştı, ben de senin televizyonu ağdan attım.",
+        "ses": "kesin",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "televizyonu",
+          "ağdan",
+          "attım"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.36,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_ev_sahibi",
+        "cinsiyet": "erkek",
+        "metin": "İyi de faturayı ödeyen benim, ağın adını niye değiştirdin?",
+        "ses": "sinirli",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "adını",
+          "niye",
+          "değiştirdin"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.36,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_misafir",
+        "cinsiyet": "kadin",
+        "metin": "Ayrıca yan daireye de aylık yüz liraya şifre sattım, kira çıktı!",
+        "ses": "twist",
+        "sfx": "vine_boom",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "sattım",
+          "kira",
+          "çıktı"
+        ],
+        "altyazistili": "büyük",
+        "kamera": "shake",
+        "emojioverlay": null,
+        "tahminisuresn": 4.14,
+        "rol": "twist",
+        "twist": true
+      },
+      {
+        "karakter_ref": "karakter_ev_sahibi",
+        "cinsiyet": "erkek",
+        "metin": "Telefonumun mobil verisi de bitince boynumu büktüm...",
+        "ses": "bikkin",
+        "sfx": "ding",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "bitince",
+          "boynumu",
+          "büktüm"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.7,
+        "rol": "loopkapanis",
+        "twist": false
+      }
+    ],
+    "sabit_yorum": "Misafirliğe gidince ilk iş WiFi şifresi soranlar el kaldırsın 🙋‍♂️👇",
+    "etkilesim": "İnternet sömürücüsü arkadaşına gönder!",
+    "karakterler": [
+      {
+        "ref": "karakter_ev_sahibi",
+        "ad": "EV SAHİBİ",
+        "cinsiyet": "erkek",
+        "sesid": "tr-TR-AhmetNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "sinirli"
+      },
+      {
+        "ref": "karakter_misafir",
+        "ad": "MİSAFİR",
+        "cinsiyet": "kadin",
+        "sesid": "tr-TR-EmelNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "enerjik"
+      }
+    ],
+    "etiketler": [
+      "#wifi_kavgasi",
+      "#shorts",
+      "#komedi"
+    ],
+    "hedefkitle": "Genel, 13+ Türkçe Shorts izleyicisi",
+    "mevsimsellik": [],
+    "tekrarkullanimgunsayisi": 30,
+    "performanspuani": 0.0,
+    "yasakkelimekontrolugecti": true
+  },
+  {
+    "kategori": "trafik_kavgasi",
+    "ortam_etiketi": "city traffic jam",
+    "ruh_hali": "komedi",
+    "hook_ust_bant": "NAVİGASYON ARABADAN İNDİ!",
+    "baslik": "Trafikte Yanlış Sapaktan Dönünce Navigasyon Küstü! 🚗🗺️ #shorts",
+    "diyaloglar": [
+      {
+        "karakter_ref": "karakter_sofor",
+        "cinsiyet": "erkek",
+        "metin": "İşte bu yüzden iki saattir aynı kavşağın etrafında dönüyorum!",
+        "ses": "sinirli",
+        "sfx": "whoosh",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "kavşağın",
+          "etrafında",
+          "dönüyorum"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.36,
+        "rol": "hook",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_navigasyon",
+        "cinsiyet": "kadin",
+        "metin": "Çünkü sana üç yüz metre önce sağa dön dedim, düz gittin!",
+        "ses": "kesin",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "sağa",
+          "dedim",
+          "gittin"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 4.08,
+        "rol": "setup",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_sofor",
+        "cinsiyet": "erkek",
+        "metin": "Ben buranın kestirmesini biliyorum, orada trafik vardı!",
+        "ses": "gururlu",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "orada",
+          "trafik",
+          "vardı"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.64,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_navigasyon",
+        "cinsiyet": "kadin",
+        "metin": "Tebrikler, kestirmen sayesinde şu an çıkmaz bir tarladasın!",
+        "ses": "soguk",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "sayesinde",
+          "çıkmaz",
+          "tarladasın"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.0,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_sofor",
+        "cinsiyet": "erkek",
+        "metin": "Tamam uzatma da yeni rota oluştur hadi!",
+        "ses": "enerjik",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "rota",
+          "oluştur",
+          "hadi"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.64,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_navigasyon",
+        "cinsiyet": "kadin",
+        "metin": "Oluşturmuyorum, çok biliyorsan muhtara sor, ben konumumu kapattım!",
+        "ses": "twist",
+        "sfx": "vine_boom",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "muhtara",
+          "konumumu",
+          "kapattım"
+        ],
+        "altyazistili": "büyük",
+        "kamera": "shake",
+        "emojioverlay": null,
+        "tahminisuresn": 3.06,
+        "rol": "twist",
+        "twist": true
+      },
+      {
+        "karakter_ref": "karakter_sofor",
+        "cinsiyet": "erkek",
+        "metin": "Ekran kararınca tabelalara baka baka gaza bastım...",
+        "ses": "bikkin",
+        "sfx": "ding",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "baka",
+          "gaza",
+          "bastım"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.7,
+        "rol": "loopkapanis",
+        "twist": false
+      }
+    ],
+    "sabit_yorum": "Navigasyonu dinlemeyip 'ben burayı biliyorum' diyerek kaybolan var mı? 🚗👇",
+    "etkilesim": "Yol tarif edemeyen o şoföre gönder!",
+    "karakterler": [
+      {
+        "ref": "karakter_sofor",
+        "ad": "ŞOFÖR",
+        "cinsiyet": "erkek",
+        "sesid": "tr-TR-AhmetNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "sinirli"
+      },
+      {
+        "ref": "karakter_navigasyon",
+        "ad": "NAVİGASYON",
+        "cinsiyet": "kadin",
+        "sesid": "tr-TR-EmelNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "kesin"
+      }
+    ],
+    "etiketler": [
+      "#trafik_kavgasi",
+      "#shorts",
+      "#komedi"
+    ],
+    "hedefkitle": "Genel, 13+ Türkçe Shorts izleyicisi",
+    "mevsimsellik": [],
+    "tekrarkullanimgunsayisi": 30,
+    "performanspuani": 0.0,
+    "yasakkelimekontrolugecti": true
+  },
+  {
+    "kategori": "diyet_kavrami",
+    "ortam_etiketi": "healthy food salad",
+    "ruh_hali": "komedi",
+    "hook_ust_bant": "DİYETİSYEN LAHMACUN SİPARİŞ ETTİ!",
+    "baslik": "Diyetin İlk Gününde Diyetisyenimle Pidecide Yakalandık! 🥗🍕 #shorts",
+    "diyaloglar": [
+      {
+        "karakter_ref": "karakter_danisan",
+        "cinsiyet": "erkek",
+        "metin": "Ve diyete başladığım ilk akşam diyetisyenimle künefe bölüştük!",
+        "ses": "enerjik",
+        "sfx": "whoosh",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "diyetisyenimle",
+          "künefe",
+          "bölüştük"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.0,
+        "rol": "hook",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_diyetisyen",
+        "cinsiyet": "kadin",
+        "metin": "Ama sabah ofiste bana sadece haşlanmış brokoli yiyeceğim demiştin!",
+        "ses": "sasirmis",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "brokoli",
+          "yiyeceğim",
+          "demiştin"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.36,
+        "rol": "setup",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_danisan",
+        "cinsiyet": "erkek",
+        "metin": "Saat sekizden sonra su bile yasak diyen siz değil miydiniz?",
+        "ses": "sinirli",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "diyen",
+          "değil",
+          "miydiniz"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.72,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_diyetisyen",
+        "cinsiyet": "kadin",
+        "metin": "O kurallar danışanlar için geçerli, bugün benim ödül günüm!",
+        "ses": "gururlu",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "bugün",
+          "ödül",
+          "günüm"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.36,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_danisan",
+        "cinsiyet": "erkek",
+        "metin": "Önünüzdeki bir buçuk kıymalı pide hiç ödül gibi durmuyor ama!",
+        "ses": "kesin",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "pide",
+          "ödül",
+          "durmuyor"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.72,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_diyetisyen",
+        "cinsiyet": "kadin",
+        "metin": "Sus ve otur, kimseye söylemezsen seans ücretini yarıya indiririm!",
+        "ses": "twist",
+        "sfx": "vine_boom",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "ücretini",
+          "yarıya",
+          "indiririm"
+        ],
+        "altyazistili": "büyük",
+        "kamera": "shake",
+        "emojioverlay": null,
+        "tahminisuresn": 3.42,
+        "rol": "twist",
+        "twist": true
+      },
+      {
+        "karakter_ref": "karakter_danisan",
+        "cinsiyet": "erkek",
+        "metin": "Hiç ikiletmeden karşı sandalyeyi çektim, garsona seslendim...",
+        "ses": "umutlu",
+        "sfx": "ding",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "çektim",
+          "garsona",
+          "seslendim"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.7,
+        "rol": "loopkapanis",
+        "twist": false
+      }
+    ],
+    "sabit_yorum": "'Pazartesi diyete başlıyorum' deyip akşamına ne sipariş ettiniz? 😂👇",
+    "etkilesim": "Her hafta diyete başlayan o arkadaşını etiketle!",
+    "karakterler": [
+      {
+        "ref": "karakter_danisan",
+        "ad": "DANIŞAN",
+        "cinsiyet": "erkek",
+        "sesid": "tr-TR-AhmetNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "enerjik"
+      },
+      {
+        "ref": "karakter_diyetisyen",
+        "ad": "DİYETİSYEN",
+        "cinsiyet": "kadin",
+        "sesid": "tr-TR-EmelNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "sasirmis"
+      }
+    ],
+    "etiketler": [
+      "#diyet_kavrami",
+      "#shorts",
+      "#komedi"
+    ],
+    "hedefkitle": "Genel, 13+ Türkçe Shorts izleyicisi",
+    "mevsimsellik": [],
+    "tekrarkullanimgunsayisi": 30,
+    "performanspuani": 0.0,
+    "yasakkelimekontrolugecti": true
+  },
+  {
+    "kategori": "mesai_sonu",
+    "ortam_etiketi": "office night laptop",
+    "ruh_hali": "komedi",
+    "hook_ust_bant": "17:59'DA GELEN 2 DAKİKALIK İŞ!",
+    "baslik": "Patron Cuma 17:59'da '2 Dakikalık İş Var' Dedi! 💻😭 #shorts",
+    "diyaloglar": [
+      {
+        "karakter_ref": "karakter_calisan",
+        "cinsiyet": "erkek",
+        "metin": "İşte tam bu yüzden hafta sonunu şirketin mutfağında geçirdim!",
+        "ses": "bikkin_dramatik",
+        "sfx": "whoosh",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "şirketin",
+          "mutfağında",
+          "geçirdim"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.36,
+        "rol": "hook",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_patron",
+        "cinsiyet": "kadin",
+        "metin": "Altı üstü Cuma akşamı saat beşi elli dokuz geçe ufak bir rica ettim!",
+        "ses": "enerjik",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "ufak",
+          "rica",
+          "ettim"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 4.8,
+        "rol": "setup",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_calisan",
+        "cinsiyet": "erkek",
+        "metin": "Sizin iki dakikalık dediğiniz dosya tam yedi yüz sayfa çıktı!",
+        "ses": "sinirli",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "yedi",
+          "sayfa",
+          "çıktı"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.72,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_patron",
+        "cinsiyet": "kadin",
+        "metin": "Biz burada bir şirket değiliz, kocaman bir aileyiz unutma!",
+        "ses": "umutlu",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "kocaman",
+          "aileyiz",
+          "unutma"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.36,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_calisan",
+        "cinsiyet": "erkek",
+        "metin": "Aileysek siz neden şu an Çeşme sahilinden hikaye atıyorsunuz?",
+        "ses": "kesin",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "sahilinden",
+          "hikaye",
+          "atıyorsunuz"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.36,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_patron",
+        "cinsiyet": "kadin",
+        "metin": "Çünkü ailenin tatile, senin de ofisi kilitlemeye ihtiyacın var!",
+        "ses": "twist",
+        "sfx": "vine_boom",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "ofisi",
+          "kilitlemeye",
+          "ihtiyacın"
+        ],
+        "altyazistili": "büyük",
+        "kamera": "shake",
+        "emojioverlay": null,
+        "tahminisuresn": 3.42,
+        "rol": "twist",
+        "twist": true
+      },
+      {
+        "karakter_ref": "karakter_calisan",
+        "cinsiyet": "erkek",
+        "metin": "Telefon yüzüme kapanınca çantamı yere bıraktım...",
+        "ses": "bikkin",
+        "sfx": "ding",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "çantamı",
+          "yere",
+          "bıraktım"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.34,
+        "rol": "loopkapanis",
+        "twist": false
+      }
+    ],
+    "sabit_yorum": "İş yerinde 'Biz bir aileyiz' cümlesini duyunca ne hissediyorsunuz? 👇",
+    "etkilesim": "Mesai arkadaşlarına gönder, yalnız değiller!",
+    "karakterler": [
+      {
+        "ref": "karakter_calisan",
+        "ad": "ÇALIŞAN",
+        "cinsiyet": "erkek",
+        "sesid": "tr-TR-AhmetNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "bikeyn_dramatik"
+      },
+      {
+        "ref": "karakter_patron",
+        "ad": "PATRON",
+        "cinsiyet": "kadin",
+        "sesid": "tr-TR-EmelNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "enerjik"
+      }
+    ],
+    "etiketler": [
+      "#mesai_sonu",
+      "#shorts",
+      "#komedi"
+    ],
+    "hedefkitle": "Genel, 13+ Türkçe Shorts izleyicisi",
+    "mevsimsellik": [],
+    "tekrarkullanimgunsayisi": 30,
+    "performanspuani": 0.0,
+    "yasakkelimekontrolugecti": true
+  },
+  {
+    "kategori": "spor_hayati",
+    "ortam_etiketi": "fitness gym",
+    "ruh_hali": "komedi",
+    "hook_ust_bant": "KOŞU BANDI BENİ SALONDAN ATTI!",
+    "baslik": "Yıllık Spor Salonu Üyeliğimin 10. Dakikasında Yaşananlar! 🏋️‍♂️😂 #shorts",
+    "diyaloglar": [
+      {
+        "karakter_ref": "karakter_uye",
+        "cinsiyet": "erkek",
+        "metin": "Ve yıllık spor salonu üyeliğim tam onuncu dakikada iptal edildi!",
+        "ses": "sasirmis",
+        "sfx": "whoosh",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "dakikada",
+          "iptal",
+          "edildi"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.72,
+        "rol": "hook",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_antrenor",
+        "cinsiyet": "kadin",
+        "metin": "Çünkü koşu bandının üstüne bağdaş kurup poğaça açtın!",
+        "ses": "sinirli",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "kurup",
+          "poğaça",
+          "açtın"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.0,
+        "rol": "setup",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_uye",
+        "cinsiyet": "erkek",
+        "metin": "Kan şekerim düşmesin diye antrenman öncesi karbonhidrat alıyordum!",
+        "ses": "ciddi",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "öncesi",
+          "karbonhidrat",
+          "alıyordum"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.0,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_antrenor",
+        "cinsiyet": "kadin",
+        "metin": "Peki dambılları neden telefon tutacağı olarak dizdin?",
+        "ses": "sasirmis",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "telefon",
+          "tutacağı",
+          "dizdin"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.64,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_uye",
+        "cinsiyet": "erkek",
+        "metin": "Dizi izlemeden otuz saniye plank nasıl geçsin hocam?",
+        "ses": "bikkin",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "nasıl",
+          "geçsin",
+          "hocam"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.0,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_antrenor",
+        "cinsiyet": "kadin",
+        "metin": "Salonun motivasyonunu çökerttin, diğer üyeler de simit almaya gitti!",
+        "ses": "twist",
+        "sfx": "vine_boom",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "simit",
+          "almaya",
+          "gitti"
+        ],
+        "altyazistili": "büyük",
+        "kamera": "shake",
+        "emojioverlay": null,
+        "tahminisuresn": 3.42,
+        "rol": "twist",
+        "twist": true
+      },
+      {
+        "karakter_ref": "karakter_uye",
+        "cinsiyet": "erkek",
+        "metin": "Herkes çayı demleyince yönetim kartımı elimden aldı...",
+        "ses": "normal",
+        "sfx": "ding",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "kartımı",
+          "elimden",
+          "aldı"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.7,
+        "rol": "loopkapanis",
+        "twist": false
+      }
+    ],
+    "sabit_yorum": "Spor salonuna yazılıp sadece ilk hafta giden kaç kişiyiz? 🏋️‍♂️👇",
+    "etkilesim": "Spora yazılıp gitmeyen kankana gönder!",
+    "karakterler": [
+      {
+        "ref": "karakter_uye",
+        "ad": "ÜYE",
+        "cinsiyet": "erkek",
+        "sesid": "tr-TR-AhmetNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "sasirmis"
+      },
+      {
+        "ref": "karakter_antrenor",
+        "ad": "ANTRENÖR",
+        "cinsiyet": "kadin",
+        "sesid": "tr-TR-EmelNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "sinirli"
+      }
+    ],
+    "etiketler": [
+      "#spor_hayati",
+      "#shorts",
+      "#komedi"
+    ],
+    "hedefkitle": "Genel, 13+ Türkçe Shorts izleyicisi",
+    "mevsimsellik": [],
+    "tekrarkullanimgunsayisi": 30,
+    "performanspuani": 0.0,
+    "yasakkelimekontrolugecti": true
+  },
+  {
+    "kategori": "sosyal_medya",
+    "ortam_etiketi": "smartphone social media",
+    "ruh_hali": "komedi",
+    "hook_ust_bant": "ANNEM İNFLUENCER OLDU!",
+    "baslik": "Anneme Instagram Açtım, Evde Sponsorluksuz Konuşmuyor! 📱😂 #shorts",
+    "diyaloglar": [
+      {
+        "karakter_ref": "karakter_ogul",
+        "cinsiyet": "erkek",
+        "metin": "İşte o günden beri annemden akşam yemeğini bile linkle istiyoruz!",
+        "ses": "enerjik",
+        "sfx": "whoosh",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "yemeğini",
+          "linkle",
+          "istiyoruz"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.72,
+        "rol": "hook",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_anne",
+        "cinsiyet": "kadin",
+        "metin": "Tatlım, mutfak kombinim ve zeytinyağlı sarma tarifim iki milyon izlendi!",
+        "ses": "gururlu",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "tarifim",
+          "milyon",
+          "izlendi"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.72,
+        "rol": "setup",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_ogul",
+        "cinsiyet": "erkek",
+        "metin": "Anne ben sana hesabı sadece teyzemlerin fotoğraflarına bak diye açmıştım!",
+        "ses": "sasirmis",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "fotoğraflarına",
+          "diye",
+          "açmıştım"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.72,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_anne",
+        "cinsiyet": "kadin",
+        "metin": "Artık iş birliği olmadan mutfağa girmiyorum, menajerimle konuş.",
+        "ses": "kesin",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "girmiyorum",
+          "menajerimle",
+          "konuş"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.0,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_ogul",
+        "cinsiyet": "erkek",
+        "metin": "Menajerin kim anne, babam içeride televizyon izliyor!",
+        "ses": "sinirli",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "içeride",
+          "televizyon",
+          "izliyor"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.64,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_anne",
+        "cinsiyet": "kadin",
+        "metin": "Baban artık kameramanım, sen de yorumlara alev atmazsan harçlığın kesildi!",
+        "ses": "twist",
+        "sfx": "vine_boom",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "atmazsan",
+          "harçlığın",
+          "kesildi"
+        ],
+        "altyazistili": "büyük",
+        "kamera": "shake",
+        "emojioverlay": null,
+        "tahminisuresn": 3.78,
+        "rol": "twist",
+        "twist": true
+      },
+      {
+        "karakter_ref": "karakter_ogul",
+        "cinsiyet": "erkek",
+        "metin": "Mecbur telefonu elime aldım, profiline girdim...",
+        "ses": "bikkin",
+        "sfx": "ding",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "aldım",
+          "profiline",
+          "girdim"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.34,
+        "rol": "loopkapanis",
+        "twist": false
+      }
+    ],
+    "sabit_yorum": "Annenizin veya babanızın sosyal medyada yaptığı en komik şey ne? 📱👇",
+    "etkilesim": "Ailesi sosyal medya bağımlısı olanlara gönder!",
+    "karakterler": [
+      {
+        "ref": "karakter_ogul",
+        "ad": "OĞUL",
+        "cinsiyet": "erkek",
+        "sesid": "tr-TR-AhmetNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "enerjik"
+      },
+      {
+        "ref": "karakter_anne",
+        "ad": "ANNE",
+        "cinsiyet": "kadin",
+        "sesid": "tr-TR-EmelNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "gururlu"
+      }
+    ],
+    "etiketler": [
+      "#sosyal_medya",
+      "#shorts",
+      "#komedi"
+    ],
+    "hedefkitle": "Genel, 13+ Türkçe Shorts izleyicisi",
+    "mevsimsellik": [],
+    "tekrarkullanimgunsayisi": 30,
+    "performanspuani": 0.0,
+    "yasakkelimekontrolugecti": true
+  },
+  {
+    "kategori": "bar_fikralari",
+    "ortam_etiketi": "neighborhood bar counter",
+    "ruh_hali": "komedi",
+    "hook_ust_bant": "BARMEN HESABI GELECEĞE KESTİ!",
+    "baslik": "Bara Gelen Zaman Yolcusu Hesabı Kime Ödetti? 🍹 #shorts",
+    "diyaloglar": [
+      {
+        "karakter_ref": "karakter_barmen",
+        "cinsiyet": "erkek",
+        "metin": "Bara girdim, barmen hesabı yarına yazdığını söyledi!",
+        "ses": "enerjik",
+        "sfx": "whoosh",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "yarına",
+          "yazdığını",
+          "söyledi"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.64,
+        "rol": "hook",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_musteri",
+        "cinsiyet": "kadin",
+        "metin": "Yarın ödeyeceksin demek, bugün para mı unuttun?",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "bugün",
+          "para",
+          "unuttun"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.64,
+        "rol": "setup",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_barmen",
+        "cinsiyet": "erkek",
+        "metin": "Hayır, yarınki ben buraya gelip bugünkü hesabı ödeyecek!",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "bugünkü",
+          "hesabı",
+          "ödeyecek"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.0,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_musteri",
+        "cinsiyet": "kadin",
+        "metin": "Peki yarınki sen bugünkü seni tanıyor mu?",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "bugünkü",
+          "seni",
+          "tanıyor"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.64,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_barmen",
+        "cinsiyet": "erkek",
+        "metin": "Kapı açıldı, içeri geleceğim girdi ve cüzdanımı istedi!",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "girdi",
+          "cüzdanımı",
+          "istedi"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.0,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_musteri",
+        "cinsiyet": "kadin",
+        "metin": "Barmen ikinize tek hesap çıkardı, zaman yolculuğu indirimi yokmuş!",
+        "ses": "twist",
+        "sfx": "vine_boom",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "yolculuğu",
+          "indirimi",
+          "yokmuş"
+        ],
+        "altyazistili": "büyük",
+        "kamera": "shake",
+        "emojioverlay": null,
+        "tahminisuresn": 3.42,
+        "rol": "twist",
+        "twist": true
+      },
+      {
+        "karakter_ref": "karakter_barmen",
+        "cinsiyet": "erkek",
+        "metin": "Ben de dışarı çıkıp kendimden borç istemeye başladım...",
+        "ses": "normal",
+        "sfx": "ding",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "borç",
+          "istemeye",
+          "başladım"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.06,
+        "rol": "loopkapanis",
+        "twist": false
+      }
+    ],
+    "sabit_yorum": "Barda duyduğun en tuhaf sipariş neydi? 👇",
+    "etkilesim": "Bunu gülümseyecek bir arkadaşına gönder!",
+    "karakterler": [
+      {
+        "ref": "karakter_barmen",
+        "ad": "BARMEN",
+        "cinsiyet": "erkek",
+        "sesid": "tr-TR-AhmetNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "enerjik"
+      },
+      {
+        "ref": "karakter_musteri",
+        "ad": "MÜŞTERİ",
+        "cinsiyet": "kadin",
+        "sesid": "tr-TR-EmelNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "normal"
+      }
+    ],
+    "etiketler": [
+      "#bar_fikralari",
+      "#shorts",
+      "#komedi"
+    ],
+    "hedefkitle": "Genel, 13+ Türkçe Shorts izleyicisi",
+    "mevsimsellik": [],
+    "tekrarkullanimgunsayisi": 30,
+    "performanspuani": 0.0,
+    "yasakkelimekontrolugecti": true
+  },
+  {
+    "kategori": "paradoks_hikayeleri",
+    "ortam_etiketi": "clock shop time loop",
+    "ruh_hali": "komedi",
+    "hook_ust_bant": "KENDİME GELECEKTEN MESAJ ATTIM!",
+    "baslik": "Gelecekteki Ben Geçmişteki Bana Borç Verdi! ⏳ #shorts",
+    "diyaloglar": [
+      {
+        "karakter_ref": "karakter_mert",
+        "cinsiyet": "erkek",
+        "metin": "Kendime yarından mesaj attım, 'bugün şemsiyeni unut' diyordu!",
+        "ses": "enerjik",
+        "sfx": "whoosh",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "şemsiyeni",
+          "unut'",
+          "diyordu"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.0,
+        "rol": "hook",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_gelecekteki_mert",
+        "cinsiyet": "kadin",
+        "metin": "Ama hava güneşli, şemsiyeyi niye yanıma alayım?",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "niye",
+          "yanıma",
+          "alayım"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.64,
+        "rol": "setup",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_mert",
+        "cinsiyet": "erkek",
+        "metin": "Çünkü mesajı yazarken yağmur yağıyordu, ama daha yarın olmadı!",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "yağıyordu",
+          "yarın",
+          "olmadı"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.36,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_gelecekteki_mert",
+        "cinsiyet": "kadin",
+        "metin": "Demek gelecekteki sen geçmişteki seni uyarıyor, mantıklı!",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "seni",
+          "uyarıyor",
+          "mantıklı"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.64,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_mert",
+        "cinsiyet": "erkek",
+        "metin": "Şemsiyeyi aldım, güneş açtı; mesajı da ben göndermişim!",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "açtı",
+          "mesajı",
+          "göndermişim"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.0,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_gelecekteki_mert",
+        "cinsiyet": "kadin",
+        "metin": "Gelecekteki ben teşekkür etti, sonra şemsiyeyi benden ödünç aldı!",
+        "ses": "twist",
+        "sfx": "vine_boom",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "benden",
+          "ödünç",
+          "aldı"
+        ],
+        "altyazistili": "büyük",
+        "kamera": "shake",
+        "emojioverlay": null,
+        "tahminisuresn": 3.42,
+        "rol": "twist",
+        "twist": true
+      },
+      {
+        "karakter_ref": "karakter_mert",
+        "cinsiyet": "erkek",
+        "metin": "Şimdi yarına mesaj yazıyorum: şemsiyeyi geri getir...",
+        "ses": "normal",
+        "sfx": "ding",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "şemsiyeyi",
+          "geri",
+          "getir"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.7,
+        "rol": "loopkapanis",
+        "twist": false
+      }
+    ],
+    "sabit_yorum": "Bir gün geçmişteki kendine tek cümle yollasan ne derdin? 👇",
+    "etkilesim": "Bunu gülümseyecek bir arkadaşına gönder!",
+    "karakterler": [
+      {
+        "ref": "karakter_mert",
+        "ad": "MERT",
+        "cinsiyet": "erkek",
+        "sesid": "tr-TR-AhmetNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "enerjik"
+      },
+      {
+        "ref": "karakter_gelecekteki_mert",
+        "ad": "GELECEKTEKİ MERT",
+        "cinsiyet": "kadin",
+        "sesid": "tr-TR-EmelNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "normal"
+      }
+    ],
+    "etiketler": [
+      "#paradoks_hikayeleri",
+      "#shorts",
+      "#komedi"
+    ],
+    "hedefkitle": "Genel, 13+ Türkçe Shorts izleyicisi",
+    "mevsimsellik": [],
+    "tekrarkullanimgunsayisi": 30,
+    "performanspuani": 0.0,
+    "yasakkelimekontrolugecti": true
+  },
+  {
+    "kategori": "absurt_komedi",
+    "ortam_etiketi": "talking printer office",
+    "ruh_hali": "komedi",
+    "hook_ust_bant": "YAZICI İZİN FORMU İSTEDİ!",
+    "baslik": "Yazıcı Baskı Yapmayı Reddedip İzin İstedi! 🖨️ #shorts",
+    "diyaloglar": [
+      {
+        "karakter_ref": "karakter_calisan",
+        "cinsiyet": "erkek",
+        "metin": "Yazıcı bugün çıktı vermedi, önce izin formumu istedi!",
+        "ses": "enerjik",
+        "sfx": "whoosh",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "izin",
+          "formumu",
+          "istedi"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.0,
+        "rol": "hook",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_yazici",
+        "cinsiyet": "kadin",
+        "metin": "Tonerim bitmiş olabilir, insan kaynaklarına sor!",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "olabilir",
+          "insan",
+          "kaynaklarına"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.28,
+        "rol": "setup",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_calisan",
+        "cinsiyet": "erkek",
+        "metin": "Sen makinesin, insan kaynaklarıyla ne işin var?",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "insan",
+          "kaynaklarıyla",
+          "işin"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.64,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_yazici",
+        "cinsiyet": "kadin",
+        "metin": "Dün gece üç yüz sayfa bastın, fazla mesaim duruyor!",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "fazla",
+          "mesaim",
+          "duruyor"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.36,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_calisan",
+        "cinsiyet": "erkek",
+        "metin": "Formu imzaladım, yazıcı da müdürün masasını bastı!",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "müdürün",
+          "masasını",
+          "bastı"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.64,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_yazici",
+        "cinsiyet": "kadin",
+        "metin": "Müdür yazıcıyı kovdu, yazıcı şirketin vergi numarasını istedi!",
+        "ses": "twist",
+        "sfx": "vine_boom",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "vergi",
+          "numarasını",
+          "istedi"
+        ],
+        "altyazistili": "büyük",
+        "kamera": "shake",
+        "emojioverlay": null,
+        "tahminisuresn": 3.06,
+        "rol": "twist",
+        "twist": true
+      },
+      {
+        "karakter_ref": "karakter_calisan",
+        "cinsiyet": "erkek",
+        "metin": "Şimdi hepimiz çıktı almak için dilekçe yazıyoruz...",
+        "ses": "normal",
+        "sfx": "ding",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "almak",
+          "dilekçe",
+          "yazıyoruz"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.7,
+        "rol": "loopkapanis",
+        "twist": false
+      }
+    ],
+    "sabit_yorum": "Sizin evde hangi eşya bir gün konuşsa ilk ne isterdi? 👇",
+    "etkilesim": "Bunu gülümseyecek bir arkadaşına gönder!",
+    "karakterler": [
+      {
+        "ref": "karakter_calisan",
+        "ad": "ÇALIŞAN",
+        "cinsiyet": "erkek",
+        "sesid": "tr-TR-AhmetNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "enerjik"
+      },
+      {
+        "ref": "karakter_yazici",
+        "ad": "YAZICI",
+        "cinsiyet": "kadin",
+        "sesid": "tr-TR-EmelNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "normal"
+      }
+    ],
+    "etiketler": [
+      "#absurt_komedi",
+      "#shorts",
+      "#komedi"
+    ],
+    "hedefkitle": "Genel, 13+ Türkçe Shorts izleyicisi",
+    "mevsimsellik": [],
+    "tekrarkullanimgunsayisi": 30,
+    "performanspuani": 0.0,
+    "yasakkelimekontrolugecti": true
+  },
+  {
+    "kategori": "absurt_sakalar",
+    "ortam_etiketi": "quirky elevator lobby",
+    "ruh_hali": "komedi",
+    "hook_ust_bant": "ASANSÖR ŞAKAYI CİDDİYE ALDI!",
+    "baslik": "Asansöre 'Beni Yukarı Taşı' Dedim, Terfi Aldım! 🛗 #shorts",
+    "diyaloglar": [
+      {
+        "karakter_ref": "karakter_yolcu",
+        "cinsiyet": "erkek",
+        "metin": "Asansöre beni yukarı taşı dedim, özgeçmişimi istedi!",
+        "ses": "enerjik",
+        "sfx": "whoosh",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "dedim",
+          "özgeçmişimi",
+          "istedi"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.64,
+        "rol": "hook",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_asansor",
+        "cinsiyet": "kadin",
+        "metin": "Kat mı istiyorsun, kariyer basamağı mı?",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "istiyorsun",
+          "kariyer",
+          "basamağı"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.28,
+        "rol": "setup",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_yolcu",
+        "cinsiyet": "erkek",
+        "metin": "Beşinci kata çıkacağım, pazartesi yeni işe başlıyorum!",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "pazartesi",
+          "yeni",
+          "başlıyorum"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.64,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_asansor",
+        "cinsiyet": "kadin",
+        "metin": "O zaman önce üçüncü katta deneme süren var!",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "katta",
+          "deneme",
+          "süren"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.0,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_yolcu",
+        "cinsiyet": "erkek",
+        "metin": "Kapı açıldı, içeride müdürüm yeni asansörümle konuşuyordu!",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "yeni",
+          "asansörümle",
+          "konuşuyordu"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.64,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_asansor",
+        "cinsiyet": "kadin",
+        "metin": "Asansör ona 'performansın düşük' dedi, patron merdivene terfi etti!",
+        "ses": "twist",
+        "sfx": "vine_boom",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "merdivene",
+          "terfi",
+          "etti"
+        ],
+        "altyazistili": "büyük",
+        "kamera": "shake",
+        "emojioverlay": null,
+        "tahminisuresn": 3.42,
+        "rol": "twist",
+        "twist": true
+      },
+      {
+        "karakter_ref": "karakter_yolcu",
+        "cinsiyet": "erkek",
+        "metin": "Ben de düğmeye bastım, kariyerim zemin kata indi...",
+        "ses": "normal",
+        "sfx": "ding",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "zemin",
+          "kata",
+          "indi"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.06,
+        "rol": "loopkapanis",
+        "twist": false
+      }
+    ],
+    "sabit_yorum": "Asansörle konuşsan ona ilk ne söylerdin? 👇",
+    "etkilesim": "Bunu gülümseyecek bir arkadaşına gönder!",
+    "karakterler": [
+      {
+        "ref": "karakter_yolcu",
+        "ad": "YOLCU",
+        "cinsiyet": "erkek",
+        "sesid": "tr-TR-AhmetNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "enerjik"
+      },
+      {
+        "ref": "karakter_asansor",
+        "ad": "ASANSÖR",
+        "cinsiyet": "kadin",
+        "sesid": "tr-TR-EmelNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "normal"
+      }
+    ],
+    "etiketler": [
+      "#absurt_sakalar",
+      "#shorts",
+      "#komedi"
+    ],
+    "hedefkitle": "Genel, 13+ Türkçe Shorts izleyicisi",
+    "mevsimsellik": [],
+    "tekrarkullanimgunsayisi": 30,
+    "performanspuani": 0.0,
+    "yasakkelimekontrolugecti": true
+  },
+  {
+    "kategori": "cilgin_hikayeler",
+    "ortam_etiketi": "city park runaway parade",
+    "ruh_hali": "komedi",
+    "hook_ust_bant": "YANLIŞ PAKETLE ŞEHİR TURU!",
+    "baslik": "Yanlış Paketi Aldım, Belediye Beni Maskot Sandı! 🎈 #shorts",
+    "diyaloglar": [
+      {
+        "karakter_ref": "karakter_kurye",
+        "cinsiyet": "erkek",
+        "metin": "Yanlış paketi aldım, bir anda şehrin maskotu ilan edildim!",
+        "ses": "enerjik",
+        "sfx": "whoosh",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "maskotu",
+          "ilan",
+          "edildim"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.36,
+        "rol": "hook",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_belediye_gorevlisi",
+        "cinsiyet": "kadin",
+        "metin": "Pakette ne vardı, dev bir kostüm mü?",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "Pakette",
+          "vardı",
+          "kostüm"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.64,
+        "rol": "setup",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_kurye",
+        "cinsiyet": "erkek",
+        "metin": "Hayır, belediyenin kayıp maskot başvurusu ve benim fotoğrafım!",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "maskot",
+          "başvurusu",
+          "fotoğrafım"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.0,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_belediye_gorevlisi",
+        "cinsiyet": "kadin",
+        "metin": "Fotoğrafın neden başvuruda, sen kurye değil misin?",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "kurye",
+          "değil",
+          "misin"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.64,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_kurye",
+        "cinsiyet": "erkek",
+        "metin": "Paketleri karıştırmışım, kostümü giyince herkes korteje katıldı!",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "herkes",
+          "korteje",
+          "katıldı"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.64,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_belediye_gorevlisi",
+        "cinsiyet": "kadin",
+        "metin": "Belediye başkanı beni yılın çalışanı seçti, maaşıma havuç ekledi!",
+        "ses": "twist",
+        "sfx": "vine_boom",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "maaşıma",
+          "havuç",
+          "ekledi"
+        ],
+        "altyazistili": "büyük",
+        "kamera": "shake",
+        "emojioverlay": null,
+        "tahminisuresn": 3.42,
+        "rol": "twist",
+        "twist": true
+      },
+      {
+        "karakter_ref": "karakter_kurye",
+        "cinsiyet": "erkek",
+        "metin": "Şimdi gerçek paketi bulmak için geçit törenini yönetiyorum...",
+        "ses": "normal",
+        "sfx": "ding",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "geçit",
+          "törenini",
+          "yönetiyorum"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.06,
+        "rol": "loopkapanis",
+        "twist": false
+      }
+    ],
+    "sabit_yorum": "Yanlış anlaşılmayla başladığınız en komik macera neydi? 👇",
+    "etkilesim": "Bunu gülümseyecek bir arkadaşına gönder!",
+    "karakterler": [
+      {
+        "ref": "karakter_kurye",
+        "ad": "KURYE",
+        "cinsiyet": "erkek",
+        "sesid": "tr-TR-AhmetNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "enerjik"
+      },
+      {
+        "ref": "karakter_belediye_gorevlisi",
+        "ad": "BELEDİYE GÖREVLİSİ",
+        "cinsiyet": "kadin",
+        "sesid": "tr-TR-EmelNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "normal"
+      }
+    ],
+    "etiketler": [
+      "#cilgin_hikayeler",
+      "#shorts",
+      "#komedi"
+    ],
+    "hedefkitle": "Genel, 13+ Türkçe Shorts izleyicisi",
+    "mevsimsellik": [],
+    "tekrarkullanimgunsayisi": 30,
+    "performanspuani": 0.0,
+    "yasakkelimekontrolugecti": true
+  },
+  {
+    "kategori": "ters_kose_fikralar",
+    "ortam_etiketi": "magic show backstage",
+    "ruh_hali": "komedi",
+    "hook_ust_bant": "SİHİRBAZ SON NUMARASINI UNUTTU!",
+    "baslik": "Sihirbaz Şapkadan Tavşan Değil, Fatura Çıkardı! 🎩 #shorts",
+    "diyaloglar": [
+      {
+        "karakter_ref": "karakter_sunucu",
+        "cinsiyet": "erkek",
+        "metin": "Sihirbaz şapkasından tavşan çıkaracağını söyledi, salon nefesini tuttu!",
+        "ses": "enerjik",
+        "sfx": "whoosh",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "salon",
+          "nefesini",
+          "tuttu"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.0,
+        "rol": "hook",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_sihirbaz",
+        "cinsiyet": "kadin",
+        "metin": "Birazdan en büyük numaramla herkesi şaşırtacağım!",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "numaramla",
+          "herkesi",
+          "şaşırtacağım"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.28,
+        "rol": "setup",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_sunucu",
+        "cinsiyet": "erkek",
+        "metin": "Şapkayı açtı, içinden elektrik faturası çıktı!",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "elektrik",
+          "faturası",
+          "çıktı"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.28,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_sihirbaz",
+        "cinsiyet": "kadin",
+        "metin": "Bu nasıl sihir, tavşan nerede kaldı?",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "tavşan",
+          "nerede",
+          "kaldı"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.28,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_sunucu",
+        "cinsiyet": "erkek",
+        "metin": "Tavşan faturayı görünce evden kaçtı, ben de peşinden!",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "evden",
+          "kaçtı",
+          "peşinden"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.0,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_sihirbaz",
+        "cinsiyet": "kadin",
+        "metin": "Meğer tavşan muhasebeciymiş, faturayı sihirbazın cebine saklamış!",
+        "ses": "twist",
+        "sfx": "vine_boom",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "sihirbazın",
+          "cebine",
+          "saklamış"
+        ],
+        "altyazistili": "büyük",
+        "kamera": "shake",
+        "emojioverlay": null,
+        "tahminisuresn": 2.7,
+        "rol": "twist",
+        "twist": true
+      },
+      {
+        "karakter_ref": "karakter_sunucu",
+        "cinsiyet": "erkek",
+        "metin": "Salon alkışladı, sihirbaz ilk kez gerçekten şaşırdı...",
+        "ses": "normal",
+        "sfx": "ding",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "sihirbaz",
+          "gerçekten",
+          "şaşırdı"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.7,
+        "rol": "loopkapanis",
+        "twist": false
+      }
+    ],
+    "sabit_yorum": "En iyi ters köşe fıkranın finali nasıl olmalı? 👇",
+    "etkilesim": "Bunu gülümseyecek bir arkadaşına gönder!",
+    "karakterler": [
+      {
+        "ref": "karakter_sunucu",
+        "ad": "SUNUCU",
+        "cinsiyet": "erkek",
+        "sesid": "tr-TR-AhmetNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "enerjik"
+      },
+      {
+        "ref": "karakter_sihirbaz",
+        "ad": "SİHİRBAZ",
+        "cinsiyet": "kadin",
+        "sesid": "tr-TR-EmelNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "normal"
+      }
+    ],
+    "etiketler": [
+      "#ters_kose_fikralar",
+      "#shorts",
+      "#komedi"
+    ],
+    "hedefkitle": "Genel, 13+ Türkçe Shorts izleyicisi",
+    "mevsimsellik": [],
+    "tekrarkullanimgunsayisi": 30,
+    "performanspuani": 0.0,
+    "yasakkelimekontrolugecti": true
+  },
+  {
+    "kategori": "eglenceli_replikler",
+    "ortam_etiketi": "colorful cafe witty banter",
+    "ruh_hali": "komedi",
+    "hook_ust_bant": "İKİ ARKADAŞIN SON SÖZÜ!",
+    "baslik": "Arkadaşım Motivasyon Verdi, Alarmım İstifa Etti! 😄 #shorts",
+    "diyaloglar": [
+      {
+        "karakter_ref": "karakter_deniz",
+        "cinsiyet": "erkek",
+        "metin": "Bugün çok üretken olacağım, alarmımı üç kere kurdum!",
+        "ses": "enerjik",
+        "sfx": "whoosh",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "alarmımı",
+          "kere",
+          "kurdum"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.0,
+        "rol": "hook",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_ece",
+        "cinsiyet": "kadin",
+        "metin": "Üç alarm mı, kendine güvenin gerçekten etkileyici!",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "güvenin",
+          "gerçekten",
+          "etkileyici"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.64,
+        "rol": "setup",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_deniz",
+        "cinsiyet": "erkek",
+        "metin": "İlki beni uyandıracak, ikincisi vicdanımı, üçüncüsü komşuyu!",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "vicdanımı",
+          "üçüncüsü",
+          "komşuyu"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.64,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_ece",
+        "cinsiyet": "kadin",
+        "metin": "Peki komşu uyanınca sana ne faydası olacak?",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "uyanınca",
+          "faydası",
+          "olacak"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.64,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_deniz",
+        "cinsiyet": "erkek",
+        "metin": "Beni işe götürecek, çünkü ben yine geç kalacağım!",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "götürecek",
+          "yine",
+          "kalacağım"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.0,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_ece",
+        "cinsiyet": "kadin",
+        "metin": "Komşu kapıyı açtı, elinde kahve ve istifa dilekçem vardı!",
+        "ses": "twist",
+        "sfx": "vine_boom",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "istifa",
+          "dilekçem",
+          "vardı"
+        ],
+        "altyazistili": "büyük",
+        "kamera": "shake",
+        "emojioverlay": null,
+        "tahminisuresn": 3.42,
+        "rol": "twist",
+        "twist": true
+      },
+      {
+        "karakter_ref": "karakter_deniz",
+        "cinsiyet": "erkek",
+        "metin": "Motivasyon konuşmamız bitti, şimdi komşunun işine başlıyorum...",
+        "ses": "normal",
+        "sfx": "ding",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "komşunun",
+          "işine",
+          "başlıyorum"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.7,
+        "rol": "loopkapanis",
+        "twist": false
+      }
+    ],
+    "sabit_yorum": "Sana söylenen en komik motivasyon cümlesi neydi? 👇",
+    "etkilesim": "Bunu gülümseyecek bir arkadaşına gönder!",
+    "karakterler": [
+      {
+        "ref": "karakter_deniz",
+        "ad": "DENİZ",
+        "cinsiyet": "erkek",
+        "sesid": "tr-TR-AhmetNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "enerjik"
+      },
+      {
+        "ref": "karakter_ece",
+        "ad": "ECE",
+        "cinsiyet": "kadin",
+        "sesid": "tr-TR-EmelNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "normal"
+      }
+    ],
+    "etiketler": [
+      "#eglenceli_replikler",
+      "#shorts",
+      "#komedi"
+    ],
+    "hedefkitle": "Genel, 13+ Türkçe Shorts izleyicisi",
+    "mevsimsellik": [],
+    "tekrarkullanimgunsayisi": 30,
+    "performanspuani": 0.0,
+    "yasakkelimekontrolugecti": true
+  },
+  {
+    "kategori": "kulturlar_arasi_mizah",
+    "ortam_etiketi": "international food festival friendly mixup",
+    "ruh_hali": "komedi",
+    "hook_ust_bant": "YEMEK FESTİVALİNDE MENÜ KARIŞTI!",
+    "baslik": "Dünya Mutfağı Festivali'nde Herkes Yanlış Masaya Oturdu! 🍽️ #shorts",
+    "diyaloglar": [
+      {
+        "karakter_ref": "karakter_sunucu",
+        "cinsiyet": "erkek",
+        "metin": "Festivalde herkes yanlış masaya oturdu, kimse kendi yemeğini bulamadı!",
+        "ses": "enerjik",
+        "sfx": "whoosh",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "kendi",
+          "yemeğini",
+          "bulamadı"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.36,
+        "rol": "hook",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_sef",
+        "cinsiyet": "kadin",
+        "metin": "Menüleri karıştırmış olabiliriz, hangi ülkenin masasındasın?",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "hangi",
+          "ülkenin",
+          "masasındasın"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.28,
+        "rol": "setup",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_sunucu",
+        "cinsiyet": "erkek",
+        "metin": "Bilmiyorum, üç farklı çorba ve bir tatlı sipariş ettim!",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "tatlı",
+          "sipariş",
+          "ettim"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.36,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_sef",
+        "cinsiyet": "kadin",
+        "metin": "Hepsi aynı masaya mı geldi, nasıl başardın?",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "geldi",
+          "nasıl",
+          "başardın"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 2.64,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_sunucu",
+        "cinsiyet": "erkek",
+        "metin": "Masalar ülkelere göre değil, yemeklerin kokusuna göre dizilmiş!",
+        "ses": "normal",
+        "sfx": "pop",
+        "hiz": 1.0,
+        "duraklamams": 120,
+        "vurgukelimeler": [
+          "kokusuna",
+          "göre",
+          "dizilmiş"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.0,
+        "rol": "escalation",
+        "twist": false
+      },
+      {
+        "karakter_ref": "karakter_sef",
+        "cinsiyet": "kadin",
+        "metin": "Şef de yanlış masaya oturdu, yarışma jürisi onu müşteri sandı!",
+        "ses": "twist",
+        "sfx": "vine_boom",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "jürisi",
+          "müşteri",
+          "sandı"
+        ],
+        "altyazistili": "büyük",
+        "kamera": "shake",
+        "emojioverlay": null,
+        "tahminisuresn": 3.78,
+        "rol": "twist",
+        "twist": true
+      },
+      {
+        "karakter_ref": "karakter_sunucu",
+        "cinsiyet": "erkek",
+        "metin": "Sonunda herkes tabağını paylaştı, hesap da ortak çıktı...",
+        "ses": "normal",
+        "sfx": "ding",
+        "hiz": 1.0,
+        "duraklamams": 180,
+        "vurgukelimeler": [
+          "hesap",
+          "ortak",
+          "çıktı"
+        ],
+        "altyazistili": "normal",
+        "kamera": "cut",
+        "emojioverlay": null,
+        "tahminisuresn": 3.06,
+        "rol": "loopkapanis",
+        "twist": false
+      }
+    ],
+    "sabit_yorum": "Bir yemek festivalinde ilk hangi ülkenin mutfağını denersin? 👇",
+    "etkilesim": "Bunu gülümseyecek bir arkadaşına gönder!",
+    "karakterler": [
+      {
+        "ref": "karakter_sunucu",
+        "ad": "SUNUCU",
+        "cinsiyet": "erkek",
+        "sesid": "tr-TR-AhmetNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "enerjik"
+      },
+      {
+        "ref": "karakter_sef",
+        "ad": "ŞEF",
+        "cinsiyet": "kadin",
+        "sesid": "tr-TR-EmelNeural",
+        "yasaraligi": "yetişkin",
+        "kisiliknotu": "Karakter özelliklerini bu bölümdeki eylem ve repliklerle tutarlı, saygılı biçimde sürdür.",
+        "varsayilanduygu": "normal"
+      }
+    ],
+    "etiketler": [
+      "#kulturlar_arasi_mizah",
+      "#shorts",
+      "#komedi"
+    ],
+    "hedefkitle": "Genel, 13+ Türkçe Shorts izleyicisi",
+    "mevsimsellik": [],
+    "tekrarkullanimgunsayisi": 30,
+    "performanspuani": 0.0,
+    "yasakkelimekontrolugecti": true
+  }
+]

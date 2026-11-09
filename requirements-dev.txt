@@ -1,0 +1,4 @@
+-r requirements.txt
+mypy>=1.13,<2
+ruff>=0.8,<1
+pytest>=8,<9

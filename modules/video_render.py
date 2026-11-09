@@ -10,10 +10,12 @@ import os
 import json
 import shutil
 import subprocess
+import wave
 from pathlib import Path
 
 from modules.audio_fx import profesyonel_ses_miksla
 from modules.animasyon import pro_sahne_videosu_uret
+from modules.senaryo_v7.ayarlar import Ayarlar
 
 RENDER_YOLU = Path("bobi_tv/production/render")
 OUTPUT_YOLU = Path("bobi_tv/output")
@@ -38,20 +40,39 @@ def _ses_suresi(ses_dosyasi: str) -> float:
         return 2.0
 
 
-def ses_birlestir(ses_dosyalari: list, cikis_dosyasi: str) -> float:
-    """Kırpılmış replik WAV dosyalarını 0ms boşlukla birleştirir."""
+def ses_birlestir(
+    ses_dosyalari: list,
+    cikis_dosyasi: str,
+    duraklamalar_ms: list[int] | None = None,
+) -> float:
+    """Replik WAV'larını birleştirir; varsa satır sonu duraklamalarını sessizlik WAV'larıyla ekler."""
     Path(cikis_dosyasi).parent.mkdir(parents=True, exist_ok=True)
     if not ses_dosyalari:
         return 0.0
-    if len(ses_dosyalari) == 1:
-        shutil.copy(ses_dosyalari[0], cikis_dosyasi)
+    pauses = duraklamalar_ms or []
+    concat_paths: list[str] = []
+    silence_paths: list[str] = []
+    for index, audio_path in enumerate(ses_dosyalari):
+        concat_paths.append(str(audio_path))
+        pause = pauses[index] if index < len(pauses) and index < len(ses_dosyalari) - 1 else 0
+        if pause > 0:
+            silence_path = f"{cikis_dosyasi}_pause_{index:03d}.wav"
+            with wave.open(silence_path, "wb") as wav_file:
+                wav_file.setnchannels(1)
+                wav_file.setsampwidth(2)
+                wav_file.setframerate(44100)
+                wav_file.writeframes(b"\x00\x00" * int(44100 * min(pause, 3000) / 1000))
+            concat_paths.append(silence_path)
+            silence_paths.append(silence_path)
+    if len(concat_paths) == 1:
+        shutil.copy(concat_paths[0], cikis_dosyasi)
         return _ses_suresi(cikis_dosyasi)
 
     liste_dosyasi = str(cikis_dosyasi) + "_concat.txt"
     try:
         with open(liste_dosyasi, "w", encoding="utf-8") as f:
-            for s in ses_dosyalari:
-                f.write(f"file '{os.path.abspath(s)}'\n")
+            for audio_path in concat_paths:
+                f.write(f"file '{os.path.abspath(audio_path)}'\n")
         subprocess.run(
             [
                 "ffmpeg", "-y", "-f", "concat", "-safe", "0",
@@ -64,6 +85,9 @@ def ses_birlestir(ses_dosyalari: list, cikis_dosyasi: str) -> float:
     finally:
         if os.path.exists(liste_dosyasi):
             os.remove(liste_dosyasi)
+        for silence_path in silence_paths:
+            if os.path.exists(silence_path):
+                os.remove(silence_path)
 
     return _ses_suresi(cikis_dosyasi)
 
@@ -96,7 +120,7 @@ def sfx_zaman_cizelgesi_olustur(ses_kayitlari: list) -> list:
             else:
                 olaylar.append({"tip": "pop", "zaman": round(imlec, 3), "seviye": 0.38})
 
-        imlec += sure
+        imlec += sure + (int(s.get("duraklamams", 0)) / 1000 if idx < son_idx else 0.0)
 
     return olaylar
 
@@ -129,7 +153,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
     satirlar = []
     oteleme = hook_suresi
-    for ses in ses_dosyalari:
+    for index, ses in enumerate(ses_dosyalari):
         zamanlar = ses.get("zamanlamalar", [])
         sure = float(ses.get("sure", 1.8))
         for g in range(0, len(zamanlar), 3):
@@ -145,7 +169,9 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                     else:
                         parcalar.append(kelime)
                 satirlar.append(f"Dialogue: 0,{bas},{bit},Default,,0,0,0,,{' '.join(parcalar)}\n")
-        oteleme += sure
+        oteleme += sure + (
+            int(ses.get("duraklamams", 0)) / 1000 if index < len(ses_dosyalari) - 1 else 0.0
+        )
 
     Path(cikis_ass).parent.mkdir(parents=True, exist_ok=True)
     with open(cikis_ass, "w", encoding="utf-8") as f:
@@ -161,6 +187,7 @@ def video_kalite_kontrol(video_yolu: str) -> dict:
     - Hem video (h264) hem ses (aac) akışı var mı?
     - Süre kullanıcı sınırına uygun mu (15sn - 59.5sn)? İnce/çok kısa videoları reddeder.
     """
+    ayarlar = Ayarlar.ortamdan()
     p = Path(video_yolu)
     if not p.exists() or p.stat().st_size < 25_000:
         raise RuntimeError(f"Render QC Başarısız: Dosya yok veya çok küçük ({video_yolu})")
@@ -183,8 +210,11 @@ def video_kalite_kontrol(video_yolu: str) -> dict:
 
     if gen != VIDEO_GENISLIK or yuk != VIDEO_YUKSEKLIK:
         raise RuntimeError(f"Render QC Başarısız: Çözünürlük {gen}x{yuk} (beklenen 1080x1920)")
-    if sure < 15.0 or sure > 59.5:
-        raise RuntimeError(f"Render QC Başarısız: Video 15.0–59.5 saniye aralığında olmalı (mevcut: {sure:.2f}sn)")
+    if sure < ayarlar.minimum_yayin_suresi or sure > ayarlar.maksimum_yayin_suresi:
+        raise RuntimeError(
+            f"Render QC Başarısız: Video {ayarlar.minimum_yayin_suresi:.1f}–"
+            f"{ayarlar.maksimum_yayin_suresi:.1f} saniye aralığında olmalı (mevcut: {sure:.2f}sn)"
+        )
 
     ozet = {
         "gecerli": True,
@@ -201,6 +231,7 @@ def video_render(senaryo_paketi: dict) -> str:
     """
     Senaryo ve seslendirilen repliklerden tam profesyonel BOBİ TV v6.0 Shorts videosu üretir.
     """
+    ayarlar = Ayarlar.ortamdan()
     if not ffmpeg_kurulu_mu():
         raise RuntimeError("FFmpeg kurulu değil.")
 
@@ -218,16 +249,27 @@ def video_render(senaryo_paketi: dict) -> str:
     altyazi_ass = str(RENDER_YOLU / f"{dosya_adi}.ass")
     final_video = str(OUTPUT_YOLU / f"{dosya_adi}.mp4")
 
-    ses_yollari = [s["ses_dosyasi"] for s in ses_dosyalari if Path(s["ses_dosyasi"]).exists()]
+    kullanilabilir_sesler = [s for s in ses_dosyalari if Path(s["ses_dosyasi"]).exists()]
+    ses_yollari = [s["ses_dosyasi"] for s in kullanilabilir_sesler]
     if not ses_yollari:
         raise RuntimeError("Seslendirilen replik dosyası bulunamadı!")
 
-    # 1. Sıfır boşluklu diyalog birleştirme
-    diyalog_suresi = ses_birlestir(ses_yollari, ham_birlesik_wav)
-    if diyalog_suresi < 15.0:
-        raise RuntimeError(f"Minimum 15 saniye kuralı: gerçek diyalog {diyalog_suresi:.2f}sn; video render/yayın iptal edildi.")
-    if diyalog_suresi > 59.5:
-        raise RuntimeError(f"Shorts süre sınırı: gerçek diyalog {diyalog_suresi:.2f}sn; 59.5sn üzerinde video render edilemez.")
+    # 1. Replikleri satır metadata'sındaki duraklamalarla birleştir.
+    diyalog_suresi = ses_birlestir(
+        ses_yollari,
+        ham_birlesik_wav,
+        [int(s.get("duraklamams", 0)) for s in kullanilabilir_sesler],
+    )
+    if diyalog_suresi < ayarlar.minimum_yayin_suresi:
+        raise RuntimeError(
+            f"Minimum {ayarlar.minimum_yayin_suresi:.1f} saniye kuralı: "
+            f"gerçek diyalog {diyalog_suresi:.2f}sn; render/yayın iptal edildi."
+        )
+    if diyalog_suresi > ayarlar.maksimum_yayin_suresi:
+        raise RuntimeError(
+            f"Süre sınırı: gerçek diyalog {diyalog_suresi:.2f}sn; "
+            f"{ayarlar.maksimum_yayin_suresi:.1f}sn üzerinde render edilemez."
+        )
 
     # 2. SFX + Telifsiz BGM (-20dB ducking) + -14 LUFS Mastering
     sfx_olaylari = sfx_zaman_cizelgesi_olustur(ses_dosyalari)

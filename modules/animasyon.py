@@ -336,7 +336,12 @@ def _konusma_balonu_olustur(
     return img
 
 
-def _karaoke_altyazi_katmani(kelime_grubu: list, aktif_idx: int, twist_mi: bool = False) -> Image.Image:
+def _karaoke_altyazi_katmani(
+    kelime_grubu: list,
+    aktif_idx: int,
+    twist_mi: bool = False,
+    stil: str = "normal",
+) -> Image.Image:
     """
     CapCut / Hormozi stili:
     2-3 kelimelik satırda o salise okunan kelimenin arkasına parlak yuvarlatılmış kutu (pill)
@@ -368,20 +373,28 @@ def _karaoke_altyazi_katmani(kelime_grubu: list, aktif_idx: int, twist_mi: bool 
             top_g += bosluk_px * (len(liste) - 1)
         return liste, top_g
 
+    buyuk = stil == "büyük"
+    font_normal, font_aktif = (66, 74) if buyuk else (58, 64)
     bosluk = 24
-    parcalar, toplam_g = _satir_olc(58, 64, bosluk)
+    parcalar, toplam_g = _satir_olc(font_normal, font_aktif, bosluk)
     if not parcalar:
         return img
 
     if toplam_g > kat_g - 56:
         bosluk = 18
-        parcalar, toplam_g = _satir_olc(45, 50, bosluk)
+        parcalar, toplam_g = _satir_olc(45, 50)
 
     x_imlec = (kat_g - toplam_g) // 2
     merkez_y = kat_y // 2
 
-    kutu_renk = (255, 42, 84, 252) if twist_mi else (255, 214, 10, 252)
-    aktif_yazi_renk = (255, 255, 255, 255) if twist_mi else (14, 14, 24, 255)
+    kutu_renk = (
+        (255, 42, 84, 252)
+        if twist_mi
+        else (45, 170, 255, 252)
+        if stil == "renkli"
+        else (255, 214, 10, 252)
+    )
+    aktif_yazi_renk = (255, 255, 255, 255) if twist_mi or stil == "renkli" else (14, 14, 24, 255)
 
     # Önce aktif kelimenin yuvarlatılmış kutusunu çiz
     gecici_x = x_imlec
@@ -418,6 +431,8 @@ def _karaoke_altyazi_katmani(kelime_grubu: list, aktif_idx: int, twist_mi: bool 
             )
         gecici_x += kg + bosluk
 
+    if stil == "titreşimli":
+        img = img.rotate(2 if aktif_idx % 2 == 0 else -2, resample=Image.BICUBIC, center=(kat_g // 2, kat_y // 2))
     return img
 
 
@@ -435,7 +450,11 @@ def pro_sahne_videosu_uret(
     kategori = senaryo.get("kategori", "varsayilan")
     hook_bant_metni = senaryo.get("hook_ust_bant") or senaryo.get("hook_metni") or "BOBİ TV"
 
-    toplam_sure = sum(float(s.get("sure", 1.8)) for s in ses_dosyalari)
+    toplam_sure = sum(
+        float(s.get("sure", 1.8))
+        + (int(s.get("duraklamams", 0)) / 1000 if index < len(ses_dosyalari) - 1 else 0.0)
+        for index, s in enumerate(ses_dosyalari)
+    )
     toplam_kare = max(30, int(round(toplam_sure * FPS)))
     ses_zarfi = _ses_zarfi_cikar(birlesik_ses_wav, toplam_kare)
 
@@ -490,24 +509,32 @@ def pro_sahne_videosu_uret(
         for g_bas in range(0, len(zamanlar), grup_boyut):
             grup = zamanlar[g_bas:g_bas + grup_boyut]
             for k_i, k_obj in enumerate(grup):
-                katman_img = _karaoke_altyazi_katmani(grup, k_i, twist_mi=twist_mi)
+                katman_img = _karaoke_altyazi_katmani(
+                    grup,
+                    k_i,
+                    twist_mi=twist_mi,
+                    stil=str(s.get("altyazistili", "normal")),
+                )
                 kelime_durumlari.append({
                     "bas": imlec_sn + k_obj["baslangic"],
                     "bit": imlec_sn + k_obj["bitis"],
                     "img": katman_img,
                 })
 
+        pause_seconds = int(s.get("duraklamams", 0)) / 1000 if idx < len(ses_dosyalari) - 1 else 0.0
         segmentler.append({
             "idx": idx,
             "bas": imlec_sn,
-            "bit": imlec_sn + sure,
+            "bit": imlec_sn + sure + pause_seconds,
             "taraf": taraf,
             "twist_mi": twist_mi,
+            "kamera": str(s.get("kamera", "cut")),
+            "emojioverlay": s.get("emojioverlay"),
             "aktif_kart": aktif_kart,
             "soluk_kart": soluk_kart,
             "kelime_durumlari": kelime_durumlari,
         })
-        imlec_sn += sure
+        imlec_sn += sure + pause_seconds
 
     # FFmpeg ham video + master ses birleştirme süreci
     Path(cikis_video_mp4).parent.mkdir(parents=True, exist_ok=True)
@@ -658,16 +685,30 @@ def pro_sahne_videosu_uret(
 
             son_rgb = tuval.convert("RGB")
 
-            # 8. Dinamik Kamera Kesmesi (%100 <-> %105) + Twist Punch-In Zoom (%118) + Shake
+            # Satır başına kesme/zoom/shake/whippan; twist gerektiğinde güçlü punch-in uygular.
+            camera = seg["kamera"]
+            seg_duration = max(0.1, seg["bit"] - seg["bas"])
+            progress = min(1.0, yerel_t / seg_duration)
             zoom = 1.04 if seg["idx"] % 2 == 1 else 1.00
             sx, sy = 0, 0
+            if camera == "zoomin":
+                zoom = 1.0 + 0.12 * progress
+            elif camera == "zoomout":
+                zoom = 1.12 - 0.12 * progress
+            elif camera == "shake":
+                intensity = int(8 * (1.0 - progress))
+                if intensity > 0:
+                    sx = int(rng_shake.integers(-intensity, intensity + 1))
+                    sy = int(rng_shake.integers(-intensity, intensity + 1))
+            elif camera == "whippan":
+                sx = int((1.0 - progress * 2.0) * 36)
             if seg["twist_mi"]:
-                zoom = min(1.18, 1.06 + yerel_t * 0.45) if yerel_t < 0.28 else 1.16
+                zoom = max(zoom, min(1.18, 1.06 + yerel_t * 0.45) if yerel_t < 0.28 else 1.16)
                 if yerel_t < 0.26:
                     siddet = int((1.0 - yerel_t / 0.26) * 16)
                     if siddet > 1:
-                        sx = int(rng_shake.integers(-siddet, siddet + 1))
-                        sy = int(rng_shake.integers(-siddet, siddet + 1))
+                        sx += int(rng_shake.integers(-siddet, siddet + 1))
+                        sy += int(rng_shake.integers(-siddet, siddet + 1))
 
             if zoom > 1.005 or sx != 0 or sy != 0:
                 kirp_g = int(W / zoom)

@@ -1,0 +1,22 @@
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["modules/senaryo_v7", "modules/scenario.py", "tests"]
+warn_unused_ignores = true
+show_error_codes = true
+
+[tool.ruff]
+target-version = "py311"
+line-length = 110
+include = ["modules/senaryo_v7/**/*.py", "modules/scenario.py", "tests/**/*.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

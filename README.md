@@ -1,6 +1,12 @@
-# 🎬 BOBİ TV v6.3 PRO — Otonom YouTube Shorts Üretim Sistemi
+# 🎬 BOBİ TV — v6.3 Video Pipeline / v7.0 Senaryo Motoru
 
 Türkçe absürt ve ironik komedi diyaloglarını **yüksek tutunmalı (high-retention)** YouTube Shorts videolarına dönüştüren uçtan uca otonom yapay zeka prodüksiyon hattı.
+
+### Senaryo Motoru v7.0
+- Senaryo çekirdeği `modules/senaryo_v7/` altında sablonlar, dogrulama, zenginlestirme, arsiv, kuyruk ve cikti sorumluluklarına ayrıldı.
+- Dataclass modelleri, duygu/stil/kamera/rol Enum'ları, referanslı karakter kartları (sabit Ahmet/Emel sesi), satır başına TTS/altyazı/kamera alanları, v6/satirlar migration'ı (`semaversiyonu: "7.0"`), merkezi `Ayarlar`, logging ve alan bazlı istisnalar kullanılır. Diyalog modeli: `docs/BOBI_TV_V7_TEMPLATE_MODEL.md`.
+- Geriye dönük uyumluluk: `from modules.scenario import senaryo_paketi_olustur` ve `senaryo_paketi_olustur(video_no)` aynen çalışır.
+- Kalite kapısı: `pytest -q`, `mypy --strict`, `ruff check`, `ruff format --check`. Mimari kararlar ve kabul kriterleri: `docs/BOBI_TV_V7_MIGRATION_PLAN.md`.
 
 ### v6.3 PRO: Sürekli Değişen Konular + 15sn Minimum
 - **Konu rotasyonu:** Bar fıkraları, paradoks hikâyeleri, absürt komedi/şakalar, çılgın ama zararsız hikâyeler, ters köşe fıkralar, eğlenceli replik düelloları ve saygılı kültürler arası mizah. Son 6 yayın kategorisi rotasyon seçiminde geriye atılır; yeni yüklemelerin kategorisi arşivlenir.
@@ -30,7 +36,8 @@ bobi-tv/
 ├── modules/
 │   ├── arena_api.py            # Arena.ai Headless Playwright Yönetmen + Çerez Yenileyici
 │   ├── arena_uretici.py        # Senkron üretim sarmalayıcısı
-│   ├── scenario.py             # Kusursuz Döngülü (Seamless Loop) Senaryo Motoru v6.0
+│   ├── scenario.py             # v6 uyumlu façade; tek argümanlı senaryo_paketi_olustur(video_no)
+│   ├── senaryo_v7/             # Tipli v7 çekirdeği: sablonlar/dogrulama/zenginlestirme/arsiv/kuyruk/cikti/cli
 │   ├── tts_engine.py           # Çift Sesli (Ahmet+Emel), Sıfır Ölü Boşluklu TTS + WordBoundary
 │   ├── audio_fx.py             # Stüdyo SFX (whoosh, pop, vine_boom, riser, ding) + Sidechain BGM (-14 LUFS)
 │   ├── animasyon.py            # 1080x1920 30FPS Vektör Karakter Kartları + Kutulu Karaoke Altyazı + Zoom/Shake
@@ -48,7 +55,9 @@ bobi-tv/
 │   └── output/                 # Üretilen nihai MP4 ve kapak görselleri
 ├── docs/
 │   ├── BOBI_TV_V6_PRO_MIMARI_VE_KURALLAR.md  # Shorts algoritma rehberi ve mimari
-│   └── BOBI_TV_V6_3_KONU_15DK_KAPAK.md       # Konu rotasyonu, minimum 15sn, Frame 0 kapak ve 15dk işleyiş
+│   ├── BOBI_TV_V6_3_KONU_15DK_KAPAK.md       # Konu rotasyonu, minimum 15sn, Frame 0 kapak ve 15dk işleyiş
+│   ├── BOBI_TV_V7_MIGRATION_PLAN.md           # 8 TODO maddesinin gerekçe/uygulama/kabul kriterleri
+│   └── BOBI_TV_V7_TEMPLATE_MODEL.md           # Diyalog, karakter, duygu enum ve satır metadata sözleşmesi
 ├── arena-ask.mjs               # Arena.ai çerez birleştirme (<4KB) ve Tiptap otomasyon CLI aracı
 ├── arena-senaryo.mjs           # Master Loop JSON senaryo üretici Node betiği
 ├── main_pipeline.py            # Ana orkestrasyon ve akıllı kuyruk yöneticisi
@@ -94,6 +103,13 @@ YUKLEME_ATLA=1 GUNLUK_HEDEF=1 python3 main_pipeline.py
 
 # Tam otonom üretim + YouTube yükleme + Otomatik ilk yorum + Akıllı kota kuyruğu
 GUNLUK_HEDEF=1 python3 main_pipeline.py
+
+# v7 senaryo kalite kapıları
+python -m pip install -r requirements-dev.txt
+pytest -q
+mypy --strict
+ruff check
+ruff format --check
 ```
 
 ## 📺 Kanal

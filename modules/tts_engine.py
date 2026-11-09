@@ -17,6 +17,8 @@ import importlib.util
 import subprocess
 from pathlib import Path
 
+from modules.senaryo_v7.ayarlar import Ayarlar
+
 TTS_YOLU = Path("bobi_tv/production/tts")
 
 ERKEK_SES = "tr-TR-AhmetNeural"
@@ -35,13 +37,18 @@ TON_PROFILLERI = {
     "enerjik":         {"rate": "+18%", "volume": "+8%",  "pitch": "+8Hz"},
     "sinirli":         {"rate": "+22%", "volume": "+12%", "pitch": "+12Hz"},
     "panik":           {"rate": "+24%", "volume": "+10%", "pitch": "+18Hz"},
+    "sasirmis":        {"rate": "+16%", "volume": "+8%",  "pitch": "+20Hz"},
     "suprized":        {"rate": "+16%", "volume": "+8%",  "pitch": "+20Hz"},
     "şaşkın":          {"rate": "+16%", "volume": "+8%",  "pitch": "+20Hz"},
+    "surprised":       {"rate": "+16%", "volume": "+8%",  "pitch": "+20Hz"},
     "kesin":           {"rate": "+12%", "volume": "+6%",  "pitch": "-4Hz"},
     "ciddi":           {"rate": "+6%",  "volume": "+4%",  "pitch": "-6Hz"},
+    "soguk":           {"rate": "+4%",  "volume": "+0%",  "pitch": "-10Hz"},
     "soğuk":           {"rate": "+4%",  "volume": "+0%",  "pitch": "-10Hz"},
+    "bikkin":          {"rate": "+2%",  "volume": "+0%",  "pitch": "-8Hz"},
     "bikeyn":          {"rate": "+2%",  "volume": "+0%",  "pitch": "-8Hz"},
     "yavas_bikkin":    {"rate": "+0%",  "volume": "+0%",  "pitch": "-8Hz"},
+    "bikkin_dramatik": {"rate": "-2%",  "volume": "+4%",  "pitch": "-12Hz"},
     "bikeyn_dramatik": {"rate": "-2%",  "volume": "+4%",  "pitch": "-12Hz"},
     "yavas_dramatik":  {"rate": "-4%",  "volume": "+5%",  "pitch": "-10Hz"},
     "uykulu":          {"rate": "-6%",  "volume": "-4%",  "pitch": "-12Hz"},
@@ -62,9 +69,24 @@ def edge_tts_kurulu_mu() -> bool:
     return importlib.util.find_spec("edge_tts") is not None
 
 
-def ses_tonu_al(ses_tipi: str, cinsiyet: str = "erkek") -> dict:
+def ses_tonu_al(
+    ses_tipi: str,
+    cinsiyet: str = "erkek",
+    *,
+    sesid: str | None = None,
+    hiz: float = 1.0,
+) -> dict:
+    """Duygu profilini sabit karakter sesi ve 0.85–1.25 TTS hız çarpanıyla birleştirir."""
     baz = dict(TON_PROFILLERI.get(ses_tipi, TON_PROFILLERI["normal"]))
-    baz["voice"] = KADIN_SES if str(cinsiyet).lower().startswith("kad") else ERKEK_SES
+    default_voice = KADIN_SES if str(cinsiyet).lower().startswith("kad") else ERKEK_SES
+    baz["voice"] = sesid if sesid in {ERKEK_SES, KADIN_SES} else default_voice
+    multiplier = max(0.85, min(1.25, float(hiz)))
+    try:
+        rate_percent = int(baz.get("rate", "+0%").replace("%", "").replace("+", ""))
+    except ValueError:
+        rate_percent = 0
+    adjusted_rate = round((1.0 + rate_percent / 100) * multiplier * 100 - 100)
+    baz["rate"] = f"{adjusted_rate:+d}%"
     return baz
 
 
@@ -199,10 +221,17 @@ def _oransal_zamanlama(metin: str, toplam_sure: float) -> list:
     return sonuc
 
 
-async def _edge_tts_uret(metin: str, cikis_mp3: str, ses_tipi: str, cinsiyet: str) -> list:
+async def _edge_tts_uret(
+    metin: str,
+    cikis_mp3: str,
+    ses_tipi: str,
+    cinsiyet: str,
+    sesid: str | None = None,
+    hiz: float = 1.0,
+) -> list:
     import edge_tts
 
-    ton = ses_tonu_al(ses_tipi, cinsiyet)
+    ton = ses_tonu_al(ses_tipi, cinsiyet, sesid=sesid, hiz=hiz)
     communicate = edge_tts.Communicate(
         metin,
         ton["voice"],
@@ -227,14 +256,14 @@ async def _edge_tts_uret(metin: str, cikis_mp3: str, ses_tipi: str, cinsiyet: st
     return word_timestamps
 
 
-def _gtts_uret(metin: str, cikis_wav: Path, ses_tipi: str, cinsiyet: str) -> float:
+def _gtts_uret(metin: str, cikis_wav: Path, ses_tipi: str, cinsiyet: str, hiz: float = 1.0) -> float:
     """gTTS fallback — kadın ve erkek karakterler için ayrı hız/perde profili uygular."""
     from gtts import gTTS
 
     tmp_mp3 = str(cikis_wav) + "_gtts.mp3"
     try:
         gTTS(text=metin, lang="tr", slow=False).save(tmp_mp3)
-        ton = ses_tonu_al(ses_tipi, cinsiyet)
+        ton = ses_tonu_al(ses_tipi, cinsiyet, hiz=hiz)
         try:
             pct = int(ton.get("rate", "+10%").replace("%", "").replace("+", ""))
         except Exception:
@@ -255,12 +284,13 @@ def _gtts_uret(metin: str, cikis_wav: Path, ses_tipi: str, cinsiyet: str) -> flo
             os.remove(tmp_mp3)
 
 
-def _espeak_fallback(metin: str, cikis_wav: Path, cinsiyet: str) -> float:
+def _espeak_fallback(metin: str, cikis_wav: Path, cinsiyet: str, hiz: float = 1.0) -> float:
     raw_wav = str(cikis_wav) + "_esp.wav"
     pitch = "68" if str(cinsiyet).lower().startswith("kad") else "42"
+    speech_rate = str(round(max(130, min(260, 185 * max(0.85, min(1.25, hiz))))))
     try:
         subprocess.run(
-            ["espeak-ng", "-v", "tr", "-p", pitch, "-s", "185", "-w", raw_wav, metin],
+            ["espeak-ng", "-v", "tr", "-p", pitch, "-s", speech_rate, "-w", raw_wav, metin],
             capture_output=True, check=True, timeout=20,
         )
         return _wav_sessizlik_kirp(raw_wav, cikis_wav)
@@ -292,6 +322,9 @@ def metin_sese_cevir(
     dosya_adi: str,
     ses_tipi: str = "normal",
     cinsiyet: str = "erkek",
+    *,
+    sesid: str | None = None,
+    hiz: float = 1.0,
 ) -> dict:
     """
     Tek bir diyalog satırını seslendirir, nefes boşluklarını kırpar ve kalibre zaman damgalarını döndürür.
@@ -308,7 +341,7 @@ def metin_sese_cevir(
     if edge_tts_kurulu_mu():
         try:
             ham_zamanlar = _calistir_async(
-                _edge_tts_uret(temiz_metin, str(tmp_mp3), ses_tipi, cinsiyet)
+                _edge_tts_uret(temiz_metin, str(tmp_mp3), ses_tipi, cinsiyet, sesid, hiz)
             )
             if tmp_mp3.exists() and tmp_mp3.stat().st_size > 800:
                 sure = _wav_sessizlik_kirp(str(tmp_mp3), cikis_wav)
@@ -317,17 +350,17 @@ def metin_sese_cevir(
         except Exception as e:
             print(f"[TTS] edge-tts uyarı ({e}), gTTS devreye giriyor...")
             try:
-                sure = _gtts_uret(temiz_metin, cikis_wav, ses_tipi, cinsiyet)
+                sure = _gtts_uret(temiz_metin, cikis_wav, ses_tipi, cinsiyet, hiz)
             except Exception:
-                sure = _espeak_fallback(temiz_metin, cikis_wav, cinsiyet)
+                sure = _espeak_fallback(temiz_metin, cikis_wav, cinsiyet, hiz)
         finally:
             if tmp_mp3.exists():
                 tmp_mp3.unlink(missing_ok=True)
     else:
         try:
-            sure = _gtts_uret(temiz_metin, cikis_wav, ses_tipi, cinsiyet)
+            sure = _gtts_uret(temiz_metin, cikis_wav, ses_tipi, cinsiyet, hiz)
         except Exception:
-            sure = _espeak_fallback(temiz_metin, cikis_wav, cinsiyet)
+            sure = _espeak_fallback(temiz_metin, cikis_wav, cinsiyet, hiz)
 
     # Ekranda gösterilecek kelimelerle (emoji temizlenmiş kelimeler) zaman damgalarını eşle
     ekran_kelimeleri = re.sub(
@@ -345,6 +378,8 @@ def metin_sese_cevir(
         "ham_metin": gorunen_metin,
         "ses_tipi": ses_tipi,
         "cinsiyet": cinsiyet,
+        "sesid": sesid or (KADIN_SES if str(cinsiyet).lower().startswith("kad") else ERKEK_SES),
+        "hiz": max(0.85, min(1.25, hiz)),
     }
 
 
@@ -386,6 +421,9 @@ def senaryo_seslendir(senaryo_paketi: dict) -> dict:
     Senaryodaki tüm replikleri çift sesli (Ahmet + Emel), nefes boşluksuz ve
     kelime zaman damgalı olarak seslendirir.
     """
+    ayarlar = Ayarlar.ortamdan()
+    minimum_sure = ayarlar.minimum_yayin_suresi
+    hedef_sure = minimum_sure + ayarlar.tts_guvenlik_payi
     senaryo = senaryo_paketi["senaryo"]
     dosya_adi_taslak = senaryo_paketi["dosya_adi"]
     diyaloglar = senaryo.get("diyaloglar", [])
@@ -393,7 +431,10 @@ def senaryo_seslendir(senaryo_paketi: dict) -> dict:
 
     ses_dosyalari = []
     toplam_idx = len(diyaloglar)
-    twist_idx = senaryo.get("twist_indeksi", max(0, toplam_idx - 2))
+    twist_idx = next(
+        (index for index, line in enumerate(diyaloglar) if line.get("twist") or line.get("rol") == "twist"),
+        int(senaryo.get("twist_indeksi", max(0, toplam_idx - 2))),
+    )
 
     for sira, diyalog in enumerate(diyaloglar):
         metin = diyalog["metin"]
@@ -402,13 +443,27 @@ def senaryo_seslendir(senaryo_paketi: dict) -> dict:
         cinsiyet = cinsiyet_haritasi.get(karakter.upper(), "erkek")
         dosya_adi = f"{dosya_adi_taslak}_{sira:02d}"
 
-        sonuc = metin_sese_cevir(metin, dosya_adi, ses_tipi=ses_tipi, cinsiyet=cinsiyet)
+        sonuc = metin_sese_cevir(
+            metin,
+            dosya_adi,
+            ses_tipi=ses_tipi,
+            cinsiyet=cinsiyet,
+            sesid=str(diyalog.get("sesid") or (KADIN_SES if cinsiyet == "kadin" else ERKEK_SES)),
+            hiz=float(diyalog.get("hiz", 1.0)),
+        )
         sonuc["karakter"] = karakter
         sonuc["sira"] = sira
         sonuc["taraf"] = "sol" if list(cinsiyet_haritasi.keys()).index(karakter.upper()) % 2 == 0 else "sag"
-        sonuc["twist_mi"] = (sira == twist_idx)
-        sonuc["vurgu_kelimeler"] = diyalog.get("vurgu_kelimeler", [])
-        sonuc["sfx"] = diyalog.get("sfx", "vine_boom" if sira == twist_idx else "pop")
+        twist_mi = bool(diyalog.get("twist", diyalog.get("rol") == "twist" or sira == twist_idx))
+        sonuc["twist_mi"] = twist_mi
+        sonuc["rol"] = diyalog.get("rol", "twist" if twist_mi else "escalation")
+        sonuc["vurgu_kelimeler"] = diyalog.get("vurgukelimeler", diyalog.get("vurgu_kelimeler", []))
+        sonuc["hiz"] = float(diyalog.get("hiz", 1.0))
+        sonuc["duraklamams"] = int(diyalog.get("duraklamams", 120))
+        sonuc["altyazistili"] = diyalog.get("altyazistili", "normal")
+        sonuc["kamera"] = diyalog.get("kamera", "cut")
+        sonuc["emojioverlay"] = diyalog.get("emojioverlay")
+        sonuc["sfx"] = diyalog.get("sfx", "vine_boom" if twist_mi else "pop")
         ses_dosyalari.append(sonuc)
 
         ses_etiket = "Emel(K)" if cinsiyet == "kadin" else "Ahmet(E)"
@@ -419,7 +474,11 @@ def senaryo_seslendir(senaryo_paketi: dict) -> dict:
 
     # TTS'nin gerçek süresini ölç. Tahmini metin hesabı değil, gerçek WAV süreleri
     # minimumu belirler; kısa kalırsa twist'ten önce doğal diyalog çiftleri ekle.
-    toplam_gercek_sure = sum(float(s.get("sure", 0.0)) for s in ses_dosyalari)
+    toplam_gercek_sure = sum(
+        float(s.get("sure", 0.0))
+        + (float(s.get("duraklamams", 0)) / 1000 if index < len(ses_dosyalari) - 1 else 0.0)
+        for index, s in enumerate(ses_dosyalari)
+    )
     ek_replik_ciftleri = [
         ("Dur, asıl mesele şimdi başlıyor; bu hikâyenin en tuhaf yerini duymadın!", "Söyle artık, meraktan sonunu bekleyemiyorum gerçekten!"),
         ("Peki bu karışıklığı şimdi kim çözecek, herkes bize bakıyor!", "Bir dakika daha sabret, cevap sandığından da komik çıkacak!"),
@@ -428,44 +487,85 @@ def senaryo_seslendir(senaryo_paketi: dict) -> dict:
         ("Herkes sakin olsun, bu olayın arkasında çok basit bir sebep var!", "Basitse anlat, çünkü şu an hiçbir şey anlamadım gerçekten!"),
         ("Şimdi geriye dönüp bakınca bütün işaretler aslında ortadaymış!", "Evet ama finali bilseydim en başta başka kapıdan girerdim!")
     ]
-    if toplam_gercek_sure < 16.0:
-        print(f"[TTS] ⏱️ Gerçek diyalog {toplam_gercek_sure:.2f}sn; 16sn güvenlik hedefi için doğal replik ekleniyor.")
+    if toplam_gercek_sure < hedef_sure:
+        print(f"[TTS] ⏱️ Gerçek diyalog {toplam_gercek_sure:.2f}sn; saniyelik güvenlik hedefi için doğal replik ekleniyor.")
         twist_idx = min(max(0, int(senaryo.get("twist_indeksi", max(0, len(diyaloglar) - 2)))), len(diyaloglar))
         ilk_karakter = str(diyaloglar[0].get("karakter", "MERT")).upper() if diyaloglar else "MERT"
-        ikinci_karakter = next((str(d.get("karakter", "")).upper() for d in diyaloglar if str(d.get("karakter", "")).upper() != ilk_karakter), "AYŞE")
+        ikinci_satir = next((d for d in diyaloglar if str(d.get("karakter", "")).upper() != ilk_karakter), {})
+        ikinci_karakter = str(ikinci_satir.get("karakter", "AYŞE")).upper()
+        ilk_satir = diyaloglar[0] if diyaloglar else {}
         ilk_cinsiyet = cinsiyet_haritasi.get(ilk_karakter, "erkek")
         ikinci_cinsiyet = cinsiyet_haritasi.get(ikinci_karakter, "kadin")
-        for pair_no, (replik_a, replik_b) in enumerate(ek_replik_ciftleri):
-            if toplam_gercek_sure >= 16.0:
+        for pair_no, (replik_a, replik_b) in enumerate(ek_replik_ciftleri[:ayarlar.tts_uzatma_cift_azami]):
+            if toplam_gercek_sure >= hedef_sure:
                 break
             yeni_diyaloglar = []
             yeni_sesler = []
-            for offset, (karakter, cinsiyet, metin, ses_tipi) in enumerate((
-                (ikinci_karakter, ikinci_cinsiyet, replik_a, "suprized"),
-                (ilk_karakter, ilk_cinsiyet, replik_b, "enerjik"),
+            for offset, (karakter, cinsiyet, metin, ses_tipi, character_line) in enumerate((
+                (ikinci_karakter, ikinci_cinsiyet, replik_a, "sasirmis", ikinci_satir),
+                (ilk_karakter, ilk_cinsiyet, replik_b, "enerjik", ilk_satir),
             )):
                 sıra = toplam_idx + pair_no * 2 + offset
-                sonuc = metin_sese_cevir(metin, f"{dosya_adi_taslak}_min_{sıra:02d}", ses_tipi=ses_tipi, cinsiyet=cinsiyet)
+                sesid = str(character_line.get("sesid") or (KADIN_SES if cinsiyet == "kadin" else ERKEK_SES))
+                sonuc = metin_sese_cevir(
+                    metin,
+                    f"{dosya_adi_taslak}_min_{sıra:02d}",
+                    ses_tipi=ses_tipi,
+                    cinsiyet=cinsiyet,
+                    sesid=sesid,
+                )
+                ref = str(character_line.get("karakter_ref") or f"karakter_{karakter.lower()}")
+                words = [word.strip(".,!?;:") for word in metin.split()[-3:] if word.strip(".,!?;:")]
+                new_line = {
+                    "karakter": karakter,
+                    "karakter_ref": ref,
+                    "cinsiyet": cinsiyet,
+                    "sesid": sesid,
+                    "metin": metin,
+                    "ses": ses_tipi,
+                    "hiz": 1.0,
+                    "duraklamams": 120,
+                    "vurgukelimeler": words or [metin.split()[-1]],
+                    "vurgu_kelimeler": words or [metin.split()[-1]],
+                    "altyazistili": "normal",
+                    "kamera": "cut",
+                    "emojioverlay": None,
+                    "tahminisuresn": round(len(metin.split()) * 0.36, 2),
+                    "rol": "escalation",
+                    "twist": False,
+                    "sfx": "pop",
+                }
                 sonuc["karakter"] = karakter
                 sonuc["sira"] = twist_idx + offset
                 sonuc["taraf"] = "sag" if karakter == ikinci_karakter else "sol"
                 sonuc["twist_mi"] = False
-                sonuc["vurgu_kelimeler"] = []
+                sonuc["vurgu_kelimeler"] = new_line["vurgukelimeler"]
+                sonuc["duraklamams"] = 120
+                sonuc["rol"] = "escalation"
+                sonuc["hiz"] = 1.0
+                sonuc["altyazistili"] = "normal"
+                sonuc["kamera"] = "cut"
+                sonuc["emojioverlay"] = None
                 sonuc["sfx"] = "pop"
-                yeni_diyaloglar.append({"karakter": karakter, "cinsiyet": cinsiyet, "metin": metin, "ses": ses_tipi, "sfx": "pop", "vurgu_kelimeler": []})
+                yeni_diyaloglar.append(new_line)
                 yeni_sesler.append(sonuc)
-                toplam_gercek_sure += float(sonuc.get("sure", 0.0))
+                toplam_gercek_sure += float(sonuc.get("sure", 0.0)) + 0.12
             diyaloglar[twist_idx:twist_idx] = yeni_diyaloglar
             ses_dosyalari[twist_idx:twist_idx] = yeni_sesler
-            twist_idx += len(yeni_diyaloglar)
+            twist_idx = next(
+                (idx for idx, line in enumerate(diyaloglar) if line.get("twist") or line.get("rol") == "twist"),
+                min(twist_idx + len(yeni_diyaloglar), max(0, len(diyaloglar) - 1)),
+            )
             senaryo["twist_indeksi"] = twist_idx
             for idx, ses in enumerate(ses_dosyalari):
+                line = diyaloglar[idx]
                 ses["sira"] = idx
-                ses["twist_mi"] = idx == twist_idx
+                ses["twist_mi"] = bool(line.get("twist", line.get("rol") == "twist"))
+                ses["rol"] = line.get("rol", "escalation")
             print(f"[TTS] ➕ Uzatma {pair_no + 1}: toplam gerçek süre {toplam_gercek_sure:.2f}sn")
 
-        if toplam_gercek_sure < 15.0:
-            raise RuntimeError(f"Minimum 15 saniye kuralı: uzatma sonrasında TTS yalnızca {toplam_gercek_sure:.2f}sn oldu; yayın iptal edildi.")
+        if toplam_gercek_sure < minimum_sure:
+            raise RuntimeError(f"Minimum {minimum_sure:.1f} saniye kuralı: TTS {toplam_gercek_sure:.2f}sn oldu; yayın iptal edildi.")
         senaryo["diyaloglar"] = diyaloglar
         senaryo["tts_metinleri"] = [d.get("metin", "") for d in diyaloglar]
         senaryo["toplam_sure"] = round(toplam_gercek_sure, 2)

@@ -80,9 +80,15 @@ async function main() {
     let cleanAuthCookie = process.env.ARENA_AUTH_COOKIE;
 
     if (!cleanAuthCookie && process.env.ARENA_COOKIES_JSON) {
-        const { sanitizeCookieJsonText, buildCleanArenaCookie } = await import('./arena-ask.mjs');
-        const parsed = JSON.parse(sanitizeCookieJsonText(process.env.ARENA_COOKIES_JSON));
-        cleanAuthCookie = buildCleanArenaCookie(parsed);
+        try {
+            const { sanitizeCookieJsonText, buildCleanArenaCookie } = await import('./arena-ask.mjs');
+            const parsed = JSON.parse(sanitizeCookieJsonText(process.env.ARENA_COOKIES_JSON));
+            cleanAuthCookie = buildCleanArenaCookie(parsed);
+            console.error('[Arena] Cookie islendi');
+        } catch (e) {
+            console.error(`[Arena] Cookie hatasi: ${e.message}`);
+            process.exit(1);
+        }
     }
 
     if (!cleanAuthCookie) {
@@ -90,15 +96,21 @@ async function main() {
         process.exit(1);
     }
 
+    let result;
     try {
-        const result = await askArenaAgent({
+        result = await askArenaAgent({
             cleanAuthCookie,
             promptText: prompt,
-            screenshotPath: null, // screenshot istemiyoruz
+            screenshotPath: 'arena-debug.png',
         });
+    } catch (e) {
+        console.error(`[Arena] Hata: ${e.message}`);
+        // Screenshot is already saved by askArenaAgent on error
+        process.exit(1);
+    }
 
-        // Cevaptan JSON çıkar
-        let answer = result.answer.trim();
+    try {
+        let answer = (result.answer || '').trim();
 
         // Markdown kod bloğu varsa temizle
         if (answer.includes('```json')) {

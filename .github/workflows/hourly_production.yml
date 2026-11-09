@@ -134,6 +134,7 @@ jobs:
         run: |
           git config user.name "BOBİ TV Bot"
           git config user.email "bobi-tv-bot@users.noreply.github.com"
+          git reset HEAD  # Tüm staged değişiklikleri unstage et
           git add bobi_tv/archive/ bobi_tv/queue/*.json bobi_tv/production/scripts/arena/ 2>/dev/null || git add -u bobi_tv/archive/ bobi_tv/queue/ bobi_tv/production/scripts/arena/ || true
           if ! git diff --staged --quiet; then
             git commit -m "📺 BOBİ TV v6.2 arşiv/kuyruk [$(date +%Y-%m-%dT%H:%M)] [skip ci]"

@@ -57,7 +57,11 @@ jobs:
                   await context.add_cookies(cookies_data)
                   
                   print("📡 Arena.ai açılıyor...")
-                  await page.goto("https://arena.ai/", wait_until="networkidle", timeout=30000)
+                  try:
+                      await page.goto("https://arena.ai/", wait_until="load", timeout=60000)
+                  except:
+                      print("⚠️  load timeout, domcontentloaded ile deneniyor...")
+                      await page.goto("https://arena.ai/", wait_until="domcontentloaded", timeout=45000)
                   
                   # Input'a soruyu yaz
                   print("⌨️  'Şu an saat kaç?' sorusu yazılıyor...")

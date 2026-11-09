@@ -662,7 +662,9 @@ def pro_sahne_videosu_uret(
 
             proc.stdin.write(son_rgb.tobytes())
 
+        proc.stdin.flush()
         proc.stdin.close()
+        proc.stdin = None
         _, stderr_bytes = proc.communicate(timeout=180)
         if proc.returncode != 0:
             raise RuntimeError(f"FFmpeg encode hatası: {stderr_bytes.decode(errors='ignore')[-400:]}")

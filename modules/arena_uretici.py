@@ -30,13 +30,15 @@ def arena_tam_uretim(video_no: int) -> dict | None:
         print("[Arena Tam] ARENA_COOKIES_JSON yok.")
         return None
 
-    # Cookie'yi geçici dosyaya yaz (COOKIES_FILE yöntemi en güvenilir)
+    # Cookie'yi geçici dosyaya yaz
     import tempfile
     cookie_tmp = None
     try:
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False, encoding='utf-8') as f:
+            # GitHub Secret'ın raw JSON olması gerekir
             f.write(cookies_json)
             cookie_tmp = f.name
+            print(f"[Arena Tam] Cookie dosyası: {cookie_tmp}")
     except Exception as e:
         print(f"[Arena Tam] Cookie dosyası yazılamadı: {e}")
         return None

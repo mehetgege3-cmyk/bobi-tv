@@ -30,10 +30,15 @@ def arena_tam_uretim(video_no: int) -> dict | None:
         print("[Arena Tam] ARENA_COOKIES_JSON yok.")
         return None
 
-    # Cookie'yi temizle ve auth token çıkar
-    clean_cookie = _cookie_temizle(cookies_json)
-    if not clean_cookie:
-        print("[Arena Tam] Cookie parse başarısız.")
+    # Cookie'yi geçici dosyaya yaz (COOKIES_FILE yöntemi en güvenilir)
+    import tempfile
+    cookie_tmp = None
+    try:
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            f.write(cookies_json)
+            cookie_tmp = f.name
+    except Exception as e:
+        print(f"[Arena Tam] Cookie dosyası yazılamadı: {e}")
         return None
 
     tarih = datetime.now().strftime("%Y%m%d")
@@ -66,7 +71,7 @@ Sadece Python kodu döndür, markdown yok."""
     try:
         result = subprocess.run(
             ["node", str(ARENA_SCRIPT), prompt],
-            env={**os.environ, "ARENA_AUTH_COOKIE": clean_cookie},
+            env={**os.environ, "COOKIES_FILE": cookie_tmp},
             capture_output=True,
             text=True,
             timeout=300
@@ -113,44 +118,72 @@ Sadece Python kodu döndür, markdown yok."""
     except Exception as e:
         print(f"[Arena Tam] Hata: {e}")
         return None
+    finally:
+        if cookie_tmp:
+            Path(cookie_tmp).unlink(missing_ok=True)
 
 
 def _cookie_temizle(cookies_json: str) -> str | None:
-    """ARENA_COOKIES_JSON'dan temiz cookie string'i döndür."""
+    """
+    ARENA_COOKIES_JSON'dan Arena auth cookie'sini çıkar.
+    Regex ile access_token'ı direkt yakalar — JSON parse sorununu bypass eder.
+    """
     import re, base64
     try:
         cookies = json.loads(cookies_json)
-        # arena-auth-prod-v1.X parçalarını sıralı birleştir
+
+        # Tüm arena-auth parçalarını birleştir
         parts = sorted(
             [(c['name'], c['value']) for c in cookies
-             if c.get('name','').startswith('arena-auth-prod-v1.') and c.get('value')],
+             if c.get('name', '').startswith('arena-auth-prod-v1.') and c.get('value')],
             key=lambda x: x[0]
         )
         if not parts:
             return None
-        combined = ''.join(v for _, v in parts).replace('base64-', '', 1)
-        # Sadece geçerli base64 karakterleri
-        valid = re.sub(r'[^A-Za-z0-9+/]', '', combined)
-        # 4'ün katına yuvarla
-        pad = (4 - len(valid) % 4) % 4
-        decoded = base64.b64decode(valid[:len(valid) - len(valid) % 4] + '=' * min(2, pad)).decode('utf-8', errors='replace')
-        # Kontrol karakterlerini temizle
-        clean = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f\ufffd]', '', decoded)
-        session = json.loads(clean)
-        access = session.get('access_token', '')
-        if access:
-            # base64 formatında encode ederek cookie değeri oluştur
-            minimal = {
-                'access_token': access,
-                'token_type': 'bearer',
-                'expires_in': 3600,
-                'refresh_token': session.get('refresh_token', ''),
-                'user': {'id': session.get('user', {}).get('id', ''), 'email': session.get('user', {}).get('email', '')}
-            }
-            return f"base64-{base64.b64encode(json.dumps(minimal).encode()).decode()}"
+
+        # Her parçayı decode edip access_token ara
+        access_token = None
+        refresh_token = ""
+
+        for name, value in parts:
+            b64 = value.replace('base64-', '', 1)
+            valid = re.sub(r'[^A-Za-z0-9+/]', '', b64)
+            trim = valid[:len(valid) - len(valid) % 4]
+            try:
+                decoded = base64.b64decode(trim + '==').decode('utf-8', errors='replace')
+                clean = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f\ufffd]', '', decoded)
+
+                # access_token regex ile yakala
+                m = re.search(r'"access_token"\s*:\s*"([^"]+)"', clean)
+                if m and not access_token:
+                    access_token = m.group(1)
+
+                # refresh_token regex ile yakala
+                m2 = re.search(r'"refresh_token"\s*:\s*"([^"]+)"', clean)
+                if m2 and not refresh_token:
+                    refresh_token = m2.group(1)
+            except Exception:
+                continue
+
+        if not access_token:
+            print("[Arena] access_token bulunamadı.")
+            return None
+
+        print(f"[Arena] access_token: {access_token[:30]}... refresh: {refresh_token}")
+
+        # Arena auth cookie formatında döndür
+        minimal = {
+            'access_token': access_token,
+            'token_type': 'bearer',
+            'expires_in': 3600,
+            'refresh_token': refresh_token,
+            'user': {}
+        }
+        return f"base64-{base64.b64encode(json.dumps(minimal).encode()).decode()}"
+
     except Exception as e:
         print(f"[Arena] Cookie temizleme hatası: {e}")
-    return None
+        return None
     """Arena cevabından Python kodunu çıkar."""
     if "```python" in metin:
         return metin.split("```python")[1].split("```")[0].strip()

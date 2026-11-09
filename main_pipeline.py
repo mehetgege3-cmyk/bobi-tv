@@ -51,26 +51,6 @@ def video_uret_arena(video_no: int) -> dict | None:
         return None
 
 
-def video_uret_fallback(video_no: int) -> dict | None:
-    """Eski pipeline ile video üret (Arena başarısız olursa)."""
-    try:
-        from modules.scenario import senaryo_paketi_olustur
-        from modules.tts_engine import senaryo_seslendir
-        from modules.video_render import video_render
-        from modules.kapak_uret import kapak_uret as kapak_uret_pil
-
-        paket = senaryo_paketi_olustur(video_no)
-        paket = senaryo_seslendir(paket)
-        video_render(paket)
-        kapak = kapak_uret_pil(paket)
-        if kapak:
-            paket["kapak_dosyasi"] = kapak
-        return paket
-    except Exception as e:
-        log_yaz(f"Fallback üretim hatası: {e}", "ERROR")
-        return None
-
-
 def pipeline_calistir():
     baslangic = datetime.now(timezone.utc)
     saat = baslangic.strftime("%H:00")
@@ -92,23 +72,16 @@ def pipeline_calistir():
         video_no = bugunki + i
         log_yaz(f"Video #{video_no} üretimi (Arena AI)...")
 
-        # Katman 1: Arena AI tam üretim
         paket = video_uret_arena(video_no)
 
         if paket:
             log_yaz(f"✅ Arena AI başarılı: {paket['baslik']}")
-        else:
-            # Katman 2: Eski pipeline fallback
-            log_yaz(f"⚠️ Arena başarısız, fallback kullanılıyor...", "WARNING")
-            paket = video_uret_fallback(video_no)
-
-        if paket:
             hazir_paketler.append(paket)
         else:
-            hata = f"Video #{video_no} üretilemedi."
+            hata = f"Video #{video_no} — Arena AI başarısız oldu."
             log_yaz(hata, "ERROR")
             hatalar.append(hata)
-            notify_error("pipeline", hata)
+            notify_error("arena", hata)
 
     # YouTube yükleme
     yayinlanan = 0

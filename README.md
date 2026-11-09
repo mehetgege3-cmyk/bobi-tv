@@ -1,6 +1,14 @@
-# 🎬 BOBİ TV v6.0 PRO — Otonom Viral YouTube Shorts Üretim Sistemi
+# 🎬 BOBİ TV v6.2 PRO — Otonom YouTube Shorts Üretim Sistemi
 
 Türkçe absürt ve ironik komedi diyaloglarını **yüksek tutunmalı (high-retention)** YouTube Shorts videolarına dönüştüren uçtan uca otonom yapay zeka prodüksiyon hattı.
+
+### v6.2 PRO: İlk Kare Kapak + 15 Dakika Üretim + Performans Kontrolü
+- **Profesyonel kapak:** Özel 1080×1920 VS/Clash kapak görseli videonun Frame 0'ına gömülür; render sonrası ilk kare tekrar çıkarılır ve YouTube özel kapak olarak yüklenir.
+- **15 dakikada bir:** `.github/workflows/hourly_production.yml` cron'u `*/15 * * * *`; bir çalıştırmada 1 video, günlük yapılandırılmış tavan 96 videodur.
+- **İzlenme eşiği:** Her çalışmada, yayını en az 60 dakika önce yapılmış ve YouTube Data API'de 100'den az görüntülenen adaylar otomatik silinir; arşiv durumu ve Telegram bildirimi güncellenir.
+- **OAuth önkoşulu:** Otomatik silme için `YOUTUBE_TOKEN` refresh token'ı kanal videosu silmeye izin veren `https://www.googleapis.com/auth/youtube.force-ssl` veya daha geniş bir YouTube OAuth scope'u ile verilmiş olmalıdır. Silme API izin vermezse video korunur ve log'a hata yazılır.
+- **Operasyonel uyarı:** 15 dakikada bir üretim günde 96'ya kadar video anlamına gelir; GitHub Actions zamanlama gecikebilir, YouTube yükleme/API limitleri uygulanabilir ve 100 izlenme kararı için YouTube `viewCount` gecikmeli olabilir. Silme işlemi kalıcıdır; eşik, 60 dakika geçtikten sonra ilk uygun denetimde uygulanır.
+
 
 ---
 
@@ -9,7 +17,7 @@ Türkçe absürt ve ironik komedi diyaloglarını **yüksek tutunmalı (high-ret
 ```text
 bobi-tv/
 ├── .github/workflows/
-│   ├── hourly_production.yml   # Pik saat üretimi (09:03, 13:03, 18:03, 21:03 TSİ + Artifact)
+│   ├── hourly_production.yml   # Her 15 dk üretim, 60 dk/100 izlenme otomatik kontrol + Artifact
 │   ├── arena_senaryo.yml       # Günlük Arena AI Master Loop senaryo üretimi
 │   ├── daily_production.yml    # Manuel toplu üretim tetikleyicisi
 │   ├── test_pipeline.yml       # Uçtan uca v6.0 Render & QC doğrulama testi
@@ -22,8 +30,8 @@ bobi-tv/
 │   ├── audio_fx.py             # Stüdyo SFX (whoosh, pop, vine_boom, riser, ding) + Sidechain BGM (-14 LUFS)
 │   ├── animasyon.py            # 1080x1920 30FPS Vektör Karakter Kartları + Kutulu Karaoke Altyazı + Zoom/Shake
 │   ├── video_render.py         # Çok kanallı ses miksajı + FFmpeg rawvideo borusu + ffprobe Kalite Kontrolü (QC)
-│   ├── kapak_uret.py           # Twist karesi seçimi + Montserrat-ExtraBold 'SONUNU BEKLE!' kapak üretici
-│   ├── youtube_upload.py       # YouTube Data API v3 + Otomatik İlk Yorum (commentThreads) + Kota Koruması
+│   ├── kapak_uret.py           # 1080x1920 profesyonel VS/Clash kapak + Frame 0 çıkarımı
+│   ├── youtube_upload.py       # YouTube API: ilk yorum, özel kapak, <100/60dk otomatik silme + kota koruması
 │   └── telegram_notify.py      # Telegram anlık yayın, kuyruk ve hata bildirimleri
 ├── bobi_tv/
 │   ├── assets/

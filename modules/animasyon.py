@@ -523,6 +523,8 @@ def pro_sahne_videosu_uret(
         "-c:v", "libx264",
         "-preset", "fast",
         "-crf", "20",
+        "-g", "25",
+        "-force_key_frames", "expr:eq(n,0)",
         "-pix_fmt", "yuv420p",
         "-c:a", "aac",
         "-b:a", "192k",
@@ -531,12 +533,26 @@ def pro_sahne_videosu_uret(
         str(cikis_video_mp4),
     ]
 
+    # 1. Kareye (Frame 0) yerleştirilecek profesyonel kapak görselini hazırla
+    from modules.kapak_uret import kapak_resmi_olustur
+
+    kapak_yolu = senaryo_paketi.get("kapak_yolu") or str(cikis_video_mp4).replace(".mp4", "_thumb.jpg")
+    if not os.path.exists(kapak_yolu):
+        kapak_resmi_olustur(senaryo_paketi, kapak_yolu)
+    senaryo_paketi["kapak_yolu"] = kapak_yolu
+    ilk_kare_kapak_rgb = Image.open(kapak_yolu).convert("RGB").resize((W, H), Image.BILINEAR)
+
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
     rng_shake = np.random.default_rng(77)
 
     try:
         seg_ptr = 0
         for kare_no in range(toplam_kare):
+            # KURAL: Videonun 1. karesi (Frame 0, t=0.00s) profesyonel kapak fotoğrafıdır
+            if kare_no == 0:
+                proc.stdin.write(ilk_kare_kapak_rgb.tobytes())
+                continue
+
             t = kare_no / float(FPS)
             enerji = float(ses_zarfi[kare_no])
 

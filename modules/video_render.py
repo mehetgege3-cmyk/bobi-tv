@@ -238,12 +238,22 @@ def video_render(senaryo_paketi: dict) -> str:
     # 3. Arşivlik ASS altyazı dosyası üret
     ass_altyazi_olustur(ses_dosyalari, diyaloglar, altyazi_ass, hook_suresi=0.0)
 
-    # 4. Pro Sahne + Vektör Kartlar + Karaoke Altyazı + Twist Zoom/Shake Render
+    # 3.5. Profesyonel Kapak Görselini Üret (1. Kareye yerleştirilmek üzere)
+    from modules.kapak_uret import kapak_resmi_olustur, videodan_ilk_kareyi_kapak_sec
+
+    kapak_jpg = str(OUTPUT_YOLU / f"{dosya_adi}_thumb.jpg")
+    kapak_resmi_olustur(senaryo_paketi, kapak_jpg)
+    senaryo_paketi["kapak_yolu"] = kapak_jpg
+
+    # 4. Pro Sahne + 1. Kare Kapak + Vektör Kartlar + Karaoke Altyazı + Twist Zoom/Shake Render
     pro_sahne_videosu_uret(
         senaryo_paketi=senaryo_paketi,
         birlesik_ses_wav=master_ses_wav,
         cikis_video_mp4=final_video,
     )
+
+    # 4.5. Videonun 1. karesinden (Frame 0) kapak fotoğrafını seç ve doğrula
+    videodan_ilk_kareyi_kapak_sec(final_video, kapak_jpg)
 
     # 5. Kalite Kontrol (QC)
     qc = video_kalite_kontrol(final_video)

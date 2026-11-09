@@ -1,11 +1,13 @@
 """
-BOBİ TV — Ana Otonom Üretim ve Yayın Pipeline v6.0 PRO
+BOBİ TV — Ana Otonom Üretim, 15 Dakika Isındırma ve Performans Temizlik Pipeline v6.2 PRO
 Mimari:
-1. Akıllı Kuyruk (bobi_tv/queue/): Önceki çalışmada YouTube kotasına takılan senaryo/video varsa önce onu işler.
-2. Birleşik v6.0 Üretim: Arena AI Yönetmen (veya v6.0 Loop Şablon) -> Ahmet+Emel Çift Ses TTS ->
-   Vektör Kartlı & Karaoke Altyazılı & SFX+BGM (-14 LUFS) Render -> Montserrat Kapak -> ffprobe QC
-3. Akıllı Yükleme: YouTube + Otomatik İlk Yorum + Özel Kapak.
-   YouTube uploadLimitExceeded dönerse iş boşa gitmez; bobi_tv/queue/ altına kaydedilir.
+1. Otomatik Performans Temizliği: Kanalda yayınlanalı >= 60 dk (1 saat) olmuş ve < 100 görüntüleme
+   almış videoları YouTube Data API v3 ile otomatik siler (kanal algoritmasını yüksek izlenmeli tutar).
+2. Akıllı Kuyruk (bobi_tv/queue/): Önceki çalışmada YouTube kotasına takılan senaryo/video varsa önce onu işler.
+3. Birleşik v6.2 Üretim: Arena AI Yönetmen -> Ahmet+Emel Çift Ses TTS ->
+   1. Kareye (Frame 0) Profesyonel VS/Clash Kapak Gömme + İlk Kareden Kapak Seçme ->
+   Vektör Kartlı & Karaoke Altyazılı & SFX+BGM (-14 LUFS) Render -> ffprobe QC
+4. Her 15 Dakikada 1 Video Isındırma: YouTube + Otomatik İlk Yorum + 1. Kare Özel Kapak.
 """
 import os
 import sys
@@ -20,12 +22,16 @@ from modules.tts_engine import senaryo_seslendir
 from modules.video_render import video_render
 from modules.kapak_uret import kapak_uret
 from modules.telegram_notify import notify_error, send_message
-from modules.youtube_upload import toplu_yukle
+from modules.youtube_upload import toplu_yukle, dusuk_izlenmeli_videolari_temizle
 
 GUNLUK_HEDEF = int(os.environ.get("GUNLUK_HEDEF", "1"))
-GUNLUK_MAKS = int(os.environ.get("GUNLUK_MAKS", "4"))
-MOD = os.environ.get("MOD", "pik_saat")
+GUNLUK_MAKS = int(os.environ.get("GUNLUK_MAKS", "96"))
+MOD = os.environ.get("MOD", "isindirma_15dk")
 YUKLEME_ATLA = os.environ.get("YUKLEME_ATLA", "0") == "1"
+
+OTOMATIK_SIL_AKTIF = os.environ.get("OTOMATIK_SIL_AKTIF", "1") == "1"
+MIN_IZLENME_ESIGI = int(os.environ.get("MIN_IZLENME_ESIGI", "100"))
+IZLENME_KONTROL_DK = int(os.environ.get("IZLENME_KONTROL_DK", "60"))
 
 LOG_YOLU = Path("bobi_tv/logs")
 ARSIV = Path("bobi_tv/archive/videos.json")
@@ -64,10 +70,10 @@ def kuyruga_kaydet(paket: dict):
         "baslik": paket["baslik"],
         "aciklama": paket.get("aciklama", ""),
         "final_video": paket.get("final_video", ""),
-        "kapak_dosyasi": paket.get("kapak_dosyasi", ""),
+        "kapak_dosyasi": paket.get("kapak_dosyasi") or paket.get("kapak_yolu", ""),
         "senaryo": paket["senaryo"],
         "kaynak": paket.get("kaynak", "kuyruk"),
-        "olusturuldu": paket.get("olusturuldu", datetime.now().isoformat()),
+        "olusturuldu": paket.get("olusturuldu", datetime.now(timezone.utc).isoformat()),
     }
     hedef = KUYRUK_YOLU / f"{paket['dosya_adi']}.json"
     hedef.write_text(json.dumps(kayit, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -102,14 +108,36 @@ def pipeline_calistir():
     baslangic = datetime.now(timezone.utc)
     saat = baslangic.strftime("%H:%M")
 
-    log_yaz(f"=== BOBİ TV v6.0 PRO ({saat} UTC) Başladı ===")
+    log_yaz(f"=== BOBİ TV v6.2 PRO ({saat} UTC) Başladı ===")
+
+    # 1. ADIM: 1 saat (60 dk) içinde 100 görüntüleme almayan videoları otomatik temizle
+    if not YUKLEME_ATLA and OTOMATIK_SIL_AKTIF:
+        log_yaz(
+            f"🔍 Performans kontrolü: {IZLENME_KONTROL_DK} dk sonunda "
+            f"<{MIN_IZLENME_ESIGI} görüntüleme alan videolar denetleniyor..."
+        )
+        silinen_videolar = dusuk_izlenmeli_videolari_temizle(
+            min_izlenme=MIN_IZLENME_ESIGI,
+            kontrol_suresi_dk=IZLENME_KONTROL_DK,
+        )
+        for sv in silinen_videolar:
+            log_yaz(
+                f"🗑️ Otomatik silindi: {sv['video_id']} | '{sv['baslik'][:45]}' "
+                f"({sv['yas_dk']} dk -> {sv['izlenme']} görüntüleme < {MIN_IZLENME_ESIGI})"
+            )
+            send_message(
+                f"🗑️ <b>BOBİ TV — Düşük Performanslı Video Silindi</b>\n"
+                f"🎥 {sv['baslik'][:65]}\n"
+                f"👁️ Görüntüleme: {sv['izlenme']} (Hedef: {MIN_IZLENME_ESIGI}+)\n"
+                f"⏱️ Geçen Süre: {sv['yas_dk']:.0f} dk"
+            )
 
     bugunki = bugunki_video_sayisi()
-    if bugunki >= GUNLUK_MAKS and MOD == "saatlik":
-        log_yaz(f"Günlük kalite tavanına ulaşıldı ({bugunki}/{GUNLUK_MAKS}). Atlanıyor.")
+    if bugunki >= GUNLUK_MAKS:
+        log_yaz(f"Günlük üretim tavanına ulaşıldı ({bugunki}/{GUNLUK_MAKS}). Atlanıyor.")
         sys.exit(0)
 
-    log_yaz(f"Bugün yayınlanan: {bugunki}/{GUNLUK_MAKS} | Üretilecek hedef: {GUNLUK_HEDEF}")
+    log_yaz(f"Bugün üretilen: {bugunki}/{GUNLUK_MAKS} | Bu tur hedefi: {GUNLUK_HEDEF}")
 
     hazir_paketler = []
     kuyruk_kaynak_dosyalari = {}
@@ -127,11 +155,11 @@ def pipeline_calistir():
                 kuyruk_kaynak_dosyalari[kuyruk_paketi["dosya_adi"]] = kuyruk_dosya
             continue
 
-        log_yaz(f"🎬 Video #{video_no} v6.0 Pro üretimi başlıyor...")
+        log_yaz(f"🎬 Video #{video_no} v6.2 Pro üretimi başlıyor...")
         paket = arena_tam_uretim(video_no)
         if paket and paket.get("final_video") and Path(paket["final_video"]).exists():
             sure_bilgi = paket.get("video_suresi", 0)
-            log_yaz(f"✅ Pro Video hazır: {paket['baslik']} ({sure_bilgi}sn)")
+            log_yaz(f"✅ Pro Video + 1. Kare Kapak hazır: {paket['baslik']} ({sure_bilgi}sn)")
             hazir_paketler.append(paket)
         else:
             hata = f"Video #{video_no} üretimi başarısız oldu."
@@ -145,6 +173,7 @@ def pipeline_calistir():
 
     yayinlanan = 0
     kuyruga_alinan = 0
+    yeni_kuyruga_alinan = 0
 
     if hazir_paketler:
         log_yaz(f"{len(hazir_paketler)} video YouTube'a yükleniyor...")
@@ -153,7 +182,6 @@ def pipeline_calistir():
             yayinlanan = len(sonuclar)
             hatalar.extend(yukle_hatalari)
 
-            # Başarıyla yüklenenlerin kuyruk dosyasını temizle
             for sonuc in sonuclar:
                 d_adi = sonuc["dosya_adi"]
                 if d_adi in kuyruk_kaynak_dosyalari:
@@ -161,22 +189,24 @@ def pipeline_calistir():
 
                 log_yaz(f"🚀 Yayınlandı: {sonuc['url']}")
                 send_message(
-                    f"🎬 <b>BOBİ TV v6.0 PRO</b>\n"
+                    f"🎬 <b>BOBİ TV v6.2 PRO (15dk Isındırma)</b>\n"
                     f"🎥 {sonuc['baslik'][:70]}\n"
-                    f"🔗 {sonuc['url']}\n"
-                    f"📊 Bugün: {bugunki + yayinlanan}/{GUNLUK_MAKS}"
+                    f"🖼️ 1. Kare VS Kapak + Otomatik Yorum Aktif\n"
+                    f"🔗 {sonuc['url']}"
                 )
 
-            # Kotaya takılanları kuyruğa kaydet (iş kaybolmaz!)
             for kp in kota_paketleri:
+                d_adi = kp["dosya_adi"]
+                if d_adi not in kuyruk_kaynak_dosyalari:
+                    yeni_kuyruga_alinan += 1
                 kuyruga_kaydet(kp)
                 kuyruga_alinan += 1
 
-            if kuyruga_alinan > 0:
+            if yeni_kuyruga_alinan > 0:
                 send_message(
-                    f"⏳ <b>BOBİ TV v6.0 PRO — Kuyruğa Alındı</b>\n"
+                    f"⏳ <b>BOBİ TV v6.2 PRO — Kuyruğa Alındı</b>\n"
                     f"🎥 {kota_paketleri[0]['baslik'][:65]}\n"
-                    f"YouTube 24 saatlik yükleme limiti dolduğu için video kuyruğa kaydedildi; kota açıldığında otomatik yayınlanacak."
+                    f"YouTube yükleme limiti dolduğu için video kuyruğa kaydedildi; kota açıldığında otomatik yayınlanacak."
                 )
         except Exception as e:
             hata = f"YouTube yükleme hatası: {e}"
@@ -186,7 +216,7 @@ def pipeline_calistir():
 
     gecen_sn = int((datetime.now(timezone.utc) - baslangic).total_seconds())
     log_yaz(
-        f"=== Tamamlandı: {yayinlanan} yayınlandı, {kuyruga_alinan} kuyruğa alındı ({gecen_sn}sn) ==="
+        f"=== Tamamlandı: {yayinlanan} yayınlandı, {kuyruga_alinan} kuyrukta ({gecen_sn}sn) ==="
     )
 
     basarili_toplam = yayinlanan + kuyruga_alinan

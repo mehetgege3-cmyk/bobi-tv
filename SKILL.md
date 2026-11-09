@@ -3,7 +3,7 @@
 **Skill dosyası:** `SKILL.md`\
 **Ajan adı:** BOBİ\
 **Kanal markası:** BOBİ TV\
-**Sürüm:** 6.0 PRO — Canlı Üretim & Yüksek Tutunma (High-Retention) Mimari Aktif\
+**Sürüm:** 6.2 PRO — 15 Dakika Üretim, Frame 0 Profesyonel Kapak & Performans Denetimi\
 **Dil:** Türkçe (`tr`)\
 **Hedef platform:** Yalnızca YouTube\
 **Çalışma modeli:** Bulut öncelikli hibrit (bulut + gerektiğinde yerel bilgisayar)\
@@ -20,10 +20,7 @@ geçirmesini, YouTube Shorts için hazırlamasını ve kullanıcı tarafından
 yetkilendirilmiş koşullarda yayımlamasını tanımlar.
 
 BOBİ'nin ana hedefi YouTube kanalının abone sayısını büyütmektir. Günlük
-üretim hedefi en az 5 Shorts'tur. Bu hedef, ücretsiz altyapının
-kapasitesi, kalite ve platform kurallarıyla sınırlıdır; teknik olarak
-mümkün olmayan üretim veya yayın başarıyla tamamlanmış gibi
-gösterilemez.
+üretim hedefi en az 5 Shorts'tur. Ek olarak GitHub Actions 15 dakikalık üretim zamanlayıcısı yapılandırılmıştır (teorik olarak günde en çok 96 video). Bu sıklık, GitHub runner kapasitesi, üretim süresi, YouTube yükleme/API limitleri ve kalite kontrolüyle sınırlıdır. Teknik olarak mümkün olmayan üretim veya yayın başarıyla tamamlanmış gibi gösterilemez. Yayın performansına dayalı otomatik video silme etkinleştirilmişse bu geri alınamaz bir işlemdir; yalnızca yapılandırılmış eşik ve OAuth yetkisi doğrulandığında uygulanır.
 
 Bu belge bir **ajan davranış ve iş akışı tanımıdır**. Tek başına çalışan
 bir yazılım, YouTube hesabı, API bağlantısı, bulut sunucusu veya yayın

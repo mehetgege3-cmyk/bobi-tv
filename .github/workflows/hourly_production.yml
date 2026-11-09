@@ -1,9 +1,9 @@
-name: BOBİ TV v6.0 PRO — Pik Saat Video Üretimi
+name: BOBİ TV v6.2 PRO — 15 Dakikada Bir Video Üretimi & Performans Temizliği
 
 on:
   schedule:
-    # Türkiye Altın Shorts Saatleri: 09:03, 13:03, 18:03, 21:03 TSİ
-    - cron: '3 6,10,15,18 * * *'
+    # Kanal ısındırma modu: Her 15 dakikada 1 video üretimi + 1 saatte <100 izlenenleri otomatik temizleme
+    - cron: '*/15 * * * *'
   workflow_dispatch:
     inputs:
       force:
@@ -17,9 +17,9 @@ concurrency:
 
 jobs:
   uret-ve-yayinla:
-    name: BOBİ TV v6.0 Pro Üretim & Yayın
+    name: BOBİ TV v6.2 Pro (15dk Üretim + 1.Kare Kapak + <100 İzlenme Silme)
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 40
 
     steps:
       - name: Repo'yu çek
@@ -49,7 +49,7 @@ jobs:
           python -m pip install -q -r requirements.txt
           python -m playwright install --with-deps chromium
 
-      - name: Günlük video sayısını kontrol et
+      - name: Günlük video sayısını kontrol et (96 video/gün — 15dk ısındırma)
         id: kapasite
         run: |
           python - << 'PYEOF'
@@ -59,7 +59,7 @@ jobs:
 
           arsiv = Path("bobi_tv/archive/videos.json")
           bugun = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-          hedef = 4
+          hedef = 96
 
           bugunki = 0
           if arsiv.exists():
@@ -71,7 +71,7 @@ jobs:
 
           kalan = max(0, hedef - bugunki)
           devam = "true" if kalan > 0 else "false"
-          print(f"Bugün yayınlanan: {bugunki}/{hedef} | Kalan: {kalan} | Devam: {devam}")
+          print(f"Bugün üretilen: {bugunki}/{hedef} | Kalan: {kalan} | Devam: {devam}")
 
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
               f.write(f"bugunki={bugunki}\n")
@@ -84,7 +84,7 @@ jobs:
         run: |
           mkdir -p bobi_tv/{queue,assets/{fonts,sfx},production/{scripts/arena,tts,render},output,archive/published,logs,config}
 
-      - name: BOBİ TV v6.0 Pro Pipeline'ı çalıştır
+      - name: BOBİ TV v6.2 Pro Pipeline'ı çalıştır
         if: steps.kapasite.outputs.devam == 'true' || github.event.inputs.force == 'true'
         env:
           YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
@@ -95,12 +95,15 @@ jobs:
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           SAVE_UPDATED_COOKIES: /tmp/updated_arena_cookies.json
           GUNLUK_HEDEF: '1'
-          GUNLUK_MAKS: ${{ github.event.inputs.force == 'true' && '99' || '4' }}
-          MOD: 'saatlik'
+          GUNLUK_MAKS: '96'
+          MOD: 'isindirma_15dk'
+          OTOMATIK_SIL_AKTIF: '1'
+          MIN_IZLENME_ESIGI: '100'
+          IZLENME_KONTROL_DK: '60'
         run: |
           python main_pipeline.py
 
-      - name: Üretilen Pro MP4 ve Kapağı Artifact olarak yükle
+      - name: Üretilen Pro MP4 ve 1. Kare Kapağı Artifact olarak yükle
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -129,7 +132,7 @@ jobs:
           git config user.email "bobi-tv-bot@users.noreply.github.com"
           git add bobi_tv/archive/ bobi_tv/queue/*.json bobi_tv/production/scripts/arena/ 2>/dev/null || git add -u bobi_tv/archive/ bobi_tv/queue/ bobi_tv/production/scripts/arena/ || true
           if ! git diff --staged --quiet; then
-            git commit -m "📺 BOBİ TV v6.0 arşiv/kuyruk [$(date +%Y-%m-%dT%H:%M)] [skip ci]"
+            git commit -m "📺 BOBİ TV v6.2 arşiv/kuyruk [$(date +%Y-%m-%dT%H:%M)] [skip ci]"
             git pull --rebase origin main || true
             git push || true
           fi
@@ -148,6 +151,6 @@ jobs:
           if token and chat_id:
               requests.post(f'https://api.telegram.org/bot{token}/sendMessage',
                 json={'chat_id': chat_id,
-                      'text': f'🔴 <b>BOBİ TV v6.0 ({saat} UTC) başarısız</b>\nhttps://github.com/mehetgege3-cmyk/bobi-tv/actions',
+                      'text': f'🔴 <b>BOBİ TV v6.2 ({saat} UTC) başarısız</b>\nhttps://github.com/mehetgege3-cmyk/bobi-tv/actions',
                       'parse_mode': 'HTML'}, timeout=10)
           "

@@ -1,8 +1,9 @@
 """
-BOBİ TV — YouTube Yükleme, Otomatik İlk Yorum ve SEO Modülü v6.0
+BOBİ TV — YouTube Yükleme, Otomatik İlk Yorum, 1. Kare Kapak ve Performans Temizlik Modülü v6.2 PRO
 Yenilikler:
+- 1 Saat (60 dk) içinde 100 görüntülemeye ulaşmayan videoları YouTube Data API v3 (videos.delete) ile otomatik silme
+- Videonun 1. karesinden (Frame 0) seçilen profesyonel VS/Clash kapak görselini (thumbnails.set) yükleme
 - Yükleme sonrası YouTube Data API v3 commentThreads.insert ile gerçek ilk yorum atma
-- Üretilen özel kapak görselini (thumbnails.set) yükleme
 - 21 kategorinin tamamı için yüksek hacimli Türkçe Shorts SEO etiket haritası
 - uploadLimitExceeded / quotaExceeded ayrımı (KotaDolduHatasi -> videoyu kuyruğa alır)
 """
@@ -10,7 +11,7 @@ import os
 import json
 import time
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 
 import requests
 
@@ -20,6 +21,8 @@ TOKEN_URI = "https://oauth2.googleapis.com/token"
 UPLOAD_URI = "https://www.googleapis.com/upload/youtube/v3/videos"
 THUMB_URI = "https://www.googleapis.com/upload/youtube/v3/thumbnails/set"
 VIDEOS_URI = "https://www.googleapis.com/youtube/v3/videos"
+CHANNELS_URI = "https://www.googleapis.com/youtube/v3/channels"
+PLAYLIST_ITEMS_URI = "https://www.googleapis.com/youtube/v3/playlistItems"
 COMMENTS_URI = "https://www.googleapis.com/youtube/v3/commentThreads"
 
 
@@ -72,6 +75,8 @@ def zaten_yuklendi_mi(dosya_adi: str) -> str | None:
     if durum_dosyasi.exists():
         try:
             data = json.loads(durum_dosyasi.read_text(encoding="utf-8"))
+            if data.get("durum") == "silindi_dusuk_izlenme":
+                return None
             return data.get("video_id")
         except Exception:
             return None
@@ -84,7 +89,8 @@ def yayin_durumu_kaydet(dosya_adi: str, video_id: str, baslik: str):
         "dosya_adi": dosya_adi,
         "video_id": video_id,
         "baslik": baslik,
-        "yayinlandi": datetime.now().isoformat(),
+        "durum": "yayinda",
+        "yayinlandi": datetime.now(timezone.utc).isoformat(),
         "url": f"https://www.youtube.com/shorts/{video_id}",
     }
     (YAYIN_DURUMU_YOLU / f"{dosya_adi}.json").write_text(
@@ -104,15 +110,193 @@ def arsive_ekle(dosya_adi: str, baslik: str, senaryo: dict, video_id: str):
         "dosya_adi": dosya_adi,
         "baslik": baslik,
         "video_id": video_id,
+        "durum": "yayinda",
         "url": f"https://www.youtube.com/shorts/{video_id}",
         "senaryo_ozeti": senaryo.get("acilis", "")[:200],
         "hash": senaryo.get("hash", ""),
-        "tarih": datetime.now().isoformat(),
+        "tarih": datetime.now(timezone.utc).isoformat(),
     }
     arsiv.append(kayit)
 
     ARSIV_YOLU.parent.mkdir(parents=True, exist_ok=True)
     ARSIV_YOLU.write_text(json.dumps(arsiv, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _arsivde_silindi_isaretle(video_id: str, izlenme: int, yas_dk: float):
+    """Silinen videoyu hem ana arşivde hem published/ kayıtlarında işaretler."""
+    simdi_iso = datetime.now(timezone.utc).isoformat()
+    if ARSIV_YOLU.exists():
+        try:
+            arsiv = json.loads(ARSIV_YOLU.read_text(encoding="utf-8"))
+            degisti = False
+            for k in arsiv:
+                if k.get("video_id") == video_id:
+                    k["durum"] = "silindi_dusuk_izlenme"
+                    k["silinme_izlenme"] = izlenme
+                    k["silinme_yas_dk"] = round(yas_dk, 1)
+                    k["silinme_tarihi"] = simdi_iso
+                    degisti = True
+            if degisti:
+                ARSIV_YOLU.write_text(json.dumps(arsiv, ensure_ascii=False, indent=2), encoding="utf-8")
+        except Exception:
+            pass
+
+    if YAYIN_DURUMU_YOLU.exists():
+        for p in YAYIN_DURUMU_YOLU.glob("*.json"):
+            try:
+                veri = json.loads(p.read_text(encoding="utf-8"))
+                if veri.get("video_id") == video_id:
+                    veri["durum"] = "silindi_dusuk_izlenme"
+                    veri["silinme_izlenme"] = izlenme
+                    veri["silinme_yas_dk"] = round(yas_dk, 1)
+                    veri["silinme_tarihi"] = simdi_iso
+                    p.write_text(json.dumps(veri, ensure_ascii=False, indent=2), encoding="utf-8")
+            except Exception:
+                continue
+
+
+def dusuk_izlenmeli_videolari_temizle(min_izlenme: int = 100, kontrol_suresi_dk: int = 60) -> list:
+    """
+    Kanaldaki videoları kontrol eder:
+    Yayınlanma üzerinden en az `kontrol_suresi_dk` (varsayılan 60 dk = 1 saat) geçmiş
+    ve görüntülenmesi `min_izlenme` (varsayılan 100) altında kalmış videoları
+    YouTube Data API v3 `videos.delete` ile otomatik olarak siler.
+    """
+    if not os.environ.get("YOUTUBE_TOKEN", "").strip():
+        return []
+
+    try:
+        access_token = token_yenile(token_yukle())
+    except Exception as e:
+        print(f"[İzlenme Kontrol] Token yenilenemedi: {e}")
+        return []
+
+    headers = {"Authorization": f"Bearer {access_token}"}
+    aday_id_listesi = []
+    gorulen_idler = set()
+
+    def aday_ekle(video_id: str):
+        # Sıralamayı koru: öncelik kanalın en yeni yüklemelerinde, sonra yerel arşivde.
+        if video_id and video_id not in gorulen_idler:
+            gorulen_idler.add(video_id)
+            aday_id_listesi.append(video_id)
+
+    # 1. Kanalın 'uploads' oynatma listesinden son 50 videoyu çek (Sadece 2 kota birimi harcar)
+    try:
+        ch_resp = requests.get(
+            f"{CHANNELS_URI}?part=contentDetails&mine=true",
+            headers=headers,
+            timeout=15,
+        )
+        if ch_resp.status_code == 200:
+            items = ch_resp.json().get("items", [])
+            if items:
+                uploads_id = (
+                    items[0]
+                    .get("contentDetails", {})
+                    .get("relatedPlaylists", {})
+                    .get("uploads")
+                )
+                if uploads_id:
+                    pl_resp = requests.get(
+                        f"{PLAYLIST_ITEMS_URI}?part=contentDetails&playlistId={uploads_id}&maxResults=50",
+                        headers=headers,
+                        timeout=15,
+                    )
+                    if pl_resp.status_code == 200:
+                        for it in pl_resp.json().get("items", []):
+                            vid = it.get("contentDetails", {}).get("videoId")
+                            if vid:
+                                aday_ekle(vid)
+    except Exception as e:
+        print(f"[İzlenme Kontrol] Kanal listesi uyarısı: {e}")
+
+    # 2. Yerel arşivdeki aktif videoları da ekle
+    if ARSIV_YOLU.exists():
+        try:
+            for k in json.loads(ARSIV_YOLU.read_text(encoding="utf-8")):
+                if k.get("durum") != "silindi_dusuk_izlenme" and k.get("video_id"):
+                    aday_ekle(k["video_id"])
+        except Exception:
+            pass
+
+    if not aday_id_listesi:
+        return []
+
+    aday_listesi = aday_id_listesi[:50]
+    silinenler = []
+    simdi_utc = datetime.now(timezone.utc)
+
+    try:
+        v_resp = requests.get(
+            f"{VIDEOS_URI}?part=snippet,statistics&id={','.join(aday_listesi)}",
+            headers=headers,
+            timeout=15,
+        )
+        if v_resp.status_code != 200:
+            print(f"[İzlenme Kontrol] Video istatistik sorgusu hatası: {v_resp.status_code}")
+            return []
+
+        for item in v_resp.json().get("items", []):
+            vid_id = item.get("id")
+            snippet = item.get("snippet", {})
+            stats = item.get("statistics", {})
+            baslik = snippet.get("title", vid_id)
+            pub_str = snippet.get("publishedAt", "")
+            if not vid_id or not pub_str:
+                continue
+
+            try:
+                yayin_dt = datetime.fromisoformat(pub_str.replace("Z", "+00:00"))
+                if yayin_dt.tzinfo is None:
+                    yayin_dt = yayin_dt.replace(tzinfo=timezone.utc)
+            except Exception:
+                continue
+
+            yas_dk = (simdi_utc - yayin_dt).total_seconds() / 60.0
+            izlenme = int(stats.get("viewCount", 0))
+
+            if yas_dk < kontrol_suresi_dk:
+                print(
+                    f"[İzlenme Kontrol] ⏳ Takipte ({yas_dk:.0f}/{kontrol_suresi_dk} dk): "
+                    f"'{baslik[:42]}' -> {izlenme} görüntüleme"
+                )
+                continue
+
+            if izlenme >= min_izlenme:
+                print(
+                    f"[İzlenme Kontrol] ✅ Barajı geçti ({izlenme} >= {min_izlenme} izlenme, {yas_dk:.0f} dk): "
+                    f"'{baslik[:42]}'"
+                )
+                continue
+
+            # KURAL: 1 saat (60 dk) doldu ve 100 görüntülemenin altında -> Otomatik Sil!
+            del_resp = requests.delete(
+                f"{VIDEOS_URI}?id={vid_id}",
+                headers=headers,
+                timeout=20,
+            )
+            if del_resp.status_code in (200, 204):
+                print(
+                    f"[İzlenme Kontrol] 🗑️ OTOMATİK SİLİNDİ: {vid_id} | '{baslik[:45]}' | "
+                    f"{yas_dk:.0f} dk sonunda {izlenme} görüntüleme (<{min_izlenme})"
+                )
+                _arsivde_silindi_isaretle(vid_id, izlenme, yas_dk)
+                silinenler.append({
+                    "video_id": vid_id,
+                    "baslik": baslik,
+                    "izlenme": izlenme,
+                    "yas_dk": round(yas_dk, 1),
+                })
+            else:
+                print(
+                    f"[İzlenme Kontrol] Silme API uyarısı ({vid_id}): "
+                    f"{del_resp.status_code} — {del_resp.text[:200]}"
+                )
+    except Exception as e:
+        print(f"[İzlenme Kontrol] Hata: {e}")
+
+    return silinenler
 
 
 def _ilk_yorum_at(video_id: str, yorum_metni: str, access_token: str) -> bool:
@@ -165,7 +349,7 @@ def _kapak_yukle(video_id: str, kapak_dosyasi: str, access_token: str) -> bool:
             timeout=25,
         )
         if resp.status_code in (200, 201):
-            print(f"[YouTube] 🖼️ Özel kapak yüklendi.")
+            print("[YouTube] 🖼️ Videonun 1. karesinden seçilen profesyonel kapak yüklendi.")
             return True
     except Exception:
         pass
@@ -205,7 +389,7 @@ def video_yukle(senaryo_paketi: dict) -> str:
         "",
         etkilesim,
         "",
-        "🎬 BOBİ TV — Her gün yeni Türkçe absürt komedi Shorts!",
+        "🎬 BOBİ TV — Her 15 dakikada yeni Türkçe absürt komedi Shorts!",
         "🔔 Abone olmayı ve videoyu sonuna kadar (hatta iki kere 😉) izlemeyi unutma!",
         "",
         " ".join(etiketler),
@@ -280,7 +464,8 @@ def video_yukle(senaryo_paketi: dict) -> str:
     print(f"[YouTube] 🚀 Yayınlandı: https://www.youtube.com/shorts/{video_id}")
 
     time.sleep(3)
-    _kapak_yukle(video_id, senaryo_paketi.get("kapak_dosyasi", ""), access_token)
+    kapak_yol = senaryo_paketi.get("kapak_dosyasi") or senaryo_paketi.get("kapak_yolu", "")
+    _kapak_yukle(video_id, kapak_yol, access_token)
     _ilk_yorum_at(video_id, sabit_yorum, access_token)
 
     yayin_durumu_kaydet(dosya_adi, video_id, baslik)

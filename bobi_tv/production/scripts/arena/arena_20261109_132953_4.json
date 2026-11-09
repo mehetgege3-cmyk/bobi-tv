@@ -1,0 +1,35 @@
+{
+  "kategori": "saglik_sorunu",
+  "hook_metni": "Doktor bey, kulağımdaki ses benimle konuşuyor!",
+  "hook_suresi": 1.3,
+  "diyaloglar": [
+    {
+      "karakter": "HASTA",
+      "metin": "Doktor bey, kulağımda sürekli bir ses var.",
+      "ses": "normal",
+      "sure": 2.4
+    },
+    {
+      "karakter": "DOKTOR",
+      "metin": "Ne diyor?",
+      "ses": "normal",
+      "sure": 1
+    },
+    {
+      "karakter": "HASTA",
+      "metin": "Adımı soruyor.",
+      "ses": "normal",
+      "sure": 1.4
+    },
+    {
+      "karakter": "DOKTOR",
+      "metin": "Söylemeyin. Israrcıdır.",
+      "ses": "normal",
+      "sure": 2
+    }
+  ],
+  "punchline_efekt": "zoom_in",
+  "loop_baslangic": "HASTA",
+  "etkilesim": "soru",
+  "sabit_yorum": "O ses bende de var, adımı sordu, söylemedim. Üç gündür sessizlik var, kazanıyorum."
+}

@@ -1,0 +1,35 @@
+{
+  "kategori": "kahve_hayati",
+  "hook_metni": "Kahvem istifa etti!",
+  "hook_suresi": 1,
+  "diyaloglar": [
+    {
+      "karakter": "BEN",
+      "metin": "Kahve, neden soğuksun?",
+      "ses": "normal",
+      "sure": 1.5
+    },
+    {
+      "karakter": "KAHVE",
+      "metin": "Bu evde değer görmüyorum.",
+      "ses": "normal",
+      "sure": 1.5
+    },
+    {
+      "karakter": "BEN",
+      "metin": "Sana süt bile aldım!",
+      "ses": "normal",
+      "sure": 1.5
+    },
+    {
+      "karakter": "KAHVE",
+      "metin": "O da bitkisel!",
+      "ses": "normal",
+      "sure": 1
+    }
+  ],
+  "punchline_efekt": "zoom_in",
+  "loop_baslangic": "BEN",
+  "etkilesim": "soru",
+  "sabit_yorum": "Senin kahven neden istifa ederdi?"
+}

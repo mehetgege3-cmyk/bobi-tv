@@ -17,7 +17,7 @@ Türkçe absürt ve ironik komedi diyaloglarını **yüksek tutunmalı (high-ret
 
 ---
 
-## 🚀 v6.0 PRO Mimari Özeti
+## 🚀 v6.3 PRO Mimari Özeti
 
 ```text
 bobi-tv/
@@ -47,7 +47,8 @@ bobi-tv/
 │   ├── production/             # Senaryo şablonları (prompt_template.md) ve geçici çalışma alanı
 │   └── output/                 # Üretilen nihai MP4 ve kapak görselleri
 ├── docs/
-│   └── BOBI_TV_V6_PRO_MIMARI_VE_KURALLAR.md  # 2026 Shorts Algoritma Rehberi & Teknik Dokümantasyon
+│   ├── BOBI_TV_V6_PRO_MIMARI_VE_KURALLAR.md  # Shorts algoritma rehberi ve mimari
+│   └── BOBI_TV_V6_3_KONU_15DK_KAPAK.md       # Konu rotasyonu, minimum 15sn, Frame 0 kapak ve 15dk işleyiş
 ├── arena-ask.mjs               # Arena.ai çerez birleştirme (<4KB) ve Tiptap otomasyon CLI aracı
 ├── arena-senaryo.mjs           # Master Loop JSON senaryo üretici Node betiği
 ├── main_pipeline.py            # Ana orkestrasyon ve akıllı kuyruk yöneticisi

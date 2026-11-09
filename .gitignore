@@ -9,3 +9,10 @@ bobi_tv/production/animation/
 bobi_tv/output/
 bobi_tv/logs/
 bobi_tv/queue/
+__pycache__/
+*.pyc
+bobi_tv/output/*.mp4
+bobi_tv/output/*.jpg
+bobi_tv/production/tts/*
+bobi_tv/production/render/*
+

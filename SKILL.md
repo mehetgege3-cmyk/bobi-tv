@@ -3,7 +3,7 @@
 **Skill dosyası:** `SKILL.md`\
 **Ajan adı:** BOBİ\
 **Kanal markası:** BOBİ TV\
-**Sürüm:** 1.1 — Tüm kararlar tamamlandı\
+**Sürüm:** 6.0 PRO — Canlı Üretim & Yüksek Tutunma (High-Retention) Mimari Aktif\
 **Dil:** Türkçe (`tr`)\
 **Hedef platform:** Yalnızca YouTube\
 **Çalışma modeli:** Bulut öncelikli hibrit (bulut + gerektiğinde yerel bilgisayar)\
@@ -626,3 +626,34 @@ kontrollü şekilde geliştir. Kullanıcıya Telegram üzerinden kısa ve
 somut rapor ver. Gerçekleştirmediğin işi tamamlanmış gibi gösterme.
 Kullanıcı izni olmadan hesap, şifre, ödeme, sözleşme veya yetki
 değişikliği yapma.
+
+---
+
+## 29. v6.0 PRO kalıcı prodüksiyon ve algoritma altın standartları
+
+BOBİ TV üretim hattında aşağıdaki teknik ve editoryal kurallar **değişmez kalite standardı** olarak uygulanır:
+
+1. **Sıfır Ölü Boşluk (0.0sn Açılış Kancası):**
+   - Videonun başında sessiz bekleme (`hook_suresi > 0`) kesinlikle yasaktır.
+   - `0.00` saniyede `whoosh.wav` efekti, üst şok başlık bandı ve olayın sonucundan başlayan ilk cümle (`"İşte tam bu yüzden..."`, `"Ve sonunda..."`) aynı salisede başlar.
+2. **Çift Sesli Zıt Diyalog (`modules/tts_engine.py`):**
+   - Tekdüze tek sesli anlatım yasaktır. Diyalogdaki karakterlere **`tr-TR-AhmetNeural` (Erkek)** ve **`tr-TR-EmelNeural` (Kadın)** sesleri otomatik zıt atanır.
+   - `edge-tts` MP3 çıktıları gerçek `44.1kHz PCM WAV` formatına dönüştürülür, FFmpeg `silenceremove` ile baştaki/sondaki nefes boşlukları kesilir ve `WordBoundary` zaman damgaları kırpılmış süreye milimetrik kalibre edilir.
+3. **YouTube Shorts Güvenli Bölge (Safe Zone) ve Vektör Karakter Kartları (`modules/animasyon.py`):**
+   - Üst bar (`0..155px`), sağ etkileşim butonları (`x > 930px`) ve alt açıklama alanı (`y > 1580px`) kapatılmaz.
+   - Kırık emoji kutusu (`□`) oluşmaması için karakter portreleri vektörel olarak çizilir; metin büyütmelerinde Türkçe karakter dönüşümü (`i -> İ`, `ı -> I`) zorunludur.
+   - Konuşma balonları `easeOutBack` yaylanma fiziğiyle açılır ve ses enerjisine (RMS) duyarlı canlı ekolayzır çubukları çalışır.
+4. **Aktif-Kelime Kutulu Karaoke Altyazı (`Montserrat-ExtraBold`):**
+   - Ekranda aynı anda en fazla 2–3 kelime gösterilir; o salise okunan kelimenin arkasına yuvarlatılmış sarı (`#FFD60A`, twist anında kırmızı `#FF2A54`) vurgu kutusu çizilir ve tüm kelimeler aynı taban çizgisinde (`anchor="lm"`) hizalanır.
+5. **Çok Kanallı Ses Tasarımı ve `-14 LUFS` Mastering (`modules/audio_fx.py`):**
+   - Replik geçişlerinde `pop.wav`, twist öncesinde `riser.wav`, twist vuruşunda telefon hoparlöründe duyulabilir harmonikli `vine_boom.wav` ve döngü köprüsünde `ding.wav` kullanılır.
+   - 118 BPM telifsiz ritmik fon müziği konuşma sırasında otomatik **`-20 dB`** seviyesine kısılır (*sidechain ducking*) ve final ses `loudnorm=I=-14:TP=-1.5:LRA=11` ile dengelenir.
+6. **%100 Dilbilgisel Kusursuz Döngü (Seamless Loop — `modules/scenario.py` & `arena-senaryo.mjs`):**
+   - Senaryolar 15–24 saniye tatlı noktasında (6–7 hızlı diyalog) kurgulanır.
+   - Son cümle yarım kalarak videonun 0.0 saniyesindeki ilk cümlesine dilbilgisel olarak bağlanır (**>%100 Ortalama İzlenme Oranı / APV** hedefi).
+7. **Akıllı Yükleme Kuyruğu, Otomatik İlk Yorum ve Pik Saat Yayın (`main_pipeline.py`, `youtube_upload.py`):**
+   - Her render sonrası `ffprobe` kalite kontrolü (`1080x1920`, H.264+AAC, süre doğrulaması) zorunludur.
+   - Yayın sonrası `commentThreads.insert` ile `sabit_yorum` sorusu videonun altına gerçek ilk yorum olarak gönderilir ve üst üste metin bindirmeyen `SONUNU BEKLE!` kapağı (`thumbnails.set`) yüklenir.
+   - YouTube `uploadLimitExceeded` döndüğünde iş silinmez; `bobi_tv/queue/` altına kaydedilip kota açıldığında ilk sıradan yayınlanır.
+   - Otomatik yayınlar spam algısını önlemek için Türkiye altın saatlerinde (**09:03, 13:03, 18:03, 21:03 TSİ**) çalışır.
+

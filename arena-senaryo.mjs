@@ -1,93 +1,85 @@
 #!/usr/bin/env node
 /**
- * BOBİ TV — Arena AI Senaryo Üretim Entegrasyonu v3
- * spawn (async) kullanır — timeout yok, cevap gelene kadar bekler.
+ * BOBİ TV — Arena AI Viral Loop Senaryo Üretici v6.0
+ * Master Prompt: 0.0sn Hook + Çift Karakter (Erkek/Kadın) + Twist + %100 Kusursuz Döngü (Loop)
  */
 import { spawn } from 'child_process';
-import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const KATEGORILER = [
-    "kurumsal_hayat", "pazartesi_sendromu", "ik_toplantisi", "mesai_sonu",
-    "bar_fikrasi", "diyet_kavrami", "google_sorusu", "trafik_kavgasi",
-    "wifi_kavgasi", "saglik_sorunu", "kahve_hayati", "evlilik_hayati",
-    "yapay_zeka", "sabah_alarmi", "sigara_kavgasi", "sok_diyalog",
-    "hastane_korkusu", "egitim_sistemi", "sosyal_medya", "spor_hayati", "sok_hayati"
+  'kurumsal_hayat', 'pazartesi_sendromu', 'ik_toplantisi', 'mesai_sonu',
+  'diyet_kavrami', 'trafik_kavgasi', 'wifi_kavgasi', 'saglik_sorunu',
+  'kahve_hayati', 'yapay_zeka', 'sosyal_medya', 'spor_hayati'
 ];
 
-function senaryo_prompt(kategori) {
-    return `Türkçe absürt kısa Shorts senaryosu yaz. Kategori: ${kategori}. 4 diyalog, kısa. Sadece JSON: {"kategori":"${kategori}","hook_metni":"KISA HOOK","hook_suresi":1.0,"diyaloglar":[{"karakter":"AD","metin":"metin","ses":"normal","sure":1.0}],"punchline_efekt":"zoom_in","loop_baslangic":"AD","etkilesim":"soru","sabit_yorum":"yorum fikri"}`;
+function senaryoPrompt(kategori) {
+  return [
+    `Sen milyonlar izlenen bir Türkçe YouTube Shorts komedi yönetmenisin. Kategori: "${kategori}".`,
+    `Hiçbir araç (bash/search) ÇAĞIRMA, sadece geçerli tek bir JSON nesnesi döndür.`,
+    `Kurallar:`,
+    `1) Toplam 6 veya 7 kısa, hızlı, doğal Türkçe diyalog cümlesi yaz (her cümle 5-11 kelime).`,
+    `2) 2 zıt karakter karşılıklı konuşsun: biri "erkek", diğeri "kadin".`,
+    `3) 1. cümle ("İşte tam bu yüzden..." veya "Ve o saniye...") doğrudan olayın en şok edici sonucundan başlasın.`,
+    `4) Sondan bir önceki cümle (twist_indeksi: 5) hiç beklenmedik komik bir ters köşe (twist) olsun.`,
+    `5) En son cümle yarım kalarak ("...ben de kapıyı çarpıp bağırdım...") videonun başındaki 1. cümleye DİLBİLGİSEL KUSURSUZ DÖNGÜ (loop) ile bağlansın!`,
+    `Şu JSON şemasında yanıt ver:`,
+    `{"kategori":"${kategori}","ortam_etiketi":"office coffee","ruh_hali":"komedi","hook_ust_bant":"MAKS 4 KELİME ŞOK BAŞLIK!","baslik":"Merak Uyandıran Türkçe Başlık 😱 #shorts","twist_indeksi":5,"diyaloglar":[{"karakter":"MÜDÜR","cinsiyet":"erkek","metin":"İşte tam bu yüzden...","ses":"sinirli","sfx":"whoosh"},{"karakter":"AYŞE","cinsiyet":"kadin","metin":"Ama nasıl olur?","ses":"suprized","sfx":"pop"}],"sabit_yorum":"İzleyiciyi yoruma çekecek tartışmalı/komik soru 👇","etkilesim":"Arkadaşını etiketle çağrısı"}`
+  ].join(' ');
 }
 
 function runArena(prompt) {
-    return new Promise((resolve, reject) => {
-        const child = spawn('node', [join(__dirname, 'arena-ask.mjs'), prompt], {
-            env: process.env,
-            stdio: ['pipe', 'pipe', 'pipe']
-        });
-
-        let stdout = '';
-        let stderr = '';
-
-        child.stdout.on('data', (d) => { stdout += d.toString(); });
-        child.stderr.on('data', (d) => { stderr += d.toString(); process.stderr.write(d); });
-
-        child.on('close', (code) => {
-            if (code === 0) {
-                resolve(stdout);
-            } else {
-                reject(new Error(stderr.substring(0, 300) || `exit code ${code}`));
-            }
-        });
-
-        child.on('error', reject);
+  return new Promise((resolve, reject) => {
+    const child = spawn('node', [join(__dirname, 'arena-ask.mjs'), prompt], {
+      env: process.env,
+      stdio: ['pipe', 'pipe', 'pipe']
     });
+
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', d => { stdout += d.toString(); });
+    child.stderr.on('data', d => { stderr += d.toString(); process.stderr.write(d); });
+    child.on('close', code => {
+      if (code === 0 && stdout.trim()) resolve(stdout);
+      else reject(new Error(stderr.substring(0, 350) || `exit code ${code}`));
+    });
+    child.on('error', reject);
+  });
+}
+
+function extractScenarioJson(rawOutput) {
+  let text = rawOutput.trim();
+  if (text.includes('```json')) {
+    text = text.split('```json')[1].split('```')[0].trim();
+  } else if (text.includes('```')) {
+    text = text.split('```')[1].split('```')[0].trim();
+  }
+  const first = text.indexOf('{');
+  const last = text.lastIndexOf('}');
+  if (first === -1 || last === -1 || last <= first) {
+    throw new Error('Yanıt içinde JSON nesnesi bulunamadı.');
+  }
+  const parsed = JSON.parse(text.slice(first, last + 1));
+  if (!Array.isArray(parsed.diyaloglar) || parsed.diyaloglar.length < 4) {
+    throw new Error('diyaloglar dizisi eksik veya çok kısa.');
+  }
+  return parsed;
 }
 
 async function main() {
-    const kategori = process.argv[2] || KATEGORILER[Math.floor(Math.random() * KATEGORILER.length)];
-    const prompt = senaryo_prompt(kategori);
+  const kategori = process.argv[2] || KATEGORILER[Math.floor(Math.random() * KATEGORILER.length)];
+  const prompt = senaryoPrompt(kategori);
 
-    console.error(`[Arena] Kategori: ${kategori}`);
-    console.error(`[Arena] Prompt gönderiliyor, cevap bekleniyor...`);
-
-    let output;
-    try {
-        output = await runArena(prompt);
-        console.error(`[Arena] Cevap alındı (${output.length} char)`);
-    } catch(e) {
-        console.error(`[Arena] Hata: ${e.message}`);
-        process.exit(1);
-    }
-
-    // JSON çıkar — son JSON bloğunu al
-    let answer = output.trim();
-    if (answer.includes('```json')) {
-        answer = answer.split('```json')[1].split('```')[0].trim();
-    } else if (answer.includes('```')) {
-        answer = answer.split('```')[1].split('```')[0].trim();
-    }
-    const lastBrace = answer.lastIndexOf('}');
-    const firstBrace = answer.indexOf('{');
-    if (firstBrace !== -1 && lastBrace !== -1) {
-        answer = answer.substring(firstBrace, lastBrace + 1);
-    }
-
-    try {
-        const senaryo = JSON.parse(answer);
-        console.log(JSON.stringify(senaryo, null, 2));
-        console.error(`[Arena] Senaryo başarıyla üretildi`);
-    } catch(e) {
-        console.error(`[Arena] JSON parse hatası: ${e.message}`);
-        console.error(`[Arena] Cevap: ${answer.substring(0, 500)}`);
-        process.exit(1);
-    }
+  console.error(`[Arena v6] Kategori: ${kategori} — Loop senaryo isteniyor...`);
+  const output = await runArena(prompt);
+  const senaryo = extractScenarioJson(output);
+  console.log(JSON.stringify(senaryo, null, 2));
+  console.error(`[Arena v6] ✅ Loop senaryo üretildi: ${senaryo.baslik}`);
 }
 
-main().catch(e => {
-    console.error(`[Arena] Beklenmeyen hata: ${e.message}`);
-    process.exit(1);
+main().catch(err => {
+  console.error(`[Arena v6] Hata: ${err.message}`);
+  process.exit(1);
 });

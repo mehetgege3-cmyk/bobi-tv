@@ -1,18 +1,18 @@
-name: BOBİ TV — İlk Kurulum Testi
+name: BOBİ TV v6.0 — Uçtan Uca Kalite Testi
 
 on:
   workflow_dispatch:
     inputs:
-      hedef:
-        description: 'Test için kaç video üretilsin? (varsayılan: 1)'
+      yukle:
+        description: 'YouTube yüklemesi de yapılsın mı? (0 = sadece render testi, 1 = yükle)'
         required: false
-        default: '1'
+        default: '0'
 
 jobs:
   test:
-    name: İlk Uçtan Uca Test
+    name: v6.0 Pro Render & QC Testi
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 40
 
     steps:
       - name: Repo'yu çek
@@ -22,99 +22,39 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      - name: Node.js kur
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+          cache: 'pip'
 
       - name: Sistem bağımlılıklarını kur
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq \
-            ffmpeg \
-            espeak-ng \
-            wget \
-            curl \
-            fonts-dejavu-core \
-            fonts-liberation2 \
-            libass9 \
-            libvips
+          sudo apt-get install -y -qq --no-install-recommends \
+            ffmpeg espeak-ng fonts-dejavu-core fonts-liberation2 libass9
 
       - name: Python bağımlılıklarını kur
         run: |
-          pip install --upgrade pip
-          pip install \
-            edge-tts==7.0.0 \
-            gTTS==2.5.4 \
-            requests==2.32.3 \
-            google-auth==2.35.0 \
-            google-auth-httplib2==0.2.0 \
-            google-api-python-client==2.151.0 \
-            pydub==0.25.1 \
-            Pillow==11.0.0 \
-            numpy==2.1.3
+          python -m pip install --upgrade pip -q
+          python -m pip install -q -r requirements.txt
+          python -m playwright install --with-deps chromium
 
-      - name: Klasör yapısını oluştur
-        run: |
-          mkdir -p bobi_tv/{queue,production/{scripts,assets/{characters,backgrounds,sfx},tts,animation,render},output,archive/published,logs,config}
-
-      - name: Telegram test bildirimi gönder
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          python -c "
-          import os, requests
-          token = os.environ['TELEGRAM_BOT_TOKEN']
-          chat_id = os.environ['TELEGRAM_CHAT_ID']
-          resp = requests.post(
-            f'https://api.telegram.org/bot{token}/sendMessage',
-            json={
-              'chat_id': chat_id,
-              'text': '🧪 <b>BOBİ TV v3.0 Test Başladı</b>\n\nedge-tts + ASS altyazı + sinematik render\nSenaryo → TTS → Render → YouTube',
-              'parse_mode': 'HTML'
-            }
-          )
-          print('Telegram test:', 'OK' if resp.status_code == 200 else f'HATA {resp.status_code}')
-          "
-
-      - name: Pipeline'ı çalıştır
+      - name: Pipeline testini çalıştır
         env:
           YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          GUNLUK_HEDEF: ${{ github.event.inputs.hedef }}
+          ARENA_COOKIES_JSON: ${{ secrets.ARENA_COOKIES_JSON }}
+          GUNLUK_HEDEF: '1'
+          YUKLEME_ATLA: ${{ github.event.inputs.yukle == '1' && '0' || '1' }}
         run: |
           python main_pipeline.py
 
-      - name: Sonuç bildir
+      - name: Test Videosunu Artifact olarak yükle
         if: always()
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          python -c "
-          import os, requests
-          token = os.environ['TELEGRAM_BOT_TOKEN']
-          chat_id = os.environ['TELEGRAM_CHAT_ID']
-          durum = '✅ Başarılı' if '${{ job.status }}' == 'success' else '❌ Başarısız'
-          requests.post(
-            f'https://api.telegram.org/bot{token}/sendMessage',
-            json={
-              'chat_id': chat_id,
-              'text': f'🧪 <b>BOBİ TV Test Tamamlandı</b>\nDurum: {durum}\nDetay: https://github.com/mehetgege3-cmyk/bobi-tv/actions',
-              'parse_mode': 'HTML'
-            }
-          )
-          "
-
-      - name: Arşivi commit et
-        if: always()
-        run: |
-          git config user.name "BOBİ TV Bot"
-          git config user.email "bobi-tv-bot@users.noreply.github.com"
-          git add bobi_tv/archive/ bobi_tv/logs/ || true
-          git diff --staged --quiet || git commit -m "🧪 Test arşiv güncellendi [$(date +%Y-%m-%d)]"
-          git push || true
+        uses: actions/upload-artifact@v4
+        with:
+          name: bobi-tv-v6-test-video-${{ github.run_number }}
+          if-no-files-found: error
+          retention-days: 5
+          path: |
+            bobi_tv/output/*.mp4
+            bobi_tv/output/*_thumb.jpg

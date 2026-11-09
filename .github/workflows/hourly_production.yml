@@ -1,14 +1,15 @@
-name: BOBİ TV — Saatlik Video Üretimi (24/7)
+name: BOBİ TV v6.0 PRO — Pik Saat Video Üretimi
 
 on:
   schedule:
-    - cron: '3 * * * *'
+    # Türkiye Altın Shorts Saatleri: 09:03, 13:03, 18:03, 21:03 TSİ
+    - cron: '3 6,10,15,18 * * *'
   workflow_dispatch:
     inputs:
       force:
         description: 'Zorla çalıştır (günlük limit kontrolünü atla)'
         required: false
-        default: 'false'
+        default: 'true'
 
 concurrency:
   group: hourly-production
@@ -16,9 +17,9 @@ concurrency:
 
 jobs:
   uret-ve-yayinla:
-    name: Saatlik Video Üretimi
+    name: BOBİ TV v6.0 Pro Üretim & Yayın
     runs-on: ubuntu-latest
-    timeout-minutes: 55
+    timeout-minutes: 45
 
     steps:
       - name: Repo'yu çek
@@ -45,17 +46,7 @@ jobs:
       - name: Python bağımlılıklarını ve Playwright Chromium'u kur
         run: |
           python -m pip install --upgrade pip -q
-          python -m pip install -q \
-            edge-tts==7.0.0 \
-            gTTS==2.5.4 \
-            requests==2.32.3 \
-            google-auth==2.35.0 \
-            google-auth-httplib2==0.2.0 \
-            google-api-python-client==2.151.0 \
-            Pillow==11.0.0 \
-            numpy==2.1.3 \
-            PyNaCl==1.5.0 \
-            playwright==1.48.0
+          python -m pip install -q -r requirements.txt
           python -m playwright install --with-deps chromium
 
       - name: Günlük video sayısını kontrol et
@@ -68,19 +59,18 @@ jobs:
 
           arsiv = Path("bobi_tv/archive/videos.json")
           bugun = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-          hedef = 24
+          hedef = 4
 
           bugunki = 0
           if arsiv.exists():
               try:
-                  kayitlar = json.loads(arsiv.read_text())
+                  kayitlar = json.loads(arsiv.read_text(encoding="utf-8"))
                   bugunki = sum(1 for k in kayitlar if k.get("tarih","")[:10] == bugun)
               except Exception:
                   pass
 
           kalan = max(0, hedef - bugunki)
           devam = "true" if kalan > 0 else "false"
-
           print(f"Bugün yayınlanan: {bugunki}/{hedef} | Kalan: {kalan} | Devam: {devam}")
 
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
@@ -89,12 +79,12 @@ jobs:
               f.write(f"devam={devam}\n")
           PYEOF
 
-      - name: Klasör yapısını oluştur
+      - name: Klasör yapısını hazırla
         if: steps.kapasite.outputs.devam == 'true' || github.event.inputs.force == 'true'
         run: |
-          mkdir -p bobi_tv/{queue,production/{scripts/{arena},assets/{characters,backgrounds,sfx},tts,animation,render},output,archive/published,logs,config}
+          mkdir -p bobi_tv/{queue,assets/{fonts,sfx},production/{scripts/arena,tts,render},output,archive/published,logs,config}
 
-      - name: Pipeline'ı çalıştır (1 video)
+      - name: BOBİ TV v6.0 Pro Pipeline'ı çalıştır
         if: steps.kapasite.outputs.devam == 'true' || github.event.inputs.force == 'true'
         env:
           YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
@@ -102,11 +92,24 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           ARENA_COOKIES_JSON: ${{ secrets.ARENA_COOKIES_JSON }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           SAVE_UPDATED_COOKIES: /tmp/updated_arena_cookies.json
           GUNLUK_HEDEF: '1'
+          GUNLUK_MAKS: ${{ github.event.inputs.force == 'true' && '99' || '4' }}
           MOD: 'saatlik'
         run: |
           python main_pipeline.py
+
+      - name: Üretilen Pro MP4 ve Kapağı Artifact olarak yükle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bobi-tv-v6-pro-video-${{ github.run_number }}
+          if-no-files-found: ignore
+          retention-days: 5
+          path: |
+            bobi_tv/output/*.mp4
+            bobi_tv/output/*_thumb.jpg
 
       - name: Yenilenen Arena çerezini GitHub Secret'a geri kaydet
         if: always()
@@ -119,31 +122,17 @@ jobs:
             echo "ARENA_COOKIES_JSON güncellendi."
           fi
 
-      - name: Arşivi commit et
+      - name: Arşivi ve kuyruk durumunu commit et
         if: always()
         run: |
           git config user.name "BOBİ TV Bot"
           git config user.email "bobi-tv-bot@users.noreply.github.com"
-          git add bobi_tv/archive/ || true
-          git diff --staged --quiet || git commit -m "📺 Saatlik arşiv [$(date +%Y-%m-%dT%H:%M)] [skip ci]"
-          git push || true
-
-      - name: Limit doldu bildirimi
-        if: steps.kapasite.outputs.devam == 'false' && github.event.inputs.force != 'true'
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          python -c "
-          import os, requests
-          token = os.environ.get('TELEGRAM_BOT_TOKEN','')
-          chat_id = os.environ.get('TELEGRAM_CHAT_ID','')
-          if token and chat_id:
-              requests.post(f'https://api.telegram.org/bot{token}/sendMessage',
-                json={'chat_id': chat_id,
-                      'text': '✅ <b>BOBİ TV</b> Günlük 24 video hedefine ulaşıldı!',
-                      'parse_mode': 'HTML'}, timeout=10)
-          "
+          git add bobi_tv/archive/ bobi_tv/queue/*.json bobi_tv/production/scripts/arena/ 2>/dev/null || git add -u bobi_tv/archive/ bobi_tv/queue/ bobi_tv/production/scripts/arena/ || true
+          if ! git diff --staged --quiet; then
+            git commit -m "📺 BOBİ TV v6.0 arşiv/kuyruk [$(date +%Y-%m-%dT%H:%M)] [skip ci]"
+            git pull --rebase origin main || true
+            git push || true
+          fi
 
       - name: Hata bildirimi
         if: failure()
@@ -155,10 +144,10 @@ jobs:
           import os, requests
           token = os.environ.get('TELEGRAM_BOT_TOKEN','')
           chat_id = os.environ.get('TELEGRAM_CHAT_ID','')
-          saat = __import__('datetime').datetime.utcnow().strftime('%H:00')
+          saat = __import__('datetime').datetime.utcnow().strftime('%H:%M')
           if token and chat_id:
               requests.post(f'https://api.telegram.org/bot{token}/sendMessage',
                 json={'chat_id': chat_id,
-                      'text': f'🔴 <b>BOBİ TV {saat} üretimi başarısız</b>\nhttps://github.com/mehetgege3-cmyk/bobi-tv/actions',
+                      'text': f'🔴 <b>BOBİ TV v6.0 ({saat} UTC) başarısız</b>\nhttps://github.com/mehetgege3-cmyk/bobi-tv/actions',
                       'parse_mode': 'HTML'}, timeout=10)
           "

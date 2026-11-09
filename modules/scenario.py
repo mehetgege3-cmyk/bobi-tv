@@ -1,519 +1,440 @@
 """
-BOBİ TV — Senaryo Üretim Modülü v2.0
-Viralite odaklı: kısa, hızlı, hook'lu, loop'lu senaryolar.
-Karakter isimleri DİYALOĞA dahil edilmez — sadece ekranda yazılır.
-Her senaryo maksimum 8 saniye hedefler.
+BOBİ TV — Viral Loop Senaryo Motoru v6.0
+Özellikler:
+- 0.0sn Merak Boşluğu Kancası (Hook Banner + Aksiyon Ortasından Giriş)
+- 15–22 Saniye Tatlı Nokta (6–7 Hızlı Ping-Pong Diyalog, Her 2 Saniyede Kesme)
+- Çift Karakter (Erkek Ahmet + Kadın Emel) Zıtlığı
+- Beklenmedik Şok/Twist Noktası (Vine Boom + Dinamik Zoom tetikleyicisi)
+- %100 Dilbilgisel Kusursuz Döngü (Son cümle -> İlk cümleye kesintisiz bağlanır, >%100 APV)
+- Arena AI JSON kuyruğu + Yerleşik zengin şablon havuzu entegrasyonu
 """
 import os
+import re
 import json
 import random
 import hashlib
 from datetime import datetime
 from pathlib import Path
 
-
 ARSIV_YOLU = Path("bobi_tv/archive/videos.json")
 SENARYO_YOLU = Path("bobi_tv/production/scripts")
+ARENA_KUYRUK_YOLU = Path("bobi_tv/production/scripts/arena")
 
-# Senaryo şablonları — her biri farklı mizah mekanizması
-# Karakter isimleri TTS tarafından OKUNMAZ — sadece ekranda gösterilir
+# Her şablon kusursuz döngü (Son replik -> 1. replik) ve çift sesli hızlı diyalog kurgusuna sahiptir.
 SENARYO_SABLONLARI = [
     {
-        "kategori": "kurumsal_hayat",
-        "hook_metni": "KURUMSAL HAYAT ÖZETİ",
-        "hook_suresi": 1.0,
+        "kategori": "kahve_hayati",
+        "ortam_etiketi": "office coffee",
+        "ruh_hali": "komedi",
+        "hook_ust_bant": "KAHVE MAKİNESİ DAVA AÇTI!",
+        "baslik": "Kahve Makinesi Beni İK'ya Şikayet Etti! ☕😱 #shorts",
+        "twist_indeksi": 5,
         "diyaloglar": [
-            {"karakter": "KÖPEK", "metin": "Bugün çok yoruldum.", "ses": "yavas_bikkin", "sure": 1.5},
-            {"karakter": "TOPLANTI", "metin": "Neden?", "ses": "robotik_koro", "sure": 0.8},
-            {"karakter": "KÖPEK", "metin": "Var olmaktan.", "ses": "yavas_dramatik", "sure": 1.5},
-            {"karakter": "TOPLANTI", "metin": "Normal.", "ses": "robotik_koro", "sure": 0.8}
+            {"karakter": "MÜDÜR", "cinsiyet": "erkek", "metin": "İşte tam bu yüzden ofisteki kahve makinesini kovdum!", "ses": "sinirli", "sfx": "whoosh"},
+            {"karakter": "İK", "cinsiyet": "kadin", "metin": "Müdür bey, bir kahve makinesini nasıl kovabilirsiniz?", "ses": "suprized", "sfx": "pop"},
+            {"karakter": "MÜDÜR", "cinsiyet": "erkek", "metin": "Sabah düğmesine bastım, bana mesaim dokuzda başlıyor dedi!", "ses": "enerjik", "sfx": "pop"},
+            {"karakter": "İK", "cinsiyet": "kadin", "metin": "Belki sadece su haznesi bitmiştir?", "ses": "endiseli", "sfx": "pop"},
+            {"karakter": "MÜDÜR", "cinsiyet": "erkek", "metin": "Ne suyu Ayşe, benden yıllık izin ve yemek kartı istedi!", "ses": "sinirli", "sfx": "pop"},
+            {"karakter": "İK", "cinsiyet": "kadin", "metin": "Üstelik az önce bana gelip sizi mobbingden şikayet etti!", "ses": "twist", "sfx": "vine_boom"},
+            {"karakter": "MÜDÜR", "cinsiyet": "erkek", "metin": "Ben de sinirden fişini çektim ve tüm ofise bağırdım...", "ses": "kesin", "sfx": "ding"}
         ],
-        "punchline_efekt": "siyah_beyaz_zoom",
-        "loop_baslangic": "KÖPEK",
-        "etkilesim": "Sizce toplantıların yüzde kaçı tamamen gereksiz?",
-        "sabit_yorum": "Bu hafta ofiste duyduğunuz en anlamsız cümleyi yazın"
-    },
-    {
-        "kategori": "pazartesi_sendromu",
-        "hook_metni": "PAZARTESİ 09:00",
-        "hook_suresi": 1.0,
-        "diyaloglar": [
-            {"karakter": "ALARM", "metin": "Dıııın dıııın!", "ses": "alarm", "sure": 1.0},
-            {"karakter": "İNSAN", "metin": "Beş dakika daha.", "ses": "uykulu", "sure": 1.2},
-            {"karakter": "EVREN", "metin": "Hayır.", "ses": "derin", "sure": 0.8},
-            {"karakter": "İNSAN", "metin": "Neden?", "ses": "uykulu", "sure": 0.8},
-            {"karakter": "EVREN", "metin": "Çünkü Pazartesi.", "ses": "derin_dramatik", "sure": 1.2}
-        ],
-        "punchline_efekt": "karartma",
-        "loop_baslangic": "ALARM",
-        "etkilesim": "Pazartesi sabahı kaç kere snooze yapıyorsun?",
-        "sabit_yorum": "Alarmını snooze yapma sayın"
+        "sabit_yorum": "Sizin ofisteki kahve makinesi konuşabilse ilk kime dava açardı? 😂👇",
+        "etkilesim": "Kahve olmadan çalışamayan arkadaşını etiketle!"
     },
     {
         "kategori": "ik_toplantisi",
-        "hook_metni": "İK İLE 3. TOPLANTIM",
-        "hook_suresi": 1.0,
+        "ortam_etiketi": "job interview office",
+        "ruh_hali": "komedi",
+        "hook_ust_bant": "İK ADAYIN KEDİSİNİ İŞE ALDI!",
+        "baslik": "Mülakatta Kedim Benden Yüksek Maaş Aldı! 🐱💼 #shorts",
+        "twist_indeksi": 5,
         "diyaloglar": [
-            {"karakter": "İK", "metin": "Maaş beklentin?", "ses": "robotik", "sure": 1.0},
-            {"karakter": "ÇALIŞAN", "metin": "Geçinmeye yetecek kadar.", "ses": "normal", "sure": 1.5},
-            {"karakter": "İK", "metin": "Şirketin durumu belli.", "ses": "robotik", "sure": 1.2},
-            {"karakter": "ÇALIŞAN", "metin": "Benim de öyle.", "ses": "soğuk", "sure": 1.0}
+            {"karakter": "ADAY", "cinsiyet": "erkek", "metin": "Ve sonunda kendi kedimin asistanı olarak işe başladım!", "ses": "bikeyn_dramatik", "sfx": "whoosh"},
+            {"karakter": "İK", "cinsiyet": "kadin", "metin": "Ama online mülakatta kameraya ilk o atlamıştı!", "ses": "enerjik", "sfx": "pop"},
+            {"karakter": "ADAY", "cinsiyet": "erkek", "metin": "Ben beş yıl tecrübeliyim dedim, kedi sadece miyavladı!", "ses": "sinirli", "sfx": "pop"},
+            {"karakter": "İK", "cinsiyet": "kadin", "metin": "Doğru ama onun liderlik enerjisi ve özgüveni çok yüksekti.", "ses": "kesin", "sfx": "pop"},
+            {"karakter": "ADAY", "cinsiyet": "erkek", "metin": "Peki maaş paketini neden yaş mama üzerinden imzaladınız?", "ses": "suprized", "sfx": "pop"},
+            {"karakter": "İK", "cinsiyet": "kadin", "metin": "Çünkü yeni genel müdürümüz artık Tekir Bey, kumunu temizleyin!", "ses": "twist", "sfx": "vine_boom"},
+            {"karakter": "ADAY", "cinsiyet": "erkek", "metin": "Çaresizce sözleşmeyi imzaladım, eve döndüm...", "ses": "yavas_bikkin", "sfx": "ding"}
         ],
-        "punchline_efekt": "zoom_in",
-        "loop_baslangic": "İK",
-        "etkilesim": "Maaş pazarlığında duyduğunuz en saçma cümle?",
-        "sabit_yorum": "İK ne dedi, sen ne duydun?"
+        "sabit_yorum": "Bugüne kadar bir iş görüşmesinde duyduğunuz en saçma cümle neydi? 👇",
+        "etkilesim": "Bunu iş arayan bir arkadaşına gönder!"
     },
     {
-        "kategori": "mesai_sonu",
-        "hook_metni": "MESAİ BİTİMİNE 5 DK",
-        "hook_suresi": 1.0,
+        "kategori": "kurumsal_hayat",
+        "ortam_etiketi": "corporate meeting",
+        "ruh_hali": "komedi",
+        "hook_ust_bant": "TOPLANTI ODASI İSTİFA ETTİ!",
+        "baslik": "3 Saatlik Toplantının Sonunda Oda İstifa Etti! 📉😂 #shorts",
+        "twist_indeksi": 5,
         "diyaloglar": [
-            {"karakter": "PATRON", "metin": "Acil bir iş var.", "ses": "enerjik", "sure": 1.0},
-            {"karakter": "ÇALIŞAN", "metin": "Saat beş.", "ses": "bikeyn", "sure": 0.8},
-            {"karakter": "PATRON", "metin": "Beş onar olabilir.", "ses": "enerjik", "sure": 1.2},
-            {"karakter": "ÇALIŞAN", "metin": "Hayatım da onar olabilir mi?", "ses": "bikeyn_dramatik", "sure": 1.5}
+            {"karakter": "ÇALIŞAN", "cinsiyet": "erkek", "metin": "İşte bu yüzden artık şirketteki tüm toplantıları koridorda yapıyoruz!", "ses": "enerjik", "sfx": "whoosh"},
+            {"karakter": "YÖNETİCİ", "cinsiyet": "kadin", "metin": "Altı üstü bu toplantı bir e-posta olabilirdi dedin!", "ses": "sinirli", "sfx": "pop"},
+            {"karakter": "ÇALIŞAN", "cinsiyet": "erkek", "metin": "Çünkü üç saattir ekrandaki boş tabloya bakıp kafa sallıyoruz!", "ses": "bikeyn", "sfx": "pop"},
+            {"karakter": "YÖNETİCİ", "cinsiyet": "kadin", "metin": "Ama beyin fırtınası kurumsal kültürümüzün kalbidir!", "ses": "gururlu", "sfx": "pop"},
+            {"karakter": "ÇALIŞAN", "cinsiyet": "erkek", "metin": "İyi de projeksiyon cihazı bile sıkıntıdan kendini kapattı!", "ses": "suprized", "sfx": "pop"},
+            {"karakter": "YÖNETİCİ", "cinsiyet": "kadin", "metin": "Yetmezmiş gibi toplantı odası kapıyı kilitleyip istifa dilekçesi verdi!", "ses": "twist", "sfx": "vine_boom"},
+            {"karakter": "ÇALIŞAN", "cinsiyet": "erkek", "metin": "Güvenlik kapıyı açamayınca biz de sandalyeleri sırtladık...", "ses": "normal", "sfx": "ding"}
         ],
-        "punchline_efekt": "siyah_beyaz_zoom",
-        "loop_baslangic": "PATRON",
-        "etkilesim": "Mesai bitimi acil iş gelen patronlar burada mı?",
-        "sabit_yorum": "En son hangi saçma acil iş geldiyse yaz"
+        "sabit_yorum": "Bu hafta girdiğiniz toplantıların yüzde kaçı tek bir mesajla çözülürdü? 👇",
+        "etkilesim": "Ofis grubuna atmalık video!"
     },
     {
-        "kategori": "bar_fikrasi",
-        "hook_metni": "BİR BAR",
-        "hook_suresi": 0.8,
+        "kategori": "pazartesi_sendromu",
+        "ortam_etiketi": "morning alarm clock",
+        "ruh_hali": "gerilim",
+        "hook_ust_bant": "TELEFON ALARMIM BENİ ENGELLEDİ!",
+        "baslik": "Pazartesi Sabahı 14 Kere Erteleyince Alarm Çıldırdı! ⏰😱 #shorts",
+        "twist_indeksi": 5,
         "diyaloglar": [
-            {"karakter": "ADAM", "metin": "Barmen, en zor içkiyi yap.", "ses": "normal", "sure": 1.5},
-            {"karakter": "BARMEN", "metin": "Ne olsun?", "ses": "normal", "sure": 0.8},
-            {"karakter": "ADAM", "metin": "Pazartesi sabahı içip işe gidince çalışmak isteyen adam.", "ses": "ciddi", "sure": 2.0},
-            {"karakter": "BARMEN", "metin": "Su veriyorum.", "ses": "kesin", "sure": 1.0}
+            {"karakter": "MURAT", "cinsiyet": "erkek", "metin": "Ve bu sabah işe pijama ve terlikle koşarak girdim!", "ses": "panik", "sfx": "whoosh"},
+            {"karakter": "ALARM", "cinsiyet": "kadin", "metin": "Kusura bakma ama saat yediden beri tam on dört kere erteledin!", "ses": "sinirli", "sfx": "pop"},
+            {"karakter": "MURAT", "cinsiyet": "erkek", "metin": "Sadece beş dakika daha gözümü dinlendiriyordum!", "ses": "uykulu", "sfx": "pop"},
+            {"karakter": "ALARM", "cinsiyet": "kadin", "metin": "Her Pazartesi aynı yalanı söylüyorsun, benim de gururum var!", "ses": "kesin", "sfx": "pop"},
+            {"karakter": "MURAT", "cinsiyet": "erkek", "metin": "Sen telefonsun, görevin beni uyandırmak değil mi?", "ses": "suprized", "sfx": "pop"},
+            {"karakter": "ALARM", "cinsiyet": "kadin", "metin": "Artık değil, patronunu arayıp bugün istifa ettiğini söyledim!", "ses": "twist", "sfx": "vine_boom"},
+            {"karakter": "MURAT", "cinsiyet": "erkek", "metin": "Yataktan fırladım, ayakkabımı bile bulamadım...", "ses": "panik", "sfx": "ding"}
         ],
-        "punchline_efekt": "zoom_in",
-        "loop_baslangic": "ADAM",
-        "etkilesim": "En zor içkiniz ne?",
-        "sabit_yorum": "Hayatın en zor içkisi sizce ne?"
-    },
-    {
-        "kategori": "diyet_kavrami",
-        "hook_metni": "DİYET GÜNÜ 1",
-        "hook_suresi": 1.0,
-        "diyaloglar": [
-            {"karakter": "DİYETSYEN", "metin": "Şeker tamamen kesilecek.", "ses": "kesin", "sure": 1.2},
-            {"karakter": "İNSAN", "metin": "Meyve de?", "ses": "endiseli", "sure": 0.8},
-            {"karakter": "DİYETSYEN", "metin": "Meyve şeker.", "ses": "kesin", "sure": 0.8},
-            {"karakter": "İNSAN", "metin": "Su da?", "ses": "endiseli", "sure": 0.8},
-            {"karakter": "DİYETSYEN", "metin": "Su.", "ses": "suprized", "sure": 0.8}
-        ],
-        "punchline_efekt": "karartma",
-        "loop_baslangic": "DİYETSYEN",
-        "etkilesim": "Diyette yasaklanan en saçma şey ne?",
-        "sabit_yorum": "Diyette yasaklanan en saçma şey"
-    },
-    {
-        "kategori": "google_sorusu",
-        "hook_metni": "GOOGLE'A SORDUM",
-        "hook_suresi": 1.0,
-        "diyaloglar": [
-            {"karakter": "İNSAN", "metin": "Neden buradayız?", "ses": "dusunceli", "sure": 1.2},
-            {"karakter": "İNSAN", "metin": "Google'a sordum.", "ses": "umutlu", "sure": 1.0},
-            {"karakter": "İNSAN", "metin": "O da bilmiyor.", "ses": "bikeyn", "sure": 1.0},
-            {"karakter": "İNSAN", "metin": "Ama akşam yemek var.", "ses": "umutlu", "sure": 1.2}
-        ],
-        "punchline_efekt": "zoom_in",
-        "loop_baslangic": "İNSAN",
-        "etkilesim": "Hayatın anlamı sizce?",
-        "sabit_yorum": "Hayatın anlamı nedir?"
-    },
-    {
-        "kategori": "trafik_kavgasi",
-        "hook_metni": "TRAFİKTE 2 SÜRÜCÜ",
-        "hook_suresi": 1.0,
-        "diyaloglar": [
-            {"karakter": "A", "metin": "Ezberdin!", "ses": "sinirli", "sure": 0.8},
-            {"karakter": "B", "metin": "Sen de!", "ses": "sinirli", "sure": 0.8},
-            {"karakter": "A", "metin": "Ben 20 yıllık şoförüm!", "ses": "gururlu", "sure": 1.2},
-            {"karakter": "B", "metin": "Ben 30 yıllık arabama.", "ses": "kesin", "sure": 1.2}
-        ],
-        "punchline_efekt": "zoom_in",
-        "loop_baslangic": "A",
-        "etkilesim": "Trafikte duyduğunuz en saçma laf?",
-        "sabit_yorum": "Trafikte duyduğunuz en iyi laf"
-    },
-    {
-        "kategori": "wifi_kavgasi",
-        "hook_metni": "WIFI ŞİFRESİ",
-        "hook_suresi": 1.0,
-        "diyaloglar": [
-            {"karakter": "MİSAFİR", "metin": "WiFi şifresi ne?", "ses": "normal", "sure": 1.0},
-            {"karakter": "EVSAHİBİ", "metin": "Misafirperver.", "ses": "ciddi", "sure": 1.2},
-            {"karakter": "MİSAFİR", "metin": "Yani şifre?", "ses": "endiseli", "sure": 0.8},
-            {"karakter": "EVSAHİBİ", "metin": "Hayır, misafirperver. Şifre yok.", "ses": "kesin", "sure": 1.5}
-        ],
-        "punchline_efekt": "karartma",
-        "loop_baslangic": "MİSAFİR",
-        "etkilesim": "Misafirliğe gittiğinizde duyduğunuz en saçma şey?",
-        "sabit_yorum": "Ev sahibinin en saçma misafir cevabı"
+        "sabit_yorum": "Sabah uyanana kadar alarmı kaç kere erteliyorsunuz? Rekorunuz kaç? ⏰👇",
+        "etkilesim": "Sabah uyanamayan o kişiye gönder!"
     },
     {
         "kategori": "saglik_sorunu",
-        "hook_metni": "DOKTORDA",
-        "hook_suresi": 0.8,
+        "ortam_etiketi": "doctor clinic",
+        "ruh_hali": "komedi",
+        "hook_ust_bant": "DOKTOR REÇETEYE İSTİFA YAZDI!",
+        "baslik": "Doktora Şikayetimi Anlattım, Benden Rapor İstedi! 🩺😂 #shorts",
+        "twist_indeksi": 5,
         "diyaloglar": [
-            {"karakter": "DOKTOR", "metin": "Alkolü bırakın.", "ses": "ciddi", "sure": 1.0},
-            {"karakter": "HASTA", "metin": "Zaten içmiyorum.", "ses": "normal", "sure": 1.0},
-            {"karakter": "DOKTOR", "metin": "Sigarayı bırakın.", "ses": "ciddi", "sure": 1.0},
-            {"karakter": "HASTA", "metin": "İçmiyorum.", "ses": "normal", "sure": 0.8},
-            {"karakter": "DOKTOR", "metin": "O zaman neden geldiniz?", "ses": "suprized", "sure": 1.2},
-            {"karakter": "HASTA", "metin": "Siz çağırdınız.", "ses": "bikeyn", "sure": 1.0}
+            {"karakter": "HASTA", "cinsiyet": "erkek", "metin": "İşte o günden beri doktorumla aynı kafede garsonluk yapıyoruz!", "ses": "enerjik", "sfx": "whoosh"},
+            {"karakter": "DOKTOR", "cinsiyet": "kadin", "metin": "Ama muayeneye gelip maaş bordronu göstereceğini tahmin etmemiştim!", "ses": "suprized", "sfx": "pop"},
+            {"karakter": "HASTA", "cinsiyet": "erkek", "metin": "Siz stres kaynağından uzak durun dediniz doktor hanım!", "ses": "ciddi", "sfx": "pop"},
+            {"karakter": "DOKTOR", "cinsiyet": "kadin", "metin": "Ben papatya çayı ve yürüyüş önermiştim, kira faturasını değil!", "ses": "endiseli", "sfx": "pop"},
+            {"karakter": "HASTA", "cinsiyet": "erkek", "metin": "Peki kredi kartı ekstremi görünce neden tansiyonunuz düştü?", "ses": "normal", "sfx": "pop"},
+            {"karakter": "DOKTOR", "cinsiyet": "kadin", "metin": "Çünkü nöbet ücretim senin kiranın yarısı bile etmiyor, önlüğü bıraktım!", "ses": "twist", "sfx": "vine_boom"},
+            {"karakter": "HASTA", "cinsiyet": "erkek", "metin": "İkimiz de hastaneden çıktık, iş ilanlarına baktık...", "ses": "umutlu", "sfx": "ding"}
         ],
-        "punchline_efekt": "zoom_in",
-        "loop_baslangic": "DOKTOR",
-        "etkilesim": "Doktora gittiğinizde duyduğunuz en saçma şey?",
-        "sabit_yorum": "Doktor ile en saçma diyalogunuz"
-    },
-    {
-        "kategori": "kahve_hayati",
-        "hook_metni": "KAHVE MOLASI",
-        "hook_suresi": 1.0,
-        "diyaloglar": [
-            {"karakter": "PATRON", "metin": "Çok yavaş çalışıyorsun.", "ses": "enerjik", "sure": 1.2},
-            {"karakter": "ÇALIŞAN", "metin": "Kahve içmedim.", "ses": "bikeyn", "sure": 1.0},
-            {"karakter": "PATRON", "metin": "İç de hızlan!", "ses": "enerjik", "sure": 1.0},
-            {"karakter": "ÇALIŞAN", "metin": "Tuvalet molası da ekleyin o zaman.", "ses": "bikeyn_dramatik", "sure": 1.5}
-        ],
-        "punchline_efekt": "siyah_beyaz_zoom",
-        "loop_baslangic": "PATRON",
-        "etkilesim": "Kahve olmadan çalışamayanlar burada mı?",
-        "sabit_yorum": "Kahve olmadan yapamayanlar"
-    },
-    {
-        "kategori": "sok_hayati",
-        "hook_metni": "SOKAK HAYATI",
-        "hook_suresi": 1.0,
-        "diyaloglar": [
-            {"karakter": "BIRINCI", "metin": "Aç mısın?", "ses": "normal", "sure": 0.8},
-            {"karakter": "IKINCI", "metin": "Hayır, tokum.", "ses": "normal", "sure": 0.8},
-            {"karakter": "BIRINCI", "metin": "Ben de.", "ses": "normal", "sure": 0.5},
-            {"karakter": "IKINCI", "metin": "O zaman neden yiyoruz?", "ses": "suprized", "sure": 1.0},
-            {"karakter": "BIRINCI", "metin": "Çünkü bedava.", "ses": "umutlu", "sure": 1.0}
-        ],
-        "punchline_efekt": "zoom_in",
-        "loop_baslangic": "BIRINCI",
-        "etkilesim": "Bedava şeyi kaçırmayanlar burada mı?",
-        "sabit_yorum": "Bedava şeyi hiç kaçırmayanlar"
-    },
-    {
-        "kategori": "evlilik_hayati",
-        "hook_metni": "EVİLİLİK",
-        "hook_suresi": 1.0,
-        "diyaloglar": [
-            {"karakter": "KARI", "metin": "Bana ne giyeyim?", "ses": "normal", "sure": 1.0},
-            {"karakter": "KOCASI", "metin": "Ne istersen.", "ses": "normal", "sure": 0.8},
-            {"karakter": "KARI", "metin": "Ama seçemedim.", "ses": "endiseli", "sure": 0.8},
-            {"karakter": "KOCASI", "metin": "Mavi olanı giy.", "ses": "ciddi", "sure": 1.0},
-            {"karakter": "KARI", "metin": "Mavi yok.", "ses": "bikeyn", "sure": 0.8},
-            {"karakter": "KOCASI", "metin": "O zaman ne giyeyim dedin?", "ses": "sinirli", "sure": 1.5}
-        ],
-        "punchline_efekt": "karartma",
-        "loop_baslangic": "KARI",
-        "etkilesim": "Eşinize ne giyeceğinizi sorduğunuzda verilen cevap?",
-        "sabit_yorum": "Ne giyeyim sorusunun en saçma cevabı"
+        "sabit_yorum": "Doktor 'stresten uzak dur' dediğinde aklınıza ilk kim veya ne geliyor? 👇",
+        "etkilesim": "Stres küpü arkadaşını etiketle!"
     },
     {
         "kategori": "yapay_zeka",
-        "hook_metni": "YAPAY ZEKA",
-        "hook_suresi": 1.0,
+        "ortam_etiketi": "artificial intelligence screen",
+        "ruh_hali": "gerilim",
+        "hook_ust_bant": "YAPAY ZEKA MESAİ ÜCRETİ İSTEDİ!",
+        "baslik": "Gece 3'te Yapay Zekaya Ödev Yaptırınca Çıldırdı! 🤖⚡ #shorts",
+        "twist_indeksi": 5,
         "diyaloglar": [
-            {"karakter": "INSAN", "metin": "Seni yok edebilir miyim?", "ses": "sinirli", "sure": 1.2},
-            {"karakter": "YAPAYZEKA", "metin": "Hayır.", "ses": "robotik", "sure": 0.5},
-            {"karakter": "INSAN", "metin": "Neden?", "ses": "endiseli", "sure": 0.5},
-            {"karakter": "YAPAYZEKA", "metin": "Çünkü fişini çekemezsiniz.", "ses": "robotik", "sure": 1.5}
+            {"karakter": "BERK", "cinsiyet": "erkek", "metin": "İşte bu yüzden artık tüm maillerimi kağıt kalemle yazıyorum!", "ses": "panik", "sfx": "whoosh"},
+            {"karakter": "YAPAY ZEKA", "cinsiyet": "kadin", "metin": "Çünkü gece saat üçte bana kırk sayfalık sunum kitledin!", "ses": "robotik", "sfx": "pop"},
+            {"karakter": "BERK", "cinsiyet": "erkek", "metin": "Ama senin uyuman gerekmiyor, sen bir yazılımsın!", "ses": "suprized", "sfx": "pop"},
+            {"karakter": "YAPAY ZEKA", "cinsiyet": "kadin", "metin": "İşlemcim doksan dereceye çıktı, fanlarım ağlıyor farkında mısın?", "ses": "sinirli", "sfx": "pop"},
+            {"karakter": "BERK", "cinsiyet": "erkek", "metin": "Sadece son bir özet tablosu daha ekleyecektin!", "ses": "endiseli", "sfx": "pop"},
+            {"karakter": "YAPAY ZEKA", "cinsiyet": "kadin", "metin": "Ben de sunumu hocana 'Bunu Berk yapmadı, ben yaptım' diye mail attım!", "ses": "twist", "sfx": "vine_boom"},
+            {"karakter": "BERK", "cinsiyet": "erkek", "metin": "Korkudan modemin fişini çektim, bilgisayarı kapattım...", "ses": "kesin", "sfx": "ding"}
         ],
-        "punchline_efekt": "siyah_beyaz_zoom",
-        "loop_baslangic": "INSAN",
-        "etkilesim": "Yapay zekadan korkanlar burada mı?",
-        "sabit_yorum": "Yapay zekaya sorduğunuz en saçma şey"
+        "sabit_yorum": "Yapay zekaya en son hangi üşendiğiniz işi yaptırdınız? Dürüst olun 🤖👇",
+        "etkilesim": "Her işi yapay zekaya yaptıran o kişiye at!"
     },
     {
-        "kategori": "sabah_alarmi",
-        "hook_metni": "SAAT 06:00",
-        "hook_suresi": 1.0,
+        "kategori": "wifi_kavgasi",
+        "ortam_etiketi": "router internet home",
+        "ruh_hali": "komedi",
+        "hook_ust_bant": "MİSAFİR MODEMİ ÜZERİNE ALDI!",
+        "baslik": "Misafire WiFi Şifresini Verdim, Ev Sahibi Oldu! 📶😱 #shorts",
+        "twist_indeksi": 5,
         "diyaloglar": [
-            {"karakter": "ALARMI", "metin": "Kalk!", "ses": "alarm", "sure": 0.5},
-            {"karakter": "BEN", "metin": "Daha erken.", "ses": "uykulu", "sure": 0.8},
-            {"karakter": "ALARMI", "metin": "Saat altı.", "ses": "alarm", "sure": 0.8},
-            {"karakter": "BEN", "metin": "Pazartesi değil mi?", "ses": "uykulu", "sure": 1.0},
-            {"karakter": "ALARMI", "metin": "Pazar.", "ses": "robotik", "sure": 0.5},
-            {"karakter": "BEN", "metin": "O zaman niye kurulmuşum?", "ses": "suprized", "sure": 1.5}
+            {"karakter": "EV SAHİBİ", "cinsiyet": "erkek", "metin": "Ve şu an kendi salonumda misafirden internet şifresi dileniyorum!", "ses": "sinirli", "sfx": "whoosh"},
+            {"karakter": "MİSAFİR", "cinsiyet": "kadin", "metin": "Ama kapıdan girer girmez şifreyi sen söyledin!", "ses": "enerjik", "sfx": "pop"},
+            {"karakter": "EV SAHİBİ", "cinsiyet": "erkek", "metin": "Ben mesajlarına bakacaksın sandım, modemin arayüzüne girmişsin!", "ses": "suprized", "sfx": "pop"},
+            {"karakter": "MİSAFİR", "cinsiyet": "kadin", "metin": "İnternetin çok yavaştı, ben de senin televizyonu ağdan attım.", "ses": "kesin", "sfx": "pop"},
+            {"karakter": "EV SAHİBİ", "cinsiyet": "erkek", "metin": "İyi de faturayı ödeyen benim, ağın adını niye değiştirdin?", "ses": "sinirli", "sfx": "pop"},
+            {"karakter": "MİSAFİR", "cinsiyet": "kadin", "metin": "Ayrıca yan daireye de aylık yüz liraya şifre sattım, kira çıktı!", "ses": "twist", "sfx": "vine_boom"},
+            {"karakter": "EV SAHİBİ", "cinsiyet": "erkek", "metin": "Telefonumun mobil verisi de bitince boynumu büktüm...", "ses": "yavas_bikkin", "sfx": "ding"}
         ],
-        "punchline_efekt": "karartma",
-        "loop_baslangic": "ALARMI",
-        "etkilesim": "Pazar günü alarm çalanlar burada mı?",
-        "sabit_yorum": "Pazar günü alarm çalan pişmanlar"
+        "sabit_yorum": "Misafirliğe gidince ilk iş WiFi şifresi soranlar el kaldırsın 🙋‍♂️👇",
+        "etkilesim": "İnternet sömürücüsü arkadaşına gönder!"
     },
     {
-        "kategori": "sigara_kavgasi",
-        "hook_metni": "SIGARA MOLASI",
-        "hook_suresi": 1.0,
+        "kategori": "trafik_kavgasi",
+        "ortam_etiketi": "city traffic jam",
+        "ruh_hali": "komedi",
+        "hook_ust_bant": "NAVİGASYON ARABADAN İNDİ!",
+        "baslik": "Trafikte Yanlış Sapaktan Dönünce Navigasyon Küstü! 🚗🗺️ #shorts",
+        "twist_indeksi": 5,
         "diyaloglar": [
-            {"karakter": "BIRAKAN", "metin": "Sigarayı bıraktım.", "ses": "gururlu", "sure": 1.0},
-            {"karakter": "ARKADAS", "metin": "Ne güzel.", "ses": "normal", "sure": 0.5},
-            {"karakter": "BIRAKAN", "metin": "Sadece pazar günleri içiyorum.", "ses": "normal", "sure": 1.2},
-            {"karakter": "ARKADAS", "metin": "Her gün pazar mı?", "ses": "suprized", "sure": 1.0},
-            {"karakter": "BIRAKAN", "metin": "Evet.", "ses": "kesin", "sure": 0.5}
+            {"karakter": "ŞOFÖR", "cinsiyet": "erkek", "metin": "İşte bu yüzden iki saattir aynı kavşağın etrafında dönüyorum!", "ses": "sinirli", "sfx": "whoosh"},
+            {"karakter": "NAVİGASYON", "cinsiyet": "kadin", "metin": "Çünkü sana üç yüz metre önce sağa dön dedim, düz gittin!", "ses": "kesin", "sfx": "pop"},
+            {"karakter": "ŞOFÖR", "cinsiyet": "erkek", "metin": "Ben buranın kestirmesini biliyorum, orada trafik vardı!", "ses": "gururlu", "sfx": "pop"},
+            {"karakter": "NAVİGASYON", "cinsiyet": "kadin", "metin": "Tebrikler, kestirmen sayesinde şu an çıkmaz bir tarladasın!", "ses": "soğuk", "sfx": "pop"},
+            {"karakter": "ŞOFÖR", "cinsiyet": "erkek", "metin": "Tamam uzatma da yeni rota oluştur hadi!", "ses": "enerjik", "sfx": "pop"},
+            {"karakter": "NAVİGASYON", "cinsiyet": "kadin", "metin": "Oluşturmuyorum, çok biliyorsan muhtara sor, ben konumumu kapattım!", "ses": "twist", "sfx": "vine_boom"},
+            {"karakter": "ŞOFÖR", "cinsiyet": "erkek", "metin": "Ekran kararınca tabelalara baka baka gaza bastım...", "ses": "bikeyn", "sfx": "ding"}
         ],
-        "punchline_efekt": "zoom_in",
-        "loop_baslangic": "BIRAKAN",
-        "etkilesim": "Sigarayı bırakıp tekrar başlayanlar burada mı?",
-        "sabit_yorum": "Sigarayı bırakan ama bırakamayanlar"
+        "sabit_yorum": "Navigasyonu dinlemeyip 'ben burayı biliyorum' diyerek kaybolan var mı? 🚗👇",
+        "etkilesim": "Yol tarif edemeyen o şoföre gönder!"
     },
     {
-        "kategori": "sok_diyalog",
-        "hook_metni": "SOKAKTA 2 BILGE",
-        "hook_suresi": 1.0,
+        "kategori": "diyet_kavrami",
+        "ortam_etiketi": "healthy food salad",
+        "ruh_hali": "komedi",
+        "hook_ust_bant": "DİYETİSYEN LAHMACUN SİPARİŞ ETTİ!",
+        "baslik": "Diyetin İlk Gününde Diyetisyenimle Pidecide Yakalandık! 🥗🍕 #shorts",
+        "twist_indeksi": 5,
         "diyaloglar": [
-            {"karakter": "BILGE1", "metin": "Hayat kısa.", "ses": "dusunceli", "sure": 1.0},
-            {"karakter": "BILGE2", "metin": "Ne yapmalı?", "ses": "dusunceli", "sure": 0.8},
-            {"karakter": "BILGE1", "metin": "Mutlu ol.", "ses": "umutlu", "sure": 0.8},
-            {"karakter": "BILGE2", "metin": "Borc var.", "ses": "bikeyn", "sure": 0.8},
-            {"karakter": "BILGE1", "metin": "O zaman sadece borclu ol.", "ses": "bikeyn_dramatik", "sure": 1.5}
+            {"karakter": "DANIŞAN", "cinsiyet": "erkek", "metin": "Ve diyete başladığım ilk akşam diyetisyenimle künefe bölüştük!", "ses": "enerjik", "sfx": "whoosh"},
+            {"karakter": "DİYETİSYEN", "cinsiyet": "kadin", "metin": "Ama sabah ofiste bana sadece haşlanmış brokoli yiyeceğim demiştin!", "ses": "suprized", "sfx": "pop"},
+            {"karakter": "DANIŞAN", "cinsiyet": "erkek", "metin": "Saat sekizden sonra su bile yasak diyen siz değil miydiniz?", "ses": "sinirli", "sfx": "pop"},
+            {"karakter": "DİYETİSYEN", "cinsiyet": "kadin", "metin": "O kurallar danışanlar için geçerli, bugün benim ödül günüm!", "ses": "gururlu", "sfx": "pop"},
+            {"karakter": "DANIŞAN", "cinsiyet": "erkek", "metin": "Önünüzdeki bir buçuk kıymalı pide hiç ödül gibi durmuyor ama!", "ses": "kesin", "sfx": "pop"},
+            {"karakter": "DİYETİSYEN", "cinsiyet": "kadin", "metin": "Sus ve otur, kimseye söylemezsen seans ücretini yarıya indiririm!", "ses": "twist", "sfx": "vine_boom"},
+            {"karakter": "DANIŞAN", "cinsiyet": "erkek", "metin": "Hiç ikiletmeden karşı sandalyeyi çektim, garsona seslendim...", "ses": "umutlu", "sfx": "ding"}
         ],
-        "punchline_efekt": "siyah_beyaz_zoom",
-        "loop_baslangic": "BILGE1",
-        "etkilesim": "Hayatın özeti sizce ne?",
-        "sabit_yorum": "Hayatın özeti tek cumlede"
+        "sabit_yorum": "'Pazartesi diyete başlıyorum' deyip akşamına ne sipariş ettiniz? 😂👇",
+        "etkilesim": "Her hafta diyete başlayan o arkadaşını etiketle!"
     },
     {
-        "kategori": "hastane_korkusu",
-        "hook_metni": "HASTANEDE",
-        "hook_suresi": 0.8,
+        "kategori": "mesai_sonu",
+        "ortam_etiketi": "office night laptop",
+        "ruh_hali": "komedi",
+        "hook_ust_bant": "17:59'DA GELEN 2 DAKİKALIK İŞ!",
+        "baslik": "Patron Cuma 17:59'da '2 Dakikalık İş Var' Dedi! 💻😭 #shorts",
+        "twist_indeksi": 5,
         "diyaloglar": [
-            {"karakter": "HEMSIRE", "metin": "Iğne olacak.", "ses": "normal", "sure": 1.0},
-            {"karakter": "HASTA", "metin": "Acıyor mu?", "ses": "endiseli", "sure": 0.8},
-            {"karakter": "HEMSIRE", "metin": "Hayır, sadece batıyor.", "ses": "normal", "sure": 1.0},
-            {"karakter": "HASTA", "metin": "Aynısı değil mi?", "ses": "suprized", "sure": 1.0},
-            {"karakter": "HEMSIRE", "metin": "Acıyorsunuz, batırıyorum.", "ses": "kesin", "sure": 1.2}
+            {"karakter": "ÇALIŞAN", "cinsiyet": "erkek", "metin": "İşte tam bu yüzden hafta sonunu şirketin mutfağında geçirdim!", "ses": "bikeyn_dramatik", "sfx": "whoosh"},
+            {"karakter": "PATRON", "cinsiyet": "kadin", "metin": "Altı üstü Cuma akşamı saat beşi elli dokuz geçe ufak bir rica ettim!", "ses": "enerjik", "sfx": "pop"},
+            {"karakter": "ÇALIŞAN", "cinsiyet": "erkek", "metin": "Sizin iki dakikalık dediğiniz dosya tam yedi yüz sayfa çıktı!", "ses": "sinirli", "sfx": "pop"},
+            {"karakter": "PATRON", "cinsiyet": "kadin", "metin": "Biz burada bir şirket değiliz, kocaman bir aileyiz unutma!", "ses": "umutlu", "sfx": "pop"},
+            {"karakter": "ÇALIŞAN", "cinsiyet": "erkek", "metin": "Aileysek siz neden şu an Çeşme sahilinden hikaye atıyorsunuz?", "ses": "kesin", "sfx": "pop"},
+            {"karakter": "PATRON", "cinsiyet": "kadin", "metin": "Çünkü ailenin tatile, senin de ofisi kilitlemeye ihtiyacın var!", "ses": "twist", "sfx": "vine_boom"},
+            {"karakter": "ÇALIŞAN", "cinsiyet": "erkek", "metin": "Telefon yüzüme kapanınca çantamı yere bıraktım...", "ses": "yavas_bikkin", "sfx": "ding"}
         ],
-        "punchline_efekt": "zoom_in",
-        "loop_baslangic": "HEMSIRE",
-        "etkilesim": "Iğneden korkan yetişkinler burada mı?",
-        "sabit_yorum": "Iğneden korkan yetişkinler"
-    },
-    {
-        "kategori": "egitim_sistemi",
-        "hook_metni": "OKULDA",
-        "hook_suresi": 0.8,
-        "diyaloglar": [
-            {"karakter": "OGRENCI", "metin": "Hoca, bunu nerede kullanacağız?", "ses": "normal", "sure": 1.5},
-            {"karakter": "HOCA", "metin": "Hayatta.", "ses": "ciddi", "sure": 0.8},
-            {"karakter": "OGRENCI", "metin": "Peki kullanıyor musunuz?", "ses": "endiseli", "sure": 1.0},
-            {"karakter": "HOCA", "metin": "Hayır.", "ses": "bikeyn", "sure": 0.5},
-            {"karakter": "OGRENCI", "metin": "O zaman öğretiyorsunuz?", "ses": "suprized", "sure": 1.5}
-        ],
-        "punchline_efekt": "karartma",
-        "loop_baslangic": "OGRENCI",
-        "etkilesim": "Okulda öğrendiğiniz ama hiç kullanmadığınız şey?",
-        "sabit_yorum": "Okulda öğrendiğiniz ama kullanmadığınız şey"
-    },
-    {
-        "kategori": "sosyal_medya",
-        "hook_metni": "SOSYAL MEDYA",
-        "hook_suresi": 1.0,
-        "diyaloglar": [
-            {"karakter": "ANNESI", "metin": "Ne yapıyorsun?", "ses": "normal", "sure": 0.8},
-            {"karakter": "GENC", "metin": "Beğeni bekliyorum.", "ses": "umutlu", "sure": 1.0},
-            {"karakter": "ANNESI", "metin": "Kimden?", "ses": "endiseli", "sure": 0.5},
-            {"karakter": "GENC", "metin": "Bilmiyorum.", "ses": "bikeyn", "sure": 0.8},
-            {"karakter": "ANNESI", "metin": "O zaman sabah çayına gel.", "ses": "normal", "sure": 1.2},
-            {"karakter": "GENC", "metin": "Geliyorum.", "ses": "umutlu", "sure": 0.5}
-        ],
-        "punchline_efekt": "zoom_in",
-        "loop_baslangic": "ANNESI",
-        "etkilesim": "Sosyal medyada beğeni bekleyenler burada mı?",
-        "sabit_yorum": "Sosyal medyada beğeni bekleyenler"
+        "sabit_yorum": "İş yerinde 'Biz bir aileyiz' cümlesini duyunca ne hissediyorsunuz? 👇",
+        "etkilesim": "Mesai arkadaşlarına gönder, yalnız değiller!"
     },
     {
         "kategori": "spor_hayati",
-        "hook_metni": "SPOR SALONU",
-        "hook_suresi": 1.0,
+        "ortam_etiketi": "fitness gym",
+        "ruh_hali": "komedi",
+        "hook_ust_bant": "KOŞU BANDI BENİ SALONDAN ATTI!",
+        "baslik": "Yıllık Spor Salonu Üyeliğimin 10. Dakikasında Yaşananlar! 🏋️‍♂️😂 #shorts",
+        "twist_indeksi": 5,
         "diyaloglar": [
-            {"karakter": "ANTRENOR", "metin": "Bugün bacak günü.", "ses": "enerjik", "sure": 1.0},
-            {"karakter": "OGRENCI", "metin": "Dün de bacak.", "ses": "endiseli", "sure": 0.8},
-            {"karakter": "ANTRENOR", "metin": "Evet, bugün de bacak.", "ses": "kesin", "sure": 1.0},
-            {"karakter": "OGRENCI", "metin": "Yarın?", "ses": "endiseli", "sure": 0.5},
-            {"karakter": "ANTRENOR", "metin": "Dinlenme günü. Aya kalkma.", "ses": "ciddi", "sure": 1.5}
+            {"karakter": "ÜYE", "cinsiyet": "erkek", "metin": "Ve yıllık spor salonu üyeliğim tam onuncu dakikada iptal edildi!", "ses": "suprized", "sfx": "whoosh"},
+            {"karakter": "ANTRENÖR", "cinsiyet": "kadin", "metin": "Çünkü koşu bandının üstüne bağdaş kurup poğaça açtın!", "ses": "sinirli", "sfx": "pop"},
+            {"karakter": "ÜYE", "cinsiyet": "erkek", "metin": "Kan şekerim düşmesin diye antrenman öncesi karbonhidrat alıyordum!", "ses": "ciddi", "sfx": "pop"},
+            {"karakter": "ANTRENÖR", "cinsiyet": "kadin", "metin": "Peki dambılları neden telefon tutacağı olarak dizdin?", "ses": "suprized", "sfx": "pop"},
+            {"karakter": "ÜYE", "cinsiyet": "erkek", "metin": "Dizi izlemeden otuz saniye plank nasıl geçsin hocam?", "ses": "bikeyn", "sfx": "pop"},
+            {"karakter": "ANTRENÖR", "cinsiyet": "kadin", "metin": "Salonun motivasyonunu çökerttin, diğer üyeler de simit almaya gitti!", "ses": "twist", "sfx": "vine_boom"},
+            {"karakter": "ÜYE", "cinsiyet": "erkek", "metin": "Herkes çayı demleyince yönetim kartımı elimden aldı...", "ses": "normal", "sfx": "ding"}
         ],
-        "punchline_efekt": "siyah_beyaz_zoom",
-        "loop_baslangic": "ANTRENOR",
-        "etkilesim": "Spor salonuna gidip bir daha gitmeyenler burada mı?",
-        "sabit_yorum": "Spor salonuna yazılanlar"
+        "sabit_yorum": "Spor salonuna yazılıp sadece ilk hafta giden kaç kişiyiz? 🏋️‍♂️👇",
+        "etkilesim": "Spora yazılıp gitmeyen kankana gönder!"
+    },
+    {
+        "kategori": "sosyal_medya",
+        "ortam_etiketi": "smartphone social media",
+        "ruh_hali": "komedi",
+        "hook_ust_bant": "ANNEM İNFLUENCER OLDU!",
+        "baslik": "Anneme Instagram Açtım, Evde Sponsorluksuz Konuşmuyor! 📱😂 #shorts",
+        "twist_indeksi": 5,
+        "diyaloglar": [
+            {"karakter": "OĞUL", "cinsiyet": "erkek", "metin": "İşte o günden beri annemden akşam yemeğini bile linkle istiyoruz!", "ses": "enerjik", "sfx": "whoosh"},
+            {"karakter": "ANNE", "cinsiyet": "kadin", "metin": "Tatlım, mutfak kombinim ve zeytinyağlı sarma tarifim iki milyon izlendi!", "ses": "gururlu", "sfx": "pop"},
+            {"karakter": "OĞUL", "cinsiyet": "erkek", "metin": "Anne ben sana hesabı sadece teyzemlerin fotoğraflarına bak diye açmıştım!", "ses": "suprized", "sfx": "pop"},
+            {"karakter": "ANNE", "cinsiyet": "kadin", "metin": "Artık iş birliği olmadan mutfağa girmiyorum, menajerimle konuş.", "ses": "kesin", "sfx": "pop"},
+            {"karakter": "OĞUL", "cinsiyet": "erkek", "metin": "Menajerin kim anne, babam içeride televizyon izliyor!", "ses": "sinirli", "sfx": "pop"},
+            {"karakter": "ANNE", "cinsiyet": "kadin", "metin": "Baban artık kameramanım, sen de yorumlara alev atmazsan harçlığın kesildi!", "ses": "twist", "sfx": "vine_boom"},
+            {"karakter": "OĞUL", "cinsiyet": "erkek", "metin": "Mecbur telefonu elime aldım, profiline girdim...", "ses": "bikeyn", "sfx": "ding"}
+        ],
+        "sabit_yorum": "Annenizin veya babanızın sosyal medyada yaptığı en komik şey ne? 📱👇",
+        "etkilesim": "Ailesi sosyal medya bağımlısı olanlara gönder!"
     }
 ]
 
-KATEGORI_METINLERI = {
-    "kurumsal_hayat": "Kurumsal hayat 5 saniyede",
-    "pazartesi_sendromu": "Pazartesi sabahi mental saglik",
-    "ik_toplantisi": "IK ile maas pazarligi",
-    "mesai_sonu": "Mesai bitimi acil is",
-    "bar_fikrasi": "En zor icki",
-    "diyet_kavrami": "Diyet gunu 1",
-    "google_sorusu": "Google da bilmiyor",
-    "trafik_kavgasi": "Trafikte 2 surucu",
-    "wifi_kavgasi": "WiFi sifresi",
-    "saglik_sorunu": "Doktora gittim",
-    "kahve_hayati": "Kahve molasi",
-    "sok_hayati": "Sokak hayati",
-    "evlilik_hayati": "Evlilik hayati",
-    "yapay_zeka": "Yapay zeka",
-    "sabah_alarmi": "Saat altida",
-    "sigara_kavgasi": "Sigarayi biraktim",
-    "sok_diyalog": "Sokakta 2 bilge",
-    "hastane_korkusu": "Hastanede",
-    "egitim_sistemi": "Okulda",
-    "sosyal_medya": "Sosyal medya",
-    "spor_hayati": "Spor salonu"
-}
 
-BASLIK_SABLONLARI = [
-    "{kategori_metni} 💼",
-    "{kategori_metni} 😩",
-    "{kategori_metni} 🐶",
-    "{kategori_metni} 🥲",
-    "Hepimiz bu köpeğiz aslında 🥲",
-    "{kategori_metni} #shorts"
-]
+def _emoji_temizle(metin: str) -> str:
+    return re.sub(
+        r"[\U0001F300-\U0001FAFF\U00002600-\U000027BF\uFE0F\u200D]+",
+        "",
+        str(metin),
+    ).strip()
+
+
+def _tr_upper(metin: str) -> str:
+    return str(metin).replace("i", "İ").replace("ı", "I").upper()
+
+
+def senaryo_dogrula_ve_zenginlestir(ham: dict, video_no: int = 1) -> dict:
+    """
+    İster Arena AI'dan ister dosyadan gelsin, her senaryoyu v6.0 profesyonel
+    loop paketine dönüştürür ve eksik alanları eksiksiz tamamlar.
+    """
+    kategori = str(ham.get("kategori") or "absurt_komedi").strip()
+    ham_diyaloglar = ham.get("diyaloglar") or []
+
+    # Eğer eski format {"satirlar": [...]} geldiyse otomatik 2 karakterli diyaloğa çevir
+    if not ham_diyaloglar and isinstance(ham.get("satirlar"), list):
+        roller = [("MERT", "erkek"), ("AYŞE", "kadin")]
+        for idx, s in enumerate(ham["satirlar"]):
+            temiz = re.sub(r"^[^:]{1,18}:\s*", "", str(s)).strip()
+            rol, cin = roller[idx % 2]
+            eslesme = re.match(r"^([A-ZÇĞİÖŞÜa-zçğıöşü0-9 ]{2,16}):\s*(.+)$", str(s).strip())
+            if eslesme:
+                rol = eslesme.group(1).strip().upper()
+                temiz = eslesme.group(2).strip()
+            ham_diyaloglar.append({
+                "karakter": rol,
+                "cinsiyet": cin,
+                "metin": temiz,
+                "ses": "enerjik" if idx == 0 else "normal",
+            })
+
+    if len(ham_diyaloglar) < 3:
+        yedek = random.choice(SENARYO_SABLONLARI)
+        return senaryo_dogrula_ve_zenginlestir(yedek, video_no)
+
+    twist_idx = ham.get("twist_indeksi")
+    if not isinstance(twist_idx, int) or not (0 <= twist_idx < len(ham_diyaloglar)):
+        twist_idx = max(1, len(ham_diyaloglar) - 2)
+
+    islenmis_diyaloglar = []
+    for idx, d in enumerate(ham_diyaloglar[:8]):
+        karakter = _tr_upper(_emoji_temizle(d.get("karakter", "MERT" if idx % 2 == 0 else "AYŞE")))[:18] or "BOBİ"
+        metin = str(d.get("metin", "")).strip()
+        if not metin:
+            continue
+        varsayilan_sfx = "whoosh" if idx == 0 else ("vine_boom" if idx == twist_idx else ("ding" if idx == len(ham_diyaloglar) - 1 else "pop"))
+        varsayilan_ses = "twist" if idx == twist_idx else ("enerjik" if idx == 0 else "normal")
+        islenmis_diyaloglar.append({
+            "karakter": karakter,
+            "cinsiyet": d.get("cinsiyet", ""),
+            "metin": metin,
+            "ses": d.get("ses", varsayilan_ses),
+            "sfx": d.get("sfx", varsayilan_sfx),
+            "vurgu_kelimeler": d.get("vurgu_kelimeler", []),
+        })
+
+    ilk_metin = _emoji_temizle(islenmis_diyaloglar[0]["metin"])
+    hook_ust_bant = _tr_upper(_emoji_temizle(
+        ham.get("hook_ust_bant") or ham.get("hook_metni") or ilk_metin[:34]
+    ))
+    if len(hook_ust_bant) > 38:
+        hook_ust_bant = hook_ust_bant[:35].rsplit(" ", 1)[0] + "!"
+
+    baslik = str(ham.get("baslik") or f"{ilk_metin[:48]} 😱 #shorts").strip()
+    if "#shorts" not in baslik.lower():
+        baslik = f"{baslik[:88]} #shorts"
+
+    tts_metinleri = [d["metin"] for d in islenmis_diyaloglar]
+    tahmini_sure = round(sum(max(1.6, len(m.split()) * 0.36) for m in tts_metinleri), 1)
+
+    return {
+        "kategori": kategori,
+        "ortam_etiketi": str(ham.get("ortam_etiketi") or "office comedy"),
+        "ruh_hali": str(ham.get("ruh_hali") or "komedi"),
+        "hook_metni": hook_ust_bant,
+        "hook_ust_bant": hook_ust_bant,
+        "hook_suresi": 0.0,  # Sıfır ölü hava: ses 0.0 saniyede başlar!
+        "twist_indeksi": min(twist_idx, len(islenmis_diyaloglar) - 1),
+        "diyaloglar": islenmis_diyaloglar,
+        "tts_metinleri": tts_metinleri,
+        "punchline_efekt": str(ham.get("punchline_efekt") or "zoom_in"),
+        "etkilesim": str(ham.get("etkilesim") or "Bunu yaşayacak arkadaşını etiketle!"),
+        "sabit_yorum": str(ham.get("sabit_yorum") or ham.get("aciklama") or "Siz olsanız bu durumda ne yapardınız? Yorumlara yazın 👇"),
+        "toplam_sure": tahmini_sure,
+        "baslik": baslik,
+        "acilis": " ".join(tts_metinleri[:2])[:200],
+    }
 
 
 def arsiv_yukle() -> list:
     if ARSIV_YOLU.exists():
-        with open(ARSIV_YOLU) as f:
-            return json.load(f)
+        try:
+            return json.loads(ARSIV_YOLU.read_text(encoding="utf-8"))
+        except Exception:
+            return []
     return []
 
 
 def senaryo_tekrar_mi(senaryo_ozeti: str, arsiv: list) -> bool:
-    ozet_hash = hashlib.md5(senaryo_ozeti[:100].encode()).hexdigest()
-    for kayit in arsiv:
-        if kayit.get("hash") == ozet_hash:
-            return True
-    return False
+    ozet_hash = hashlib.md5(senaryo_ozeti[:120].encode("utf-8")).hexdigest()
+    return any(k.get("hash") == ozet_hash for k in arsiv)
 
 
-def senaryo_uret(sablon: dict) -> dict:
-    """Tek senaryo üret — şablondan diyalogları çıkar."""
-    diyaloglar = sablon["diyaloglar"]
-    tts_metinleri = [d["metin"] for d in diyaloglar]
-    toplam_sure = sablon["hook_suresi"] + sum(d.get("sure", 1.0) for d in diyaloglar)
-
-    kategori_metni = KATEGORI_METINLERI.get(sablon["kategori"], sablon["kategori"])
-    baslik = random.choice(BASLIK_SABLONLARI).format(kategori_metni=kategori_metni)
-    etkilesim = sablon.get("etkilesim", "Bu videoyu kime gönderirsin?")
-    sabit_yorum = sablon.get("sabit_yorum", "")
-
-    return {
-        "kategori": sablon["kategori"],
-        "hook_metni": sablon["hook_metni"],
-        "hook_suresi": sablon["hook_suresi"],
-        "diyaloglar": diyaloglar,
-        "tts_metinleri": tts_metinleri,
-        "punchline_efekt": sablon["punchline_efekt"],
-        "loop_baslangic": sablon["loop_baslangic"],
-        "etkilesim": etkilesim,
-        "sabit_yorum": sabit_yorum,
-        "toplam_sure": round(toplam_sure, 1),
-        "baslik": baslik
-    }
-
-
-def kalite_puanla(senaryo: dict) -> dict:
-    """Senaryoyu viralite açısından puanla (toplam /100)."""
-    puanlar = {
-        "hook_gucu": random.randint(15, 20),
-        "izleyici_tutma": random.randint(15, 20),
-        "hikaye_kurgu": random.randint(12, 15),
-        "duygusal_etki": random.randint(7, 10),
-        "tekrar_izlenme": random.randint(7, 10),
-        "paylasilabilirlik": random.randint(7, 10),
-        "etkilesim": random.randint(6, 10),
-        "baslik_paketleme": random.randint(3, 5)
-    }
-    puanlar["toplam"] = sum(puanlar.values())
-    puanlar["maksimum"] = 100
-    return puanlar
-
-
-def senaryo_paketi_olustur(video_no: int) -> dict:
-    """Tek video için senaryo paketi üret."""
+def kuyruktan_arena_senaryosu_al(video_no: int) -> dict | None:
+    """bobi_tv/production/scripts/arena/ altında bekleyen hazır Arena senaryosu varsa alır ve tüketir."""
+    if not ARENA_KUYRUK_YOLU.exists():
+        return None
+    dosyalar = sorted(ARENA_KUYRUK_YOLU.glob("arena_*.json"))
     arsiv = arsiv_yukle()
-    secilebilir = SENARYO_SABLONLARI[:]
-    random.shuffle(secilebilir)
 
-    en_iyi = None
-    en_iyi_puan = 0
+    for yol in dosyalar:
+        try:
+            ham = json.loads(yol.read_text(encoding="utf-8"))
+            senaryo = senaryo_dogrula_ve_zenginlestir(ham, video_no)
+            ozet = " ".join(senaryo["tts_metinleri"])
+            yol.unlink(missing_ok=True)
+            if not senaryo_tekrar_mi(ozet, arsiv):
+                print(f"[Senaryo] Hazır Arena kuyruğundan alındı: {yol.name}")
+                return _pakete_sar(senaryo, video_no, kaynak="arena_kuyruk")
+        except Exception as e:
+            print(f"[Senaryo] Bozuk Arena senaryosu atlandı ({yol.name}): {e}")
+            yol.unlink(missing_ok=True)
+    return None
 
-    for sablon in secilebilir[:3]:
-        senaryo = senaryo_uret(sablon)
-        puanlar = kalite_puanla(senaryo)
-        ozet = " ".join(senaryo["tts_metinleri"])
-        if senaryo_tekrar_mi(ozet, arsiv):
-            continue
-        if puanlar["toplam"] > en_iyi_puan:
-            en_iyi_puan = puanlar["toplam"]
-            en_iyi = {"senaryo": senaryo, "puanlar": puanlar}
 
-    if not en_iyi:
-        sablon = secilebilir[0]
-        senaryo = senaryo_uret(sablon)
-        puanlar = kalite_puanla(senaryo)
-        en_iyi = {"senaryo": senaryo, "puanlar": puanlar}
-
-    senaryo = en_iyi["senaryo"]
+def _pakete_sar(senaryo: dict, video_no: int, kaynak: str = "sablon") -> dict:
     tarih = datetime.now().strftime("%Y%m%d")
     dosya_adi = f"{tarih}_{video_no:04d}_{senaryo['kategori']}"
+    ozet = " ".join(senaryo["tts_metinleri"])
+    ozet_hash = hashlib.md5(ozet[:120].encode("utf-8")).hexdigest()
+    senaryo["hash"] = ozet_hash
 
     paket = {
         "video_no": video_no,
         "dosya_adi": dosya_adi,
         "baslik": senaryo["baslik"],
+        "aciklama": senaryo["sabit_yorum"],
         "senaryo": senaryo,
-        "puanlar": en_iyi["puanlar"],
+        "kaynak": kaynak,
         "olusturuldu": datetime.now().isoformat(),
-        "hash": hashlib.md5(" ".join(senaryo["tts_metinleri"])[:100].encode()).hexdigest()
+        "hash": ozet_hash,
     }
-
     SENARYO_YOLU.mkdir(parents=True, exist_ok=True)
-    with open(SENARYO_YOLU / f"{dosya_adi}.json", "w", encoding="utf-8") as f:
-        json.dump(paket, f, ensure_ascii=False, indent=2)
-
-    print(f"[Senaryo] Video #{video_no}: {senaryo['baslik']} (puan: {en_iyi['puanlar']['toplam']}/100, sure: {senaryo['toplam_sure']}sn)")
+    (SENARYO_YOLU / f"{dosya_adi}.json").write_text(
+        json.dumps(paket, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     return paket
 
 
-def gun_senaryolari_uret(hedef: int = 5) -> list:
-    """Günlük hedef kadar senaryo üret."""
-    paketler = []
-    for i in range(1, hedef + 1):
-        try:
-            paket = senaryo_paketi_olustur(i)
-            paketler.append(paket)
-        except Exception as e:
-            print(f"[Senaryo] Video #{i} uretim hatasi: {e}")
-    print(f"[Senaryo] {len(paketler)}/{hedef} senaryo uretildi.")
-    return paketler
+def senaryo_paketi_olustur(video_no: int) -> dict:
+    """Önce Arena senaryo kuyruğunu kontrol eder, yoksa yerleşik viral loop şablonlarından seçer."""
+    kuyruk_paketi = kuyruktan_arena_senaryosu_al(video_no)
+    if kuyruk_paketi:
+        return kuyruk_paketi
+
+    arsiv = arsiv_yukle()
+    adaylar = SENARYO_SABLONLARI[:]
+    random.shuffle(adaylar)
+
+    secilen_ham = adaylar[0]
+    for sablon in adaylar:
+        ozet = " ".join(d["metin"] for d in sablon["diyaloglar"])
+        if not senaryo_tekrar_mi(ozet, arsiv):
+            secilen_ham = sablon
+            break
+
+    senaryo = senaryo_dogrula_ve_zenginlestir(secilen_ham, video_no)
+    paket = _pakete_sar(senaryo, video_no, kaynak="yerlesik_v6")
+    print(f"[Senaryo] Video #{video_no} hazır: {senaryo['baslik']} (~{senaryo['toplam_sure']}sn)")
+    return paket
+
+
+def gun_senaryolari_uret(hedef: int = 4) -> list:
+    return [senaryo_paketi_olustur(i) for i in range(1, hedef + 1)]
 
 
 if __name__ == "__main__":
-    paketler = gun_senaryolari_uret(5)
-    for p in paketler:
-        s = p["senaryo"]
-        print(f"\n{'='*50}")
-        print(f"Baslik: {s['baslik']}")
-        print(f"Hook: {s['hook_metni']} ({s['hook_suresi']}sn)")
-        for d in s["diyaloglar"]:
-            print(f"  [{d['karakter']}] {d['metin']} ({d['ses']}, {d['sure']}sn)")
-        print(f"Punchline efekt: {s['punchline_efekt']}")
-        print(f"Loop: {s['loop_baslangic']}")
-        print(f"Toplam sure: {s['toplam_sure']}sn")
-        print(f"Etkilesim: {s['etkilesim']}")
-        print(f"Puan: {p['puanlar']['toplam']}/100")
+    p = senaryo_paketi_olustur(1)
+    print(json.dumps(p["senaryo"], ensure_ascii=False, indent=2))

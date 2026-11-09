@@ -1,62 +1,46 @@
-name: BOBİ TV — Günlük Üretim Pipeline
+name: BOBİ TV — Toplu Manuel Üretim Pipeline
 
 on:
-  schedule:
-    # Her gün UTC 06:00 (Türkiye 09:00)
-    - cron: '0 6 * * *'
-    # İkinci tur UTC 12:00 (Türkiye 15:00)
-    - cron: '0 12 * * *'
   workflow_dispatch:
     inputs:
       hedef:
-        description: 'Kaç video üretilsin?'
+        description: 'Kaç Pro video üretilsin?'
         required: false
-        default: '5'
+        default: '2'
 
 jobs:
   uretim:
-    name: Günlük Video Üretimi
+    name: Toplu Pro Video Üretimi
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 90
 
     steps:
       - name: Repo'yu çek
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT || github.token }}
 
       - name: Python kur
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
 
       - name: Sistem bağımlılıklarını kur
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq \
-            ffmpeg \
-            espeak-ng \
-            wget \
-            curl \
-            fonts-dejavu-core \
-            fonts-liberation2 \
-            libass9
+          sudo apt-get install -y -qq --no-install-recommends \
+            ffmpeg espeak-ng fonts-dejavu-core fonts-liberation2 libass9
 
-      - name: Python bağımlılıklarını kur
+      - name: Python bağımlılıklarını ve Playwright Chromium'u kur
         run: |
-          pip install --upgrade pip
-          pip install \
-            edge-tts==7.0.0 \
-            gTTS==2.5.4 \
-            requests==2.32.3 \
-            google-auth==2.35.0 \
-            google-auth-httplib2==0.2.0 \
-            google-api-python-client==2.151.0 \
-            pydub==0.25.1 \
-            Pillow==11.0.0 \
-            numpy==2.1.3
+          python -m pip install --upgrade pip -q
+          python -m pip install -q -r requirements.txt
+          python -m playwright install --with-deps chromium
 
       - name: Klasör yapısını oluştur
         run: |
-          mkdir -p bobi_tv/{queue,production/{scripts,assets/{characters,backgrounds,sfx},tts,animation,render},output,archive/published,logs,config}
+          mkdir -p bobi_tv/{queue,assets/{fonts,sfx},production/{scripts/arena,tts,render},output,archive/published,logs,config}
 
       - name: Pipeline'ı çalıştır
         env:
@@ -64,35 +48,33 @@ jobs:
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          GUNLUK_HEDEF: ${{ github.event.inputs.hedef || '5' }}
+          ARENA_COOKIES_JSON: ${{ secrets.ARENA_COOKIES_JSON }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          GUNLUK_HEDEF: ${{ github.event.inputs.hedef || '2' }}
+          GUNLUK_MAKS: '20'
+          MOD: 'manuel'
         run: |
           python main_pipeline.py
+
+      - name: Üretilen Pro Videoları Artifact olarak yükle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bobi-tv-toplu-videolar-${{ github.run_number }}
+          if-no-files-found: ignore
+          retention-days: 5
+          path: |
+            bobi_tv/output/*.mp4
+            bobi_tv/output/*_thumb.jpg
 
       - name: Arşivi commit et
         if: always()
         run: |
           git config user.name "BOBİ TV Bot"
           git config user.email "bobi-tv-bot@users.noreply.github.com"
-          git add bobi_tv/archive/ bobi_tv/logs/ || true
-          git diff --staged --quiet || git commit -m "📺 Günlük arşiv güncellendi [$(date +%Y-%m-%d)]"
-          git push || true
-
-      - name: Hata durumunda Telegram bildir
-        if: failure()
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          python -c "
-          import os, requests
-          token = os.environ['TELEGRAM_BOT_TOKEN']
-          chat_id = os.environ['TELEGRAM_CHAT_ID']
-          requests.post(
-            f'https://api.telegram.org/bot{token}/sendMessage',
-            json={
-              'chat_id': chat_id,
-              'text': '🔴 <b>BOBİ TV Pipeline Hatası</b>\nGitHub Actions başarısız oldu.\nDetay: https://github.com/mehetgege3-cmyk/bobi-tv/actions',
-              'parse_mode': 'HTML'
-            }
-          )
-          "
+          git add bobi_tv/archive/ bobi_tv/queue/*.json 2>/dev/null || true
+          if ! git diff --staged --quiet; then
+            git commit -m "📺 Toplu arşiv güncellendi [$(date +%Y-%m-%d)] [skip ci]"
+            git pull --rebase origin main || true
+            git push || true
+          fi

@@ -1,16 +1,32 @@
 """
-BOBİ TV — Arena AI API Entegrasyonu v2.1 (Tam Sağlamlaştırılmış)
-Playwright (headless Chromium) ile Arena.ai Agent üzerinden senaryo + animasyon kodu üretir.
+BOBİ TV — Arena AI Yaratıcı Yönetmen & Pro Üretim Entegrasyonu v6.0
+Mimari:
+1. Arena AI (Playwright Headless) -> Master Loop JSON Senaryo (0.0s Kanca + Erkek/Kadın Diyalog + Twist + Kusursuz Döngü)
+   (ARENA_COOKIES_JSON yoksa veya erişilemezse otomatik olarak modules/scenario.py v6.0 kuyruğuna/şablonlarına geçer)
+2. modules/tts_engine.py v6.0 -> Ahmet + Emel Çift Ses + Nefes Kırpma + WordBoundary Senkronu
+3. modules/video_render.py v6.0 -> Vektör Karakter Kartları + Karaoke Altyazı + SFX + Sidechain BGM (-20dB) + -14 LUFS + QC
+4. modules/kapak_uret.py v6.0 -> Montserrat-ExtraBold Kapak
 """
 import os
 import re
 import json
 import base64
+import random
 import asyncio
-import tempfile
-import subprocess
 from pathlib import Path
 from datetime import datetime
+
+from modules.scenario import (
+    SENARYO_SABLONLARI,
+    kuyruktan_arena_senaryosu_al,
+    senaryo_dogrula_ve_zenginlestir,
+    senaryo_paketi_olustur,
+)
+from modules.tts_engine import senaryo_seslendir
+from modules.video_render import video_render
+from modules.kapak_uret import kapak_uret
+
+KATEGORILER = [s["kategori"] for s in SENARYO_SABLONLARI]
 
 
 def sanitize_cookie_json(raw_text: str) -> str:
@@ -20,8 +36,7 @@ def sanitize_cookie_json(raw_text: str) -> str:
 
 def build_clean_arena_cookie(cookies: list) -> str:
     """
-    arena-auth-prod-v1.0, v1.1 ... parçalarını isim sırasına göre birleştirir.
-    Parça sınırında kesilme olsa bile regex fallback ile oturumu kurtarır ve
+    arena-auth-prod-v1.0, v1.1 ... parçalarını isim sırasına göre birleştirir ve
     4 KB sınırının altında tek parça temiz base64 çerezi üretir.
     """
     chunks = sorted(
@@ -41,7 +56,6 @@ def build_clean_arena_cookie(cookies: list) -> str:
 
     minimal_session = None
 
-    # 1. Tam birleştirilmiş Base64 JSON çözümlemesi dene
     try:
         padded = combined + "=" * ((4 - len(combined) % 4) % 4)
         session_obj = json.loads(base64.b64decode(padded).decode("utf-8"))
@@ -63,7 +77,6 @@ def build_clean_arena_cookie(cookies: list) -> str:
     except Exception:
         pass
 
-    # 2. Fallback: Kopyalama sırasında parça sonu kesildiyse ilk parçadan (v1.0) regex ile kurtar
     if not minimal_session:
         first = chunk_vals[0]
         if first.startswith("base64-"):
@@ -100,94 +113,136 @@ def build_clean_arena_cookie(cookies: list) -> str:
     return f"base64-{encoded}"
 
 
-async def arena_video_uret(video_no: int, output_dir: str = "bobi_tv/output") -> dict | None:
-    """
-    Arena AI'dan otonom video üretimi:
-    1. Senaryo iste (kısa absürt Türkçe)
-    2. Animasyon Python kodu iste ve çalıştır (hata verirse garantili yerel FFmpeg+TTS fallback)
-    """
+def _ic_ice_json_ayikla(metin: str) -> dict | None:
+    """İç içe (nested) diyalog dizisi barındıran JSON nesnesini güvenle ayıklar."""
+    aday_metin = metin.strip()
+    if "```json" in aday_metin:
+        aday_metin = aday_metin.split("```json", 1)[1].split("```", 1)[0].strip()
+    elif "```" in aday_metin:
+        parcalar = aday_metin.split("```")
+        if len(parcalar) >= 3:
+            aday_metin = parcalar[1].strip()
+
+    decoder = json.JSONDecoder()
+    bulunanlar = []
+    for i, ch in enumerate(aday_metin):
+        if ch == "{":
+            try:
+                nesne, _ = decoder.raw_decode(aday_metin[i:])
+                if isinstance(nesne, dict) and ("diyaloglar" in nesne or "satirlar" in nesne):
+                    bulunanlar.append(nesne)
+            except Exception:
+                continue
+
+    return bulunanlar[-1] if bulunanlar else None
+
+
+async def arena_canli_senaryo_iste(video_no: int) -> dict | None:
+    """Arena.ai Agent üzerinden canlı Master v6.0 Loop JSON senaryosu ister."""
+    cookies_raw = os.environ.get("ARENA_COOKIES_JSON", "").strip()
+    if not cookies_raw:
+        return None
+
     try:
         from playwright.async_api import async_playwright
     except ImportError:
-        print("[Arena] Playwright kurulu değil: pip install playwright")
-        return None
-
-    cookies_raw = os.environ.get("ARENA_COOKIES_JSON", "").strip()
-    if not cookies_raw:
-        print("[Arena] ARENA_COOKIES_JSON ortam değişkeni boş.")
+        print("[Arena] Playwright kurulu değil, yerel v6.0 senaryo motoruna geçiliyor.")
         return None
 
     try:
         cookies_list = json.loads(sanitize_cookie_json(cookies_raw))
         clean_cookie = build_clean_arena_cookie(cookies_list)
     except Exception as e:
-        print(f"[Arena] Çerez hazırlama hatası: {e}")
+        print(f"[Arena] Çerez hazırlama uyarısı: {e}")
         return None
 
-    Path(output_dir).mkdir(parents=True, exist_ok=True)
-    tarih = datetime.now().strftime("%Y%m%d")
-    dosya_adi = f"{tarih}_{video_no:04d}_arena"
-    video_cikti = f"{output_dir}/{dosya_adi}.mp4"
+    kategori = random.choice(KATEGORILER)
+    prompt = (
+        f"Sen milyonlar izlenen bir Türkçe YouTube Shorts komedi yönetmenisin (Bölüm #{video_no}, Kategori: {kategori}). "
+        "Hiçbir araç (bash/search/write_file) ÇAĞIRMA, doğrudan tek bir geçerli JSON nesnesi döndür. "
+        "Kurallar: "
+        "1) 6 veya 7 kısa, hızlı Türkçe diyalog cümlesi yaz (her cümle 5-11 kelime). "
+        "2) 2 zıt karakter konuşsun: biri 'erkek', diğeri 'kadin'. "
+        "3) 1. cümle ('İşte tam bu yüzden...' veya 'Ve sonunda...') doğrudan olayın en şok edici sonucundan başlasın. "
+        "4) Sondan bir önceki cümle (twist_indeksi: 5) beklenmedik komik bir ters köşe (twist) olsun. "
+        "5) En son cümle yarım kalarak videonun 1. cümlesine DİLBİLGİSEL KUSURSUZ DÖNGÜ (loop) ile bağlansın! "
+        "Şema: "
+        f'{{"kategori":"{kategori}","ortam_etiketi":"office comedy","ruh_hali":"komedi",'
+        '"hook_ust_bant":"MAKS 4 KELİME ŞOK BAŞLIK!","baslik":"Merak Uyandıran Başlık 😱 #shorts",'
+        '"twist_indeksi":5,"diyaloglar":['
+        '{"karakter":"MÜDÜR","cinsiyet":"erkek","metin":"İşte tam bu yüzden...","ses":"sinirli","sfx":"whoosh"},'
+        '{"karakter":"İK","cinsiyet":"kadin","metin":"Ama nasıl olur?","ses":"suprized","sfx":"pop"}'
+        '],"sabit_yorum":"İzleyiciye tartışmalı soru 👇","etkilesim":"Arkadaşını etiketle!"}'
+    )
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         context = await browser.new_context(viewport={"width": 1366, "height": 900})
-
-        # Yalnızca 3 temiz çerezi ekle (__cf_bm veya _dd_s EKLEME!)
         await context.add_cookies([
             {"name": "arena-auth-prod-v1.0", "value": clean_cookie, "domain": "arena.ai", "path": "/"},
             {"name": "arena_build_bucket", "value": "stable", "domain": "arena.ai", "path": "/"},
             {"name": "user_country_code", "value": "TR", "domain": "arena.ai", "path": "/"},
         ])
-
         page = await context.new_page()
 
-        # === ADIM 1: Senaryo + Başlık JSON olarak iste ===
-        print(f"[Arena] Video #{video_no}: Senaryo oluşturuluyor...")
-        senaryo_paket = await _arena_senaryo_uret(page, video_no)
+        print(f"[Arena] Video #{video_no} ({kategori}) için Master Loop senaryosu isteniyor...")
+        cevap = await _arena_sorgusu_yap(page, prompt, min_cevap_uzunlugu=120, timeout=130)
         await _guncel_cerezleri_kaydet(context)
         await browser.close()
 
-        if not senaryo_paket:
-            return None
+    if not cevap:
+        return None
 
-        senaryo = "\n".join(senaryo_paket["satirlar"])
-        print(f"[Arena] Senaryo alındı ({len(senaryo_paket['satirlar'])} satır): {senaryo_paket['baslik']}")
+    ham_json = _ic_ice_json_ayikla(cevap)
+    if not ham_json:
+        print("[Arena] JSON ayrıştırılamadı, yerleşik v6.0 şablonuna geçiliyor.")
+        return None
 
-    # === ADIM 2: Garantili yüksek kaliteli Türkçe TTS + FFmpeg Shorts render ===
-    basari, fb_meta = _garantili_shorts_render(senaryo, video_cikti, video_no)
-    metadata = {
-        "baslik": senaryo_paket.get("baslik") or fb_meta["baslik"],
-        "aciklama": senaryo_paket.get("aciklama") or fb_meta["aciklama"],
-        "hashtag": "#shorts #komedi #absürt #türkçe",
+    senaryo = senaryo_dogrula_ve_zenginlestir(ham_json, video_no)
+    tarih = datetime.now().strftime("%Y%m%d")
+    dosya_adi = f"{tarih}_{video_no:04d}_{senaryo['kategori']}_arena"
+    print(f"[Arena] ✅ Canlı Loop Senaryo alındı: {senaryo['baslik']}")
+    return {
+        "video_no": video_no,
+        "dosya_adi": dosya_adi,
+        "baslik": senaryo["baslik"],
+        "aciklama": senaryo["sabit_yorum"],
+        "senaryo": senaryo,
+        "kaynak": "arena_canli",
+        "olusturuldu": datetime.now().isoformat(),
     }
 
-    if basari and Path(video_cikti).exists() and Path(video_cikti).stat().st_size > 10_000:
-        boyut_kb = Path(video_cikti).stat().st_size // 1024
-        print(f"[Arena] ✅ Video hazır: {video_cikti} ({boyut_kb} KB)")
 
-        return {
-            "video_no": video_no,
-            "dosya_adi": dosya_adi,
-            "final_video": video_cikti,
-            "baslik": metadata.get("baslik", f"BOBİ TV #{video_no} #Shorts"),
-            "aciklama": metadata.get("aciklama", "BOBİ TV — Absürt Türkçe Shorts"),
-            "hashtag": metadata.get("hashtag", "#shorts #komedi #türkçe"),
-            "senaryo": {
-                "acilis": senaryo[:200],
-                "kategori": "absurt",
-                "sabit_yorum": metadata.get("aciklama", "Sizce sonunda ne oldu?"),
-                "etkilesim": "Yorumlara yazın!",
-            },
-            "olusturuldu": datetime.now().isoformat(),
-        }
+async def arena_video_uret(video_no: int, output_dir: str = "bobi_tv/output") -> dict | None:
+    """
+    Birleşik BOBİ TV v6.0 Pro Üretim Hattı:
+    1. Senaryo: Arena kuyruğu -> Arena canlı -> Yerleşik v6.0 Loop Şablonu
+    2. Ses: Ahmet + Emel Çift Ses + Sıfır Ölü Boşluk + WordBoundary
+    3. Görüntü & Miksaj: Vektör Karakter Kartları + Karaoke Altyazı + SFX + Sidechain BGM + -14 LUFS
+    4. Kapak & QC: Montserrat-ExtraBold Kapak + ffprobe Doğrulama
+    """
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
 
-    print("[Arena] ❌ Video oluşturulamadı.")
-    return None
+    # 1. Senaryo Paketi
+    paket = kuyruktan_arena_senaryosu_al(video_no)
+    if not paket:
+        paket = await arena_canli_senaryo_iste(video_no)
+    if not paket:
+        paket = senaryo_paketi_olustur(video_no)
+
+    # 2. Çift Sesli TTS
+    paket = senaryo_seslendir(paket)
+
+    # 3. Pro Video Render + Ses Mastering + QC
+    video_render(paket)
+
+    # 4. Yüksek Kontrastlı Kapak
+    kapak_uret(paket)
+
+    return paket
 
 
 async def _guncel_cerezleri_kaydet(context):
-    """Supabase oturumu yenilediyse güncel çerezleri dosyaya yazar."""
     save_path = os.environ.get("SAVE_UPDATED_COOKIES", "").strip()
     if not save_path:
         return
@@ -202,75 +257,7 @@ async def _guncel_cerezleri_kaydet(context):
         print(f"[Arena] Güncel çerez kaydetme uyarısı: {e}")
 
 
-async def _arena_senaryo_uret(page, video_no: int) -> dict | None:
-    prompt = (
-        f"Türkçe absürt komedi YouTube Shorts senaryosu yaz (Bölüm #{video_no}). "
-        "4 veya 5 kısa Türkçe diyalog cümlesi olsun, son cümle beklenmedik komik şok/twist olsun. "
-        "Hiçbir araç kullanma, sadece şu JSON formatında yanıt ver: "
-        '{"baslik": "Vurucu Türkçe Başlık 😱 #shorts", "aciklama": "Siz olsanız ne yapardınız?", "satirlar": ["1. cümle", "2. cümle", "3. cümle", "4. twist cümlesi"]}'
-    )
-    cevap = await _arena_sorgusu_yap(page, prompt, min_cevap_uzunlugu=60, timeout=120)
-    if not cevap:
-        return None
-
-    # Yanıtın sonundaki geçerli JSON nesnesini cımbızla çıkar (önündeki Thought bloğunu tamamen yoksayar!)
-    candidates = re.findall(r"\{[^{}]*\}", cevap)
-    if "{" in cevap and "}" in cevap:
-        candidates.append(cevap[cevap.find("{"):cevap.rfind("}") + 1])
-    for raw_json in reversed(candidates):
-        try:
-            obj = json.loads(raw_json)
-            if isinstance(obj.get("satirlar"), list) and len(obj["satirlar"]) >= 2:
-                return {
-                    "baslik": str(obj.get("baslik") or f"Sonunu Beklemiyordum 😱 #{video_no} #shorts"),
-                    "aciklama": str(obj.get("aciklama") or "Yorumlara yazın!"),
-                    "satirlar": [str(s).strip() for s in obj["satirlar"] if str(s).strip()],
-                }
-        except Exception:
-            continue
-
-    # JSON parse edilemezse sadece Türkçe karakter barındıran diyalog satırlarını al
-    tr_lines = [
-        l.strip() for l in cevap.splitlines()
-        if len(l.strip()) > 5 and not re.match(r"^(Thought|Let me|I will|The user|Here)", l.strip(), re.I)
-    ]
-    if tr_lines:
-        return {
-            "baslik": f"{tr_lines[0][:50]} 😱 #shorts",
-            "aciklama": "Sonuna kadar izleyin!",
-            "satirlar": tr_lines[:5],
-        }
-    return None
-
-
-async def _arena_kod_uret(page, senaryo: str, video_cikti: str) -> str | None:
-    prompt = f"""Aşağıdaki Türkçe YouTube Shorts senaryosu için tek başına çalıştırılabilir Python 3 kodu yaz.
-Hiçbir araç (bash/write_file) ÇAĞIRMA! Doğrudan mesajının içinde tek bir python kod bloğu olarak yaz.
-
-Gereksinimler:
-- 1080x1920 px (9:16), 24 FPS, ~8 saniye MP4 (`{video_cikti}`)
-- Sadece PIL (Pillow) + `gtts` (veya sessiz/ton ses) + `subprocess` ile `ffmpeg` kullan (`moviepy` KULLANMA!)
-- Font olarak `/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf` kullan.
-- Senaryo satırlarını sırayla ortada büyük beyaz kutulu metin olarak göster, altta küçük "BOBI TV" yazsın:
-{senaryo}
-
-Kodun en sonunda şu JSON satırını print et:
-{{"baslik": "Vurucu kısa Türkçe başlık #shorts", "aciklama": "İzleyiciye soru soran kısa açıklama", "hashtag": "#shorts #komedi #türkçe"}}"""
-
-    cevap = await _arena_sorgusu_yap(page, prompt, min_cevap_uzunlugu=200, timeout=180)
-    if not cevap:
-        return None
-
-    if "```python" in cevap:
-        return cevap.split("```python", 1)[1].split("```", 1)[0].strip()
-    if "```" in cevap:
-        parts = cevap.split("```")
-        if len(parts) >= 3:
-            return parts[1].strip()
-    return None
-
-
-async def _arena_sorgusu_yap(page, prompt: str, min_cevap_uzunlugu: int = 60, timeout: int = 120) -> str | None:
+async def _arena_sorgusu_yap(page, prompt: str, min_cevap_uzunlugu: int = 100, timeout: int = 130) -> str | None:
     try:
         await page.goto("https://arena.ai/agent/", wait_until="domcontentloaded", timeout=30000)
         await page.wait_for_timeout(3000)
@@ -284,18 +271,17 @@ async def _arena_sorgusu_yap(page, prompt: str, min_cevap_uzunlugu: int = 60, ti
         try:
             await editor.wait_for(state="visible", timeout=15000)
         except Exception:
-            print(f"[Arena] HATA: Tiptap editörü görünmedi. Sayfa: {ilk_body[:250]}")
+            print("[Arena] Tiptap editörü görünmedi.")
             return None
 
         await editor.click()
         await page.wait_for_timeout(300)
         await page.keyboard.insert_text(prompt)
-        await page.wait_for_timeout(500)
+        await page.wait_for_timeout(400)
 
         send_btn = page.locator('button[aria-label="Send message"]')
         await send_btn.click(force=True)
 
-        # URL'nin /agent/<chat_id> adresine geçmesini bekle
         for _ in range(15):
             await page.wait_for_timeout(1000)
             if page.url != "https://arena.ai/agent/":
@@ -311,14 +297,11 @@ async def _arena_sorgusu_yap(page, prompt: str, min_cevap_uzunlugu: int = 60, ti
             body = await page.locator("body").inner_text()
 
             if "Sign in to continue" in body or "Continue with Google" in body:
-                print("[Arena] HATA: Oturum süresi dolmuş veya geçersiz (Login modalı açıldı)!")
+                print("[Arena] Oturum süresi dolmuş (Login modalı açıldı).")
                 return None
 
             cevap = _cevabi_ayikla(body, prompt, prompt_ilk_satir)
-            dusunuyor = (
-                "orchestrating" in body.lower()
-                or "thinking" in body.lower()
-            )
+            dusunuyor = "orchestrating" in body.lower() or "thinking" in body.lower()
             bitti_isareti = "Was this task successful?" in body
 
             if bitti_isareti and len(cevap) >= min_cevap_uzunlugu:
@@ -332,16 +315,13 @@ async def _arena_sorgusu_yap(page, prompt: str, min_cevap_uzunlugu: int = 60, ti
                 if stable_ticks >= 5 and len(cevap) >= min_cevap_uzunlugu:
                     return cevap
 
-        print(f"[Arena] Cevap zaman aşımı ({timeout}sn).")
         return None
-
     except Exception as e:
         print(f"[Arena] Sorgu hatası: {e}")
         return None
 
 
 def _cevabi_ayikla(full_body: str, prompt: str, prompt_ilk_satir: str) -> str:
-    # Prompt'un son satirini referans alarak prompt govdesinin tamamen sonrasina gec
     prompt_son_satir = [s.strip() for s in prompt.splitlines() if s.strip()][-1][:60]
     idx = full_body.rfind(prompt)
     if idx != -1:
@@ -360,140 +340,12 @@ def _cevabi_ayikla(full_body: str, prompt: str, prompt_ilk_satir: str) -> str:
             slice_text = slice_text[:m_idx].strip()
 
     slice_text = re.sub(r"\n\d+s\s*\|\s*just now[\s\S]*$", "", slice_text, flags=re.IGNORECASE).strip()
-
-    # "Thought for X second(s)" dusunce blogu basligini ve ilk dusunce satirini temizle
-    lines = [l for l in slice_text.splitlines()]
+    lines = list(slice_text.splitlines())
     if lines and re.match(r"^Thought for \d+", lines[0].strip(), re.IGNORECASE):
         lines = lines[1:]
         while lines and not lines[0].strip():
             lines.pop(0)
-        # Eger bir sonraki satir tek cumlelik ic dusunce ozeti ise ("Kullanıcı ... istiyor.") ve altinda bos satir varsa atla
-        if len(lines) >= 3 and not lines[1].strip() and re.match(r"^(Kullanıcı|The user)\b", lines[0].strip(), re.IGNORECASE):
-            lines = lines[2:]
     return "\n".join(lines).strip()
-
-
-def _kodu_calistir(kod: str, video_cikti: str) -> tuple:
-    metadata = {
-        "baslik": "BOBİ TV Absürt #Shorts",
-        "aciklama": "BOBİ TV — Her gün absürt Türkçe Shorts!",
-        "hashtag": "#shorts #komedi #türkçe",
-    }
-
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False, encoding="utf-8") as f:
-        f.write(kod)
-        tmp = f.name
-
-    try:
-        result = subprocess.run(
-            ["python3", tmp],
-            capture_output=True,
-            text=True,
-            timeout=180,
-        )
-        if result.returncode == 0:
-            for satir in result.stdout.splitlines():
-                if "{" in satir and "baslik" in satir:
-                    try:
-                        s = satir[satir.find("{"):satir.rfind("}") + 1]
-                        metadata.update(json.loads(s))
-                    except Exception:
-                        pass
-            if Path(video_cikti).exists():
-                return True, metadata
-
-        print(f"[Kod] Çalıştırma hatası (rc={result.returncode}): {result.stderr[-400:]}")
-        return False, metadata
-    except Exception as e:
-        print(f"[Kod] İstisna: {e}")
-        return False, metadata
-    finally:
-        Path(tmp).unlink(missing_ok=True)
-
-
-def _garantili_shorts_render(senaryo: str, video_cikti: str, video_no: int) -> tuple:
-    """Arena'nın ürettiği senaryoyu garantili olarak 1080x1920 Türkçe TTS + FFmpeg MP4'e dönüştürür."""
-    import textwrap
-    from PIL import Image, ImageDraw, ImageFont
-
-    satirlar = [s.strip(" -•*") for s in senaryo.splitlines() if len(s.strip()) > 2][:6]
-    if not satirlar:
-        satirlar = ["Bir terslik var...", "Ama sonunu kimse tahmin edemedi!"]
-
-    ilk_baslik = re.sub(r"^[^:]+:\s*", "", satirlar[0])[:55].strip()
-    meta = {
-        "baslik": f"{ilk_baslik} 😱 #shorts",
-        "aciklama": "Son cümleyi bekleyin! Siz olsanız ne yapardınız?",
-        "hashtag": "#shorts #komedi #absürt #türkçe",
-    }
-
-    font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-    try:
-        font_main = ImageFont.truetype(font_path, 58)
-        font_wm = ImageFont.truetype(font_path, 36)
-    except Exception:
-        font_main = ImageFont.load_default()
-        font_wm = ImageFont.load_default()
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tmp = Path(tmpdir)
-        concat_lines = []
-        audio_files = []
-
-        for idx, satir in enumerate(satirlar):
-            # Görsel kare üret
-            img = Image.new("RGB", (1080, 1920), (18, 16, 46))
-            draw = ImageDraw.Draw(img)
-            # Basit modern kart
-            draw.rounded_rectangle([(80, 620), (1000, 1300)], radius=40, fill=(34, 30, 82), outline=(130, 100, 255), width=4)
-            wrapped = "\n".join(textwrap.wrap(satir, width=24))
-            draw.multiline_text((540, 960), wrapped, fill=(255, 255, 255), font=font_main, anchor="mm", align="center", spacing=18)
-            draw.text((540, 1780), "BOBİ TV", fill=(180, 170, 230), font=font_wm, anchor="mm")
-
-            img_path = tmp / f"slide_{idx:02d}.png"
-            img.save(img_path)
-
-            # Ses üret (gTTS dene)
-            temiz_ses_metni = re.sub(r"^[^:]{1,20}:\s*", "", satir).strip() or satir
-            mp3_path = tmp / f"voice_{idx:02d}.mp3"
-            sure = 2.2
-            try:
-                from gtts import gTTS
-                gTTS(text=temiz_ses_metni, lang="tr").save(str(mp3_path))
-                probe = subprocess.run(
-                    ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", str(mp3_path)],
-                    capture_output=True, text=True, timeout=10
-                )
-                sure = max(1.8, float(probe.stdout.strip()) + 0.35)
-                audio_files.append(mp3_path)
-            except Exception:
-                pass
-
-            seg_path = tmp / f"seg_{idx:02d}.mp4"
-            if mp3_path.exists():
-                cmd = [
-                    "ffmpeg", "-y", "-loop", "1", "-i", str(img_path), "-i", str(mp3_path),
-                    "-t", f"{sure:.2f}", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "24",
-                    "-c:a", "aac", "-b:a", "128k", "-shortest", str(seg_path)
-                ]
-            else:
-                cmd = [
-                    "ffmpeg", "-y", "-loop", "1", "-i", str(img_path),
-                    "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo",
-                    "-t", f"{sure:.2f}", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "24",
-                    "-c:a", "aac", "-shortest", str(seg_path)
-                ]
-            subprocess.run(cmd, capture_output=True, check=True, timeout=60)
-            concat_lines.append(f"file '{seg_path}'")
-
-        concat_txt = tmp / "list.txt"
-        concat_txt.write_text("\n".join(concat_lines), encoding="utf-8")
-        subprocess.run(
-            ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(concat_txt), "-c", "copy", str(video_cikti)],
-            capture_output=True, check=True, timeout=90
-        )
-
-    return Path(video_cikti).exists(), meta
 
 
 if __name__ == "__main__":
@@ -501,6 +353,6 @@ if __name__ == "__main__":
     v_no = int(sys.argv[1]) if len(sys.argv) > 1 else 1
     res = asyncio.run(arena_video_uret(v_no))
     if res:
-        print(json.dumps(res, ensure_ascii=False, indent=2))
+        print(json.dumps({k: v for k, v in res.items() if k != "ses_dosyalari"}, ensure_ascii=False, indent=2))
     else:
         sys.exit(1)

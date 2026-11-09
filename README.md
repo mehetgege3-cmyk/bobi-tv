@@ -8,6 +8,11 @@ Türkçe absürt ve ironik komedi diyaloglarını **yüksek tutunmalı (high-ret
 - Geriye dönük uyumluluk: `from modules.scenario import senaryo_paketi_olustur` ve `senaryo_paketi_olustur(video_no)` aynen çalışır.
 - Kalite kapısı: `pytest -q`, `mypy --strict`, `ruff check`, `ruff format --check`. Mimari kararlar ve kabul kriterleri: `docs/BOBI_TV_V7_MIGRATION_PLAN.md`.
 
+### Arena AI Otomatik Onarım
+- Mevcut GitHub Actions workflow'larından biri başarısız olursa `.github/workflows/arena_self_repair.yml`, redakte edilmiş log ve ilgili dosya bağlamını Arena AI'ya yollar.
+- Arena'nın unified diff'i `git apply` ile doğrulanır; test, mypy ve Ruff kapıları geçmeden `main`'e push yapılmaz.
+- İş akışı `ARENA_COOKIES_JSON` secret'ını ister; push için `GITHUB_TOKEN` kullanır, varsa `GH_PAT`'e geçer. Ayrıntı ve sınırlar: `docs/ARENA_SELF_REPAIR.md`.
+
 ### v6.3 PRO: Sürekli Değişen Konular + 15sn Minimum
 - **Konu rotasyonu:** Bar fıkraları, paradoks hikâyeleri, absürt komedi/şakalar, çılgın ama zararsız hikâyeler, ters köşe fıkralar, eğlenceli replik düelloları ve saygılı kültürler arası mizah. Son 6 yayın kategorisi rotasyon seçiminde geriye atılır; yeni yüklemelerin kategorisi arşivlenir.
 - **Kimlik güvenliği:** Irk/ten rengi/etnik köken hedefli aşağılayıcı fıkra veya stereotip üretilmez; çok kültürlü mizah, karakter ve durum komedisi şeklinde kapsayıcı yazılır.
@@ -32,7 +37,8 @@ bobi-tv/
 │   ├── arena_senaryo.yml       # Günlük Arena AI Master Loop senaryo üretimi
 │   ├── daily_production.yml    # Manuel toplu üretim tetikleyicisi
 │   ├── test_pipeline.yml       # Uçtan uca v6.0 Render & QC doğrulama testi
-│   └── arena-agent.yml         # Arena.ai Playwright çerez & oturum testi
+│   ├── arena-agent.yml         # Arena.ai Playwright çerez & oturum testi
+│   └── arena_self_repair.yml   # Tüm workflow hatalarında Arena teşhis + kalite kapılı main onarımı
 ├── modules/
 │   ├── arena_api.py            # Arena.ai Headless Playwright Yönetmen + Çerez Yenileyici
 │   ├── arena_uretici.py        # Senkron üretim sarmalayıcısı
@@ -57,9 +63,12 @@ bobi-tv/
 │   ├── BOBI_TV_V6_PRO_MIMARI_VE_KURALLAR.md  # Shorts algoritma rehberi ve mimari
 │   ├── BOBI_TV_V6_3_KONU_15DK_KAPAK.md       # Konu rotasyonu, minimum 15sn, Frame 0 kapak ve 15dk işleyiş
 │   ├── BOBI_TV_V7_MIGRATION_PLAN.md           # 8 TODO maddesinin gerekçe/uygulama/kabul kriterleri
-│   └── BOBI_TV_V7_TEMPLATE_MODEL.md           # Diyalog, karakter, duygu enum ve satır metadata sözleşmesi
+│   ├── BOBI_TV_V7_TEMPLATE_MODEL.md           # Diyalog, karakter, duygu enum ve satır metadata sözleşmesi
+│   └── ARENA_SELF_REPAIR.md                   # Hata günlüğü -> Arena diff -> test -> main akışı
 ├── arena-ask.mjs               # Arena.ai çerez birleştirme (<4KB) ve Tiptap otomasyon CLI aracı
 ├── arena-senaryo.mjs           # Master Loop JSON senaryo üretici Node betiği
+├── arena-self-repair.mjs       # Arena AI'dan hata için unified diff alan runner
+├── scripts/arena_self_repair.py # Log redaksiyonu, prompt hazırlama ve diff çıkarma
 ├── main_pipeline.py            # Ana orkestrasyon ve akıllı kuyruk yöneticisi
 ├── requirements.txt            # Python bağımlılıkları
 └── SKILL.md                    # BOBİ Ajan Anayasası ve v6.0 PRO Kalıcı Kuralları

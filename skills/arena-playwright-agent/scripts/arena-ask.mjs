@@ -139,10 +139,8 @@ export async function askArenaAgent({
 
   const editor = page.locator('div.tiptap[contenteditable="true"]');
   await editor.waitFor({ state: 'visible', timeout: 15000 });
-  await editor.click();
+  await editor.fill(promptText);
   await page.waitForTimeout(300);
-  await page.keyboard.type(promptText, { delay: 12 });
-  await page.waitForTimeout(400);
 
   const sendBtn = page.locator('button[aria-label="Send message"]');
   await sendBtn.click({ force: true });

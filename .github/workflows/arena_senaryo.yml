@@ -103,6 +103,10 @@ jobs:
           done
           
           echo "Toplam: $BASARI/$SAYI senaryo üretildi"
+          if [ "$BASARI" -lt "$SAYI" ]; then
+            echo "En az bir senaryo üretilemedi; Arena self-repair workflow'u hata bağlamını alacak."
+            exit 1
+          fi
           exit 0
 
       - name: Telegram bildirim

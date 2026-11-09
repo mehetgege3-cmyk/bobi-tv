@@ -142,39 +142,25 @@ async def arena_video_uret(video_no: int, output_dir: str = "bobi_tv/output") ->
 
         page = await context.new_page()
 
-        # === ADIM 1: Senaryo iste ===
+        # === ADIM 1: Senaryo + Başlık JSON olarak iste ===
         print(f"[Arena] Video #{video_no}: Senaryo oluşturuluyor...")
-        senaryo = await _arena_senaryo_uret(page, video_no)
-        if not senaryo:
-            await _guncel_cerezleri_kaydet(context)
-            await browser.close()
-            return None
-
-        print(f"[Arena] Senaryo alındı ({len(senaryo)} karakter).")
-
-        # === ADIM 2: Animasyon Python kodu iste ===
-        print(f"[Arena] Video #{video_no}: Python animasyon kodu yazılıyor...")
-        kod = await _arena_kod_uret(page, senaryo, video_cikti)
-
+        senaryo_paket = await _arena_senaryo_uret(page, video_no)
         await _guncel_cerezleri_kaydet(context)
         await browser.close()
 
-    # === ADIM 3: Kodu çalıştır (veya garantili fallback render) ===
-    basari = False
+        if not senaryo_paket:
+            return None
+
+        senaryo = "\n".join(senaryo_paket["satirlar"])
+        print(f"[Arena] Senaryo alındı ({len(senaryo_paket['satirlar'])} satır): {senaryo_paket['baslik']}")
+
+    # === ADIM 2: Garantili yüksek kaliteli Türkçe TTS + FFmpeg Shorts render ===
+    basari, fb_meta = _garantili_shorts_render(senaryo, video_cikti, video_no)
     metadata = {
-        "baslik": f"Sonunu Kimse Beklemiyordu! #{video_no} #shorts",
-        "aciklama": "BOBİ TV — Absürt Türkçe Shorts",
-        "hashtag": "#shorts #komedi #türkçe",
+        "baslik": senaryo_paket.get("baslik") or fb_meta["baslik"],
+        "aciklama": senaryo_paket.get("aciklama") or fb_meta["aciklama"],
+        "hashtag": "#shorts #komedi #absürt #türkçe",
     }
-
-    if kod:
-        print(f"[Arena] Video #{video_no}: Arena kodu ile render ediliyor...")
-        basari, metadata = _kodu_calistir(kod, video_cikti)
-
-    if not (basari and Path(video_cikti).exists() and Path(video_cikti).stat().st_size > 10_000):
-        print(f"[Arena] Video #{video_no}: Yedek garantili PIL+TTS+FFmpeg render devreye giriyor...")
-        basari, fb_meta = _garantili_shorts_render(senaryo, video_cikti, video_no)
-        metadata.update(fb_meta)
 
     if basari and Path(video_cikti).exists() and Path(video_cikti).stat().st_size > 10_000:
         boyut_kb = Path(video_cikti).stat().st_size // 1024
@@ -216,13 +202,45 @@ async def _guncel_cerezleri_kaydet(context):
         print(f"[Arena] Güncel çerez kaydetme uyarısı: {e}")
 
 
-async def _arena_senaryo_uret(page, video_no: int) -> str | None:
+async def _arena_senaryo_uret(page, video_no: int) -> dict | None:
     prompt = (
         f"Türkçe absürt komedi YouTube Shorts senaryosu yaz (Bölüm #{video_no}). "
-        "4-5 kısa diyalog satırı olsun, son cümlesi beklenmedik şok/twist ile bitsin. "
-        "Araç veya dosya KULLANMA; doğrudan mesaj olarak sadece 4-5 diyalog satırını yaz."
+        "4 veya 5 kısa Türkçe diyalog cümlesi olsun, son cümle beklenmedik komik şok/twist olsun. "
+        "Hiçbir araç kullanma, sadece şu JSON formatında yanıt ver: "
+        '{"baslik": "Vurucu Türkçe Başlık 😱 #shorts", "aciklama": "Siz olsanız ne yapardınız?", "satirlar": ["1. cümle", "2. cümle", "3. cümle", "4. twist cümlesi"]}'
     )
-    return await _arena_sorgusu_yap(page, prompt, min_cevap_uzunlugu=50, timeout=120)
+    cevap = await _arena_sorgusu_yap(page, prompt, min_cevap_uzunlugu=60, timeout=120)
+    if not cevap:
+        return None
+
+    # Yanıtın sonundaki geçerli JSON nesnesini cımbızla çıkar (önündeki Thought bloğunu tamamen yoksayar!)
+    candidates = re.findall(r"\{[^{}]*\}", cevap)
+    if "{" in cevap and "}" in cevap:
+        candidates.append(cevap[cevap.find("{"):cevap.rfind("}") + 1])
+    for raw_json in reversed(candidates):
+        try:
+            obj = json.loads(raw_json)
+            if isinstance(obj.get("satirlar"), list) and len(obj["satirlar"]) >= 2:
+                return {
+                    "baslik": str(obj.get("baslik") or f"Sonunu Beklemiyordum 😱 #{video_no} #shorts"),
+                    "aciklama": str(obj.get("aciklama") or "Yorumlara yazın!"),
+                    "satirlar": [str(s).strip() for s in obj["satirlar"] if str(s).strip()],
+                }
+        except Exception:
+            continue
+
+    # JSON parse edilemezse sadece Türkçe karakter barındıran diyalog satırlarını al
+    tr_lines = [
+        l.strip() for l in cevap.splitlines()
+        if len(l.strip()) > 5 and not re.match(r"^(Thought|Let me|I will|The user|Here)", l.strip(), re.I)
+    ]
+    if tr_lines:
+        return {
+            "baslik": f"{tr_lines[0][:50]} 😱 #shorts",
+            "aciklama": "Sonuna kadar izleyin!",
+            "satirlar": tr_lines[:5],
+        }
+    return None
 
 
 async def _arena_kod_uret(page, senaryo: str, video_cikti: str) -> str | None:

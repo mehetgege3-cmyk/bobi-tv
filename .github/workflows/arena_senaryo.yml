@@ -1,0 +1,117 @@
+name: BOBİ TV — Arena AI Senaryo Üretimi
+
+on:
+  workflow_dispatch:
+    inputs:
+      kategori:
+        description: 'Hangi kategori için senaryo üretilsin? (boş = rastgele)'
+        required: false
+        default: ''
+      sayi:
+        description: 'Kaç senaryo üretilsin?'
+        required: false
+        default: '5'
+  schedule:
+    # Her gün UTC 05:00 (Türkiye 08:00) — üretimden önce
+    - cron: '0 5 * * *'
+
+jobs:
+  senaryo-uret:
+    name: Arena AI Senaryo Üretimi
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Repo'yu çek
+        uses: actions/checkout@v4
+
+      - name: Node.js kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Bağımlılıkları ve Chromium'u kur
+        run: |
+          npm init -y 2>/dev/null
+          npm install playwright
+          npx playwright install --with-deps chromium
+
+      - name: Klasör hazırla
+        run: |
+          mkdir -p bobi_tv/production/scripts/arena
+
+      - name: Arena AI'dan senaryo üret
+        env:
+          ARENA_COOKIES_JSON: ${{ secrets.ARENA_COOKIES_JSON }}
+        run: |
+          SAYI=${{ github.event.inputs.sayi || '5' }}
+          KATEGORI="${{ github.event.inputs.kategori }}"
+          
+          KATEGORILER=("kurumsal_hayat" "pazartesi_sendromu" "ik_toplantisi" "mesai_sonu" "bar_fikrasi" "diyet_kavrami" "google_sorusu" "trafik_kaggasi" "wifi_kavgasi" "saglik_sorunu" "kahve_hayati" "evlilik_hayati" "yapay_zeka" "sabah_alarmi" "sigara_kavgasi" "sok_diyalog" "hastane_korkusu" "egitim_sistemi" "sosyal_medya" "spor_hayati" "sok_hayati")
+          
+          BASARI=0
+          for i in $(seq 1 $SAYI); do
+            if [ -z "$KATEGORI" ]; then
+              KAT=${KATEGORILER[$RANDOM % ${#KATEGORILER[@]}]}
+            else
+              KAT="$KATEGORI"
+            fi
+            
+            echo "=== Senaryo $i/$SAYI: $KAT ==="
+            TIMESTAMPH=$(date +%Y%m%d_%H%M%S)
+            OUTPUT="bobi_tv/production/scripts/arena/arena_${TIMESTAMPH}_${i}.json"
+            
+            node arena-senaryo.mjs "$KAT" > "$OUTPUT" 2>arena-error.log
+            if [ $? -eq 0 ] && [ -s "$OUTPUT" ]; then
+              echo "✅ Senaryo $i üretildi: $OUTPUT"
+              BASARI=$((BASARI + 1))
+            else
+              echo "❌ Senaryo $i başarısız"
+              cat arena-error.log
+            fi
+            
+            sleep 5
+          done
+          
+          echo "Toplam: $BASARI/$SAYI senaryo üretildi"
+
+      - name: Telegram bildirim
+        if: always()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python3 -c "
+          import os, requests, glob, json
+          token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+          chat_id = os.environ.get('TELEGRAM_CHAT_ID', '')
+          files = glob.glob('bobi_tv/production/scripts/arena/arena_*.json')
+          mesaj = f'📝 <b>Arena AI Senaryo Üretimi</b>\nÜretilen: {len(files)} senaryo\n'
+          if files:
+              for f in files[-3:]:
+                  try:
+                      with open(f) as fh:
+                          s = json.load(fh)
+                          mesaj += f'\n• {s.get(\"kategori\", \"?\")}: {s.get(\"hook_metni\", \"?\")}'
+                  except: pass
+          requests.post(f'https://api.telegram.org/bot{token}/sendMessage',
+              json={'chat_id': chat_id, 'text': mesaj, 'parse_mode': 'HTML'})
+          "
+
+      - name: Senaryoları commit et
+        if: always()
+        run: |
+          git config user.name "BOBİ TV Bot"
+          git config user.email "bobi-tv-bot@users.noreply.github.com"
+          git add bobi_tv/production/scripts/arena/ || true
+          git diff --staged --quiet || git commit -m "📝 Arena AI senaryoları [$(date +%Y-%m-%d)]"
+          git push || true
+
+      - name: Artifact yükle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: arena-senaryolar
+          path: |
+            bobi_tv/production/scripts/arena/
+            arena-error.log

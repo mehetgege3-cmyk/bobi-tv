@@ -159,7 +159,7 @@ def video_kalite_kontrol(video_yolu: str) -> dict:
     Üretilen MP4 dosyasını ffprobe ile denetler:
     - Çözünürlük 1080x1920 mi?
     - Hem video (h264) hem ses (aac) akışı var mı?
-    - Süre Shorts aralığında mı (4sn - 59.5sn)?
+    - Süre kullanıcı sınırına uygun mu (15sn - 59.5sn)? İnce/çok kısa videoları reddeder.
     """
     p = Path(video_yolu)
     if not p.exists() or p.stat().st_size < 25_000:
@@ -183,8 +183,8 @@ def video_kalite_kontrol(video_yolu: str) -> dict:
 
     if gen != VIDEO_GENISLIK or yuk != VIDEO_YUKSEKLIK:
         raise RuntimeError(f"Render QC Başarısız: Çözünürlük {gen}x{yuk} (beklenen 1080x1920)")
-    if sure < 4.0 or sure > 59.8:
-        raise RuntimeError(f"Render QC Başarısız: Geçersiz Shorts süresi ({sure:.2f}sn)")
+    if sure < 15.0 or sure > 59.5:
+        raise RuntimeError(f"Render QC Başarısız: Video 15.0–59.5 saniye aralığında olmalı (mevcut: {sure:.2f}sn)")
 
     ozet = {
         "gecerli": True,
@@ -224,6 +224,10 @@ def video_render(senaryo_paketi: dict) -> str:
 
     # 1. Sıfır boşluklu diyalog birleştirme
     diyalog_suresi = ses_birlestir(ses_yollari, ham_birlesik_wav)
+    if diyalog_suresi < 15.0:
+        raise RuntimeError(f"Minimum 15 saniye kuralı: gerçek diyalog {diyalog_suresi:.2f}sn; video render/yayın iptal edildi.")
+    if diyalog_suresi > 59.5:
+        raise RuntimeError(f"Shorts süre sınırı: gerçek diyalog {diyalog_suresi:.2f}sn; 59.5sn üzerinde video render edilemez.")
 
     # 2. SFX + Telifsiz BGM (-20dB ducking) + -14 LUFS Mastering
     sfx_olaylari = sfx_zaman_cizelgesi_olustur(ses_dosyalari)

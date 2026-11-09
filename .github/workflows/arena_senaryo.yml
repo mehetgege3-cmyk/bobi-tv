@@ -48,15 +48,41 @@ jobs:
           SAYI=${{ github.event.inputs.sayi || '5' }}
           KATEGORI="${{ github.event.inputs.kategori }}"
           
-          KATEGORILER=("kurumsal_hayat" "pazartesi_sendromu" "ik_toplantisi" "mesai_sonu" "bar_fikrasi" "diyet_kavrami" "google_sorusu" "trafik_kavgasi" "wifi_kavgasi" "saglik_sorunu" "kahve_hayati" "evlilik_hayati" "yapay_zeka" "sabah_alarmi" "sigara_kavgasi" "sok_diyalog" "hastane_korkusu" "egitim_sistemi" "sosyal_medya" "spor_hayati" "sok_hayati")
+          KATEGORILER=("bar_fikralari" "paradoks_hikayeleri" "absurt_komedi" "absurt_sakalar" "cilgin_hikayeler" "ters_kose_fikralar" "eglenceli_replikler" "kulturlar_arasi_mizah" "kurumsal_hayat" "pazartesi_sendromu" "ik_toplantisi" "mesai_sonu" "diyet_kavrami" "trafik_kavgasi" "wifi_kavgasi" "saglik_sorunu" "kahve_hayati" "yapay_zeka" "sosyal_medya" "spor_hayati")
+          if ! [[ "$SAYI" =~ ^[1-9][0-9]*$ ]]; then SAYI=5; fi
+          if [ "$SAYI" -gt "${#KATEGORILER[@]}" ]; then SAYI=${#KATEGORILER[@]}; fi
           
+          if [ -z "$KATEGORI" ]; then
+            mapfile -t SECIMLER < <(KATEGORI_POOL="${KATEGORILER[*]}" SAYI="$SAYI" python3 - <<'PYEOF'
+          import json, os, random
+          from pathlib import Path
+          pool = os.environ['KATEGORI_POOL'].split()
+          sayi = int(os.environ['SAYI'])
+          arsiv = Path('bobi_tv/archive/videos.json')
+          kayitlar = []
+          if arsiv.exists():
+              try: kayitlar = json.loads(arsiv.read_text(encoding='utf-8'))
+              except Exception: pass
+          def kategori(k):
+              if k.get('kategori'): return k['kategori']
+              parts = str(k.get('dosya_adi','')).split('_',2)
+              slug = parts[2] if len(parts) == 3 else ''
+              return slug[:-6] if slug.endswith('_arena') else slug
+          recent = {kategori(k) for k in kayitlar[-6:] if kategori(k)}
+          candidates = [k for k in pool if k not in recent]
+          candidates += [k for k in pool if k not in candidates]
+          random.shuffle(candidates)
+          print('\n'.join(candidates[:sayi]))
+          PYEOF
+            )
+          else
+            SECIMLER=()
+            for _ in $(seq 1 "$SAYI"); do SECIMLER+=("$KATEGORI"); done
+          fi
+
           BASARI=0
           for i in $(seq 1 $SAYI); do
-            if [ -z "$KATEGORI" ]; then
-              KAT=${KATEGORILER[$RANDOM % ${#KATEGORILER[@]}]}
-            else
-              KAT="$KATEGORI"
-            fi
+            KAT="${SECIMLER[$((i-1))]}"
             
             echo "=== Senaryo $i/$SAYI: $KAT ==="
             TIMESTAMPH=$(date +%Y%m%d_%H%M%S)

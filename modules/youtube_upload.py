@@ -43,6 +43,14 @@ HASHTAG_HARITASI = {
     "diyet_kavrami":      ["#shorts", "#diyet", "#diyetteyim", "#yemek", "#komedi", "#mizah"],
     "spor_hayati":        ["#shorts", "#sporsalonu", "#fitness", "#komedi", "#absürt", "#mizah"],
     "sosyal_medya":       ["#shorts", "#sosyalmedya", "#anne", "#influencer", "#komedi", "#türkçemizah"],
+    "bar_fikralari":      ["#shorts", "#barfıkrası", "#barmizah", "#fıkra", "#komedi", "#tersköşe"],
+    "paradoks_hikayeleri": ["#shorts", "#paradoks", "#zamandöngüsü", "#hikaye", "#absürt", "#komedi"],
+    "absurt_komedi":      ["#shorts", "#absürtkomedi", "#absürtmizah", "#komedi", "#skeç", "#türkçemizah"],
+    "absurt_sakalar":     ["#shorts", "#absürtşaka", "#komikşaka", "#mizah", "#komedi", "#skeç"],
+    "cilgin_hikayeler":   ["#shorts", "#komikhikaye", "#çılgınhikaye", "#absürt", "#komedi", "#hikaye"],
+    "ters_kose_fikralar": ["#shorts", "#tersköşe", "#fıkra", "#beklenmedikson", "#mizah", "#komedi"],
+    "eglenceli_replikler": ["#shorts", "#komikreplik", "#diyalog", "#eğlence", "#mizah", "#komedi"],
+    "kulturlar_arasi_mizah": ["#shorts", "#kültürlerarası", "#dünyamutfağı", "#gündelikmizah", "#komedi", "#saygılımizah"],
 }
 
 
@@ -111,6 +119,7 @@ def arsive_ekle(dosya_adi: str, baslik: str, senaryo: dict, video_id: str):
         "baslik": baslik,
         "video_id": video_id,
         "durum": "yayinda",
+        "kategori": senaryo.get("kategori", ""),
         "url": f"https://www.youtube.com/shorts/{video_id}",
         "senaryo_ozeti": senaryo.get("acilis", "")[:200],
         "hash": senaryo.get("hash", ""),

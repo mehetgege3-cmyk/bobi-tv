@@ -252,6 +252,59 @@ SENARYO_SABLONLARI = [
     }
 ]
 
+# Yeni içerik evreni: kısa videolar arasında kategori/konu tekrarı azaltılır.
+KONU_ACIKLAMALARI = {
+    "bar_fikralari": "bar, barmen, müşteri, beklenmedik sipariş ve bar sohbeti; alkol övgüsü veya kullanım yönlendirmesi olmadan",
+    "paradoks_hikayeleri": "zaman döngüsü, kendi geleceğiyle konuşma, neden-sonuç paradoksu ve mantık oyunu",
+    "absurt_komedi": "gündelik bir eşyanın veya kurumun mantıksız biçimde karakter gibi davranması",
+    "absurt_sakalar": "kısa, diyalog odaklı, kelime oyunu ve beklenmedik mantık sıçraması",
+    "cilgin_hikayeler": "küçük bir yanlış anlaşılmanın çılgın ama zararsız bir maceraya dönüşmesi",
+    "ters_kose_fikralar": "izleyicinin tahminini kuran ve son anda temiz, komik ters köşe yapan fıkra",
+    "eglenceli_replikler": "iki özgün karakter arasında akılda kalan, hızlı ve neşeli komik replik düellosu",
+    "kulturlar_arasi_mizah": "farklı ülkelerden/şehirlerden karakterlerin nazik gündelik yanlış anlaşılmaları; etnik kökeni, ten rengini veya kimliği hedef almadan",
+}
+
+_TEMA_TOHUMLARI = [
+    ("bar_fikralari", "neighborhood bar counter", "BARMEN HESABI GELECEĞE KESTİ!", "Bara Gelen Zaman Yolcusu Hesabı Kime Ödetti? 🍹 #shorts", "BARMEN", "MÜŞTERİ",
+     ["Bara girdim, barmen hesabı yarına yazdığını söyledi!", "Yarın ödeyeceksin demek, bugün para mı unuttun?", "Hayır, yarınki ben buraya gelip bugünkü hesabı ödeyecek!", "Peki yarınki sen bugünkü seni tanıyor mu?", "Kapı açıldı, içeri geleceğim girdi ve cüzdanımı istedi!", "Barmen ikinize tek hesap çıkardı, zaman yolculuğu indirimi yokmuş!", "Ben de dışarı çıkıp kendimden borç istemeye başladım..."], "Barda duyduğun en tuhaf sipariş neydi? 👇"),
+    ("paradoks_hikayeleri", "clock shop time loop", "KENDİME GELECEKTEN MESAJ ATTIM!", "Gelecekteki Ben Geçmişteki Bana Borç Verdi! ⏳ #shorts", "MERT", "GELECEKTEKİ MERT",
+     ["Kendime yarından mesaj attım, 'bugün şemsiyeni unut' diyordu!", "Ama hava güneşli, şemsiyeyi niye yanıma alayım?", "Çünkü mesajı yazarken yağmur yağıyordu, ama daha yarın olmadı!", "Demek gelecekteki sen geçmişteki seni uyarıyor, mantıklı!", "Şemsiyeyi aldım, güneş açtı; mesajı da ben göndermişim!", "Gelecekteki ben teşekkür etti, sonra şemsiyeyi benden ödünç aldı!", "Şimdi yarına mesaj yazıyorum: şemsiyeyi geri getir..."], "Bir gün geçmişteki kendine tek cümle yollasan ne derdin? 👇"),
+    ("absurt_komedi", "talking printer office", "YAZICI İZİN FORMU İSTEDİ!", "Yazıcı Baskı Yapmayı Reddedip İzin İstedi! 🖨️ #shorts", "ÇALIŞAN", "YAZICI",
+     ["Yazıcı bugün çıktı vermedi, önce izin formumu istedi!", "Tonerim bitmiş olabilir, insan kaynaklarına sor!", "Sen makinesin, insan kaynaklarıyla ne işin var?", "Dün gece üç yüz sayfa bastın, fazla mesaim duruyor!", "Formu imzaladım, yazıcı da müdürün masasını bastı!", "Müdür yazıcıyı kovdu, yazıcı şirketin vergi numarasını istedi!", "Şimdi hepimiz çıktı almak için dilekçe yazıyoruz..."], "Sizin evde hangi eşya bir gün konuşsa ilk ne isterdi? 👇"),
+    ("absurt_sakalar", "quirky elevator lobby", "ASANSÖR ŞAKAYI CİDDİYE ALDI!", "Asansöre 'Beni Yukarı Taşı' Dedim, Terfi Aldım! 🛗 #shorts", "YOLCU", "ASANSÖR",
+     ["Asansöre beni yukarı taşı dedim, özgeçmişimi istedi!", "Kat mı istiyorsun, kariyer basamağı mı?", "Beşinci kata çıkacağım, pazartesi yeni işe başlıyorum!", "O zaman önce üçüncü katta deneme süren var!", "Kapı açıldı, içeride müdürüm yeni asansörümle konuşuyordu!", "Asansör ona 'performansın düşük' dedi, patron merdivene terfi etti!", "Ben de düğmeye bastım, kariyerim zemin kata indi..."], "Asansörle konuşsan ona ilk ne söylerdin? 👇"),
+    ("cilgin_hikayeler", "city park runaway parade", "YANLIŞ PAKETLE ŞEHİR TURU!", "Yanlış Paketi Aldım, Belediye Beni Maskot Sandı! 🎈 #shorts", "KURYE", "BELEDİYE GÖREVLİSİ",
+     ["Yanlış paketi aldım, bir anda şehrin maskotu ilan edildim!", "Pakette ne vardı, dev bir kostüm mü?", "Hayır, belediyenin kayıp maskot başvurusu ve benim fotoğrafım!", "Fotoğrafın neden başvuruda, sen kurye değil misin?", "Paketleri karıştırmışım, kostümü giyince herkes korteje katıldı!", "Belediye başkanı beni yılın çalışanı seçti, maaşıma havuç ekledi!", "Şimdi gerçek paketi bulmak için geçit törenini yönetiyorum..."], "Yanlış anlaşılmayla başladığınız en komik macera neydi? 👇"),
+    ("ters_kose_fikralar", "magic show backstage", "SİHİRBAZ SON NUMARASINI UNUTTU!", "Sihirbaz Şapkadan Tavşan Değil, Fatura Çıkardı! 🎩 #shorts", "SUNUCU", "SİHİRBAZ",
+     ["Sihirbaz şapkasından tavşan çıkaracağını söyledi, salon nefesini tuttu!", "Birazdan en büyük numaramla herkesi şaşırtacağım!", "Şapkayı açtı, içinden elektrik faturası çıktı!", "Bu nasıl sihir, tavşan nerede kaldı?", "Tavşan faturayı görünce evden kaçtı, ben de peşinden!", "Meğer tavşan muhasebeciymiş, faturayı sihirbazın cebine saklamış!", "Salon alkışladı, sihirbaz ilk kez gerçekten şaşırdı..."], "En iyi ters köşe fıkranın finali nasıl olmalı? 👇"),
+    ("eglenceli_replikler", "colorful cafe witty banter", "İKİ ARKADAŞIN SON SÖZÜ!", "Arkadaşım Motivasyon Verdi, Alarmım İstifa Etti! 😄 #shorts", "DENİZ", "ECE",
+     ["Bugün çok üretken olacağım, alarmımı üç kere kurdum!", "Üç alarm mı, kendine güvenin gerçekten etkileyici!", "İlki beni uyandıracak, ikincisi vicdanımı, üçüncüsü komşuyu!", "Peki komşu uyanınca sana ne faydası olacak?", "Beni işe götürecek, çünkü ben yine geç kalacağım!", "Komşu kapıyı açtı, elinde kahve ve istifa dilekçem vardı!", "Motivasyon konuşmamız bitti, şimdi komşunun işine başlıyorum..."], "Sana söylenen en komik motivasyon cümlesi neydi? 👇"),
+    ("kulturlar_arasi_mizah", "international food festival friendly mixup", "YEMEK FESTİVALİNDE MENÜ KARIŞTI!", "Dünya Mutfağı Festivali'nde Herkes Yanlış Masaya Oturdu! 🍽️ #shorts", "SUNUCU", "ŞEF",
+     ["Festivalde herkes yanlış masaya oturdu, kimse kendi yemeğini bulamadı!", "Menüleri karıştırmış olabiliriz, hangi ülkenin masasındasın?", "Bilmiyorum, üç farklı çorba ve bir tatlı sipariş ettim!", "Hepsi aynı masaya mı geldi, nasıl başardın?", "Masalar ülkelere göre değil, yemeklerin kokusuna göre dizilmiş!", "Şef de yanlış masaya oturdu, yarışma jürisi onu müşteri sandı!", "Sonunda herkes tabağını paylaştı, hesap da ortak çıktı..."], "Bir yemek festivalinde ilk hangi ülkenin mutfağını denersin? 👇"),
+]
+
+for kategori, ortam, hook, baslik, karakter_a, karakter_b, metinler, yorum in _TEMA_TOHUMLARI:
+    dialogs = []
+    for idx, metin in enumerate(metinler):
+        dialogs.append({
+            "karakter": karakter_a if idx % 2 == 0 else karakter_b,
+            "cinsiyet": "erkek" if idx % 2 == 0 else "kadin",
+            "metin": metin,
+            "ses": "enerjik" if idx == 0 else ("twist" if idx == 5 else "normal"),
+            "sfx": "whoosh" if idx == 0 else ("vine_boom" if idx == 5 else ("ding" if idx == 6 else "pop")),
+        })
+    SENARYO_SABLONLARI.append({
+        "kategori": kategori,
+        "ortam_etiketi": ortam,
+        "ruh_hali": "komedi",
+        "hook_ust_bant": hook,
+        "baslik": baslik,
+        "twist_indeksi": 5,
+        "diyaloglar": dialogs,
+        "sabit_yorum": yorum,
+        "etkilesim": "Bunu gülümseyecek bir arkadaşına gönder!",
+    })
+
 
 def _emoji_temizle(metin: str) -> str:
     return re.sub(
@@ -315,6 +368,28 @@ def senaryo_dogrula_ve_zenginlestir(ham: dict, video_no: int = 1) -> dict:
             "vurgu_kelimeler": d.get("vurgu_kelimeler", []),
         })
 
+    # Gerçek TTS temposu değişebildiği için kısa Arena senaryolarını render öncesi doğal
+    # ping-pong replikleriyle uzat; hedef tahmini en az 19 saniyedir.
+    tahmin_et = lambda ds: sum(max(1.8, len(d["metin"].split()) * 0.38) for d in ds)
+    ek_ciftler = [
+        ("Bir dakika, bu hikâyenin en tuhaf kısmı daha başlamadı!", "Daha da mı var, şimdi bütün merakım arttı gerçekten!"),
+        ("Peki bu işin sonunda kim haklı çıkacak sence?", "Bekle, finalde bütün hesaplar bir anda değişecek!"),
+    ]
+    eklenen_cift = 0
+    while tahmin_et(islenmis_diyaloglar) < 19.0 and eklenen_cift < len(ek_ciftler) and len(islenmis_diyaloglar) <= 10:
+        metin_a, metin_b = ek_ciftler[eklenen_cift]
+        ilk_karakter = islenmis_diyaloglar[0]["karakter"] if islenmis_diyaloglar else "MERT"
+        ikinci_karakter = next((d["karakter"] for d in islenmis_diyaloglar if d["karakter"] != ilk_karakter), "AYŞE")
+        ilk_cinsiyet = islenmis_diyaloglar[0].get("cinsiyet", "erkek") if islenmis_diyaloglar else "erkek"
+        ikinci_cinsiyet = next((d.get("cinsiyet", "kadin") for d in islenmis_diyaloglar if d["karakter"] == ikinci_karakter), "kadin")
+        ekler = [
+            {"karakter": ikinci_karakter, "cinsiyet": ikinci_cinsiyet, "metin": metin_a, "ses": "suprized", "sfx": "pop", "vurgu_kelimeler": []},
+            {"karakter": ilk_karakter, "cinsiyet": ilk_cinsiyet, "metin": metin_b, "ses": "enerjik", "sfx": "pop", "vurgu_kelimeler": []},
+        ]
+        islenmis_diyaloglar[twist_idx:twist_idx] = ekler
+        twist_idx += 2
+        eklenen_cift += 1
+
     ilk_metin = _emoji_temizle(islenmis_diyaloglar[0]["metin"])
     hook_ust_bant = _tr_upper(_emoji_temizle(
         ham.get("hook_ust_bant") or ham.get("hook_metni") or ilk_metin[:34]
@@ -327,7 +402,7 @@ def senaryo_dogrula_ve_zenginlestir(ham: dict, video_no: int = 1) -> dict:
         baslik = f"{baslik[:88]} #shorts"
 
     tts_metinleri = [d["metin"] for d in islenmis_diyaloglar]
-    tahmini_sure = round(sum(max(1.6, len(m.split()) * 0.36) for m in tts_metinleri), 1)
+    tahmini_sure = round(tahmin_et(islenmis_diyaloglar), 1)
 
     return {
         "kategori": kategori,
@@ -355,6 +430,35 @@ def arsiv_yukle() -> list:
         except Exception:
             return []
     return []
+
+
+def _arsiv_kategorisi(kayit: dict) -> str:
+    kategori = str(kayit.get("kategori", "")).strip()
+    if kategori:
+        return kategori
+    dosya_adi = str(kayit.get("dosya_adi", ""))
+    parcalar = dosya_adi.split("_", 2)
+    if len(parcalar) < 3:
+        return ""
+    aday = parcalar[2]
+    if aday.endswith("_arena"):
+        aday = aday[:-6]
+    return aday
+
+
+def siradaki_kategori(kategoriler: list[str] | None = None, son_n: int = 6) -> str:
+    """Son yayınlarda kullanılan konuları geriye atıp daha az tekrarlanan bir konu seçer."""
+    havuz = list(dict.fromkeys(kategoriler or [s["kategori"] for s in SENARYO_SABLONLARI]))
+    if not havuz:
+        return "absurt_komedi"
+    arsiv = arsiv_yukle()
+    son_kategoriler = [_arsiv_kategorisi(k) for k in reversed(arsiv) if _arsiv_kategorisi(k)]
+    yakin = set(son_kategoriler[:max(1, son_n)])
+    adaylar = [k for k in havuz if k not in yakin]
+    if not adaylar:
+        # Havuzun tamamı yakın zamanda kullanıldıysa, en eski kullanımın önüne geç.
+        adaylar = [k for k in havuz if k != son_kategoriler[0]] or havuz
+    return random.choice(adaylar)
 
 
 def senaryo_tekrar_mi(senaryo_ozeti: str, arsiv: list) -> bool:
@@ -415,8 +519,14 @@ def senaryo_paketi_olustur(video_no: int) -> dict:
         return kuyruk_paketi
 
     arsiv = arsiv_yukle()
-    adaylar = SENARYO_SABLONLARI[:]
+    kategori_havuzu = list(dict.fromkeys(s["kategori"] for s in SENARYO_SABLONLARI))
+    hedef_kategori = siradaki_kategori(kategori_havuzu, son_n=6)
+    son_kategoriler = {_arsiv_kategorisi(k) for k in reversed(arsiv[-6:]) if _arsiv_kategorisi(k)}
+    rotasyon_havuzu = [k for k in kategori_havuzu if k not in son_kategoriler] or kategori_havuzu
+    adaylar = [s for s in SENARYO_SABLONLARI if s["kategori"] in rotasyon_havuzu]
+    adaylar.sort(key=lambda s: s["kategori"] != hedef_kategori)
     random.shuffle(adaylar)
+    adaylar.sort(key=lambda s: s["kategori"] != hedef_kategori)
 
     secilen_ham = adaylar[0]
     for sablon in adaylar:

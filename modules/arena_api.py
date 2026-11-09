@@ -18,6 +18,8 @@ from datetime import datetime
 
 from modules.scenario import (
     SENARYO_SABLONLARI,
+    KONU_ACIKLAMALARI,
+    siradaki_kategori,
     kuyruktan_arena_senaryosu_al,
     senaryo_dogrula_ve_zenginlestir,
     senaryo_paketi_olustur,
@@ -156,18 +158,23 @@ async def arena_canli_senaryo_iste(video_no: int) -> dict | None:
         print(f"[Arena] Çerez hazırlama uyarısı: {e}")
         return None
 
-    kategori = random.choice(KATEGORILER)
+    kategori = siradaki_kategori(KATEGORILER, son_n=6)
+    kategori_aciklamasi = KONU_ACIKLAMALARI.get(kategori, "özgün gündelik hayat komedisi")
     prompt = (
-        f"Sen milyonlar izlenen bir Türkçe YouTube Shorts komedi yönetmenisin (Bölüm #{video_no}, Kategori: {kategori}). "
+        f"Sen özgün Türkçe YouTube Shorts komedi yazarı ve yönetmenisin (Bölüm #{video_no}, Kategori: {kategori}: {kategori_aciklamasi}). "
         "Hiçbir araç (bash/search/write_file) ÇAĞIRMA, doğrudan tek bir geçerli JSON nesnesi döndür. "
+        "KONU ÇEŞİTLİLİĞİ: İstenen kategoriye sadık kal; önceki videoların hikâyesini, esprisini veya karakterlerini kopyalama. "
+        "Dönüşümlü türler: bar fıkraları, paradoks hikâyeleri, absürt komedi, absürt şakalar, çılgın ama zararsız hikâyeler, ters köşe fıkralar ve eğlenceli replik düelloları. "
+        "İnsanların ırkı, ten rengi, etnik kökeni veya başka korunan kimliğini hedef alan aşağılayıcı şaka, hakaret ve stereotip üretme; çok kültürlü karakterleri eşit ve saygılı yaz. "
         "Kurallar: "
-        "1) 6 veya 7 kısa, hızlı Türkçe diyalog cümlesi yaz (her cümle 5-11 kelime). "
-        "2) 2 zıt karakter konuşsun: biri 'erkek', diğeri 'kadin'. "
-        "3) 1. cümle ('İşte tam bu yüzden...' veya 'Ve sonunda...') doğrudan olayın en şok edici sonucundan başlasın. "
-        "4) Sondan bir önceki cümle (twist_indeksi: 5) beklenmedik komik bir ters köşe (twist) olsun. "
-        "5) En son cümle yarım kalarak videonun 1. cümlesine DİLBİLGİSEL KUSURSUZ DÖNGÜ (loop) ile bağlansın! "
+        "1) 7 veya 8 hızlı, doğal Türkçe diyalog cümlesi yaz; toplam en az 45, tercihen 50-65 konuşma kelimesi olsun. "
+        "2) 2 özgün karakter konuşsun (biri erkek, diğeri kadın); cümleleri 6-12 kelime civarında tut. "
+        "3) Süre hedefi 15-30 saniye; asla 15 saniyenin altına düşecek kadar kısa yazma. "
+        "4) 1. cümle doğrudan olayın merak uyandıran sonucundan başlasın; sondan bir önceki ana cümlede güçlü, temiz bir ters köşe olsun. "
+        "5) Son cümle doğal, kısa bir loop köprüsü olsun; zoraki veya dilbilgisi bozuk yarım cümle kurma. "
+        "6) Şablon ofis komedisine sıkışma; kategori neyse ortamı, karakterleri ve kelime dağarcığını ona göre tamamen değiştir. "
         "Şema: "
-        f'{{"kategori":"{kategori}","ortam_etiketi":"office comedy","ruh_hali":"komedi",'
+        f'{{"kategori":"{kategori}","ortam_etiketi":"{kategori_aciklamasi[:70]}","ruh_hali":"komedi",'
         '"hook_ust_bant":"MAKS 4 KELİME ŞOK BAŞLIK!","baslik":"Merak Uyandıran Başlık 😱 #shorts",'
         '"twist_indeksi":5,"diyaloglar":['
         '{"karakter":"MÜDÜR","cinsiyet":"erkek","metin":"İşte tam bu yüzden...","ses":"sinirli","sfx":"whoosh"},'

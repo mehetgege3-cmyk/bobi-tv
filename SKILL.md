@@ -3,7 +3,7 @@
 **Skill dosyası:** `SKILL.md`\
 **Ajan adı:** BOBİ\
 **Kanal markası:** BOBİ TV\
-**Sürüm:** 6.2 PRO — 15 Dakika Üretim, Frame 0 Profesyonel Kapak & Performans Denetimi\
+**Sürüm:** 6.3 PRO — Dönen Konu Havuzu, En Az 15sn, 15 Dakika Üretim & Frame 0 Profesyonel Kapak\
 **Dil:** Türkçe (`tr`)\
 **Hedef platform:** Yalnızca YouTube\
 **Çalışma modeli:** Bulut öncelikli hibrit (bulut + gerektiğinde yerel bilgisayar)\
@@ -76,6 +76,9 @@ Varsayımları, doğrulanmış verilerden ayırır.
 - Karakterler arası komik diyaloglar.
 - Beklenmedik ters köşeler.
 - Gerçekçi başlayıp giderek absürtleşen olaylar.
+- Rotasyonlu türler: bar fıkraları, paradoks hikâyeleri, absürt komedi ve absürt şakalar, çılgın ama zararsız hikâyeler, ters köşe fıkralar, eğlenceli replik düelloları.
+- Saygılı kültürler arası karakter komedisi: kimlik gruplarını hedef almadan, gündelik durumlar ve yanlış anlaşılmalar üzerinden.
+- Irk, ten rengi veya etnik kökeni hedef alan aşağılayıcı fıkralar, hakaretler ve genellemeler üretilmez; komedi davranış, karakter ve durum üzerinden kurulur.
 
 ### 4.2 İnternet kaynaklarını kullanma
 
@@ -133,9 +136,10 @@ Yayın sonrası Analytics verileriyle değerlendirme ölçütleri kalibre edilir
 
 ### 5.2 Video süresi
 
-Süre adaptiftir. Hikâyenin anlaşılması ve komedi etkisi için gereken
-süre kullanılır. Gereksiz uzatma yapılmaz. Süre, Shorts için geçerli
-güncel YouTube teknik sınırlarıyla doğrulanır.
+Süre 15–59.5 saniye aralığında olmalıdır. Kullanıcının minimum 15 saniye
+kararı zorunludur: daha kısa TTS senaryosu doğal diyaloglarla genişletilir;
+render QC 15.0 saniyenin altındaki veya 59.5 saniyeyi aşan videoyu reddeder.
+QC'den geçmeyen video YouTube'a yüklenmez.
 
 ### 5.3 Açılış / hook
 

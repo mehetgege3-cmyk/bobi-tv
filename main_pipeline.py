@@ -1,10 +1,10 @@
 """
-BOBİ TV — Ana Otonom Üretim, 15 Dakika Isındırma ve Performans Temizlik Pipeline v6.2 PRO
+BOBİ TV — Otonom Üretim, Dönen Konular, En Az 15sn ve 15 Dakika Pipeline v6.3 PRO
 Mimari:
 1. Otomatik Performans Temizliği: Kanalda yayınlanalı >= 60 dk (1 saat) olmuş ve < 100 görüntüleme
    almış videoları YouTube Data API v3 ile otomatik siler (kanal algoritmasını yüksek izlenmeli tutar).
 2. Akıllı Kuyruk (bobi_tv/queue/): Önceki çalışmada YouTube kotasına takılan senaryo/video varsa önce onu işler.
-3. Birleşik v6.2 Üretim: Arena AI Yönetmen -> Ahmet+Emel Çift Ses TTS ->
+3. Birleşik v6.3 Üretim: Dönen kategori havuzu -> gerçek TTS süresi <15sn ise uzat -> Ahmet+Emel Çift Ses TTS ->
    1. Kareye (Frame 0) Profesyonel VS/Clash Kapak Gömme + İlk Kareden Kapak Seçme ->
    Vektör Kartlı & Karaoke Altyazılı & SFX+BGM (-14 LUFS) Render -> ffprobe QC
 4. Her 15 Dakikada 1 Video Isındırma: YouTube + Otomatik İlk Yorum + 1. Kare Özel Kapak.
@@ -108,7 +108,7 @@ def pipeline_calistir():
     baslangic = datetime.now(timezone.utc)
     saat = baslangic.strftime("%H:%M")
 
-    log_yaz(f"=== BOBİ TV v6.2 PRO ({saat} UTC) Başladı ===")
+    log_yaz(f"=== BOBİ TV v6.3 PRO ({saat} UTC) Başladı ===")
 
     # 1. ADIM: 1 saat (60 dk) içinde 100 görüntüleme almayan videoları otomatik temizle
     if not YUKLEME_ATLA and OTOMATIK_SIL_AKTIF:
@@ -155,7 +155,7 @@ def pipeline_calistir():
                 kuyruk_kaynak_dosyalari[kuyruk_paketi["dosya_adi"]] = kuyruk_dosya
             continue
 
-        log_yaz(f"🎬 Video #{video_no} v6.2 Pro üretimi başlıyor...")
+        log_yaz(f"🎬 Video #{video_no} v6.3 Pro konu rotasyonu + 15sn alt sınır kontrolüyle başlıyor...")
         paket = arena_tam_uretim(video_no)
         if paket and paket.get("final_video") and Path(paket["final_video"]).exists():
             sure_bilgi = paket.get("video_suresi", 0)
@@ -189,7 +189,7 @@ def pipeline_calistir():
 
                 log_yaz(f"🚀 Yayınlandı: {sonuc['url']}")
                 send_message(
-                    f"🎬 <b>BOBİ TV v6.2 PRO (15dk Isındırma)</b>\n"
+                    f"🎬 <b>BOBİ TV v6.3 PRO (Dönen Konu + 15dk)</b>\n"
                     f"🎥 {sonuc['baslik'][:70]}\n"
                     f"🖼️ 1. Kare VS Kapak + Otomatik Yorum Aktif\n"
                     f"🔗 {sonuc['url']}"

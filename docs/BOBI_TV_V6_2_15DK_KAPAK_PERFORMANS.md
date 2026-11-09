@@ -1,4 +1,4 @@
-# BOBİ TV v6.2 PRO — 15 Dakika, Frame 0 Kapak ve Performans Denetimi
+# BOBİ TV v6.3 PRO — Dönen Konular, 15sn Minimum, 15 Dakika ve Frame 0 Kapak
 
 ## Davranış
 
@@ -40,3 +40,11 @@ YUKLEME_ATLA=1 GUNLUK_HEDEF=1 python3 main_pipeline.py
 ```
 
 Frame 0 testi: `ffprobe -select_streams v:0 -show_entries frame=pict_type,pts_time -of csv=p=0 <video.mp4>` çıktısında ilk satır `0.000000,I` olmalıdır. Yerel üretimde test için yüklemeyi atla env'si kullan; YouTube silme fonksiyonunu gerçek kanalda test etme.
+
+## v6.3 konu rotasyonu ve 15 saniye alt sınırı
+
+- Konu havuzu: `bar_fikralari`, `paradoks_hikayeleri`, `absurt_komedi`, `absurt_sakalar`, `cilgin_hikayeler`, `ters_kose_fikralar`, `eglenceli_replikler`, `kulturlar_arasi_mizah` ve mevcut gündelik yaşam şablonları.
+- `siradaki_kategori()` arşivin son altı videosundaki kategorileri geriye atıp yeni bir kategori seçer. Kategori `videos.json` içine yazılır; geçmiş dosya adlarından eski kategori kayıtları da çıkarılır. Arena prompt'u seçilen kategoriye göre özel ortam/karakter ve yeni olay örgüsü ister.
+- Irk/ten rengi/etnik kökeni hedef alan aşağılayıcı içerik ve stereotipler üretilmez. Kültürler arası mizah, kimliği değil nazik gündelik yanlış anlaşılmaları konu alır.
+- Arena senaryosu tahmini 19 saniyenin altında kalırsa doğal ek replik çiftleri ters köşe öncesine yerleştirilir. `video_kalite_kontrol()` 15.0 saniyenin altındaki veya 59.5 saniyeyi aşan MP4'ü reddeder; reddedilen video yükleme aşamasına ulaşmaz.
+- `hourly_production.yml` hâlâ `*/15 * * * *`, `GUNLUK_HEDEF=1`, `GUNLUK_MAKS=96` ile çalışır. Gerçek yayın zamanlaması GitHub runner'ına ve YouTube yükleme kotasına bağlıdır.

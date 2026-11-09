@@ -417,6 +417,60 @@ def senaryo_seslendir(senaryo_paketi: dict) -> dict:
             f"'{sonuc['metin'][:45]}' -> {sonuc['sure']:.2f}sn ({len(sonuc['zamanlamalar'])} kelime)"
         )
 
+    # TTS'nin gerçek süresini ölç. Tahmini metin hesabı değil, gerçek WAV süreleri
+    # minimumu belirler; kısa kalırsa twist'ten önce doğal diyalog çiftleri ekle.
+    toplam_gercek_sure = sum(float(s.get("sure", 0.0)) for s in ses_dosyalari)
+    ek_replik_ciftleri = [
+        ("Dur, asıl mesele şimdi başlıyor; bu hikâyenin en tuhaf yerini duymadın!", "Söyle artık, meraktan sonunu bekleyemiyorum gerçekten!"),
+        ("Peki bu karışıklığı şimdi kim çözecek, herkes bize bakıyor!", "Bir dakika daha sabret, cevap sandığından da komik çıkacak!"),
+        ("Bundan daha garip ne olabilir, bütün planımız zaten değişti!", "Finali görünce fikrin değişecek, hazır ol ve dikkatle dinle!"),
+        ("Tamam, son bir soru: bu işin sorumlusu kim sence?", "Cevabı birazdan duyacaksın, ama önce küçük bir itirafım var!"),
+        ("Herkes sakin olsun, bu olayın arkasında çok basit bir sebep var!", "Basitse anlat, çünkü şu an hiçbir şey anlamadım gerçekten!"),
+        ("Şimdi geriye dönüp bakınca bütün işaretler aslında ortadaymış!", "Evet ama finali bilseydim en başta başka kapıdan girerdim!")
+    ]
+    if toplam_gercek_sure < 16.0:
+        print(f"[TTS] ⏱️ Gerçek diyalog {toplam_gercek_sure:.2f}sn; 16sn güvenlik hedefi için doğal replik ekleniyor.")
+        twist_idx = min(max(0, int(senaryo.get("twist_indeksi", max(0, len(diyaloglar) - 2)))), len(diyaloglar))
+        ilk_karakter = str(diyaloglar[0].get("karakter", "MERT")).upper() if diyaloglar else "MERT"
+        ikinci_karakter = next((str(d.get("karakter", "")).upper() for d in diyaloglar if str(d.get("karakter", "")).upper() != ilk_karakter), "AYŞE")
+        ilk_cinsiyet = cinsiyet_haritasi.get(ilk_karakter, "erkek")
+        ikinci_cinsiyet = cinsiyet_haritasi.get(ikinci_karakter, "kadin")
+        for pair_no, (replik_a, replik_b) in enumerate(ek_replik_ciftleri):
+            if toplam_gercek_sure >= 16.0:
+                break
+            yeni_diyaloglar = []
+            yeni_sesler = []
+            for offset, (karakter, cinsiyet, metin, ses_tipi) in enumerate((
+                (ikinci_karakter, ikinci_cinsiyet, replik_a, "suprized"),
+                (ilk_karakter, ilk_cinsiyet, replik_b, "enerjik"),
+            )):
+                sıra = toplam_idx + pair_no * 2 + offset
+                sonuc = metin_sese_cevir(metin, f"{dosya_adi_taslak}_min_{sıra:02d}", ses_tipi=ses_tipi, cinsiyet=cinsiyet)
+                sonuc["karakter"] = karakter
+                sonuc["sira"] = twist_idx + offset
+                sonuc["taraf"] = "sag" if karakter == ikinci_karakter else "sol"
+                sonuc["twist_mi"] = False
+                sonuc["vurgu_kelimeler"] = []
+                sonuc["sfx"] = "pop"
+                yeni_diyaloglar.append({"karakter": karakter, "cinsiyet": cinsiyet, "metin": metin, "ses": ses_tipi, "sfx": "pop", "vurgu_kelimeler": []})
+                yeni_sesler.append(sonuc)
+                toplam_gercek_sure += float(sonuc.get("sure", 0.0))
+            diyaloglar[twist_idx:twist_idx] = yeni_diyaloglar
+            ses_dosyalari[twist_idx:twist_idx] = yeni_sesler
+            twist_idx += len(yeni_diyaloglar)
+            senaryo["twist_indeksi"] = twist_idx
+            for idx, ses in enumerate(ses_dosyalari):
+                ses["sira"] = idx
+                ses["twist_mi"] = idx == twist_idx
+            print(f"[TTS] ➕ Uzatma {pair_no + 1}: toplam gerçek süre {toplam_gercek_sure:.2f}sn")
+
+        if toplam_gercek_sure < 15.0:
+            raise RuntimeError(f"Minimum 15 saniye kuralı: uzatma sonrasında TTS yalnızca {toplam_gercek_sure:.2f}sn oldu; yayın iptal edildi.")
+        senaryo["diyaloglar"] = diyaloglar
+        senaryo["tts_metinleri"] = [d.get("metin", "") for d in diyaloglar]
+        senaryo["toplam_sure"] = round(toplam_gercek_sure, 2)
+        print(f"[TTS] ✅ Gerçek süre eşiği geçti: {toplam_gercek_sure:.2f}sn")
+
     senaryo_paketi["ses_dosyalari"] = ses_dosyalari
     return senaryo_paketi
 

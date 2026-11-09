@@ -1,6 +1,11 @@
-# 🎬 BOBİ TV v6.2 PRO — Otonom YouTube Shorts Üretim Sistemi
+# 🎬 BOBİ TV v6.3 PRO — Otonom YouTube Shorts Üretim Sistemi
 
 Türkçe absürt ve ironik komedi diyaloglarını **yüksek tutunmalı (high-retention)** YouTube Shorts videolarına dönüştüren uçtan uca otonom yapay zeka prodüksiyon hattı.
+
+### v6.3 PRO: Sürekli Değişen Konular + 15sn Minimum
+- **Konu rotasyonu:** Bar fıkraları, paradoks hikâyeleri, absürt komedi/şakalar, çılgın ama zararsız hikâyeler, ters köşe fıkralar, eğlenceli replik düelloları ve saygılı kültürler arası mizah. Son 6 yayın kategorisi rotasyon seçiminde geriye atılır; yeni yüklemelerin kategorisi arşivlenir.
+- **Kimlik güvenliği:** Irk/ten rengi/etnik köken hedefli aşağılayıcı fıkra veya stereotip üretilmez; çok kültürlü mizah, karakter ve durum komedisi şeklinde kapsayıcı yazılır.
+- **Süre garantisi:** Kısa senaryolar render öncesi konuşma replikleriyle uzatılır; Render QC 15.0 saniyenin altındaki videoyu reddeder. YouTube'a yalnızca en az 15 saniyelik, QC'den geçen video gönderilir.
 
 ### v6.2 PRO: İlk Kare Kapak + 15 Dakika Üretim + Performans Kontrolü
 - **Profesyonel kapak:** Özel 1080×1920 VS/Clash kapak görseli videonun Frame 0'ına gömülür; render sonrası ilk kare tekrar çıkarılır ve YouTube özel kapak olarak yüklenir.
@@ -56,6 +61,7 @@ bobi-tv/
 
 1. **0.0 Saniye Kancası (Sıfır Ölü Boşluk):** Videonun başında sessiz bekleme yoktur (`hook_suresi = 0.0`). İlk karede sarı şok başlık bandı, `whoosh` ses efekti ve olayın sonucundan başlayan ilk replik aynı salisede girer.
 2. **Çift Sesli Zıt Diyalog:** Tekdüze anlatım yerine Karakter 1 **`tr-TR-AhmetNeural` (Erkek)** ve Karakter 2 **`tr-TR-EmelNeural` (Kadın)** sesleriyle karşılıklı konuşur.
+2a. **Süre ve çeşitlilik (v6.3):** Her yayın en az **15 saniye** olmalı; daha kısa senaryo otomatik genişletilir, QC'den geçmezse yayınlanmaz. Konular son 6 kategorinin dışına rotasyonla seçilir.
 3. **Nefes Boşluğu Kırpma (`silenceremove`):** TTS motorunun cümle başı ve sonuna eklediği 250–400ms ölü sessizlikler FFmpeg ile kesilir; `WordBoundary` zaman damgaları 0ms kaymayla yeniden kalibre edilir.
 4. **Aktif-Kelime Kutulu Karaoke Altyazı:** Mobil izleyicilerin %60–80'i sesi kapalı başladığı için, o an okunan kelimenin arkasına yuvarlatılmış parlak sarı/kırmızı kutu (*pill*) çizilir ve Türkçe büyük harf kurallarına (`i -> İ`, `ı -> I`) tam uyulur.
 5. **Vektörel Karakter Portreleri & Yaylanan Balonlar:** Sunucularda kırık emoji kutusu (`□`) oluşmaması için her karaktere özel vektörel portre rozeti ve ses şiddetine (RMS) duyarlı canlı ekolayzır çubukları çizilir.

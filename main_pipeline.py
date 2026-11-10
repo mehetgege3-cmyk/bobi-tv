@@ -43,6 +43,10 @@ GUNLUK_MAKS = etkin_gunluk_maks(os.environ.get("GUNLUK_MAKS", "6"))
 #: 15 dk kadans + hedef 6 ile günde 6 üretim yapılır; kota doluysa hepsi stoğa gider.
 #: Ayarlanabilir: URETIM_TAVANI env (1-1440).
 URETIM_TAVANI = max(1, int(os.environ.get("URETIM_TAVANI", "288") or "288"))
+#: KOŞU BAŞINA üretim — 15 dakikalık kadans = her koşuda 1 video.
+#: (Günde 96 koşu × 1 = 96 video üretilir; yükleme kotası GUNLUK_MAKS ile sınırlı,
+#:  fazlası STOĞA yazılır ve kota açılınca yeniden render ALINMADAN yüklenir.)
+TUR_BASINA_URETIM = max(1, int(os.environ.get("TUR_BASINA_URETIM", "1") or "1"))
 MOD = os.environ.get("MOD", "isindirma_saatlik")
 YUKLEME_ATLA = os.environ.get("YUKLEME_ATLA", "0") == "1"
 # TODO 10: kota dolunca davranış — sessiz_dur (varsayılan) → exit 0,
@@ -72,17 +76,52 @@ def log_yaz(mesaj: str, seviye: str = "INFO"):
     print(satir.strip())
 
 
-def bugunki_video_sayisi() -> int:
+def bugun_arsiv_kayitlari() -> list[dict]:
+    """Bugünün (UTC) arşiv kayıtları."""
     bugun = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     if not ARSIV.exists():
-        return 0
+        return []
     try:
-        return sum(
-            1 for k in json.loads(ARSIV.read_text(encoding="utf-8"))
-            if k.get("tarih", "")[:10] == bugun
-        )
+        veri = json.loads(ARSIV.read_text(encoding="utf-8"))
+        kayitlar = list(veri.values()) if isinstance(veri, dict) else list(veri)
+        return [k for k in kayitlar if str(k.get("tarih", ""))[:10] == bugun]
     except Exception:
+        return []
+
+
+def bugun_yuklenen_sayisi() -> int:
+    """Bugün YAYINA alınmış video sayısı = YÜKLEME kotası tüketimi.
+
+    Kullanıcı şikâyeti (2026-11-11): 'Üret'e basıyorum, video çıkmıyor.'
+    Kök neden: sayaç üretilen her şeyi sayıyordu; stokta bekleyen (silinen/
+    kuyruktaki) kayıtlar da sayıldığı için kota dolu görünüp ÜRETİM
+    durduruluyordu. Kota YALNIZ yayınlanan videoları sayar.
+    """
+    yuklenen_durumlar = {"yayinda"}
+    return sum(1 for k in bugun_arsiv_kayitlari() if k.get("durum") in yuklenen_durumlar)
+
+
+def bugunki_video_sayisi() -> int:
+    """Bugün ÜRETİLEN video sayısı — üretim tavanı (stok dahil) için."""
+    return len(bugun_arsiv_kayitlari())
+
+
+def bu_tur_hesapla(bugunki: int, bugun_yuklenen: int) -> int:
+    """Bu koşuda kaç video ÜRETİLECEĞİNİ belirler (saf fonksiyon — test edilir).
+
+    Kullanıcı kararı 2026-11-11: "her 15 dakikada video üretilecek ve
+    yüklenecek". Bu yüzden GUNLUK_HEDEF (günlük yükleme hedefi) ÜRETİMİ
+    DURDURMAZ; yalnız üretim tavanı (URETIM_TAVANI) durdurur.
+
+    NOT: eski hata, hedef dolunca 0 döndürüp turu no-op yapmasıydı
+    (kullanıcının gördüğü "Üret'e basıyorum, video çıkmıyor").
+    """
+    kalan_uretim = max(0, URETIM_TAVANI - bugunki)
+    if kalan_uretim == 0:
         return 0
+    # 15 dakikalık kadans: her koşuda TUR_BASINA_URETIM (varsayılan 1) video.
+    # Günlük hedef DOLSA BİLE üretim sürer (fazlası stok); yalnız tavan keser.
+    return min(TUR_BASINA_URETIM, kalan_uretim)
 
 
 def kuyruga_kaydet(paket: dict):
@@ -190,7 +229,8 @@ def pipeline_calistir():
                 f"⏱️ Geçen Süre: {sv['yas_dk']:.0f} dk"
             )
 
-    bugunki = bugunki_video_sayisi()
+    bugunki = bugunki_video_sayisi()          # ÜRETİLEN (stok dahil)
+    bugun_yuklenen = bugun_yuklenen_sayisi()  # YAYINA alınan = kota tüketimi
 
     # =====================================================================
     # KULLANICI KARARI (2026-11-11): "her 15 dakikada video ÜRETİLSİN ve
@@ -209,10 +249,11 @@ def pipeline_calistir():
     if bugunki >= uretim_tavani:
         log_yaz(f"Üretim tavanına ulaşıldı ({bugunki}/{uretim_tavani}). Atlanıyor.")
         sys.exit(0)
-    if bugunki >= GUNLUK_MAKS:
+    # Kotanın YÜKLENEN videolarla ölçüldüğünü logla; üretim yine sürer.
+    if bugun_yuklenen >= GUNLUK_MAKS:
         log_yaz(
-            f"⏳ Yükleme kotası dolu ({bugunki}/{GUNLUK_MAKS}) — ÜRETİM SÜRÜYOR, "
-            f"videolar stoğa alınacak (tavan {uretim_tavani})."
+            f"⏳ Yükleme kotası dolu ({bugun_yuklenen}/{GUNLUK_MAKS}) — ÜRETİM SÜRÜYOR, "
+            f"videolar stoğa alınacak (üretim tavanı {uretim_tavani})."
         )
 
     # ---------------------------------------------------------------------
@@ -227,21 +268,34 @@ def pipeline_calistir():
     # Böylece kadans sıkılaşsa bile günlük yükleme sayısı DEĞİŞMEZ — yalnız
     # deneme sıklığı artar ve ilk fırsatta kota doldurulur.
     # ---------------------------------------------------------------------
-    kalan_hedef = max(0, GUNLUK_HEDEF - bugunki)
-    # ÜRETİM tavanı (stok büyüklüğü) — yükleme kotasından BAĞIMSIZ.
-    kalan_uretim = max(0, URETIM_TAVANI - bugunki)
-    bu_tur = min(kalan_hedef, kalan_uretim)
+    # ---------------------------------------------------------------------
+    # KULLANICI KARARI (2026-11-11) — "her 15 dakikada ÜRET + YÜKLE".
+    #
+    # GUNLUK_HEDEF artık ÜRETİMİ DURDURMAZ. Eskiden kalan_hedef <= 0 olunca
+    # tur no-op oluyordu ve hedef (4) dolduğunda gün bitene kadar HİÇ video
+    # üretilmiyordu — kullanıcının gördüğü "video çıkmıyor" buydu.
+    #
+    # YENİ SÖZLEŞME:
+    #   • ÜRETİM her koşuda devam eder (tavan URETIM_TAVANI = stok büyüklüğü).
+    #   • YÜKLEME kotası GUNLUK_MAKS, yalnız YAYINA alınanları sayar.
+    #   • Kota doluysa video üretilir ve STOĞA (kuyruk) yazılır; kota açılınca
+    #     yeniden render ALINMADAN yüklenir.
+    #   • GUNLUK_HEDEF hedefi aşılınca üretim sürer, yalnız fazlası stok olur.
+    # ---------------------------------------------------------------------
+    kalan_hedef = max(0, GUNLUK_HEDEF - bugun_yuklenen)
+    bu_tur = bu_tur_hesapla(bugunki, bugun_yuklenen)
 
     log_yaz(
-        f"Bugün üretilen: {bugunki}/{GUNLUK_MAKS} | "
+        f"Bugün üretilen: {bugunki} (tavan {URETIM_TAVANI}) | "
+        f"Yayına alınan: {bugun_yuklenen}/{GUNLUK_MAKS} | "
         f"Günlük hedef: {GUNLUK_HEDEF} (kalan {kalan_hedef}) | "
-        f"Bu turda: {bu_tur}"
+        f"Bu turda üretilecek: {bu_tur}"
     )
-    if bu_tur == 0:
-        if kalan_hedef == 0:
-            log_yaz(f"✅ Günlük hedef tamamlandı ({bugunki}/{GUNLUK_HEDEF}). Bu tur no-op.")
-        else:
-            log_yaz(f"🚫 Kota tavanı dolu ({bugunki}/{GUNLUK_MAKS}). Bu tur no-op.")
+    if bu_tur <= 0:
+        log_yaz(
+            f"🚫 Üretim tavanı dolu ({bugunki}/{URETIM_TAVANI}). "
+            "Stok yüklenmeyi bekliyor; bu tur no-op."
+        )
         sys.exit(0)
 
     hazir_paketler = []

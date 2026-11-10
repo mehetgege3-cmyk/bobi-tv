@@ -153,3 +153,27 @@ def test_all_icindeki_isimler_gercekten_var():
     import modules.senaryo_v7.models as m
     for isim in m.__all__:
         assert hasattr(m, isim), f"__all__ içinde tanımsız isim: {isim}"
+
+
+def test_saskin_alias_kanonik_degeri():
+    """TODO2: şaşkın/saskin SASIRMIS_TR'ye, suprized SASIRMIS'e gider."""
+    from modules.senaryo_v7.models import duyguyu_normalize_et, Duygu
+    assert duyguyu_normalize_et("şaşkın") is Duygu.SASIRMIS_TR
+    assert duyguyu_normalize_et("saskin") is Duygu.SASIRMIS_TR
+    assert duyguyu_normalize_et("suprized") is Duygu.SASIRMIS
+    assert duyguyu_normalize_et("surprised") is Duygu.SASIRMIS
+
+
+def test_duygu_aliases_anahtar_tekil():
+    """TODO2: _DUYGU_ALIASES sözcüğünde aynı anahtar iki kez tanımlanmamalı (sessizce son kazanır)."""
+    import ast
+    src = open("modules/senaryo_v7/models.py", encoding="utf-8").read()
+    tree = ast.parse(src)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign):
+            for t in node.targets:
+                if isinstance(t, ast.Name) and t.id == "_DUYGU_ALIASES":
+                    keys = [ast.literal_eval(k) for k in node.value.keys]
+                    assert len(keys) == len(set(keys)), f"Tekrarlanan alias anahtarı: {[k for k in keys if keys.count(k)>1]}"
+                    return
+    raise AssertionError("_DUYGU_ALIASES bulunamadı")

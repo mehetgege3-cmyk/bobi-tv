@@ -21,6 +21,7 @@ class Duygu(StrEnum):
     SINIRLI = "sinirli"
     PANIK = "panik"
     SASIRMIS = "sasirmis"
+    SASIRMIS_TR = "şaşkın"
     KESIN = "kesin"
     CIDDI = "ciddi"
     SOGUK = "soguk"
@@ -72,7 +73,8 @@ class DiyalogRolu(StrEnum):
 _DUYGU_ALIASES = {
     "suprized": "sasirmis",
     "surprised": "sasirmis",
-    "şaşkın": "sasirmis",
+    "şaşkın": "şaşkın",
+    "saskin": "şaşkın",
     "bikeyn": "bikkin",
     "bikeyn_dramatik": "bikkin_dramatik",
     "yavas_bikkin": "bikkin",

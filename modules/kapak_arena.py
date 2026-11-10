@@ -103,9 +103,12 @@ def _kareye_baslik_bindir(kaynak_jpg: str, cikis_jpg: str, baslik: str, renk: st
         img = Image.open(kaynak_jpg).convert("RGB")
         gen, yuk = img.size
         cizim = ImageDraw.Draw(img, "RGBA")
-        # Üst şerit: metin okunabilirliği için (ilk kare ne olursa olsun)
-        serit_h = int(yuk * 0.22)
-        cizim.rectangle([0, 0, gen, serit_h], fill=(0, 0, 0, 165))
+        # Üst şerit: metin okunabilirliği için (ilk kare ne olursa olsun).
+        # Canlıda 1. karenin kendi altyazıları banda karışıp okunmaz hale
+        # getiriyordu → şerit NEREDEYSE OPAK yapılır (koyu lacivert) ve
+        # altına yumuşak geçiş eklenir.
+        serit_h = int(yuk * 0.26)
+        cizim.rectangle([0, 0, gen, serit_h], fill=(8, 10, 22, 236))
         # Yazı tipi: kullanılabilir ilk kalın font
         font = None
         for aday in (
@@ -133,6 +136,14 @@ def _kareye_baslik_bindir(kaynak_jpg: str, cikis_jpg: str, baslik: str, renk: st
             kutu = cizim.textbbox((0, 0), satir, font=font)
             cizim.text(((gen - (kutu[2] - kutu[0])) // 2, y), satir, font=font, fill=(255, 255, 255))
             y += (kutu[3] - kutu[1]) + int(yuk * 0.008)
+        # Şerit altına yumuşak karartma geçişi (bandın keskin bitmemesi için)
+        gecis_h = int(yuk * 0.06)
+        for adim in range(gecis_h):
+            oran = 1 - (adim / max(1, gecis_h))
+            cizim.line(
+                [(0, serit_h + adim), (gen, serit_h + adim)],
+                fill=(8, 10, 22, int(200 * oran)),
+            )
         # Vurgu çizgisi (Arena'nın verdiği renk)
         try:
             rgb = tuple(int(renk.lstrip("#")[i: i + 2], 16) for i in (0, 2, 4))

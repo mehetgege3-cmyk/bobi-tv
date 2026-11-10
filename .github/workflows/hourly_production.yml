@@ -166,11 +166,30 @@ jobs:
               for anahtar, deger in sonuc.items():
                   f.write(f"{anahtar}={deger}\n")
           print(f"Kota kapısı: {sonuc}")
+          # =============================================================
+          # KULLANICI KARARI (2026-11-11): "her 15 dakikada video üretilsin
+          # ve yüklensin; başarısızsa sebebine bakalım, kotaysa stok olsun."
+          #
+          # ESKİ DAVRANIŞ (sabotaj): kota dolunca bu adım `sys.exit()` atıp
+          # KOŞUYU BİTİRİYORDU → pipeline hiç çalışmıyor, hiç video üretilmiyordu.
+          # Belirti: "Üret"e basıyorsun, video çıkmıyor.
+          #
+          # YENİ: kota dolu olsa bile ÜRETİM DEVAM EDER. Video üretilir, yükleme
+          # denenir; kota reddederse video STOĞA yazılır (kuyruk), kota açılınca
+          # yeniden render ALINMADAN yüklenir. Kota artık üretimi durdurmaz.
+          # =============================================================
           if sonuc["kota_doldu"] == "true" and not force:
               kota_dolu_bildir()
-              cikis = kota_dolu_cikis_kodu(os.environ.get("KOTA_DOLU_DAVRANIS", "sessiz_dur"))
-              print(f"Kota dolu — KOTA_DOLU_DAVRANIS çıkışı: {cikis}")
-              sys.exit(cikis)
+              # Davranış ayarı korunur (rapor/log): hata → kırmızı tik istenirse
+              # yükleme başarısızlığı pipeline'ın çıkış koduna yansır.
+              davranis = os.environ.get("KOTA_DOLU_DAVRANIS", "sessiz_dur")
+              print(
+                  f"Kota dolu — ÜRETİM DEVAM EDİYOR, videolar stoğa alınacak "
+                  f"(KOTA_DOLU_DAVRANIS={davranis}, çıkış kodu yükleme sonucuna bağlı)."
+              )
+              # devam=true: pipeline çalışsın; yükleme kendi kota kontrolünü yapar.
+              with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+                  f.write("devam=true\n")
           PYEOF
 
       - name: Klasör yapısını hazırla

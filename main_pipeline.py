@@ -13,6 +13,7 @@ Mimari:
 import os
 import sys
 import json
+from contextlib import suppress
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -21,7 +22,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 from modules.arena_uretici import arena_tam_uretim
 from modules.tts_engine import senaryo_seslendir
 from modules.video_render import video_render
-from modules.kapak_uret import kapak_uret
+from modules.kapak_arena import kapak_sec_ve_hazirla  # Arena destekli kapak hattı
+from modules.kapak_uret import kapak_uret  # yedek: Arena hattı çökerse
 from modules.telegram_notify import notify_error, send_message
 from modules.youtube_upload import (
     dusuk_izlenmeli_videolari_temizle,
@@ -37,6 +39,10 @@ GUNLUK_HEDEF = int(os.environ.get("GUNLUK_HEDEF", "1"))
 # (10000 birim / 1600 birim = 6 yükleme). Katalog varsayılanı 6'dır; 96 gibi eski
 # sabitler artık köprüden gelmez, yine de gelen aşırı değer UYARIYLA kırpılır.
 GUNLUK_MAKS = etkin_gunluk_maks(os.environ.get("GUNLUK_MAKS", "6"))
+#: ÜRETİM tavanı — yüklemeyi değil stok büyüklüğünü sınırlar (kota engeli DEĞİL).
+#: 15 dk kadans + hedef 6 ile günde 6 üretim yapılır; kota doluysa hepsi stoğa gider.
+#: Ayarlanabilir: URETIM_TAVANI env (1-1440).
+URETIM_TAVANI = max(1, int(os.environ.get("URETIM_TAVANI", "288") or "288"))
 MOD = os.environ.get("MOD", "isindirma_saatlik")
 YUKLEME_ATLA = os.environ.get("YUKLEME_ATLA", "0") == "1"
 # TODO 10: kota dolunca davranış — sessiz_dur (varsayılan) → exit 0,
@@ -143,7 +149,12 @@ def kuyruktan_paket_hazirla() -> tuple[dict | None, Path | None]:
             log_yaz(f"🔄 Kuyruktaki senaryo yeniden render ediliyor: {paket['baslik']}")
             paket = senaryo_seslendir(paket)
             video_render(paket)
-            kapak_uret(paket)
+            # Arena destekli kapak: 1. kare + Arena şok başlık, otomatik seçim
+            try:
+                kapak_sec_ve_hazirla(paket)
+            except Exception as kapak_hatasi:
+                log_yaz(f"⚠️ Kapak hattı hatası, yerel üreticiye düşülüyor: {kapak_hatasi}", "WARN")
+                kapak_uret(paket)
         return paket, dosya
     except Exception as e:
         log_yaz(f"Bozuk kuyruk kaydı silindi ({dosya.name}): {e}", "WARN")
@@ -180,9 +191,29 @@ def pipeline_calistir():
             )
 
     bugunki = bugunki_video_sayisi()
-    if bugunki >= GUNLUK_MAKS:
-        log_yaz(f"Günlük üretim tavanına ulaşıldı ({bugunki}/{GUNLUK_MAKS}). Atlanıyor.")
+
+    # =====================================================================
+    # KULLANICI KARARI (2026-11-11): "her 15 dakikada video ÜRETİLSİN ve
+    # yüklensin; yükleme başarısızsa sebebine bakalım, kotaysa STOK olsun,
+    # stok bitene kadar stok."
+    #
+    # ESKİ DAVRANIŞ (sabotaj): kota dolunca main_pipeline `sys.exit(0)` ile
+    # TAMAMEN duruyordu → hiç video üretilmiyordu. Üretim ile yükleme ayrı
+    # şeylerdir: kota yüklemeyi sınırlar, üretimi DEĞİL.
+    #
+    # YENİ: üretim GUNLUK_URETIM_TAVANI'na kadar devam eder; yükleme kotası
+    # ayrı bir kapıdır (GUNLUK_MAKS). Kota doluysa video üretilir ve STOĞA
+    # yazılır; kota açıldığında stoktan yüklenir (yeniden render YOK).
+    # =====================================================================
+    uretim_tavani = URETIM_TAVANI
+    if bugunki >= uretim_tavani:
+        log_yaz(f"Üretim tavanına ulaşıldı ({bugunki}/{uretim_tavani}). Atlanıyor.")
         sys.exit(0)
+    if bugunki >= GUNLUK_MAKS:
+        log_yaz(
+            f"⏳ Yükleme kotası dolu ({bugunki}/{GUNLUK_MAKS}) — ÜRETİM SÜRÜYOR, "
+            f"videolar stoğa alınacak (tavan {uretim_tavani})."
+        )
 
     # ---------------------------------------------------------------------
     # 15 DAKİKA KADANSI + GÜNLÜK HEDEF DÜZELTMESİ (2026-11-11)
@@ -197,8 +228,9 @@ def pipeline_calistir():
     # deneme sıklığı artar ve ilk fırsatta kota doldurulur.
     # ---------------------------------------------------------------------
     kalan_hedef = max(0, GUNLUK_HEDEF - bugunki)
-    kalan_kota = max(0, GUNLUK_MAKS - bugunki)
-    bu_tur = min(kalan_hedef, kalan_kota)
+    # ÜRETİM tavanı (stok büyüklüğü) — yükleme kotasından BAĞIMSIZ.
+    kalan_uretim = max(0, URETIM_TAVANI - bugunki)
+    bu_tur = min(kalan_hedef, kalan_uretim)
 
     log_yaz(
         f"Bugün üretilen: {bugunki}/{GUNLUK_MAKS} | "

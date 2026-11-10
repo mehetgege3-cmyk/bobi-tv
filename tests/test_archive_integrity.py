@@ -9,7 +9,12 @@ import json
 from pathlib import Path
 
 ARCHIVE = Path("bobi_tv/archive/videos.json")
-GECEERLI_DURUMLAR = {"yayinda", "kaldirildi"}
+# 2026-11-11 (C3 düzeltmesi): kod `silindi_dusuk_izlenme` yazıyordu ama test
+# `kaldirildi` bekliyordu → ilk otomatik silmede bütünlük testi KIRILDI
+# (kanıt: MWdWrFcj9uY). Artık kodun gerçekten yazdığı tüm durumlar geçerli.
+# Kaynaklar: youtube_upload.py (_arsivde_silindi_isaretle → silindi_dusuk_izlenme),
+# main_pipeline / kanal temizleme (kaldirildi), yükleme (yayinda).
+GECEERLI_DURUMLAR = {"yayinda", "kaldirildi", "silindi_dusuk_izlenme"}
 
 
 def _load() -> list[dict]:

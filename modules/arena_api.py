@@ -259,6 +259,101 @@ async def arena_canli_senaryo_iste(video_no: int) -> dict | None:
     }
 
 
+def _arena_sayfasi_hazirla(cookies_raw: str):  # pragma: no cover - Playwright
+    """Ortak: Arena çerezlerinden temiz cookie + tarayıcı bağlamı hazırlar."""
+    cookies_list = json.loads(sanitize_cookie_json(cookies_raw))
+    return build_clean_arena_cookie(cookies_list)
+
+
+async def arena_kapak_onerisi_al_async(paket: dict) -> dict | None:
+    """Arena AI'den KAPAK önerisi ister (şok başlık + vurgu + renk).
+
+    Kapak fotoğrafı için Arena desteği (kullanıcı isteği 2026-11-11).
+    Senaryo akışıyla AYNI Playwright + çerez yolunu kullanır; erişilemezse
+    None döner ve yerel kapak üreticisine düşülür (üretim DURMAZ).
+    """
+    cookies_raw = os.environ.get("ARENA_COOKIES_JSON", "").strip()
+    if not cookies_raw:
+        print("[Arena Kapak] ARENA_COOKIES_JSON yok — yerel kapak üreticisi kullanılacak")
+        return None
+    try:
+        from playwright.async_api import async_playwright
+    except ImportError:
+        print("[Arena Kapak] Playwright kurulu değil — yerel üreticiye geçiliyor")
+        return None
+
+    baslik = str(paket.get("baslik") or "")
+    senaryo = paket.get("senaryo") or {}
+    ilk_cumle = ""
+    try:
+        diyaloglar = senaryo.get("diyaloglar") or []
+        if diyaloglar:
+            ilk_cumle = str(diyaloglar[0].get("metin", ""))
+    except Exception:
+        ilk_cumle = ""
+    prompt = (
+        "Sen Türkçe YouTube Shorts kapak (thumbnail) tasarımcısısın. "
+        "Sana video başlığı ve ilk replik veriliyor. Hiçbir araç ÇAĞIRMA, "
+        "doğrudan tek bir geçerli JSON nesnesi döndür.\n"
+        f"BAŞLIK: {baslik}\n"
+        f"İLK REPLİK: {ilk_cumle[:120]}\n"
+        "Kurallar:\n"
+        "1) sok_baslik: MAKS 4 KELİME, büyük harf, merak uyandıran, yalan vaat yok.\n"
+        "2) vurgu_kelime: sok_baslik içinden renklendirilecek TEK kelime.\n"
+        "3) renk: vurgu için yüksek kontrastlı HEX renk (örn #FF2D55).\n"
+        "4) gerekce: neden bu başlık kaydırma durdurur, 1 cümle.\n"
+        "Şema: {\"sok_baslik\":\"MAKS 4 KELİME\",\"vurgu_kelime\":\"KELİME\","
+        "\"renk\":\"#FF2D55\",\"gerekce\":\"tek cümle\"}"
+    )
+
+    try:
+        clean_cookie = _arena_sayfasi_hazirla(cookies_raw)
+    except Exception as e:
+        print(f"[Arena Kapak] Çerez hazırlama uyarısı: {str(e)[:100]}")
+        return None
+
+    try:
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            context = await browser.new_context(viewport={"width": 1366, "height": 900})
+            await context.add_cookies([
+                {"name": "arena-auth-prod-v1.0", "value": clean_cookie, "domain": "arena.ai", "path": "/"},
+                {"name": "arena_build_bucket", "value": "stable", "domain": "arena.ai", "path": "/"},
+                {"name": "user_country_code", "value": "TR", "domain": "arena.ai", "path": "/"},
+            ])
+            page = await context.new_page()
+            print(f"[Arena Kapak] '{baslik[:40]}' için kapak önerisi isteniyor...")
+            cevap = await _arena_sorgusu_yap(page, prompt, min_cevap_uzunlugu=40, timeout=120)
+            await browser.close()
+    except Exception as e:
+        print(f"[Arena Kapak] Tarayıcı hatası: {str(e)[:120]}")
+        return None
+
+    if not cevap:
+        return None
+    ham = _ic_ice_json_ayikla(cevap)
+    if not isinstance(ham, dict) or not ham.get("sok_baslik"):
+        print("[Arena Kapak] JSON ayrıştırılamadı — yerel üreticiye geçiliyor")
+        return None
+    print(f"[Arena Kapak] ✅ Öneri: {ham.get('sok_baslik')!r}")
+    return ham
+
+
+def arena_kapak_onerisi_al(paket: dict) -> dict | None:
+    """Sync sarmalayıcı — kapak_arena.py bunu çağırır."""
+    try:
+        return asyncio.run(arena_kapak_onerisi_al_async(paket))
+    except RuntimeError:
+        # Zaten çalışan loop varsa yeni thread'de çalıştır
+        import concurrent.futures
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as havuz:
+            return havuz.submit(lambda: asyncio.run(arena_kapak_onerisi_al_async(paket))).result()
+    except Exception as e:
+        print(f"[Arena Kapak] Sync sarmalayıcı hatası: {str(e)[:120]}")
+        return None
+
+
 async def arena_video_uret(video_no: int, output_dir: str = "bobi_tv/output") -> dict | None:
     """
     Birleşik BOBİ TV v6.0 Pro Üretim Hattı:
@@ -325,8 +420,16 @@ async def arena_video_uret(video_no: int, output_dir: str = "bobi_tv/output") ->
     # 4. Pro Video Render + Ses Mastering + QC
     video_render(paket)
 
-    # 5. Yüksek Kontrastlı Kapak
-    kapak_uret(paket)
+    # 5. KAPAK — Arena AI destekli (1. kare + Arena şok başlık, otomatik seçim)
+    #    Kullanıcı isteği 2026-11-11: "kapak için Arena'dan destek alsın, ilk
+    #    kareye yerleştirme yapıp seçilsin." Arena erişilemezse yerel üreticiye
+    #    düşer (kapak_sec_ve_hazirla içinde) — üretim DURMAZ.
+    try:
+        from modules.kapak_arena import kapak_sec_ve_hazirla
+        kapak_sec_ve_hazirla(paket)
+    except Exception as e:
+        print(f"[Kapak] Arena hattı hatası, yerel üreticiye düşülüyor: {str(e)[:120]}")
+        kapak_uret(paket)
 
     return paket
 

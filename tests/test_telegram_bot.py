@@ -1,7 +1,9 @@
 """modules/telegram_bot.py güvenlik testleri — yetki kontrolü, PAT sızıntısı, sahte başarı."""
+import json
 import os
 import sys
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -122,3 +124,107 @@ def test_panel_html_escape_veri_alanlari_ama_b_etiketi_korunur(monkeypatch):
     assert "&lt; 5" in gonderilen         # tek başına < escape edildi
     assert "<b>dünya</b>" in gonderilen   # <b> etiketi korundu
     assert "&lt;b&gt;" not in gonderilen  # escape edilmiş <b> kalmamalı
+
+
+# ---------- 5. Menü spam'i düzeltmeleri (TODO 2) ----------
+def _telegram_yakalayici() -> tuple[list[tuple[str, dict[str, Any]]], Any]:
+    """requests.post'u yakalar; (yöntem, payload) listesi döndürür.
+    Her çağrı için ok:true + message_id:777 yanıtı verir."""
+    cagrilar: list[tuple[str, dict[str, Any]]] = []
+
+    def sahte_post(url: str, json: dict | None = None, timeout: float | None = None) -> Any:
+        yontem = str(url).rsplit("/", 1)[-1]
+        cagrilar.append((yontem, json or {}))
+
+        class R:
+            status_code = 200
+
+            def json(self) -> dict:
+                return {"ok": True, "result": {"message_id": 777}}
+
+        return R()
+
+    return cagrilar, sahte_post
+
+
+def test_taninmayan_metin_cevap_vermez(monkeypatch) -> None:
+    """Tanınmayan metin → 0 mesaj (yalnızca log). Ekran görüntüsündeki
+    '3 menü alt alta' spam'inin kök nedeni buydu."""
+    cagrilar, sahte_post = _telegram_yakalayici()
+    monkeypatch.setattr(tb.requests, "post", sahte_post)
+    tb.handle_message("selam naber nasılsın")
+    assert cagrilar == [], "Tanınmayan metne mesaj gönderilmemeli"
+
+
+def test_menu_komutu_tek_menyu_gonderir_ve_id_saklanir(monkeypatch, tmp_path) -> None:
+    menu_yolu = tmp_path / "menu.json"
+    monkeypatch.setattr(tb, "MENU_STATE_YOLU", menu_yolu)
+    cagrilar, sahte_post = _telegram_yakalayici()
+    monkeypatch.setattr(tb.requests, "post", sahte_post)
+    tb.handle_message("/menu")
+    assert sum(1 for yontem, _ in cagrilar if yontem == "sendMessage") == 1
+    saklanan = json.loads(menu_yolu.read_text(encoding="utf-8"))
+    assert saklanan["message_id"] == 777
+    assert saklanan["chat_id"] == "123456789"
+
+
+def test_uc_ust_uste_menyu_toplam_bir_mesaj(monkeypatch, tmp_path) -> None:
+    """3 kez /start üst üste → toplam 1 yeni menü mesajı; diğerleri
+    editMessageReplyMarkup ile AYNI mesajı günceller."""
+    monkeypatch.setattr(tb, "MENU_STATE_YOLU", tmp_path / "menu.json")
+    cagrilar, sahte_post = _telegram_yakalayici()
+    monkeypatch.setattr(tb.requests, "post", sahte_post)
+    for _ in range(3):
+        tb.handle_message("/start")
+    yeni_menuler = sum(1 for yontem, _ in cagrilar if yontem == "sendMessage")
+    guncellemeler = sum(1 for yontem, _ in cagrilar if yontem == "editMessageReplyMarkup")
+    assert yeni_menuler == 1, f"3 /start için {yeni_menuler} yeni menü gönderildi (≤1 olmalı)"
+    assert guncellemeler == 2
+
+
+def test_bayat_menu_silinmisse_yeni_menyu_acilir(monkeypatch, tmp_path) -> None:
+    """Saklanan menü mesajı Telegram'da silinmişse (edit 404) bayat kayıt
+    düşülür ve tek yeni menü açılır."""
+    menu_yolu = tmp_path / "menu.json"
+    monkeypatch.setattr(tb, "MENU_STATE_YOLU", menu_yolu)
+    cagrilar: list[str] = []
+
+    def sahte_post(url: str, json: dict | None = None, timeout: float | None = None) -> Any:
+        yontem = str(url).rsplit("/", 1)[-1]
+        cagrilar.append(yontem)
+
+        class R:
+            status_code = 200
+
+            def json(self) -> dict:
+                if yontem == "editMessageReplyMarkup":
+                    return {"ok": False, "description": "Bad Request: message to edit not found"}
+                return {"ok": True, "result": {"message_id": 888}}
+
+        return R()
+
+    monkeypatch.setattr(tb.requests, "post", sahte_post)
+    tb.handle_message("/menu")  # ilk menü → sendMessage
+    tb.handle_message("/menu")  # bayat id → edit bulunamadı → yeni menü
+    assert cagrilar == ["sendMessage", "editMessageReplyMarkup", "sendMessage"]
+    assert json.loads(menu_yolu.read_text(encoding="utf-8"))["message_id"] == 888
+
+
+def test_komut_cevabi_duz_mesajdir_butonsuz(monkeypatch) -> None:
+    """Menü dışı komut cevapları reply_markup İÇERMEZ (butonlar sadece ana menüde)."""
+    cagrilar, sahte_post = _telegram_yakalayici()
+    monkeypatch.setattr(tb.requests, "post", sahte_post)
+    tb.handle_message("/status")
+    cevaplar = [payload for yontem, payload in cagrilar if yontem == "sendMessage"]
+    assert len(cevaplar) == 1
+    assert "reply_markup" not in cevaplar[0]
+
+
+def test_menu_main_callback_yeni_menyu_spamlamaz(monkeypatch, tmp_path) -> None:
+    """'🏠 Menü' butonu tekrar tekrar basılsa bile yeni menü mesajı açılmaz."""
+    monkeypatch.setattr(tb, "MENU_STATE_YOLU", tmp_path / "menu.json")
+    cagrilar, sahte_post = _telegram_yakalayici()
+    monkeypatch.setattr(tb.requests, "post", sahte_post)
+    tb.handle_callback("menu_main", "cb1")
+    tb.handle_callback("menu_main", "cb2")
+    assert sum(1 for yontem, _ in cagrilar if yontem == "sendMessage") == 1

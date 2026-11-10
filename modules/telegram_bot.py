@@ -81,10 +81,17 @@ def api_call(method: str, data: dict) -> Optional[dict]:
         return None
     try:
         resp = requests.post(f"{BASE_URL}/{method}", json=data, timeout=15)
+        try:
+            body = resp.json()
+        except ValueError:
+            body = None
         if resp.status_code == 200:
-            return resp.json()
-        print(f"[Telegram Bot] API hatası: {resp.status_code}")
-        return None
+            return body
+        # Hata gövdesi de döndürülür: çağıran "message is not modified" gibi
+        # durumlara ayırt edici davranabilsin diye (menü güncelleme yolu buna muhtaç).
+        aciklama = str(body.get("description", "")) if isinstance(body, dict) else ""
+        print(f"[Telegram Bot] API hatası: {resp.status_code} {aciklama}")
+        return body if isinstance(body, dict) else None
     except Exception as e:
         print(f"[Telegram Bot] İstisna: {e}")
         return None
@@ -121,6 +128,78 @@ def get_main_menu_buttons() -> list[list[dict]]:
         [{"text": "🚫 Kota", "callback_data": "quota_status"},
          {"text": "❓ Yardım", "callback_data": "help_show"}],
     ]
+
+
+MENU_STATE_YOLU = Path("bobi_tv/state/telegram_menu.json")
+MENU_BASLIGI = "🎬 <b>BOBİ TV Kontrol Paneli</b>\n\nHoş geldiniz! Bir işlem seçin:"
+
+
+def _menu_durumu_oku() -> Optional[int]:
+    """Saklanan ana menü mesaj id'si (hedef sohbet eşleşiyorsa) ya da None."""
+    try:
+        if MENU_STATE_YOLU.exists():
+            veri = json.loads(MENU_STATE_YOLU.read_text(encoding="utf-8"))
+            if str(veri.get("chat_id", "")) == str(CHAT_ID):
+                return int(veri.get("message_id"))
+    except Exception:
+        pass
+    return None
+
+
+def _menu_durumu_yaz(message_id: int) -> None:
+    try:
+        MENU_STATE_YOLU.parent.mkdir(parents=True, exist_ok=True)
+        MENU_STATE_YOLU.write_text(
+            json.dumps({"chat_id": CHAT_ID, "message_id": message_id}), encoding="utf-8"
+        )
+    except Exception:
+        pass
+
+
+def _menu_durumu_temizle() -> None:
+    try:
+        MENU_STATE_YOLU.unlink(missing_ok=True)
+    except Exception:
+        pass
+
+
+def menyu_gonder() -> bool:
+    """Ana menüyü göster — menü spam'inin TEK çıkış kapısı.
+
+    Saklanan menü mesajı hâlâ açıksa YENİ MESAJ GÖNDERİLMEZ; aynı mesajın
+    klavyesi editMessageReplyMarkup ile güncellenir ("message is not modified"
+    değişiklik-yok demektir, başarılı sayılır). Menü mesajı silinmiş/düzenlenemez
+    ise bayat kayıt düşülür ve tek yeni menü açılır.
+
+    Döner: yeni menü mesajı gönderildi ise True, güncelleme/yok sayma ise False.
+    """
+    mevcut = _menu_durumu_oku()
+    if mevcut is not None:
+        sonuc = api_call("editMessageReplyMarkup", {
+            "chat_id": CHAT_ID, "message_id": mevcut,
+            "reply_markup": {"inline_keyboard": get_main_menu_buttons()},
+        })
+        if sonuc is not None and sonuc.get("ok"):
+            print("[Telegram Bot] Menü zaten açık — aynı mesaj güncellendi, yeni menü gönderilmedi")
+            return False
+        aciklama = str(sonuc.get("description", "")) if isinstance(sonuc, dict) else ""
+        if "message is not modified" in aciklama.lower():
+            print("[Telegram Bot] Menü zaten açık ve güncel — yeni menü gönderilmedi")
+            return False
+        # Mesaj silinmiş / düzenlenemiyor: bayat kaydı düş, taze menü aç
+        _menu_durumu_temizle()
+    resp = api_call("sendMessage", {
+        "chat_id": CHAT_ID,
+        "text": MENU_BASLIGI,
+        "parse_mode": "HTML",
+        "reply_markup": {"inline_keyboard": get_main_menu_buttons()},
+    })
+    if resp is not None and resp.get("ok"):
+        mesaj_id = (resp.get("result") or {}).get("message_id")
+        if mesaj_id:
+            _menu_durumu_yaz(int(mesaj_id))
+        return True
+    return False
 
 
 def get_status_text() -> str:
@@ -240,8 +319,9 @@ def trigger_production() -> str:
 
 def handle_callback(callback_data: str, callback_id: str) -> str:
     if callback_data == "menu_main":
-        send_message_with_buttons("🎬 <b>BOBİ TV Kontrol Paneli</b>\n\nHoş geldiniz! Bir işlem seçin:", get_main_menu_buttons())
-        answer_callback(callback_id); return ""
+        answer_callback(callback_id)
+        menyu_gonder()  # menü zaten açıksa yeni mesaj göndermez (spam önleme)
+        return ""
     if callback_data == "status_now":
         answer_callback(callback_id, "Durum yükleniyor...")
         send_message_with_buttons(get_status_text(), [
@@ -280,21 +360,31 @@ def handle_callback(callback_data: str, callback_id: str) -> str:
     return "❌ Bilinmeyen komut"
 
 
+MENU_KOMUTLARI = {"/start", "/menu", "menü", "menu"}
+
+
 def handle_message(text: str) -> str:
+    """Metin komutlarını işler (TODO 2 — menü spam'i düzeltmesi).
+
+    - Yalnızca menü komutları ana menüyü (butonlu) gösterir; menü zaten açıksa
+      yeni menü GÖNDERİLMEZ (menyu_gonder tekilleştirmesi).
+    - Diğer tanınan komutlar reply_markup OLMAYAN düz mesajla cevap verir.
+    - Tanınmayan metne cevap VERİLMEZ: klavye açıkken her tuş vuruşu yeni menü
+      + "Anlamadım" üretiyordu (ekranda üst üste menüler). Sadece loglanır.
+    """
     text = text.strip().lower()
-    menu = [[{"text": "🏠 Menü", "callback_data": "menu_main"}]]
-    if text in ["/start", "/menu", "menü", "menu"]:
-        send_message_with_buttons("🎬 <b>BOBİ TV Kontrol Paneli</b>\n\nHoş geldiniz! Bir işlem seçin:", get_main_menu_buttons())
+    if text in MENU_KOMUTLARI:
+        menyu_gonder()
         return ""
     if text in ["/status", "durum", "status"]:
-        send_message_with_buttons(get_status_text(), menu); return ""
+        send_message(get_status_text()); return ""
     if text in ["/trigger", "üret", "uret", "produce"]:
-        send_message_with_buttons(trigger_production(), menu); return ""
+        send_message(trigger_production()); return ""
     if text in ["/stats", "istatistik", "stats"]:
-        send_message_with_buttons(get_stats_text(), menu); return ""
+        send_message(get_stats_text()); return ""
     if text in ["/help", "yardım", "yardim", "help"]:
-        send_message_with_buttons(get_help_text(), menu); return ""
-    send_message_with_buttons("❓ Anlamadım. Bir işlem seçin:", get_main_menu_buttons())
+        send_message(get_help_text()); return ""
+    print(f"[Telegram Bot] Tanınmayan metin yok sayıldı (cevap verilmedi): {text[:40]!r}")
     return ""
 
 

@@ -88,10 +88,7 @@ def get_valid_token() -> str:
 
 def update_github_secret(new_token_data: dict, github_token: str, repo: str):
     """GitHub Secret'ı yeni token ile güncelle."""
-    import base64
-    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
-    from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
-
+            
     # Public key al
     pub_resp = requests.get(
         f"https://api.github.com/repos/{repo}/actions/secrets/public-key",

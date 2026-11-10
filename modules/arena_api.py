@@ -11,7 +11,6 @@ import os
 import re
 import json
 import base64
-import random
 import asyncio
 from pathlib import Path
 from datetime import datetime
@@ -275,7 +274,7 @@ async def arena_video_uret(video_no: int, output_dir: str = "bobi_tv/output") ->
 
                 # Düşük puanlı ama devam et (uyarı olarak logla)
                 if kalite_raporu.toplam_puan < 50:
-                    print(f"[Kalite] ❌ Senaryo çok düşük kalitede, reddedildi.")
+                    print("[Kalite] ❌ Senaryo çok düşük kalitede, reddedildi.")
                     return None
     except Exception as e:
         print(f"[Kalite] Kontrol hatası (devam ediliyor): {e}")

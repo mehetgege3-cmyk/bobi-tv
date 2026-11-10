@@ -13,7 +13,8 @@ import re
 import subprocess
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from PIL import Image, ImageDraw, ImageFont
+
 
 GENISLIK = 1080
 YUKSEKLIK = 1920

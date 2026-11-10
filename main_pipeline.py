@@ -24,7 +24,7 @@ from modules.video_render import video_render
 from modules.kapak_uret import kapak_uret
 from modules.telegram_notify import notify_error, send_message
 from modules.youtube_upload import toplu_yukle, dusuk_izlenmeli_videolari_temizle
-from modules.kota_state import kota_state_yaz, kota_dolu_mu
+from modules.kota_state import kota_state_yaz
 
 GUNLUK_HEDEF = int(os.environ.get("GUNLUK_HEDEF", "1"))
 GUNLUK_MAKS = int(os.environ.get("GUNLUK_MAKS", "96"))

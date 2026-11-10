@@ -83,7 +83,7 @@ def kalite_kapisindan_gecir(senaryo: Senaryo, esik_puani: int = 70) -> KaliteRap
             oneriler.append(f"   Köprü cümlesi önerisi: {loop_sonuc.kopru_cumlesi}")
 
     if not kanca_sonuc.gecerli:
-        oneriler.append(f"🪝 Kanca: İlk cümle yeterince çekici değil")
+        oneriler.append("🪝 Kanca: İlk cümle yeterince çekici değil")
         if kanca_sonuc.onerilen_varyant:
             oneriler.append(f"   Öneri: {kanca_sonuc.onerilen_varyant}")
 
@@ -138,12 +138,12 @@ def kalite_raporu_ozetle(rapor: KaliteRaporu) -> str:
         Özet metin
     """
     lines = [
-        f"📊 KALITE RAPORU",
-        f"═══════════════════════════════════",
+        "📊 KALITE RAPORU",
+        "═══════════════════════════════════",
         f"Toplam Puan: {rapor.toplam_puan}/100",
         f"Durum: {'✅ GEÇTİ' if rapor.gecti else '❌ KALDI'}",
-        f"",
-        f"Detaylar:",
+        "",
+        "Detaylar:",
         f"  🔄 Loop:     {rapor.loop_sonuc.puan}/100 {'✅' if rapor.loop_sonuc.gecerli else '❌'}",
         f"  🪝 Kanca:    {rapor.kanca_sonuc.puan}/100 {'✅' if rapor.kanca_sonuc.gecerli else '❌'}",
         f"  ⏱️ Zamanlama: {rapor.zamanlama_sonuc.puan}/100 {'✅' if rapor.zamanlama_sonuc.gecerli else '❌'}",

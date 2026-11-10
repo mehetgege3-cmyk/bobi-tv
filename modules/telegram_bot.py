@@ -124,7 +124,7 @@ def get_main_menu_buttons() -> list[list[dict]]:
 
 
 def get_status_text() -> str:
-    from modules.kota_state import kota_dolu_mu, kota_state_oku
+    from modules.kota_state import kota_dolu_mu
     arsiv = Path("bobi_tv/archive/videos.json")
     bugun = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     bugunki = 0
@@ -134,7 +134,6 @@ def get_status_text() -> str:
             bugunki = sum(1 for k in kayitlar if k.get("tarih", "")[:10] == bugun)
         except Exception:
             pass
-    kota_state = kota_state_oku()
     kota_durum = "🚫 DOLU" if kota_dolu_mu() else "✅ BOŞ"
     kuyruk = Path("bobi_tv/queue")
     kuyruk_sayisi = len(list(kuyruk.glob("*.json"))) if kuyruk.exists() else 0

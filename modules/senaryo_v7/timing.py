@@ -10,12 +10,11 @@ Zamanlama ve Tempo Modülü
 from __future__ import annotations
 
 import logging
-import re
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .models import Senaryo, Duygu
+    from .models import Senaryo
 
 _LOG = logging.getLogger("bobi_tv.senaryo_v7.timing")
 
@@ -302,7 +301,6 @@ def satir_duzelt(satirlar: list[str], hedef_sure: float = 18.5) -> tuple[list[st
     # Kısa ise: satır ekle veya uzat
     if mevcut_sure < MIN_SURE_SN:
         # Eksik süre
-        eksik = MIN_SURE_SN - mevcut_sure
 
         # Her satırı ortalama %20 uzat
         for i, satir in enumerate(duzeltilmis):
@@ -314,7 +312,6 @@ def satir_duzelt(satirlar: list[str], hedef_sure: float = 18.5) -> tuple[list[st
     # Uzun ise: satır kısalt veya birleştir
     elif mevcut_sure > MAX_SURE_SN:
         # Fazla süre
-        fazla = mevcut_sure - MAX_SURE_SN
 
         # En uzun satırı bul
         uzunluklar = [len(s.split()) for s in duzeltilmis]

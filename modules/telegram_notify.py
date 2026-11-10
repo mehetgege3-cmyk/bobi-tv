@@ -5,7 +5,6 @@ Tüm bildirimler, raporlar ve hatalar bu modül üzerinden iletilir.
 import os
 import html
 import requests
-import json
 from datetime import datetime
 
 

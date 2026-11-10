@@ -9,9 +9,7 @@ Yenilikler:
 """
 import os
 import re
-import sys
 import wave
-import json
 import asyncio
 import importlib.util
 import subprocess

@@ -151,12 +151,6 @@ def _soru_formu_olustur(metin: str) -> str | None:
         return metin
 
     # Soru oluştur
-    soru_kalari = [
-        f"{temiz} mi?",
-        f"{temiz} olabilir mu?",
-        f"{temiz} nasıl olur?",
-        f"Peki ya {temiz.lower()}?",
-    ]
 
     # İlk kelimeyi koruyarak soru oluştur
     ilk_kelime = temiz.split()[0] if temiz.split() else ""

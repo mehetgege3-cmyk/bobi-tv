@@ -177,3 +177,20 @@ def test_duygu_aliases_anahtar_tekil():
                     assert len(keys) == len(set(keys)), f"Tekrarlanan alias anahtarı: {[k for k in keys if keys.count(k)>1]}"
                     return
     raise AssertionError("_DUYGU_ALIASES bulunamadı")
+
+
+def test_uzgun_kasitli_normal_fallback():
+    """TODO3 karar (b): 'üzgün' kullanılmıyor -> NORMAL fallback, uyarı NORMAL seçildiğini söyler."""
+    from modules.senaryo_v7.models import duyguyu_normalize_et, Duygu, _LOG
+    mesajlar = []
+    import types
+    def yakala(msg, *args):
+        mesajlar.append(msg % args)
+    orj = _LOG.warning
+    _LOG.warning = types.MethodType(yakala, _LOG) if not callable(orj) else yakala
+    try:
+        sonuc = duyguyu_normalize_et("üzgün")
+    finally:
+        _LOG.warning = orj
+    assert sonuc is Duygu.NORMAL
+    assert any("NORMAL" in m for m in mesajlar), f"uyarı NORMAL demeli: {mesajlar}"

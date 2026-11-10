@@ -70,6 +70,7 @@ class DiyalogRolu(StrEnum):
     LOOPKAPANIS = "loopkapanis"
 
 
+# KARAR (TODO3): 'üzgün' şablonlarda/produksiyonda kullanılmıyor -> alias yok, kasıtlı NORMAL fallback.
 _DUYGU_ALIASES = {
     "suprized": "sasirmis",
     "surprised": "sasirmis",

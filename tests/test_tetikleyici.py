@@ -33,11 +33,20 @@ def test_hourly_hem_workflow_hem_repository_dispatch_tanimli() -> None:
     assert DISPATCH_TIPI in tipler
 
 
-def test_hourly_cron_saatlik_yedek() -> None:
-    """10 dk cron yanılsaması kaldırılır: yedek cron saat başıdır."""
+def test_hourly_cron_15_dakika() -> None:
+    """Kadans kararı (2026-11-11): yedek cron her 15 dakikadır.
+
+    Önceki sözleşme '0 * * * *' (saatlik) idi; kullanıcı "her 15 dakikada bir
+    video üretilip yüklensin" dedi. Cron yalnızca YEDEKTİR — birincil
+    tetikleyici dış dağıtıcıdır (docs/TETIKLEYICI_KURULUM.md).
+    Tek doğruluk kaynağı: modules/kadans.py → KADANS_CRON.
+    """
+    from modules.kadans import KADANS_CRON
+
     program = _workflow_yukle()["on"]["schedule"]
     crons = [str(kayit["cron"]) for kayit in program]
-    assert crons == ["0 * * * *"], f"Beklenen tek saatlik cron, gelen: {crons}"
+    assert crons == ["*/15 * * * *"], f"Beklenen 15 dk cron, gelen: {crons}"
+    assert crons == [KADANS_CRON], "workflow cron'u kadans modülüyle uyuşmuyor"
 
 
 def test_hourly_son_kosu_suresi_adimi_var() -> None:

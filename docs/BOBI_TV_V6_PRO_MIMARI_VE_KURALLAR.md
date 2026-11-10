@@ -213,3 +213,70 @@ SADECE aşağıdaki JSON formatında yanıt ver:
    - Arena AI promptunu yukarıdaki **Master Loop JSON** şemasına yükselt.
    - `youtube_upload.py` içine `commentThreads.insert` ile otomatik ilk yorum atma özelliğini ekle.
    - `hourly_production.yml` zamanlamasını günde 24 spam denemesi yerine **günde 4 pik saat** olarak ayarla.
+
+---
+
+## ⏱️ Bölüm 5: ÜRETİM KADANSI — HER 15 DAKİKADA BİR (2026-11-11 kuralı)
+
+Bu bölüm **bağlayıcı kuraldır** (normatif). Çelişki hâlinde bu bölüm ve
+`modules/kadans.py` esas alınır; SKILL.md §7.5 özet sunar.
+
+### K1 — Kadans tanımı
+
+Üretim ve yükleme **her 15 dakikada bir** denenir.
+
+| Sabit | Değer | Yeri | Doğrulama |
+|---|---|---|---|
+| `KADANS_DK` | `15` | `modules/kadans.py` | test |
+| `KADANS_CRON` | `*/15 * * * *` | `modules/kadans.py` | test |
+| Workflow cron | `*/15 * * * *` | `.github/workflows/hourly_production.yml` | test (ikisi eşit) |
+| Katalog kaydı | `KADANS_DK` seçenekleri `15/30/60` | `modules/ayar_katalogu.py` | test |
+
+### K2 — Kadans ≠ yükleme sayısı
+
+15 dakika **zamanlamadır**, yükleme kotası değildir. YouTube `videos.insert`
+≈ 1.600 birim, günlük kota 10.000 birim → **günde en fazla 6 yükleme**
+(Google sabiti, değiştirilemez). 15 dakikalık kadans günde 96 **fırsat** yaratır;
+kota dolduktan sonraki 90 fırsat **no-op (yeşil)** döner.
+
+- Fiili yükleme aralığı = `24*60 / GUNLUK_MAKS` → 6 için **240 dk (4 saatte 1)**.
+- Bu fark logda, Telegram panelinde ve dokümanda **aynı cümleyle** yazılır
+  (`kota_uyarisi()`); hiçbir yerde "her 15 dakikada bir video yayınlanıyor"
+  denmez — çünkü kota buna izin vermez.
+
+### K3 — GUNLUK_HEDEF günlük toplamdır (koşu başına DEĞİL)
+
+- ❌ Eski (hatalı): koşu başına `GUNLUK_HEDEF` video → 15 dk kadansta günde 384 deneme.
+- ✅ Yeni: günlük toplam. Bu turda üretim = `min(hedef − bugün, tavan − bugün)`.
+- Çıkış kodu günlük toplama bakar; hedef tamam veya turda yayın var → `exit 0`.
+  Böylece 96 koşu **96 kırmızı tik** üretmez (self-repair fırtınası yok).
+
+### K4 — Kota ve hedef no-op → YEŞİL
+
+Kota dolu veya günlük hedef tamam ise koşu **başarısız sayılmaz** (`exit 0`).
+`KOTA_DOLU_DAVRANIS` varsayılanı `sessiz_dur`'dur. `hata` seçilirse eski
+`exit 1` davranışı döner ve self-repair tetiklenebilir — **önerilmez**.
+
+### K5 — GitHub cron'una güvenilmez
+
+`*/15` yazmak 15 dakikada bir çalıştığı anlamına gelmez (ölçüm: `*/10` fiilen
+günde 1–2 koşuya düştü; 2026-11-10'da 16 saat hiç çalışmadı).
+**Birincil tetikleyici dış dağıtıcıdır** (cron-job.org → 15 dk);
+GitHub cron yalnızca **yedektir**. Kurulum: `docs/TETIKLEYICI_KURULUM.md`.
+
+### K6 — Kalite kadansın önünde
+
+Kadans sıkılaşması kalite eşiğini düşürmez. Kalite kontrolünü geçmeyen video
+sırf süre doldu diye yayımlanmaz; eksik üretim açıkça raporlanır.
+
+### K7 — Değişiklik prosedürü
+
+Kadansı değiştirmek **üç yeri birlikte** gerektirir (biri kalırsa test kırılır):
+1. `modules/kadans.py` → `KADANS_DK` ve `KADANS_CRON`
+2. `.github/workflows/hourly_production.yml` → `cron:`
+3. Dış dağıtıcı ayarı (cron-job.org interval)
+
+Tek doğruluk kaynağı `modules/kadans.py`'dir; diğerleri ondan **türetilir**,
+kopyalanmaz.
+
+---

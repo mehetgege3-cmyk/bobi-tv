@@ -40,9 +40,14 @@ TIPLER: tuple[str, ...] = ("secim", "sayi", "anahtar", "sadece_goruntule")
 RISKLER: tuple[str, ...] = ("dusuk", "orta", "yuksek")
 
 # P4 — kota matematiği: YouTube 10.000 birim/gün, videos.insert ≈ 1.600 birim.
-YOUTUBE_GUNLUK_KOTA_BIRIM: int = 10_000
-VIDEO_INSERT_MALIYETI: int = 1_600
-KOTA_TAVANI: int = YOUTUBE_GUNLUK_KOTA_BIRIM // VIDEO_INSERT_MALIYETI  # 6
+from modules.kadans import (  # noqa: E402  (tek doğruluk kaynağı — modules/kadans.py)
+    GUNLUK_YUKLEME_TAVANI,
+    VIDEO_INSERT_MALIYETI,
+    YOUTUBE_GUNLUK_KOTA_BIRIM,
+)
+
+#: Kota tavanı artık kadans modülünden gelir; burada KOPYALANMAZ.
+KOTA_TAVANI: int = GUNLUK_YUKLEME_TAVANI  # 6
 
 # TODO 11 — Grup 3'ün ZORUNLU dürüstlük metni (panel bu metni aynen gösterir).
 TEMIZLIK_UYARI: str = (
@@ -105,6 +110,28 @@ KATALOG: list[dict[str, Any]] = [
         "üretim workflow'u tükettikten sonra otomatik 0'a çeker.",
     },
     # ---------- Grup 2 — uretim_kota ----------
+    {
+        "anahtar": "KADANS_DK",
+        "etiket": "Üretim kadansı (dk)",
+        "grup": "uretim_kota",
+        "tip": "secim",
+        "secenekler": ["15", "30", "60"],
+        "varsayilan": "15",
+        "min": None,
+        "max": None,
+        "env_adi": "KADANS_DK",
+        "risk": "orta",
+        "kalici": True,
+        "etkili": True,
+        "secret": False,
+        "aciklama": (
+            "Üretimin KAÇ DAKİKADA BİR DENENECEĞİ (zamanlama). Yükleme SAYISINI "
+            "belirlemez: YouTube kotası günde en fazla 6 yükleme yapar "
+            f"({YOUTUBE_GUNLUK_KOTA_BIRIM}/{VIDEO_INSERT_MALIYETI}). 15 dk → günde "
+            "96 fırsat; kota dolunca kalan fırsatlar no-op döner. Değiştirmek için "
+            "workflow cron'u da (docs/KADANS_15DK.md) güncellenmelidir."
+        ),
+    },
     {
         "anahtar": "GUNLUK_HEDEF",
         "etiket": "Günlük hedef",

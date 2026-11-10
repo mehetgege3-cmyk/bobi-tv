@@ -217,9 +217,67 @@ tercih, tek başına YouTube hesabına erişim veya yayın yetkisi vermez.
 Video hazır olunca direkt yayına girer. Saat optimizasyonu Analytics
 verisi biriktikçe devreye alınacak.
 
-### 7.5 Günlük hedef
+### 7.5 Üretim kadansı — HER 15 DAKİKADA BİR (2026-11-11 kararı)
 
-Günlük hedef **GUNLUK_HEDEF** (varsayılan 1) ile **GUNLUK_MAKS** (24) ile sınırlıdır; 'günde en az 5 video' kesin vaat DEĞİLDİR. GitHub cron güvenilir olmadığı ve YouTube kotası üretimi durdurabileceği için fiili üretim daha düşük olabilir. Kalite kontrolünü geçmeyen video sırf hedefe ulaşmak için yayımlanmaz. Eksik üretim açıkça raporlanır.
+**Karar:** Video üretimi ve yükleme **her 15 dakikada bir** denenir.
+Tek doğruluk kaynağı: `modules/kadans.py` → `KADANS_DK = 15`, `KADANS_CRON = "*/15 * * * *"`.
+Workflow cron'u (`hourly_production.yml`) bu sabitle **aynı olmak zorundadır** (test doğrular).
+
+#### 7.5.1 Kadans ≠ yükleme sayısı (en sık yapılan hata)
+
+| Kavram | Ne belirler | Değer | Sınır |
+|---|---|---|---|
+| **KADANS_DK** | Ne sıklıkta *deneneceği* (zamanlama, ücretsiz) | **15 dk** | — |
+| **GUNLUK_MAKS** | Günde kaç *yükleme* yapılacağı (kota tüketir) | varsayılan **6** | Kota: 10.000 / 1.600 = **6** (Google sabiti) |
+| **GUNLUK_HEDEF** | Günde *en az* kaç yayın hedeflendiği | varsayılan **2** | ≤ GUNLUK_MAKS |
+
+15 dakikalık kadans günde **96 fırsat** yaratır (24×60/15). YouTube kotası
+günde en fazla **6 yükleme** izin verir. Yani:
+
+- Günün ilk ~90 dakikasında 6 yükleme yapılır (kota dolar).
+- Kalan **90 fırsat no-op (yeşil)** döner — atıl kapasite değil, **platformun sabit sınırı**.
+- **Fiili yükleme aralığı** = 24 sa / GUNLUK_MAKS → 6 için **240 dakika (4 saatte 1)**,
+  4 için **360 dakika (6 saatte 1)**.
+
+Bu fark **gizlenmez**: log, Telegram paneli ve bu doküman aynı cümleyi söyler
+(`modules/kadans.py → kota_uyarisi()`).
+
+#### 7.5.2 GUNLUK_HEDEF artık GÜNLÜK TOPLAM (2026-11-11 düzeltmesi)
+
+**Eski hata:** `for i in range(1, GUNLUK_HEDEF + 1)` — hedef **koşu başına**
+video sayısıydı. 15 dakikalık kadansta hedef 4 → günde **384 video denemesi**
+(kota 6'da keser, 378 koşu boşa gider).
+
+**Yeni sözleşme:** `GUNLUK_HEDEF` = **günlük toplam** hedef.
+Bu turda üretilecek sayı = `min(hedef − bugün, kota_tavanı − bugün)`.
+Kadans sıkılaşsa bile **günlük yükleme sayısı değişmez**; yalnızca deneme
+sıklığı artar ve kota ilk fırsatta doldurulur.
+
+Çıkış kodu da günlük toplama bakar: hedef tamamlanmışsa veya bu turda yayın
+varsa **`exit 0`** (yeşil). Aksi hâlde 15 dakikalık kadansta günde 96 kırmızı
+tik ve 96 otonom self-repair denemesi olurdu.
+
+#### 7.5.3 GitHub cron'una GÜVENİLMEZ
+
+Ölçüm (2026-11-10): `*/10` cron fiilen **günde 1–2 koşuya** düştü; üretim
+16 saat hiç çalışmadı. `*/15` yazmak 15 dakikada bir çalışacağı anlamına
+**gelmez**. Bu yüzden:
+
+- **Birincil tetikleyici:** dış dağıtıcı (cron-job.org) → `workflow_dispatch`
+  veya `repository_dispatch` (`bobi-tv-produce`), 15 dakikada bir.
+  Kurulum: `docs/TETIKLEYICI_KURULUM.md`.
+- **Yedek:** GitHub cron `*/15`.
+- **Gerçek sıklık denetimi:** workflow'un "son koşudan bu yana" adımı logda
+  geçen dakikayı yazar. 15 dk ayarında ~15–20 görmelisin; 60+ görüyorsan
+  dış dağıtıcı ölmüş, cron yedeğe düşmüşsündür.
+
+#### 7.5.4 Kalite kapısı kadansın önünde
+
+Kadans sıkılaşması kalite eşiğini **düşürmez**. Kalite kontrolünü geçmeyen
+video sırf "15 dakika doldu" diye yayımlanmaz. Eksik üretim açıkça raporlanır
+(`✅ Günlük hedef tamam: N/M` veya `ℹ️ Bu tur N yayınladı; hedef sürüyor`).
+
+Tam kaynak: `docs/KADANS_15DK.md`.
 
 ### 7.6 Üretime geçiş (100. karar → A)
 

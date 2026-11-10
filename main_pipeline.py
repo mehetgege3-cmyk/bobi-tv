@@ -168,13 +168,39 @@ def pipeline_calistir():
         log_yaz(f"Günlük üretim tavanına ulaşıldı ({bugunki}/{GUNLUK_MAKS}). Atlanıyor.")
         sys.exit(0)
 
-    log_yaz(f"Bugün üretilen: {bugunki}/{GUNLUK_MAKS} | Bu tur hedefi: {GUNLUK_HEDEF}")
+    # ---------------------------------------------------------------------
+    # 15 DAKİKA KADANSI + GÜNLÜK HEDEF DÜZELTMESİ (2026-11-11)
+    #
+    # ESKİ HATA: `for i in range(1, GUNLUK_HEDEF + 1)` — GUNLUK_HEDEF KOŞU BAŞINA
+    # video sayısıydı. 15 dakikalık kadans günde 96 koşu yapar; hedef 4 kalsaydı
+    # günde 384 video DENENİRDİ (kota 6'da keser, 378 koşu boşa giderdi).
+    #
+    # YENİ SÖZLEŞME: GUNLUK_HEDEF = GÜNLÜK TOPLAM hedef (kalan = hedef - bugün).
+    # Bu turda üretilecek sayı = min(kalan_hedef, kota_tavanı - bugün).
+    # Böylece kadans sıkılaşsa bile günlük yükleme sayısı DEĞİŞMEZ — yalnız
+    # deneme sıklığı artar ve ilk fırsatta kota doldurulur.
+    # ---------------------------------------------------------------------
+    kalan_hedef = max(0, GUNLUK_HEDEF - bugunki)
+    kalan_kota = max(0, GUNLUK_MAKS - bugunki)
+    bu_tur = min(kalan_hedef, kalan_kota)
+
+    log_yaz(
+        f"Bugün üretilen: {bugunki}/{GUNLUK_MAKS} | "
+        f"Günlük hedef: {GUNLUK_HEDEF} (kalan {kalan_hedef}) | "
+        f"Bu turda: {bu_tur}"
+    )
+    if bu_tur == 0:
+        if kalan_hedef == 0:
+            log_yaz(f"✅ Günlük hedef tamamlandı ({bugunki}/{GUNLUK_HEDEF}). Bu tur no-op.")
+        else:
+            log_yaz(f"🚫 Kota tavanı dolu ({bugunki}/{GUNLUK_MAKS}). Bu tur no-op.")
+        sys.exit(0)
 
     hazir_paketler = []
     kuyruk_kaynak_dosyalari = {}
     hatalar = []
 
-    for i in range(1, GUNLUK_HEDEF + 1):
+    for i in range(1, bu_tur + 1):
         video_no = bugunki + i
 
         # Önce kuyrukta kota bekleyen iş var mı bak
@@ -265,13 +291,29 @@ def pipeline_calistir():
         )
         sys.exit(kota_dolu_cikis_kodu(KOTA_DOLU_DAVRANIS))  # TODO 10: sessiz_dur → 0, hata → 1
 
-    basarili_toplam = yayinlanan + kuyruga_alinan
-    
     # Başarılı yükleme varsa kota state'i güncelle
     if yayinlanan > 0:
         kota_state_yaz(doldu=False, kalan_saat=0, video_sayisi=yayinlanan)
     
-    sys.exit(0 if basarili_toplam >= GUNLUK_HEDEF else 1)
+    # Çıkış kodu GÜNLÜK TOPLAM hedefe göre (2026-11-11 düzeltmesi).
+    # Eski hâli `basarili_toplam >= GUNLUK_HEDEF` idi: bu turda 1 video yüklenip
+    # günlük hedef 4 ise koşu KIRMIZI oluyordu — 15 dakikalık kadansta günde 96
+    # kırmızı tik + 96 otonom self-repair denemesi demek. Artık ölçü gün toplamı:
+    # kota/hedef no-op turları YEŞİL döner (sessiz_dur felsefesiyle aynı).
+    gun_toplam = bugunki_video_sayisi()
+    if gun_toplam >= GUNLUK_HEDEF:
+        log_yaz(f"✅ Günlük hedef tamam: {gun_toplam}/{GUNLUK_HEDEF}")
+        sys.exit(0)
+
+    if yayinlanan > 0:
+        log_yaz(
+            f"ℹ️ Bu tur {yayinlanan} yayınladı; günlük hedef sürüyor "
+            f"({gun_toplam}/{GUNLUK_HEDEF}) — sonraki kadans devam edecek."
+        )
+        sys.exit(0)
+
+    log_yaz(f"❌ Bu turda hiç yayın yok ({gun_toplam}/{GUNLUK_HEDEF})", "ERROR")
+    sys.exit(1)
 
 
 if __name__ == "__main__":

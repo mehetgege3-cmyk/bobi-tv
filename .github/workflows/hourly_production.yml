@@ -2,11 +2,15 @@ name: BOBİ TV v6.4 PRO — Saatlik Üretim + Kota Takibi
 
 on:
   schedule:
-    # GitHub cron güvenilir DEĞİLDİR (*/10 fiilen günde 1-2 koşuya düşebiliyordu).
-    # Birincil tetikleyici: dış dağıtıcı (cron-job.org vb.) 10 dakikada bir
-    # workflow_dispatch/repository_dispatch çağırır — bkz. docs/TETIKLEYICI_KURULUM.md.
-    # Saatlik cron yalnızca YEDEK: dış dağıtıcı ölürse üretim durmasın.
-    - cron: '0 * * * *'
+    # HEDEF KADANS: HER 15 DAKİKADA BİR (modules/kadans.py → KADANS_DK=15).
+    # ⚠️ GitHub cron GÜVENİLİR DEĞİLDİR: '*/15' yazmak 15 dakikada bir koşacağı
+    # anlamına GELMEZ. Ölçüm (2026-11-10): '*/10' fiilen günde 1-2 koşuya düştü.
+    # Birincil tetikleyici DIŞ DAĞITICI olmalı (cron-job.org, 15 dk) — bkz.
+    # docs/TETIKLEYICI_KURULUM.md. Bu cron yalnızca YEDEKTİR.
+    # NOT: 15 dk = günde 96 koşu, ama YouTube kotası günde en fazla 6 YÜKLEME
+    # yapar (10000/1600). Yükleme sayısını GUNLUK_MAKS belirler; kadans yalnızca
+    # "ne zaman deneneceğini" belirler. Kalan koşular no-op (yeşil) döner.
+    - cron: '*/15 * * * *'
   workflow_dispatch:
     inputs:
       force:

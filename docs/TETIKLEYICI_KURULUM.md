@@ -28,9 +28,9 @@ başı devam eder.
 3. Bu belgedeki `$GITHUB_TOKEN` bir **yer tutucudur**; gerçek değer secret'tan okunur.
 4. Minimum yetki ilkesi: token yalnızca `Actions: write` verir; `contents: write` gerekmez.
 
-## Kurulum — cron-job.org (ücretsiz, 10 dakikalık interval)
+## Kurulum — cron-job.org (ücretsiz, 15 dakikalık interval)
 
-1. cron-job.org'da yeni job oluştur; interval: **10 dakika**.
+1. cron-job.org'da yeni job oluştur; interval: **15 dakika** (kadans: `modules/kadans.py` → `KADANS_DK=15`).
 2. Ayarlar:
 
    - **URL:** `https://api.github.com/repos/mehetgege3-cmyk/bobi-tv/dispatches`
@@ -68,8 +68,8 @@ düşmesin diye).
 
 Workflow her koşunun başında **"Son koşudan bu yana geçen süreyi logla"** adımıyla
 önceki koşudan bu yana geçen dakikayı yazdırır. Dış dağıtıcının gerçek sıklığını
-Actions loglarından bu adımla denetleyebilirsin: 10 dakikalık ayarda bu değer
-yaklaşık 10-15 dakika olmalı; saatlik cron'a düştüğünde 55-65 dakika görürsün —
+Actions loglarından bu adımla denetleyebilirsin: 15 dakikalık ayarda bu değer
+yaklaşık 15-20 dakika olmalı; saatlik cron'a düştüğünde 55-65 dakika görürsün —
 o zaman dağıtıcı bozuk demektir.
 
 ## Kota kapısı notu

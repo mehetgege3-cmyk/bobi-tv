@@ -163,9 +163,12 @@ def test_cikarilan_ayarlar_katalogda_yok() -> None:
 
 
 def test_grup_ayarlari_sayilari_beklentiyle_uyumlu() -> None:
-    """Panel ana ekranındaki sayaçlar: tetikleme 3, üretim&kota 4, sistem 6 secret."""
+    """Panel ana ekranındaki sayaçlar: tetikleme 3, üretim&kota 5, sistem 6 secret.
+
+    2026-11-11: üretim&kota 4 → 5 (KADANS_DK eklendi — "her 15 dakikada bir" kararı).
+    """
     assert len(grup_ayarlari("tetikleme")) == 3
-    assert len(grup_ayarlari("uretim_kota")) == 4
+    assert len(grup_ayarlari("uretim_kota")) == 5
     assert len(grup_ayarlari("temizlik")) == 3
     sistem = grup_ayarlari("sistem")
     assert len(sistem) == 6

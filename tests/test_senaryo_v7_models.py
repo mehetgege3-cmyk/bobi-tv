@@ -1,9 +1,9 @@
-import sys
 """Tests for the expanded v7 line and character schema."""
 
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import pytest

@@ -270,8 +270,11 @@ jobs:
           # Arşiv ve state dosyalarını ekle
           git add -f bobi_tv/archive/ bobi_tv/state/ bobi_tv/production/scripts/arena/ 2>/dev/null || true
 
-          # Kuyruk JSON'larını zorla ekle (.gitignore override)
-          git add -f bobi_tv/queue/*.json 2>/dev/null || true
+          # TODO 4a: kuyruğu DİZİN pathspec'i ile ekle — kabuk glob'u yalnızca VAR
+          # OLAN dosyaları genişletir; kuyrukta başka dosya dururken tüketilen
+          # kaydın silmesi stage'e girmiyordu (silme commit'lenmez → bayat kuyruk).
+          # Dizin pathspec'i eklemeleri de silmeleri de HER ZAMAN alır (-f: .gitignore override).
+          git add -f bobi_tv/queue/ 2>/dev/null || true
 
           # Commit ve push
           if ! git diff --staged --quiet; then

@@ -23,7 +23,11 @@ from modules.tts_engine import senaryo_seslendir
 from modules.video_render import video_render
 from modules.kapak_uret import kapak_uret
 from modules.telegram_notify import notify_error, send_message
-from modules.youtube_upload import toplu_yukle, dusuk_izlenmeli_videolari_temizle
+from modules.youtube_upload import (
+    dusuk_izlenmeli_videolari_temizle,
+    toplu_yukle,
+    zaten_yuklendi_mi,
+)
 from modules.kota_state import kota_state_yaz
 
 GUNLUK_HEDEF = int(os.environ.get("GUNLUK_HEDEF", "1"))
@@ -96,6 +100,20 @@ def kuyruktan_paket_hazirla() -> tuple[dict | None, Path | None]:
     dosya = bekleyenler[0]
     try:
         paket = json.loads(dosya.read_text(encoding="utf-8"))
+
+        # TODO 4b: bayat kuyruk koruması — paket zaten yayınlandıysa (kota dolarken
+        # kuyruğa alınmış ve sonraki koşuda yüklenmiş ama silme commit'lenmemişse)
+        # yeniden RENDER EDİLMEZ ve tekrar "Yayınlandı" denmez: kayıt tüketilir,
+        # yeni üretim kotasını bloklamaz.
+        mevcut_video_id = zaten_yuklendi_mi(paket.get("dosya_adi", ""))
+        if mevcut_video_id:
+            log_yaz(
+                f"♻️ Kuyruktaki paket zaten yayında ({mevcut_video_id}) — bayat kayıt "
+                f"tüketildi, render atlandı: {paket.get('dosya_adi', '?')}"
+            )
+            dosya.unlink(missing_ok=True)
+            return None, None
+
         fv = paket.get("final_video", "")
         if not fv or not Path(fv).exists():
             log_yaz(f"🔄 Kuyruktaki senaryo yeniden render ediliyor: {paket['baslik']}")

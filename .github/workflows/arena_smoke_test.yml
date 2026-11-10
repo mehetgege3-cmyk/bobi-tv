@@ -1,7 +1,7 @@
 name: "Arena Smoke Test — Tanılama (manuel tetik)"
 # Manuel tetiklenen Arena.ai uçtan uca tanılama. SALT OKUNUR izin; secret geri
-# yazma YOK (gh secret set yok). Çerez düşünce exit 2 (oturum-gecersiz) verir,
-# kullanıcı elle yeniler. Çıktı arena-diagnostics/ artifact + job summary verdict.
+# yazma YOK. Çerez düşünce exit 2 (oturum-gecersiz) verir, kullanıcı elle
+# yeniler. Çıktı arena-diagnostics/ artifact + job summary verdict.
 on:
   workflow_dispatch:
     inputs:

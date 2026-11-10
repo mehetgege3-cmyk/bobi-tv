@@ -124,12 +124,15 @@
     "dosya_adi": "20261110_0006_kulturlar_arasi_mizah_arena",
     "baslik": "Tencereyi İade Edince Bütün Bina Ayaklandı 😱 #shorts",
     "video_id": "aWzY0z-wCTw",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "kulturlar_arasi_mizah",
     "url": "https://www.youtube.com/shorts/aWzY0z-wCTw",
     "senaryo_ozeti": "Yedinci kata tencereyle çıktım, altı komşu peşimdeydi. Ben sadece yemeği geri vermek istedim, çok utandım.",
     "hash": "",
-    "tarih": "2026-11-10T22:51:54.749310+00:00"
+    "tarih": "2026-11-10T22:51:54.749310+00:00",
+    "silinme_izlenme": 2,
+    "silinme_yas_dk": 63.1,
+    "silinme_tarihi": "2026-11-10T23:55:17.541068+00:00"
   },
   {
     "dosya_adi": "20261110_0007_saglik_sorunu_arena",
@@ -174,5 +177,16 @@
     "senaryo_ozeti": "Ayın Çalışanı ödülünü bizim klavye robotu aldı. Tolga, bu şaka mı, ödülü bir cihaza mı verdik?",
     "hash": "",
     "tarih": "2026-11-10T23:54:21.629744+00:00"
+  },
+  {
+    "dosya_adi": "20261110_0011_yapay_zeka_arena",
+    "baslik": "Akıllı Asistan 500 Kilo Fıstık Siparişi Verdi 😱 #shorts",
+    "video_id": "-awXr0Embik",
+    "durum": "yayinda",
+    "kategori": "yapay_zeka",
+    "url": "https://www.youtube.com/shorts/-awXr0Embik",
+    "senaryo_ozeti": "Evimize beş yüz kilo fıstık geldi! Akıllı ev asistanına 'fırtına' komutu verdik.",
+    "hash": "",
+    "tarih": "2026-11-10T23:57:13.496690+00:00"
   }
 ]

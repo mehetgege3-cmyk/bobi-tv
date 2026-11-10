@@ -12,14 +12,18 @@
  *   3) Tekil Temiz Çerez Değeri:
  *      ARENA_AUTH_COOKIE="base64-..." node scripts/arena-ask.mjs "sorunuz"
  *
- *   Opsiyonel (Oturum Yenileme İçin):
- *      SAVE_UPDATED_COOKIES=/tmp/updated-cookies.json
- *      -> Sayfa açıldığında Supabase token yenilediyse yeni çerezleri buraya yazar;
- *         GitHub Actions sonunda `gh secret set ARENA_COOKIES_JSON < /tmp/updated-cookies.json` ile secret güncellenebilir.
+ *   ACCEPT_TOS=1 → Terms of Use onay butonuna otomatik basılır.
+ *   Verilmezse ToS duvarında net hata fırlatılır + ekran görüntüsü alınır
+ *   (Agree'ye asla kendiliğinden BASILMAZ).
  */
-
 import { chromium } from 'playwright';
 import fs from 'fs';
+import {
+  waitForEditor,
+  attemptSend,
+  detectConsent,
+  acceptConsent,
+} from './arena-dom.mjs';
 
 export function sanitizeCookieJsonText(rawText) {
   return rawText.replace(/\[([^\]]+)\]\(https?:\/\/[^)]+\)/g, '$1').trim();
@@ -30,14 +34,11 @@ export function buildCleanArenaCookie(cookiesArray) {
     .filter(c => c && typeof c.name === 'string' && c.name.startsWith('arena-auth-prod-v1'))
     .sort((a, b) => a.name.localeCompare(b.name))
     .map(c => c.value);
-
   if (chunks.length === 0) {
     throw new Error('Cookie listesinde "arena-auth-prod-v1.*" bulunamadı.');
   }
-
   const combinedRaw = chunks.join('').replace(/^base64-/, '');
   let minimalSession = null;
-
   try {
     const pad = combinedRaw + '='.repeat((4 - (combinedRaw.length % 4)) % 4);
     const sessionObj = JSON.parse(Buffer.from(pad, 'base64').toString('utf-8'));
@@ -59,7 +60,6 @@ export function buildCleanArenaCookie(cookiesArray) {
   } catch (_) {
     // Parça sınırında kesilme varsa ilk parçadan regex ile kurtar
   }
-
   if (!minimalSession) {
     let first = chunks[0].replace(/^base64-/, '');
     first = first.slice(0, first.length - (first.length % 4));
@@ -84,7 +84,6 @@ export function buildCleanArenaCookie(cookiesArray) {
       },
     };
   }
-
   return `base64-${Buffer.from(JSON.stringify(minimalSession)).toString('base64')}`;
 }
 
@@ -99,14 +98,11 @@ export function extractCleanAnswer(fullBody, promptText) {
     const endIdx = fullBody.lastIndexOf(lastLine);
     slice = endIdx !== -1 ? fullBody.slice(endIdx + lastLine.length).trim() : fullBody;
   }
-
   for (const marker of ['\nWas this task successful?', '\nWorkspace\n', '\nConnectors\n']) {
     const idx = slice.indexOf(marker);
     if (idx !== -1) slice = slice.slice(0, idx).trim();
   }
-
   slice = slice.replace(/\n\d+s\s*\|\s*just now[\s\S]*$/i, '').trim();
-
   // "Thought for X second(s)" başlığını temizle
   const lines = slice.split('\n');
   if (lines.length > 0 && /^Thought for \d+/i.test(lines[0].trim())) {
@@ -119,72 +115,110 @@ export function extractCleanAnswer(fullBody, promptText) {
   return lines.join('\n').trim();
 }
 
+const THINKING_PATTERNS = [/orchestrating/i, /thinking/i, /düşünüyor/i, /dusunuyor/i];
+function isModelBusy(bodyText) {
+  return THINKING_PATTERNS.some(re => re.test(bodyText));
+}
+
 export async function askArenaAgent({
   cleanAuthCookie,
   promptText,
   screenshotPath = 'arena-cevap.png',
-  saveUpdatedCookiesPath = process.env.SAVE_UPDATED_COOKIES,
+  acceptTos = process.env.ACCEPT_TOS === '1',
+  answerTimeoutMs = 120000,
 }) {
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 1366, height: 900 } });
-
   await context.addCookies([
     { name: 'arena-auth-prod-v1.0', value: cleanAuthCookie, domain: 'arena.ai', path: '/' },
     { name: 'arena_build_bucket', value: 'stable', domain: 'arena.ai', path: '/' },
     { name: 'user_country_code', value: 'TR', domain: 'arena.ai', path: '/' },
   ]);
-
   const page = await context.newPage();
   await page.goto('https://arena.ai/agent/', { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForTimeout(1500);
 
-  const editor = page.locator('div.tiptap[contenteditable="true"]');
-  await editor.waitFor({ state: 'visible', timeout: 15000 });
-  await editor.fill(promptText);
-  await page.waitForTimeout(300);
-
-  const sendBtn = page.locator('button[aria-label="Send message"]');
-  await sendBtn.click({ force: true });
-
-  for (let i = 0; i < 15; i++) {
-    await page.waitForTimeout(1000);
-    if (page.url() !== 'https://arena.ai/agent/') break;
+  // ToS / onay duvarı: HİÇBİR koşulda sessizce devam etme.
+  const consent = await detectConsent(page);
+  if (consent.present) {
+    if (!acceptTos) {
+      const tosShot = screenshotPath ? screenshotPath.replace(/\.png$/, '-tos.png') : 'arena-tos-duvari.png';
+      await page.screenshot({ path: tosShot, fullPage: true }).catch(() => {});
+      await browser.close();
+      throw new Error(
+        `Arena Terms of Use duvarı algılandı (buton: ${consent.label}). ` +
+        'ACCEPT_TOS=1 verilmeden Agree\'ye BASILMAZ. Lütfen ACCEPT_TOS=1 ile tekrar deneyin ' +
+        `veya çerezi elle güncelleyin. Ekran görüntüsü: ${tosShot}`
+      );
+    }
+    await acceptConsent(page);
+    await page.waitForTimeout(1500);
   }
 
-  let lastText = '';
-  let stableTicks = 0;
-  for (let i = 0; i < 45; i++) {
-    await page.waitForTimeout(2000);
-    const currentText = await page.locator('body').innerText().catch(() => '');
-    const isThinking = currentText.includes('orchestrating..');
+  // Editör: tiptap birincil, fallbackler sırayla; 45 sn (hydration yavaş).
+  const editor = await waitForEditor(page, 45000);
+  if (!editor) {
+    if (screenshotPath) await page.screenshot({ path: screenshotPath, fullPage: true }).catch(() => {});
+    await browser.close();
+    throw new Error('Arena editörü (tiptap/fallback) 45 sn içinde görünmedi — arayüz değişmiş olabilir.');
+  }
+  await editor.click();
+  await page.waitForTimeout(200);
+  await page.keyboard.insertText(promptText);
+  await page.waitForTimeout(400);
 
-    if (currentText.length !== lastText.length || isThinking) {
-      lastText = currentText;
+  // Gönderim DOĞRULANIR (Enter→Enter→butonlar; composer boşaldı VEYA URL değişti).
+  const sendResult = await attemptSend(page);
+  if (!sendResult.verified) {
+    if (screenshotPath) await page.screenshot({ path: screenshotPath, fullPage: true }).catch(() => {});
+    await browser.close();
+    throw new Error(
+      `Arena gönderimi doğrulanamadı (method=${sendResult.method}, clicked=${sendResult.clicked}, ` +
+      `composer hâlâ ${sendResult.remainingComposerText.length} karakter).`
+    );
+  }
+
+  // Cevap bekleme: sabit sleep yok; metin büyüdü + duruldu + model meşgul değil.
+  const baseline = (await page.locator('body').innerText().catch(() => '')).length;
+  let lastLen = baseline;
+  let stableTicks = 0;
+  let sawGrowth = false;
+  const deadline = Date.now() + answerTimeoutMs;
+  while (Date.now() < deadline) {
+    await page.waitForTimeout(1500);
+    const currentText = await page.locator('body').innerText().catch(() => '');
+    const busy = isModelBusy(currentText);
+    const bitti = currentText.includes('Was this task successful?');
+    if (currentText.length > lastLen) {
+      sawGrowth = true;
+      lastLen = currentText.length;
       stableTicks = 0;
+    } else if (!busy) {
+      stableTicks += 1;
     } else {
-      stableTicks++;
-      if (stableTicks >= 4 && currentText.length > promptText.length + 120) {
-        break;
-      }
+      stableTicks = 0;
     }
+    // sawGrowth ŞART: metin hiç büyümeden durduysa cevap sayılmaz.
+    if (sawGrowth && stableTicks >= 4 && currentText.length > promptText.length + 120) {
+      break;
+    }
+    if (bitti && currentText.length > promptText.length + 120) {
+      sawGrowth = true;
+      break;
+    }
+  }
+  if (!sawGrowth) {
+    if (screenshotPath) await page.screenshot({ path: screenshotPath, fullPage: true }).catch(() => {});
+    await browser.close();
+    throw new Error('Arena gönderildi ama cevap gövdesi büyümedi — oturum/arayüz durumunu kontrol edin.');
   }
 
   if (screenshotPath) {
-    await page.screenshot({ path: screenshotPath, fullPage: true });
+    await page.screenshot({ path: screenshotPath, fullPage: true }).catch(() => {});
   }
-
-  // Eğer Supabase oturumu yenilediyse güncel arena-auth çerezlerini kaydet
-  if (saveUpdatedCookiesPath) {
-    const latestCookies = await context.cookies('https://arena.ai');
-    const authOnly = latestCookies.filter(c => c.name.startsWith('arena-auth-prod-v1'));
-    if (authOnly.length > 0) {
-      fs.writeFileSync(saveUpdatedCookiesPath, JSON.stringify(authOnly, null, 2), { mode: 0o600 });
-    }
-  }
-
   const fullBody = await page.locator('body').innerText();
   const chatUrl = page.url();
   await browser.close();
-
   return {
     chatUrl,
     answer: extractCleanAnswer(fullBody, promptText),
@@ -195,7 +229,6 @@ export async function askArenaAgent({
 if (import.meta.url === `file://${process.argv[1]}`) {
   const promptText = process.argv[2] || 'merhaba kanka bana kendini tanıt.';
   let cleanAuthCookie = process.env.ARENA_AUTH_COOKIE;
-
   if (!cleanAuthCookie && process.env.ARENA_COOKIES_JSON) {
     const parsed = JSON.parse(sanitizeCookieJsonText(process.env.ARENA_COOKIES_JSON));
     cleanAuthCookie = buildCleanArenaCookie(parsed);
@@ -204,12 +237,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     const parsed = JSON.parse(sanitizeCookieJsonText(raw));
     cleanAuthCookie = buildCleanArenaCookie(parsed);
   }
-
   if (!cleanAuthCookie) {
     console.error('Hata: ARENA_COOKIES_JSON, COOKIES_FILE veya ARENA_AUTH_COOKIE ortam değişkeni gerekli.');
     process.exit(1);
   }
-
   const result = await askArenaAgent({ cleanAuthCookie, promptText });
   console.log('Chat URL:', result.chatUrl);
   console.log('\n--- CEVAP ---\n');

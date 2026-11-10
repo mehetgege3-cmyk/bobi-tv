@@ -1,8 +1,9 @@
-name: BOBİ TV Telegram Bot Poller
+name: BOBİ TV Telegram Bot Poller (güvenlik düzeltmeli)
 
 on:
   schedule:
     # Her 5 dakikada bir bot mesajlarını kontrol et
+    # (GitHub cron gerçekte daha seyrek çalışabilir; beklenti yönetimi)
     - cron: '*/5 * * * *'
   workflow_dispatch:
 
@@ -39,21 +40,21 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           python - << 'PYEOF'
-          import os
-          import json
-          import requests
+          import os, json, sys, requests
           from pathlib import Path
 
           BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
           CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 
+          # HATA DURUMLARINDA exit(1) — bot ölürse kırmızı tik, sessiz yeşil değil
           if not BOT_TOKEN:
-              print("❌ TELEGRAM_BOT_TOKEN yok")
-              exit(0)
+              print("::error::TELEGRAM_BOT_TOKEN secret tanımlı değil")
+              sys.exit(1)
+          if not CHAT_ID:
+              print("::error::TELEGRAM_CHAT_ID secret tanımlı değil")
+              sys.exit(1)
 
           BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
-
-          # Offset dosyası
           offset_file = Path("bobi_tv/state/telegram_offset.json")
           offset_file.parent.mkdir(parents=True, exist_ok=True)
 
@@ -64,58 +65,44 @@ jobs:
               except Exception:
                   pass
 
-          # Get updates
           try:
               resp = requests.post(
                   f"{BASE_URL}/getUpdates",
                   json={"timeout": 5, "offset": offset, "allowed_updates": ["message", "callback_query"]},
-                  timeout=15
+                  timeout=15,
               )
-
-              if resp.status_code != 200:
-                  print(f"❌ API hatası: {resp.status_code}")
-                  exit(0)
-
-              data = resp.json()
-              if not data.get("ok"):
-                  print("❌ API başarısız")
-                  exit(0)
-
-              updates = data.get("result", [])
-
-              if not updates:
-                  print("ℹ️ Yeni mesaj yok")
-                  exit(0)
-
-              # Her update'i işle
-              from modules.telegram_bot import handle_message, handle_callback
-
-              for update in updates:
-                  offset = update["update_id"] + 1
-
-                  # Callback query
-                  if "callback_query" in update:
-                      cq = update["callback_query"]
-                      callback_id = cq["id"]
-                      callback_data = cq.get("data", "")
-                      if callback_data:
-                          handle_callback(callback_data, callback_id)
-                          print(f"✅ Callback işlendi: {callback_data}")
-
-                  # Mesaj
-                  elif "message" in update:
-                      msg = update["message"]
-                      text = msg.get("text", "")
-                      if text:
-                          handle_message(text)
-                          print(f"✅ Mesaj işlendi: {text[:30]}")
-
-              # Offset kaydet
-              offset_file.write_text(json.dumps({"offset": offset}))
-              print(f"📝 Offset kaydedildi: {offset}")
-
           except Exception as e:
-              print(f"❌ Hata: {e}")
+              print(f"::error::Telegram API bağlantı hatası: {e}")
+              sys.exit(1)
+
+          if resp.status_code != 200:
+              print(f"::error::Telegram API HTTP hatası: {resp.status_code}")
+              sys.exit(1)
+
+          data = resp.json()
+          if not data.get("ok"):
+              print(f"::error::Telegram API başarısız: {data}")
+              sys.exit(1)
+
+          updates = data.get("result", [])
+          if not updates:
+              print("ℹ️ Yeni mesaj yok")
+              sys.exit(0)  # mesaj yok = başarı
+
+          from modules.telegram_bot import process_update
+
+          reddedildi = 0
+          for update in updates:
+              offset = update["update_id"] + 1
+              # process_update içinde CHAT_ID doğrulaması var; yetkisiz reddedilir
+              if not process_update(update):
+                  reddedildi += 1
+
+          offset_file.write_text(json.dumps({"offset": offset}))
+          print(f"📝 Offset kaydedildi: {offset} (reddedilen yetkisiz mesaj: {reddedildi})")
+
+          if reddedildi > 0:
+              print(f"::warning:: {reddedildi} yetkisiz mesaj reddedildi — bot kullanıcı adı sızdırmış olabilir")
           PYEOF
 
       - name: State dosyasını commit et
@@ -128,4 +115,3 @@ jobs:
             git commit -m "🤖 Telegram bot offset [skip ci]" || true
             git push origin main || echo "Push atlandı"
           fi
-

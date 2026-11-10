@@ -205,7 +205,7 @@ def get_help_text() -> str:
         "📈 <b>İstatistik</b> - Günlük istatistikler\n🎯 <b>Kalite</b> - Kalite raporu\n"
         "🚫 <b>Kota</b> - YouTube kota durumu\n\n<b>Otomatik Üretim:</b>\n"
         "• Her saat başı (cron: 0 * * * *)\n• Günlük hedef: 24 video\n"
-        "• Kalite eşiği: 70/100\n\n<b>Not:</b> Kota doluyken üretim duraklar."
+        "• Kalite eşiği: 70/100\n\n<b>Not:</b> Kota doluyken üretim duraklar.\n⏰ <b>Not:</b> Komutlar her 5 dakikada bir kontrol edilir; GitHub cron gecikmesiyle cevap genellikle 15-60 dakika icinde gelir."
     )
 
 

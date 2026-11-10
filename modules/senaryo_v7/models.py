@@ -92,7 +92,7 @@ def duyguyu_normalize_et(raw: object) -> Duygu:
         match = get_close_matches(canonical, [item.value for item in Duygu], n=1, cutoff=0.6)
         if match:
             nearest = Duygu(match[0])
-            _LOG.warning("Bilinmeyen duygu etiketi %r; %r seçildi.", raw, nearest.value)
+            _LOG.warning("Bilinmeyen duygu etiketi %r; en yakın değer %r seçildi.", raw, nearest.value)
             return nearest
         else:
             _LOG.warning("Bilinmeyen duygu etiketi %r; NORMAL fallback'i kullanıldı.", raw)
@@ -721,3 +721,14 @@ __all__ = [
     "loop_icin_yedek_sablon",
     "LoopDogrulamaSonuc",
 ]
+
+
+@dataclass
+class Sahne:
+    """Geriye donuk uyumluluk icin v6 sahne temsilcisi (v7'de Senaryo/Diyalog kullanilir)."""
+    konu: str = ""
+    baslik: str = ""
+    replik: str = ""
+    duygu_etiketi: str = "normal"
+    ses_turu: str = "erkek"
+    tts_url: str = ""

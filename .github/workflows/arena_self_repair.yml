@@ -5,9 +5,12 @@ on:
     workflows:
       - "Arena AI Playwright Agent"
       - "BOBİ TV — Arena AI Senaryo Üretimi"
+      - "🧹 BOBİ TV Otomatik Temizleme — <100 İzlenme Videoları Sil"
       - "BOBİ TV — Toplu Manuel Üretim Pipeline"
-      - "BOBİ TV v6.3 PRO — Dönen Konular, 15sn+ ve Her 15 Dakikada Üretim"
+      - "BOBİ TV v6.4 PRO — Saatlik Üretim + Kota Takibi"
       - "BOBİ TV — Kanal Temizle"
+      - "BOBİ TV Telegram Bot Poller (güvenlik düzeltmeli)"
+      - "🤖 Arena AI Test — Saat Sorgusu (v2, Oturum Canlı Tutma)"
       - "BOBİ TV v6.0 — Uçtan Uca Kalite Testi"
       - "BOBİ TV — Haftalık Performans Raporu"
     types: [completed]

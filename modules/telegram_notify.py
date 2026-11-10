@@ -3,6 +3,7 @@ BOBİ TV — Telegram Bildirim Modülü
 Tüm bildirimler, raporlar ve hatalar bu modül üzerinden iletilir.
 """
 import os
+import html
 import requests
 import json
 from datetime import datetime
@@ -47,7 +48,7 @@ def notify_start(gun: str = None):
 def notify_video_ready(baslik: str, video_no: int, toplam: int):
     send_message(
         f"✅ <b>Video Hazır #{video_no}/{toplam}</b>\n"
-        f"🎬 {baslik}\n"
+        f"🎬 {html.escape(baslik)}\n"
         f"📤 YouTube'a yükleniyor..."
     )
 
@@ -55,7 +56,7 @@ def notify_video_ready(baslik: str, video_no: int, toplam: int):
 def notify_video_published(baslik: str, video_id: str, video_no: int, toplam: int):
     send_message(
         f"🚀 <b>Video Yayınlandı #{video_no}/{toplam}</b>\n"
-        f"🎬 {baslik}\n"
+        f"🎬 {html.escape(baslik)}\n"
         f"🔗 https://www.youtube.com/shorts/{video_id}"
     )
 

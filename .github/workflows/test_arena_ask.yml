@@ -1,6 +1,8 @@
 name: "🤖 Arena AI Test — Saat Sorgusu (v2, Oturum Canlı Tutma)"
 
-# Her 6 saatte bir çalıştırarak Arena oturumunu canlı tutar (çerez yenilenir ve secret'a geri yazılır).
+# Her 6 saatte bir çalıştırarak Arena oturumunun canlı olduğunu doğrular.
+# (Otomatik çerez yenileme KALDIRILDI — Bölüm 3-A: zincir bozuktu, secret'ı bozardı.
+#  Çerez düşünce smoke test exit 2 verir; kullanıcı elle yeniler.)
 # Manuel tetikleme de mümkündür.
 on:
   schedule:
@@ -53,24 +55,10 @@ jobs:
         continue-on-error: true
         env:
           ARENA_COOKIES_JSON: ${{ secrets.ARENA_COOKIES_JSON }}
-          SAVE_UPDATED_COOKIES: /tmp/updated-cookies.json
         run: |
           PROMPT="${{ inputs.prompt || 'Şu an saat kaç? Lütfen sadece SS:DD formatında cevap ver.' }}"
           node skills/arena-playwright-agent/scripts/arena-ask.mjs "$PROMPT" | tee yanit.txt
           echo "exit_kodu=$?" >> "$GITHUB_OUTPUT"
-
-      - name: Yenilenen çerezleri secret'a geri kaydet (oturum canlı tutma)
-        if: always()
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
-        run: |
-          if [ -n "$GH_TOKEN" ] && [ -s /tmp/updated-cookies.json ]; then
-            gh secret set ARENA_COOKIES_JSON --repo "${{ github.repository }}" < /tmp/updated-cookies.json || true
-            shred -u /tmp/updated-cookies.json || rm -f /tmp/updated-cookies.json
-            echo "✅ ARENA_COOKIES_JSON secret güncellendi (oturum yenilendi)."
-          else
-            echo "ℹ️  Yenilenen çerez bulunamadı veya GH_PAT yok — oturum yenilenmedi."
-          fi
 
       - name: Cevap doğrulama (assertion)
         run: |

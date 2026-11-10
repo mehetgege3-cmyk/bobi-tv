@@ -33,23 +33,11 @@ jobs:
       - name: Arena Agent'a soruyu gönder ve cevabı al
         env:
           ARENA_COOKIES_JSON: ${{ secrets.ARENA_COOKIES_JSON }}
-          SAVE_UPDATED_COOKIES: /tmp/updated-cookies.json
         run: |
           node skills/arena-playwright-agent/scripts/arena-ask.mjs "${{ inputs.prompt || 'merhaba kanka bana kendini tanıt.' }}" | tee yanit.txt
 
-      # OPSİYONEL AMA ÖNERİLİR: Supabase refresh_token yenilendiğinde yeni çerezi Secret'a geri yazar.
-      # Bunun çalışması için repo secret'larına Actions/Secrets yazma izinli bir `GH_PAT` (Personal Access Token) eklemen yeterli.
-      - name: Yenilenen oturum çerezini GitHub Secret'a geri kaydet
-        if: always()
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
-        run: |
-          if [ -n "$GH_TOKEN" ] && [ -s /tmp/updated-cookies.json ]; then
-            gh secret set ARENA_COOKIES_JSON --repo "${{ github.repository }}" < /tmp/updated-cookies.json || true
-            shred -u /tmp/updated-cookies.json || rm -f /tmp/updated-cookies.json
-            echo "ARENA_COOKIES_JSON secret başarıyla güncellendi."
-          fi
-
+      # Otomatik çerez yenileme KALDIRILDI (Bölüm 3-A): zincir bozuktu, secret'ı bozardı.
+      # Çerez düşünce smoke test exit 2 verir; kullanıcı elle yeniler.
       - name: Ekran görüntüsü ve yanıtı Artifact olarak yükle
         uses: actions/upload-artifact@v4
         with:

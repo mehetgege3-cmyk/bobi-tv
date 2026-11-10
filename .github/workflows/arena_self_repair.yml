@@ -103,29 +103,9 @@ jobs:
         env:
           ARENA_COOKIES_JSON: ${{ secrets.ARENA_COOKIES_JSON }}
           ARENA_PROMPT_FILE: ${{ runner.temp }}/arena-repair-prompt.txt
-          SAVE_UPDATED_COOKIES: ${{ runner.temp }}/updated_arena_cookies.json
         run: |
           node arena-self-repair.mjs > "$RUNNER_TEMP/arena-answer.txt"
           test -s "$RUNNER_TEMP/arena-answer.txt"
-
-      - name: Refresh the Arena session secret when Playwright rotates it
-        if: always()
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
-          COOKIE_FILE: ${{ runner.temp }}/updated_arena_cookies.json
-          GITHUB_REPOSITORY: ${{ github.repository }}
-        run: |
-          set -euo pipefail
-          if [ -s "$COOKIE_FILE" ] && [ -n "$GH_TOKEN" ]; then
-            if gh secret set ARENA_COOKIES_JSON --repo "$GITHUB_REPOSITORY" < "$COOKIE_FILE"; then
-              echo "Arena session secret refreshed."
-            else
-              echo "Warning: Arena cookie rotation could not update the secret."
-            fi
-          else
-            echo "No refreshed cookie or GH_PAT secret-update permission; continuing without secret rotation."
-          fi
-          rm -f "$COOKIE_FILE"
 
       - name: Extract and apply Arena patch
         env:

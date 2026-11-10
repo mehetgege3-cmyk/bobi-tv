@@ -234,7 +234,6 @@ async def arena_canli_senaryo_iste(video_no: int) -> dict | None:
 
         print(f"[Arena] Video #{video_no} ({kategori}) için Master Loop senaryosu isteniyor...")
         cevap = await _arena_sorgusu_yap(page, prompt, min_cevap_uzunlugu=120, timeout=130)
-        await _guncel_cerezleri_kaydet(context)
         await browser.close()
 
     if not cevap:
@@ -331,20 +330,6 @@ async def arena_video_uret(video_no: int, output_dir: str = "bobi_tv/output") ->
 
     return paket
 
-
-async def _guncel_cerezleri_kaydet(context):
-    save_path = os.environ.get("SAVE_UPDATED_COOKIES", "").strip()
-    if not save_path:
-        return
-    try:
-        latest = await context.cookies("https://arena.ai")
-        auth_cookies = [c for c in latest if str(c.get("name", "")).startswith("arena-auth-prod-v1")]
-        if auth_cookies:
-            p = Path(save_path)
-            p.write_text(json.dumps(auth_cookies, indent=2), encoding="utf-8")
-            p.chmod(0o600)
-    except Exception as e:
-        print(f"[Arena] Güncel çerez kaydetme uyarısı: {e}")
 
 
 async def _arena_sorgusu_yap(page, prompt: str, min_cevap_uzunlugu: int = 100, timeout: int = 130) -> str | None:

@@ -28,7 +28,6 @@ try {
     cleanAuthCookie: buildCleanArenaCookie(cookies),
     promptText: fs.readFileSync(promptPath, 'utf8'),
     screenshotPath: '',
-    saveUpdatedCookiesPath: undefined,
   });
   if (!answer.trim()) {
     throw new Error('Arena returned an empty answer.');

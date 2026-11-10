@@ -139,7 +139,6 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           ARENA_COOKIES_JSON: ${{ secrets.ARENA_COOKIES_JSON }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
-          SAVE_UPDATED_COOKIES: /tmp/updated_arena_cookies.json
           GUNLUK_HEDEF: '1'
           GUNLUK_MAKS: '24'
           MOD: 'isindirma_saatlik'
@@ -160,17 +159,6 @@ jobs:
             bobi_tv/output/*.mp4
             bobi_tv/output/*_thumb.jpg
             bobi_tv/logs/quality/*.jsonl
-
-      - name: Yenilenen Arena çerezini GitHub Secret'a geri kaydet
-        if: always()
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
-        run: |
-          if [ -n "$GH_TOKEN" ] && [ -s /tmp/updated_arena_cookies.json ]; then
-            gh secret set ARENA_COOKIES_JSON --repo "${{ github.repository }}" < /tmp/updated_arena_cookies.json || true
-            shred -u /tmp/updated_arena_cookies.json || rm -f /tmp/updated_arena_cookies.json
-            echo "ARENA_COOKIES_JSON güncellendi."
-          fi
 
       - name: Günlük kalite istatistiklerini göster
         if: always()

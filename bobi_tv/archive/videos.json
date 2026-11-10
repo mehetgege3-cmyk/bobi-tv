@@ -16,7 +16,7 @@
     "senaryo_ozeti": "",
     "hash": "",
     "tarih": "2026-11-09T07:52:39.166251",
-    "durum": "silindi_dusuk_izlenme",
+    "durum": "kaldirildi",
     "silinme_izlenme": 41,
     "silinme_yas_dk": 642.8,
     "silinme_tarihi": "2026-11-09T18:35:41.011795+00:00"
@@ -29,7 +29,7 @@
     "senaryo_ozeti": "İşte tam bu yüzden şirketin yeni müdürü tost makinesi. En azından toplantılarda herkese sıcak davranıyor.",
     "hash": "",
     "tarih": "2026-11-09T17:21:23.699402",
-    "durum": "silindi_dusuk_izlenme",
+    "durum": "kaldirildi",
     "silinme_izlenme": 0,
     "silinme_yas_dk": 74.0,
     "silinme_tarihi": "2026-11-09T18:35:39.246891+00:00"
@@ -38,10 +38,22 @@
     "dosya_adi": "20261109_0004_mesai_sonu_arena",
     "baslik": "Mesai Bitti Derken Asansörde Kilitli Kaldık 😱 #shorts",
     "video_id": "9gARtoGd4io",
-    "durum": "yayinda",
+    "durum": "kaldirildi",
     "url": "https://www.youtube.com/shorts/9gARtoGd4io",
     "senaryo_ozeti": "İşte tam bu yüzden asansörde on kişi mahsur kaldık, müdür dahil. Ama benim beş dakika sonra düğünüm var, çıkarın beni!",
     "hash": "",
     "tarih": "2026-11-09T18:37:00.188877+00:00"
+  },
+  {
+    "video_id": "Q9JPOPtLsc8",
+    "durum": "yayinda",
+    "url": "https://www.youtube.com/shorts/Q9JPOPtLsc8",
+    "tarih": ""
+  },
+  {
+    "video_id": "uJfHjbpQOOE",
+    "durum": "yayinda",
+    "url": "https://www.youtube.com/shorts/uJfHjbpQOOE",
+    "tarih": ""
   }
 ]

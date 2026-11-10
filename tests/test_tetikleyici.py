@@ -4,6 +4,7 @@ Kapsam: hourly_production.yml iki dış tetikleyici tanımalı, cron saatliğe
 dönmeli, "son koşu süresi" adımı mevcut olmalı ve tetikleyici dokümanı token
 değeri İÇERMEMELİ.
 """
+
 from __future__ import annotations
 
 import re

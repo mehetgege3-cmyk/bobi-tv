@@ -5,6 +5,7 @@ doğru komutu kullandığı ve zaten yayınlanmış kuyruk paketinin render edil
 tüketildiği. main_pipeline dinamik olarak import edilir (mypy build'ine ek hata
 sürüklememek için statik import kullanılmaz).
 """
+
 from __future__ import annotations
 
 import importlib
@@ -21,9 +22,7 @@ WORKFLOW = REPO_KOK / ".github" / "workflows" / "hourly_production.yml"
 
 
 def _git(args: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        ["git", *args], cwd=cwd, capture_output=True, text=True, check=False
-    )
+    return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, check=False)
 
 
 def _gecici_git_repo(tmp_path: Path) -> tuple[Path, Path]:
@@ -91,11 +90,7 @@ def test_workflow_kuyruk_commit_dizin_pathspec_kullanir() -> None:
     veri: object = yaml.load(WORKFLOW.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
     assert isinstance(veri, dict)
     adimlar: Any = veri["jobs"]["uret-ve-yayinla"]["steps"]
-    commit_adim = next(
-        adim
-        for adim in adimlar
-        if "kuyruk durumunu commit et" in str(adim.get("name", ""))
-    )
+    commit_adim = next(adim for adim in adimlar if "kuyruk durumunu commit et" in str(adim.get("name", "")))
     yazi = str(commit_adim.get("run", ""))
     assert "git add -f bobi_tv/queue/" in yazi, "Dizin pathspec'i kullanılmalı"
     assert "queue/*.json" not in yazi, "Kabuk glob'u silmeleri stage etmez — kaldırılmalı"
@@ -108,9 +103,7 @@ def _yasak_fonksiyon(ad: str) -> Any:
     return cagirilmamali
 
 
-def test_yuklenmis_paket_render_edilmeden_tuketilir(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_yuklenmis_paket_render_edilmeden_tuketilir(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """TODO 4b: published kaydı dolu kuyruk paketi → render YOK, kayıt tüketilir."""
     mp: Any = importlib.import_module("main_pipeline")
     kuyruk = tmp_path / "queue"
@@ -130,9 +123,7 @@ def test_yuklenmis_paket_render_edilmeden_tuketilir(
     assert not hedef.exists(), "Bayat kuyruk kaydı tüketilmeli (silinmeli)"
 
 
-def test_yuklenmemis_paket_render_yolu_korunur(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_yuklenmemis_paket_render_yolu_korunur(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """published kaydı yoksa mevcut davranış korunur: kota kuyruğu render edilip
     döner ve kayıt silinmez (silme yükleme başarısından sonradır)."""
     mp: Any = importlib.import_module("main_pipeline")

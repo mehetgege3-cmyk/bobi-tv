@@ -11,7 +11,7 @@ import json
 import requests
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
@@ -75,7 +75,7 @@ def process_update(update: dict) -> bool:
     return True
 
 
-def updates_isle(updates: list[dict], offset: int) -> tuple[int, int, int, bool]:
+def updates_isle(updates: list[dict[str, Any]], offset: int) -> tuple[int, int, int, bool]:
     """Güncelleme yığınını sırayla işler (TODO 3 — offset kaybı koruması).
 
     Offset YALNIZCA update başarılı şekilde ele alındığında ilerler:

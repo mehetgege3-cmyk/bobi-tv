@@ -3,6 +3,7 @@
 Kapsam: updates_isle offset semantiği (istisnada ilerletmeme, sıralı yeniden
 deneme), red kararının tüketim sayılması ve boşluk uyarısı gövdesi.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -29,7 +30,8 @@ def test_basariyla_islenen_update_offset_ilertir(monkeypatch: pytest.MonkeyPatch
 
 def test_istisna_offset_ilertmez_ve_dongu_durar(monkeypatch: pytest.MonkeyPatch) -> None:
     """process_update çökerse offset o update'ten ÖNCE kalır — mesaj kaybolmaz."""
-    def patlayan(update: dict) -> bool:
+
+    def patlayan(update: dict[str, Any]) -> bool:
         raise RuntimeError("handler patladı")
 
     monkeypatch.setattr(tb, "process_update", patlayan)
@@ -45,16 +47,14 @@ def test_karisik_yigin_kesintide_guvenli_kalir(monkeypatch: pytest.MonkeyPatch) 
     üçüncü update DENENMEZ (sıra korunur, bir sonraki koşuda tekrar gelir)."""
     cagrilar: list[int] = []
 
-    def sahte(update: dict) -> bool:
+    def sahte(update: dict[str, Any]) -> bool:
         cagrilar.append(update["update_id"])
         if update["update_id"] == 101:
             raise RuntimeError("pat")
         return True
 
     monkeypatch.setattr(tb, "process_update", sahte)
-    yeni, islenen, reddedilen, kesinti = tb.updates_isle(
-        [_mesaj(100), _mesaj(101), _mesaj(102)], 100
-    )
+    yeni, islenen, reddedilen, kesinti = tb.updates_isle([_mesaj(100), _mesaj(101), _mesaj(102)], 100)
     assert yeni == 101
     assert islenen == 1
     assert reddedilen == 0

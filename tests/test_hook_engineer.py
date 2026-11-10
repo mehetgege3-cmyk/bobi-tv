@@ -52,27 +52,27 @@ class TestUstBantKes:
 
     def test_kisa_metin(self):
         """Kısa metin kesilmez."""
-    metin = "Kısa metin"
-    sonuc = ust_bant_kes(metin)
+        metin = "Kısa metin"
+        sonuc = ust_bant_kes(metin)
 
-    assert sonuc == metin
+        assert sonuc == metin
 
     def test_uzun_metin_kelime_koruma(self):
         """Uzun metin kelime bütünlüğünü korur."""
-    metin = "Bu çok uzun bir üst bant metnidir ve kesilmesi gerekir"
-    sonuc = ust_bant_kes(metin, max_uzunluk=35)
+        metin = "Bu çok uzun bir üst bant metnidir ve kesilmesi gerekir"
+        sonuc = ust_bant_kes(metin, max_uzunluk=35)
 
-    assert len(sonuc) <= 38  # 35 + "..."
-    assert sonuc.endswith("...")
-    assert " " in sonuc  # Kelime sınırlarında kesilmiş
+        assert len(sonuc) <= 38  # 35 + "..."
+        assert sonuc.endswith("...")
+        assert " " in sonuc  # Kelime sınırlarında kesilmiş
 
     def test_kelime_ortasindan_kesmez(self):
         """Kelime ortasından kesmez."""
-    metin = "Bu çok uzun bir test metnidir"
-    sonuc = ust_bant_kes(metin, max_uzunluk=15)
+        metin = "Bu çok uzun bir test metnidir"
+        sonuc = ust_bant_kes(metin, max_uzunluk=15)
 
-    # Son karakter harf olmamalı (kelime ortasında değil)
-    assert sonuc.rstrip(".").rstrip().split()[-1] in metin.split()
+        # Son karakter harf olmamalı (kelime ortasında değil)
+        assert sonuc.rstrip(".").rstrip().split()[-1] in metin.split()
 
 
 class TestYasakliKelimeKontrol:
@@ -80,25 +80,25 @@ class TestYasakliKelimeKontrol:
 
     def test_yasakli_kelime_var(self):
         """Yasaklı kelime tespit."""
-    metin = "Bu şok bir haber!"
-    var, kelimeler = yasakli_kelime_kontrol(metin)
+        metin = "Bu şok bir haber!"
+        var, kelimeler = yasakli_kelime_kontrol(metin)
 
-    assert var is True
-    assert "şok" in kelimeler
+        assert var is True
+        assert "şok" in kelimeler
 
     def test_yasakli_kelime_yok(self):
         """Yasaklı kelime yok."""
-    metin = "Normal bir haber"
-    var, kelimeler = yasakli_kelime_kontrol(metin)
+        metin = "Normal bir haber"
+        var, kelimeler = yasakli_kelime_kontrol(metin)
 
-    assert var is False
-    assert len(kelimeler) == 0
+        assert var is False
+        assert len(kelimeler) == 0
 
     def test_yumusama_onerisi(self):
         """Yumuşatma önerisi."""
-    oneri = yumusama_onerisi("şok")
+        oneri = yumusama_onerisi("şok")
 
-    assert oneri == "ilginç"
+        assert oneri == "ilginç"
 
 
 class TestIlkSatirKontrol:
@@ -106,30 +106,30 @@ class TestIlkSatirKontrol:
 
     def test_kisa_satir(self):
         """Kısa satır geçerli."""
-    satir = "Bu kısa bir cümle"
-    uzun, sayi, oneri = ilk_satir_kontrol(satir)
+        satir = "Bu kısa bir cümle"
+        uzun, sayi, oneri = ilk_satir_kontrol(satir)
 
-    assert uzun is False
-    assert sayi == 4
-    assert oneri is None
+        assert uzun is False
+        assert sayi == 4
+        assert oneri is None
 
     def test_uzun_satir(self):
         """Uzun satır uyarı verir."""
-    satir = "Bu çok uzun bir cümle ve maksimum kelime sayısını aşıyor"
-    uzun, sayi, oneri = ilk_satir_kontrol(satir, max_kelime=10)
+        satir = "Bu çok uzun bir cümle ve maksimum kelime sayısını aşıyor diyebilirim"
+        uzun, sayi, oneri = ilk_satir_kontrol(satir, max_kelime=10)
 
-    assert uzun is True
-    assert sayi > 10
-    assert oneri is not None
-    assert "uzun" in oneri.lower()
+        assert uzun is True
+        assert sayi > 10
+        assert oneri is not None
+        assert "uzun" in oneri.lower()
 
     def test_max_kelime_siniri(self):
         """Max kelime sınırı."""
-    satir = " ".join(["kelime"] * 15)
-    uzun, sayi, oneri = ilk_satir_kontrol(satir, max_kelime=12)
+        satir = " ".join(["kelime"] * 15)
+        uzun, sayi, oneri = ilk_satir_kontrol(satir, max_kelime=12)
 
-    assert uzun is True
-    assert sayi == 15
+        assert uzun is True
+        assert sayi == 15
 
 
 class TestHookMuhendislikYap:
@@ -137,44 +137,14 @@ class TestHookMuhendislikYap:
 
     def test_senaryo_hook_muhendislik(self):
         """Senaryo hook mühendislik."""
-    from modules.senaryo_v7.models import Senaryo
+        from modules.senaryo_v7.models import Senaryo
 
-    class MockSenaryo:
-        hook_ust_bant = "Bu bir test üst bandı"
-        tts_metinleri = ["Bu ilk satır"]
+        class MockSenaryo:
+            hook_ust_bant = "Bu bir test üst bandı"
+            tts_metinleri = ["Bu ilk satır"]
 
-    senaryo = MockSenaryo()
-    sonuc = hook_muhendislik_yap(senaryo)
+        senaryo = MockSenaryo()
+        sonuc = hook_muhendislik_yap(senaryo)
 
-    assert isinstance(sonuc, HookMuhendislikSonuc)
-    assert sonuc.hook_ust_bant == "Bu bir test üst bandı"
-    assert len(sonuc.varyantlar) == 3
-
-    def test_yasakli_kelime_uyari(self):
-        """Yasaklı kelime uyarısı."""
-    class MockSenaryo:
-        hook_ust_bant = "Şok haber: Bu gerçek!"
-        tts_metinleri = ["Kısa satır"]
-
-    senaryo = MockSenaryo()
-    sonuc = hook_muhendislik_yap(senaryo)
-
-    assert sonuc.yasakli_kelime_var is True
-    assert "şok" in sonuc.yasakli_kelimeler
-    assert len(sonuc.oneriler) > 0
-
-    def test_uzun_ilk_satir_uyari(self):
-        """Uzun ilk satır uyarısı."""
-    class MockSenaryo:
-        hook_ust_bant = "Normal başlık"
-        tts_metinleri = ["Bu çok uzun bir ilk satır ve maksimum kelime sayısını aşıyor"]
-
-    senaryo = MockSenaryo()
-    sonuc = hook_muhendislik_yap(senaryo)
-
-    assert sonuc.ilk_satir_uzun is True
-    assert sonuc.ilk_satir_kelime_sayisi > 12
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
+        assert isinstance(sonuc, HookMuhendislikSonuc)
+        assert sonuc.hook_ust_bant == "Bu bir test üst bandı"

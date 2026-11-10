@@ -40,6 +40,9 @@ class HookMuhendislikSonuc:
     ilk_satir_uzun: bool = False
     ilk_satir_kelime_sayisi: int = 0
     oneriler: list[str] = field(default_factory=list)
+    puan: int = 100  # 0-100
+    gecerli: bool = True  # 70+ ise True
+    onerilen_varyant: str | None = None
 
 
 # Yasaklı/clickbait kelime listesi
@@ -340,6 +343,30 @@ def hook_muhendislik_yap(senaryo: Senaryo) -> HookMuhendislikSonuc:
     if len(hook_ust_bant) > 35:
         oneriler.append(f"⚠️  Üst bant {len(hook_ust_bant)} karakter (max 35 olmalı)")
 
+    # 6. Puan hesapla
+    puan = 100
+
+    if yasakli_var:
+        puan -= len(yasakli_kelimeler) * 15
+
+    if ilk_satir_uzun:
+        puan -= 20
+
+    if len(hook_ust_bant) > 35:
+        puan -= 10
+
+    if not hook_ust_bant:
+        puan -= 30
+
+    puan = max(0, min(100, puan))
+
+    # 7. Önerilen varyant
+    onerilen_varyant = None
+    if varyantlar:
+        # İlk onaylanmış varyantı seç, yoksa ilkini seç
+        onayli = [v for v in varyantlar if v.onaylandi]
+        onerilen_varyant = onayli[0].metin if onayli else varyantlar[0].metin
+
     return HookMuhendislikSonuc(
         hook_ust_bant=hook_ust_bant,
         varyantlar=varyantlar,
@@ -348,4 +375,7 @@ def hook_muhendislik_yap(senaryo: Senaryo) -> HookMuhendislikSonuc:
         ilk_satir_uzun=ilk_satir_uzun,
         ilk_satir_kelime_sayisi=ilk_satir_kelime_sayisi,
         oneriler=oneriler,
+        puan=puan,
+        gecerli=puan >= 70,
+        onerilen_varyant=onerilen_varyant,
     )

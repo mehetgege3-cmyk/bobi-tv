@@ -45,19 +45,19 @@ def loop_dogrula(senaryo: Senaryo) -> LoopDogrulamaSonuc:
     Returns:
         LoopDogrulamaSonuc: Doğrulama sonucu
     """
-    replikler = senaryo.replikler
-    if not replikler or len(replikler) < 2:
+    diyaloglar = senaryo.diyaloglar
+    if not diyaloglar or len(diyaloglar) < 2:
         return LoopDogrulamaSonuc(
             puan=0,
             gecerli=False,
             uc_nokta_var=False,
             baglanc_ile_basliyor=False,
             gecis_akici=False,
-            aciklama="Yetersiz replik sayısı (min 2 gerekli)",
+            aciklama="Yetersiz diyalog sayısı (min 2 gerekli)",
         )
 
-    son_cumle = replikler[-1].metin.strip()
-    ilk_cumle = replikler[0].metin.strip()
+    son_cumle = diyaloglar[-1].metin.strip()
+    ilk_cumle = diyaloglar[0].metin.strip()
 
     # 1. Son cümlenin üç nokta ile bitişi
     uc_nokta_var = son_cumle.rstrip().endswith("...")

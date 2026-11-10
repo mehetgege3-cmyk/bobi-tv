@@ -43,6 +43,10 @@ class ZamanlamaSonuc:
     twist_ani_sn: float | None = None
     duzeltme_gerekli: bool = False
     duzeltme_onerileri: list[str] = field(default_factory=list)
+    puan: int = 100  # 0-100
+    gecerli: bool = True  # 70+ ise True
+    onerilen_hiz: float | None = None
+    aciklama: str = ""
 
 
 # Duygu bazlı hız çarpanları
@@ -233,6 +237,35 @@ def satir_zamanlama_hesapla(
             f"⚠️  Satır sayısı fazla ({satir_sayisi}). Hedef: {HEDEF_SATIR_SAYISI[0]}-{HEDEF_SATIR_SAYISI[1]}"
         )
 
+    # Puan hesapla
+    puan = 100
+    onerilen_hiz = None
+    aciklama = ""
+
+    if not tatli_noktada:
+        if toplam_sure < MIN_SURE_SN:
+            # Çok kısa - ciddi ceza
+            fark = MIN_SURE_SN - toplam_sure
+            puan -= min(50, fark * 10)
+            aciklama = f"Video çok kısa: {toplam_sure:.1f} sn (min {MIN_SURE_SN} sn)"
+        elif toplam_sure > MAX_SURE_SN:
+            # Çok uzun - orta ceza
+            fark = toplam_sure - MAX_SURE_SN
+            puan -= min(30, fark * 5)
+            aciklama = f"Video çok uzun: {toplam_sure:.1f} sn (max {MAX_SURE_SN} sn)"
+            # Hız önerisi
+            onerilen_hiz = round(toplam_sure / MAX_SURE_SN, 2)
+    else:
+        aciklama = f"Süre tatlı noktada: {toplam_sure:.1f} sn"
+
+    # Satır sayısı cezası
+    if satir_sayisi < HEDEF_SATIR_SAYISI[0]:
+        puan -= 10
+    elif satir_sayisi > HEDEF_SATIR_SAYISI[1]:
+        puan -= 5
+
+    puan = max(0, min(100, puan))
+
     return ZamanlamaSonuc(
         toplam_sure_sn=toplam_sure,
         satirlar=zamanlama_listesi,
@@ -241,6 +274,10 @@ def satir_zamanlama_hesapla(
         twist_ani_sn=twist_ani,
         duzeltme_gerekli=duzeltme_gerekli,
         duzeltme_onerileri=duzeltme_onerileri,
+        puan=puan,
+        gecerli=puan >= 70,
+        onerilen_hiz=onerilen_hiz,
+        aciklama=aciklama,
     )
 
 

@@ -3,7 +3,7 @@ name: BOBİ TV v6.4 PRO — Saatlik Üretim + Kota Takibi
 on:
   schedule:
     # Gerçekçi saatlik üretim (GitHub'da 15 dk garanti edilemez)
-    - cron: '0 * * * *'  # Her saat başı
+    - cron: '*/10 * * * *'  # Her 10 dakika (GitHub cron güvenilir DEĞİLDİR; günlük kota kapısı sınırı korur)
   workflow_dispatch:
     inputs:
       force:

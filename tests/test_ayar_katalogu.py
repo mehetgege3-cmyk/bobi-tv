@@ -211,7 +211,8 @@ def test_etkin_gunluk_maks_tavani_dayatir_ve_uyarir(capsys: pytest.CaptureFixtur
 
 def test_temizlik_uyari_metni_durstur_ve_h1_referansli() -> None:
     """Zorunlu açıklama metni: etkisizliği AÇIKÇA söyler ve H1'e atıf yapar."""
-    assert "ETKİLEMEZ" in TEMIZLIK_UYARI
+    assert "SİLER" in TEMIZLIK_UYARI
+    assert "ETKİLEMEZ" not in TEMIZLIK_UYARI
     assert "H1" in TEMIZLIK_UYARI
     assert "cleanup_low_views.yml" in TEMIZLIK_UYARI
 

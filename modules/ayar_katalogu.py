@@ -49,12 +49,17 @@ from modules.kadans import (  # noqa: E402  (tek doğruluk kaynağı — modules
 #: Kota tavanı artık kadans modülünden gelir; burada KOPYALANMAZ.
 KOTA_TAVANI: int = GUNLUK_YUKLEME_TAVANI  # 6
 
-# TODO 11 — Grup 3'ün ZORUNLU dürüstlük metni (panel bu metni aynen gösterir).
+#: Temizlik grubunun ZORUNLU dürüstlük metni (panel bu metni aynen gösterir).
+#: 2026-11-11 düzeltmesi: eski metin "ETKİLEMEZ" diyordu — YANLIŞTI. Bu ayarlar
+#: main_pipeline → dusuk_izlenmeli_videolari_temizle → videos.delete zinciriyle
+#: GERÇEK video siler. H1 yalnızca İKİNCİ mekanizma (cleanup_low_views.yml)
+#: için geçerlidir; bu ayarlarla ilgisi yoktur.
 TEMIZLIK_UYARI: str = (
-    "⚠️ Bu değeri değiştirmek otomatik temizlemeyi ETKİLEMEZ. "
-    "Temizleme workflow'u kendi sabitini kullanıyor "
-    "(cleanup_low_views.yml → if views &lt; 100). "
-    "Bilinen sorun (H1), ayrı görevde çözülecek."
+    "⚠️ Bu ayar KANALDA GERÇEK VİDEO SİLER ve geri alınamaz. "
+    "Kural: yayından sonra belirlenen süre geçip izlenme eşiğinin altında kalan "
+    "video kalıcı silinir (main_pipeline.py → dusuk_izlenmeli_videolari_temizle "
+    "→ videos.delete). Değişiklik onay ekranından geçer ve silinecek video "
+    "sayısı önizlenir. (Ayrıca cleanup_low_views.yml kendi sabitini kullanır — H1.)"
 )
 
 KATALOG: list[dict[str, Any]] = [

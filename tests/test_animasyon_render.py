@@ -36,7 +36,8 @@ class TestAnimasyonRender:
 
         assert img is not None
         assert img.mode == "RGBA"
-        assert img.size[0] >= 800 and img.size[1] >= 150, f"beklenmedik canvas boyutu: {img.size}"
+        # modules/animasyon.py _karaoke_altyazi_katmani: kat_g, kat_y = 960, 210 (sabit canvas)
+        assert img.size == (960, 210), f"karaoke katman boyutu değişmiş: {img.size}"
 
     @pytest.mark.integration
     @pytest.mark.skip(reason="v6 Sahne/sahne_animasyonu_uret API kaldırıldı; v7 Senaryo ile yeniden yazılacak")

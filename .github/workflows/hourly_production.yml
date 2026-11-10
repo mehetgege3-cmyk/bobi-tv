@@ -2,14 +2,19 @@ name: BOBİ TV v6.4 PRO — Saatlik Üretim + Kota Takibi
 
 on:
   schedule:
-    # Gerçekçi saatlik üretim (GitHub'da 15 dk garanti edilemez)
-    - cron: '*/10 * * * *'  # Her 10 dakika (GitHub cron güvenilir DEĞİLDİR; günlük kota kapısı sınırı korur)
+    # GitHub cron güvenilir DEĞİLDİR (*/10 fiilen günde 1-2 koşuya düşebiliyordu).
+    # Birincil tetikleyici: dış dağıtıcı (cron-job.org vb.) 10 dakikada bir
+    # workflow_dispatch/repository_dispatch çağırır — bkz. docs/TETIKLEYICI_KURULUM.md.
+    # Saatlik cron yalnızca YEDEK: dış dağıtıcı ölürse üretim durmasın.
+    - cron: '0 * * * *'
   workflow_dispatch:
     inputs:
       force:
         description: 'Zorla çalıştır (kota kontrolünü atla)'
         required: false
         default: 'false'
+  repository_dispatch:
+    types: [bobi-tv-produce]
 
 permissions:
   contents: write
@@ -30,6 +35,61 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GH_PAT || github.token }}
+
+      - name: Tetikleyici parametrelerini çöz
+        id: tetik
+        run: |
+          python - << 'PYEOF'
+          # workflow_dispatch inputs ve repository_dispatch client_payload tek noktada
+          # birleştirilir; schedule'da ikisi de boştur (force=false).
+          import os
+
+          ham = str(os.environ.get("TETIK_FORCE") or "").strip().lower()
+          force = "true" if ham in ("true", "1", "yes") else "false"
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+              f.write(f"force={force}\n")
+          print(f"Tetikleyici force={force}")
+          PYEOF
+        env:
+          TETIK_FORCE: ${{ github.event.inputs.force || github.event.client_payload.force || 'false' }}
+
+      - name: Son koşudan bu yana geçen süreyi logla
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - << 'PYEOF'
+          # Gözlemlenebilirlik: dış tetikleyicinin gerçek sıklığını ölçer.
+          # Kozmetik adım — hata asla koşuyu düşürmez.
+          import json
+          import subprocess
+          from datetime import datetime, timezone
+
+          try:
+              out = subprocess.run(
+                  [
+                      "gh", "run", "list",
+                      "--workflow", "hourly_production.yml",
+                      "--status", "completed",
+                      "--limit", "1",
+                      "--json", "createdAt,runNumber",
+                  ],
+                  capture_output=True, text=True, timeout=30, check=False,
+              )
+              kayitlar = json.loads(out.stdout or "[]")
+              if not kayitlar:
+                  print("Önceki tamamlanmış koşu yok — bu ilk koşu.")
+              else:
+                  onceki = datetime.fromisoformat(
+                      kayitlar[0]["createdAt"].replace("Z", "+00:00")
+                  )
+                  fark_dk = (datetime.now(timezone.utc) - onceki).total_seconds() / 60
+                  print(
+                      f"⏱️ Son koşudan bu yana {fark_dk:.1f} dakika geçti "
+                      f"(önceki koşu #{kayitlar[0].get('runNumber')})"
+                  )
+          except Exception as e:  # noqa: BLE001 — gözlemlenebilirlik, koşuyu etkilemez
+              print(f"Süre ölçümü atlandı (koşuyu etkilemez): {e}")
+          PYEOF
 
       - name: Python kur + pip cache
         uses: actions/setup-python@v5
@@ -104,7 +164,7 @@ jobs:
 
 
       - name: Kota doluysa bildir ve durdur
-        if: steps.kota.outputs.kota_doldu == 'true' && github.event.inputs.force != 'true'
+        if: steps.kota.outputs.kota_doldu == 'true' && steps.tetik.outputs.force != 'true'
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -126,12 +186,12 @@ jobs:
           "
 
       - name: Klasör yapısını hazırla
-        if: steps.kota.outputs.devam == 'true' || github.event.inputs.force == 'true'
+        if: steps.kota.outputs.devam == 'true' || steps.tetik.outputs.force == 'true'
         run: |
           mkdir -p bobi_tv/{queue,assets/{fonts,sfx},production/{scripts/arena,tts,render},output,archive/published,logs,config}
 
       - name: BOBİ TV v6.4 Pro Pipeline'ı çalıştır
-        if: steps.kota.outputs.devam == 'true' || github.event.inputs.force == 'true'
+        if: steps.kota.outputs.devam == 'true' || steps.tetik.outputs.force == 'true'
         env:
           YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}

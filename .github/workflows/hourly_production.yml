@@ -143,8 +143,7 @@ jobs:
           GUNLUK_MAKS: '24'
           MOD: 'isindirma_saatlik'
           OTOMATIK_SIL_AKTIF: '1'
-          MIN_IZLENME_ESIGI: '100'
-          IZLENME_KONTROL_DK: '60'
+          # Silme eşiği TEK KAYNAK: main_pipeline.py (1440dk/100); burada override edilmez.
         run: |
           python main_pipeline.py
 

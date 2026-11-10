@@ -164,7 +164,9 @@ def _arsivde_silindi_isaretle(video_id: str, izlenme: int, yas_dk: float):
                 continue
 
 
-def dusuk_izlenmeli_videolari_temizle(min_izlenme: int = 100, kontrol_suresi_dk: int = 60) -> list:
+def dusuk_izlenmeli_videolari_temizle(min_izlenme: int = 100, kontrol_suresi_dk: int = 1440) -> list:
+    # Tek kaynak main_pipeline.py'dır (env var); buradaki varsayılan yalnızca
+    # doğrudan çağrı fallback'idir. Yaş eşiği 24 saat (1440 dk).
     """
     Kanaldaki videoları kontrol eder:
     Yayınlanma üzerinden en az `kontrol_suresi_dk` (varsayılan 60 dk = 1 saat) geçmiş

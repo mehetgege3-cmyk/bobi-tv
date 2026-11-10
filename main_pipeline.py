@@ -32,8 +32,11 @@ MOD = os.environ.get("MOD", "isindirma_saatlik")
 YUKLEME_ATLA = os.environ.get("YUKLEME_ATLA", "0") == "1"
 
 OTOMATIK_SIL_AKTIF = os.environ.get("OTOMATIK_SIL_AKTIF", "1") == "1"
+# Silme eşiği TEK KAYNAK (burada). hourly_production.yml artık override
+# etmez; env var isteğe bağlı geçersiz kılma için kullanılabilir.
+# Yaş eşiği 24 saat (1440 dk); izlenme eşiği 100 korunur.
 MIN_IZLENME_ESIGI = int(os.environ.get("MIN_IZLENME_ESIGI", "100"))
-IZLENME_KONTROL_DK = int(os.environ.get("IZLENME_KONTROL_DK", "60"))
+IZLENME_KONTROL_DK = int(os.environ.get("IZLENME_KONTROL_DK", "1440"))
 
 LOG_YOLU = Path("bobi_tv/logs")
 ARSIV = Path("bobi_tv/archive/videos.json")

@@ -1,9 +1,11 @@
 name: 🧹 BOBİ TV Otomatik Temizleme — <100 İzlenme Videoları Sil
 
 on:
-  schedule:
-    # Saatte 1 kez: <100 izlenme videoları otomatik sil
-    - cron: '0 * * * *'
+  # Otomatik cron KALDIRILDI (çift mekanizma): düşük izlenme temizliği artık
+  # yalnızca main_pipeline.py içindeki TEK mekanizma ile (24 saat eşiği)
+  # uygulanır. Bu workflow yalnızca manuel (workflow_dispatch) tetiklenir.
+  # schedule:
+  #   - cron: '0 * * * *'
   workflow_dispatch:
 
 permissions:

@@ -29,6 +29,47 @@ from modules.kapak_uret import kapak_uret
 
 KATEGORILER = [s["kategori"] for s in SENARYO_SABLONLARI]
 
+# --- Arena DOM seçici sabitleri — TEK KAYNAK --------------------------------
+# JS karşılığı: skills/arena-playwright-agent/scripts/arena-dom.mjs
+# (EDITOR_FALLBACKS, SEND_SELECTORS, CONSENT_BUTTON_LABELS).
+# Bu listeler değiştirilirse HER İKİ taraf da güncellenmeli;
+# tests/test_arena_selector_parity.py ayrışmayı yakalar ve testi kırar.
+ARENA_EDITOR_SELECTOR = 'div.tiptap[contenteditable="true"]'
+ARENA_EDITOR_FALLBACKS = [
+    ARENA_EDITOR_SELECTOR,
+    'div[contenteditable="true"][role="textbox"]',
+    'div[contenteditable="true"]',
+    'textarea',
+]
+ARENA_SEND_SELECTORS = [
+    'button[aria-label="Send message"]',
+    'button[aria-label="Send Message"]',
+    'button[data-testid="send-button"]',
+    'button[type="submit"]',
+]
+ARENA_CONSENT_BUTTON_LABELS = ['Agree', 'Kabul et', 'Accept']
+
+
+# --- Arena DOM seçici sabitleri — TEK KAYNAK --------------------------------
+# JS karşılığı: skills/arena-playwright-agent/scripts/arena-dom.mjs
+# (EDITOR_FALLBACKS, SEND_SELECTORS, CONSENT_BUTTON_LABELS).
+# Bu listeler değiştirilirse HER İKİ taraf da güncellenmeli;
+# tests/test_arena_selector_parity.py ayrışmayı yakalar ve testi kırar.
+ARENA_EDITOR_SELECTOR = 'div.tiptap[contenteditable="true"]'
+ARENA_EDITOR_FALLBACKS = [
+    ARENA_EDITOR_SELECTOR,
+    'div[contenteditable="true"][role="textbox"]',
+    'div[contenteditable="true"]',
+    'textarea',
+]
+ARENA_SEND_SELECTORS = [
+    'button[aria-label="Send message"]',
+    'button[aria-label="Send Message"]',
+    'button[data-testid="send-button"]',
+    'button[type="submit"]',
+]
+ARENA_CONSENT_BUTTON_LABELS = ['Agree', 'Kabul et', 'Accept']
+
 
 def sanitize_cookie_json(raw_text: str) -> str:
     """Markdown link bozulmalarını ([arena.ai](http://arena.ai)) temizler."""

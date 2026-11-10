@@ -170,7 +170,7 @@ jobs:
           # KULLANICI KARARI (2026-11-11): "her 15 dakikada video üretilsin
           # ve yüklensin; başarısızsa sebebine bakalım, kotaysa stok olsun."
           #
-          # ESKİ DAVRANIŞ (sabotaj): kota dolunca bu adım `sys.exit()` atıp
+          # ESKİ DAVRANIŞ (sabotaj): kota dolunca bu adım koşuyu sonlandırıp
           # KOŞUYU BİTİRİYORDU → pipeline hiç çalışmıyor, hiç video üretilmiyordu.
           # Belirti: "Üret"e basıyorsun, video çıkmıyor.
           #
@@ -178,6 +178,15 @@ jobs:
           # denenir; kota reddederse video STOĞA yazılır (kuyruk), kota açılınca
           # yeniden render ALINMADAN yüklenir. Kota artık üretimi durdurmaz.
           # =============================================================
+          # ÖNEMLİ (2026-11-11 canlı hata): bu adım `devam` çıktısını ESKİDEN
+          # yalnız kota_doldu=true iken yazıyordu. kota_doldu=false iken çıktı
+          # BOŞ kalıyor, `steps.kota.outputs.devam == 'true'` false oluyor ve
+          # "Pipeline'ı çalıştır" adımı ATLANIYORDU → koşu "success" görünüyor
+          # ama HİÇ video üretilmiyordu (kullanıcının gördüğü "video çıkmıyor").
+          # Artık devam HER DURUMDA true: kota yalnız YÜKLEMEYİ sınırlar.
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+              f.write("devam=true\n")
+
           if sonuc["kota_doldu"] == "true" and not force:
               kota_dolu_bildir()
               # Davranış ayarı korunur (rapor/log): hata → kırmızı tik istenirse
@@ -187,18 +196,18 @@ jobs:
                   f"Kota dolu — ÜRETİM DEVAM EDİYOR, videolar stoğa alınacak "
                   f"(KOTA_DOLU_DAVRANIS={davranis}, çıkış kodu yükleme sonucuna bağlı)."
               )
-              # devam=true: pipeline çalışsın; yükleme kendi kota kontrolünü yapar.
-              with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
-                  f.write("devam=true\n")
+              # devam=true yukarıda yazıldı; yükleme kendi kota kontrolünü yapar.
           PYEOF
 
       - name: Klasör yapısını hazırla
-        if: steps.kota.outputs.devam == 'true' || steps.tetik.outputs.force == 'true'
+        # Kota artık ÜRETİMİ durdurmaz (devam her zaman true yazılır); force
+        # bayrağı da klasör hazırlığını garanti eder.
+        if: steps.rtest.outputs.render_test != '1' || steps.tetik.outputs.force == 'true'
         run: |
           mkdir -p bobi_tv/{queue,assets/{fonts,sfx},production/{scripts/arena,tts,render},output,archive/published,logs,config}
 
       - name: BOBİ TV v6.4 Pro Pipeline'ı çalıştır
-        if: steps.kota.outputs.devam == 'true' || steps.tetik.outputs.force == 'true'
+        if: steps.rtest.outputs.render_test != '1'
         env:
           YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}

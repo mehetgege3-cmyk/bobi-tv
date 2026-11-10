@@ -36,6 +36,25 @@ jobs:
         with:
           token: ${{ secrets.GH_PAT || github.token }}
 
+      - name: Ayarları state'ten yükle
+        run: |
+          python3 - << 'PYEOF'
+          # TODO 9: bobi_tv/state/ayarlar.json → doğrula → $GITHUB_ENV.
+          # SADECE secret olmayan + değiştirilebilir + etkili ayarlar köprüden
+          # geçer; secret'lar bu yoldan env'e ASLA yazılmaz. Dosya yoksa/bozuksa
+          # katalog varsayılanları uygulanır (toleranslı yükleme).
+          import os
+
+          from modules.ayar_deposu import env_satirlari, github_env_yaz
+
+          satirlar = env_satirlari(env=dict(os.environ))
+          github_env_yaz(os.environ["GITHUB_ENV"], satirlar)
+          for satir in satirlar:
+              print(f"⚙️ ayar → env: {satir.split('=', 1)[0]}")
+          if not satirlar:
+              print("ℹ️ ayar köprüsü boş — katalog varsayılanları etkin")
+          PYEOF
+
       - name: Tetikleyici parametrelerini çöz
         id: tetik
         run: |
@@ -49,9 +68,17 @@ jobs:
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
               f.write(f"force={force}\n")
           print(f"Tetikleyici force={force}")
+          # TODO 12: render testi payload'ı → env. Köprüden SONRA yazıldığı için
+          # payload, state değerini geçersiz kılar (koşul bazlı geçici zorlama).
+          ham_yukleme = str(os.environ.get("TETIK_YUKLEME_ATLA") or "").strip().lower()
+          if ham_yukleme in ("1", "true", "yes"):
+              with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as f:
+                  f.write("YUKLEME_ATLA=1\n")
+              print("Render testi modu: YUKLEME_ATLA=1 (client_payload)")
           PYEOF
         env:
           TETIK_FORCE: ${{ github.event.inputs.force || github.event.client_payload.force || 'false' }}
+          TETIK_YUKLEME_ATLA: ${{ github.event.client_payload.yukleme_atla || '' }}
 
       - name: Son koşudan bu yana geçen süreyi logla
         env:
@@ -199,11 +226,10 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           ARENA_COOKIES_JSON: ${{ secrets.ARENA_COOKIES_JSON }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
-          GUNLUK_HEDEF: '1'
-          GUNLUK_MAKS: '24'
-          MOD: 'isindirma_saatlik'
-          OTOMATIK_SIL_AKTIF: '1'
-          # Silme eşiği TEK KAYNAK: main_pipeline.py (1440dk/100); burada override edilmez.
+          # Ayar sabitleri (GUNLUK_HEDEF/GUNLUK_MAKS/MOD/OTOMATIK_SIL_AKTIF)
+          # BURADAN KALDIRILDI (TODO 9): tek doğruluk kaynağı bobi_tv/state/
+          # ayarlar.json → 'Ayarları state'ten yükle' adımı $GITHUB_ENV'e yazar.
+          # Secret satırları köprüye girmez; burada kalır.
         run: |
           python main_pipeline.py
 

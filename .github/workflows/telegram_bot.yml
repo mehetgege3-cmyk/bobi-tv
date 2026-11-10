@@ -93,7 +93,21 @@ jobs:
               print("ℹ️ Yeni mesaj yok")
               sys.exit(0)  # mesaj yok = başarı
 
-          from modules.telegram_bot import bosuk_uyarisi_gonder, updates_isle
+          from modules.telegram_bot import (
+              bekleyen_ayarlari_yeniden_dene,
+              bosuk_uyarisi_gonder,
+              updates_isle,
+          )
+
+          # TODO 8: önceki koşudan push edilememiş ayar değişikliği varsa tekrar dene.
+          # Başarısızlık burada YUTULMAZ: log + workflow uyarısı (koşu kırmızıya gitmez,
+          # bekleyen kuyruk korunur ve sonraki koşu yeniden dener).
+          try:
+              bekleyen_durum = bekleyen_ayarlari_yeniden_dene()
+              if bekleyen_durum:
+                  print(f"🔁 Bekleyen ayar: {bekleyen_durum}")
+          except Exception as bekleyen_hata:
+              print(f"::warning::Bekleyen ayar denemesi hata verdi: {bekleyen_hata}")
 
           # TODO 3a: ölü aralık tespiti — beklenen ile gelen update_id arasındaki boşluk.
           # getUpdates 24 saatlik pencere nedeniyle aradaki mesajlar kalıcı kayıptır;
@@ -147,5 +161,11 @@ jobs:
           git add -f bobi_tv/state/telegram_menu.json 2>/dev/null || true
           if ! git diff --staged --quiet; then
             git commit -m "🤖 Telegram bot state (offset + menü) [skip ci]" || true
-            git push origin main || echo "Push atlandı"
+            # P2: push başarısızlığı SESSİZCE YUTULMAZ — kırmızı tik şart.
+            # Sessiz push kaybı, panelin kaydettiği offset'in kaybolması demektir:
+            # sonraki koşu aynı offset'i yeniden işler ve bot cevapları tekrar eder.
+            if ! git push origin main; then
+              echo "::error::State push başarısız — offset kaybolabilir; sonraki koşu aynı offset'i yeniden işler"
+              exit 1
+            fi
           fi

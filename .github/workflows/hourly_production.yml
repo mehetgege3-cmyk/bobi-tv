@@ -117,6 +117,7 @@ jobs:
           path: |
             bobi_tv/output/*.mp4
             bobi_tv/output/*_thumb.jpg
+            bobi_tv/logs/quality/*.jsonl
 
       - name: Yenilenen Arena çerezini GitHub Secret'a geri kaydet
         if: always()
@@ -129,15 +130,53 @@ jobs:
             echo "ARENA_COOKIES_JSON güncellendi."
           fi
 
+      - name: Günlük kalite istatistiklerini göster
+        if: always()
+        run: |
+          python - << 'PYEOF'
+          import json
+          from pathlib import Path
+          from datetime import datetime, timezone
+
+          tarih = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+          log_dosya = Path(f"bobi_tv/logs/quality/{tarih}.jsonl")
+
+          if not log_dosya.exists():
+              print("Bugün için kalite kaydı yok.")
+          else:
+              kayıtlar = []
+              with open(log_dosya, "r", encoding="utf-8") as f:
+                  for satir in f:
+                      try:
+                          kayıtlar.append(json.loads(satir))
+                      except Exception:
+                          continue
+
+              if not kayıtlar:
+                  print("Bugün için kalite kaydı yok.")
+              else:
+                  toplam = len(kayıtlar)
+                  puanlar = [k["toplam_puan"] for k in kayıtlar]
+                  gecen = sum(1 for k in kayıtlar if k["gecti"])
+
+                  print(f"\n📊 GÜNLÜK KALİTE RAPORU ({tarih})")
+                  print(f"{'='*40}")
+                  print(f"Toplam video: {toplam}")
+                  print(f"Ortalama puan: {round(sum(puanlar)/toplam, 1) if toplam > 0 else 0}")
+                  print(f"Geçen: {gecen}/{toplam} ({round(gecen/toplam*100) if toplam > 0 else 0}%)")
+                  print(f"Min puan: {min(puanlar) if puanlar else 0}")
+                  print(f"Max puan: {max(puanlar) if puanlar else 0}")
+          PYEOF
+
       - name: Arşivi ve kuyruk durumunu commit et
         if: always()
         run: |
           git config user.name "BOBİ TV Bot"
           git config user.email "bobi-tv-bot@users.noreply.github.com"
           git reset --hard HEAD  # Tüm değişiklikleri temizle
-          git add bobi_tv/archive/ bobi_tv/queue/*.json bobi_tv/production/scripts/arena/ 2>/dev/null || git add -u bobi_tv/archive/ bobi_tv/queue/ bobi_tv/production/scripts/arena/ || true
+          git add bobi_tv/archive/ bobi_tv/queue/*.json bobi_tv/production/scripts/arena/ bobi_tv/logs/quality/*.jsonl 2>/dev/null || git add -u bobi_tv/archive/ bobi_tv/queue/ bobi_tv/production/scripts/arena/ bobi_tv/logs/quality/ || true
           if ! git diff --staged --quiet; then
-            git commit -m "📺 BOBİ TV v6.2 arşiv/kuyruk [$(date +%Y-%m-%dT%H:%M)] [skip ci]"
+            git commit -m "📺 BOBİ TV v6.3 arşiv/kuyruk/kalite [$(date +%Y-%m-%dT%H:%M)] [skip ci]"
             git pull --rebase origin main || exit 1
             git push || exit 1
             echo "✅ Arşiv push başarılı"

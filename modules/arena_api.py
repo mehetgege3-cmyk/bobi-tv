@@ -224,10 +224,13 @@ async def arena_video_uret(video_no: int, output_dir: str = "bobi_tv/output") ->
     """
     Birleşik BOBİ TV v6.0 Pro Üretim Hattı:
     1. Senaryo: Arena kuyruğu -> Arena canlı -> Yerleşik v6.0 Loop Şablonu
-    2. Ses: Ahmet + Emel Çift Ses + Sıfır Ölü Boşluk + WordBoundary
-    3. Görüntü & Miksaj: Vektör Karakter Kartları + Karaoke Altyazı + SFX + Sidechain BGM + -14 LUFS
-    4. Kapak & QC: Montserrat-ExtraBold Kapak + ffprobe Doğrulama
+    2. Kalite Kontrol: Loop + Hook + Timing + Dialogue (min 70 puan)
+    3. Ses: Ahmet + Emel Çift Ses + Sıfır Ölü Boşluk + WordBoundary
+    4. Görüntü & Miksaj: Vektör Karakter Kartları + Karaoke Altyazı + SFX + Sidechain BGM + -14 LUFS
+    5. Kapak & QC: Montserrat-ExtraBold Kapak + ffprobe Doğrulama
     """
+    from modules.senaryo_v7.kalite_kapisi import kalite_kapisindan_gecir, kalite_raporu_ozetle
+
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     # 1. Senaryo Paketi
@@ -237,13 +240,53 @@ async def arena_video_uret(video_no: int, output_dir: str = "bobi_tv/output") ->
     if not paket:
         paket = senaryo_paketi_olustur(video_no)
 
-    # 2. Çift Sesli TTS
+    # 2. Kalite Kontrolü (YENİ)
+    senaryo_raw = paket.get("senaryo", paket)
+    try:
+        from modules.senaryo_v7.models import Senaryo
+        from modules.kalite_log import kalite_log_yaz
+
+        if isinstance(senaryo_raw, dict):
+            senaryo = Senaryo.from_dict(senaryo_raw)
+        elif isinstance(senaryo_raw, Senaryo):
+            senaryo = senaryo_raw
+        else:
+            senaryo = None
+
+        if senaryo:
+            kalite_raporu = kalite_kapisindan_gecir(senaryo, esik_puani=70)
+
+            # Loglama
+            kalite_log_yaz(video_no, {
+                "toplam_puan": kalite_raporu.toplam_puan,
+                "gecti": kalite_raporu.gecti,
+                "loop_sonuc": {"puan": kalite_raporu.loop_sonuc.puan},
+                "kanca_sonuc": {"puan": kalite_raporu.kanca_sonuc.puan},
+                "zamanlama_sonuc": {"puan": kalite_raporu.zamanlama_sonuc.puan},
+                "diyalog_sonuc": {"puan": kalite_raporu.diyalog_sonuc.puan},
+                "oneriler": kalite_raporu.oneriler,
+            })
+
+            if kalite_raporu.gecti:
+                print(f"[Kalite] ✅ Senaryo geçti: {kalite_raporu.toplam_puan}/100")
+            else:
+                print(f"[Kalite] ⚠️  Senaryo düşük puanlı: {kalite_raporu.toplam_puan}/100")
+                print(kalite_raporu_ozetle(kalite_raporu))
+
+                # Düşük puanlı ama devam et (uyarı olarak logla)
+                if kalite_raporu.toplam_puan < 50:
+                    print(f"[Kalite] ❌ Senaryo çok düşük kalitede, reddedildi.")
+                    return None
+    except Exception as e:
+        print(f"[Kalite] Kontrol hatası (devam ediliyor): {e}")
+
+    # 3. Çift Sesli TTS
     paket = senaryo_seslendir(paket)
 
-    # 3. Pro Video Render + Ses Mastering + QC
+    # 4. Pro Video Render + Ses Mastering + QC
     video_render(paket)
 
-    # 4. Yüksek Kontrastlı Kapak
+    # 5. Yüksek Kontrastlı Kapak
     kapak_uret(paket)
 
     return paket

@@ -3,7 +3,7 @@
 **Skill dosyası:** `SKILL.md`\
 **Ajan adı:** BOBİ\
 **Kanal markası:** BOBİ TV\
-**Sürüm:** 6.3 PRO — Dönen Konu Havuzu, En Az 15sn, 15 Dakika Üretim & Frame 0 Profesyonel Kapak\
+**Sürüm:** 6.4 PRO — Dönen Konu Havuzu, En Az 15sn, 10dk Cron (Güvenilir Değil) + Kota Sınırı & Frame 0 Profesyonel Kapak\
 **Dil:** Türkçe (`tr`)\
 **Hedef platform:** Yalnızca YouTube\
 **Çalışma modeli:** Bulut öncelikli hibrit (bulut + gerektiğinde yerel bilgisayar)\
@@ -20,7 +20,7 @@ geçirmesini, YouTube Shorts için hazırlamasını ve kullanıcı tarafından
 yetkilendirilmiş koşullarda yayımlamasını tanımlar.
 
 BOBİ'nin ana hedefi YouTube kanalının abone sayısını büyütmektir. Günlük
-üretim hedefi en az 5 Shorts'tur. Ek olarak GitHub Actions 15 dakikalık üretim zamanlayıcısı yapılandırılmıştır (teorik olarak günde en çok 96 video). Bu sıklık, GitHub runner kapasitesi, üretim süresi, YouTube yükleme/API limitleri ve kalite kontrolüyle sınırlıdır. Teknik olarak mümkün olmayan üretim veya yayın başarıyla tamamlanmış gibi gösterilemez. Yayın performansına dayalı otomatik video silme etkinleştirilmişse bu geri alınamaz bir işlemdir; yalnızca yapılandırılmış eşik ve OAuth yetkisi doğrulandığında uygulanır.
+üretim hedefi GUNLUK_HEDEF (varsayılan 1) ile GUNLUK_MAKS (24) arasındadır; 'günde 5 video' veya 'her 15 dakika' GARANTİ DEĞİLDİR. GitHub Actions cron'u ('*/10 * * * *') güvenilir DEĞİLDİR — eldeki kanıta göre '*/15' fiilen günde yalnızca 1-2 kez çalıştırıldı. Üretim GitHub runner kapasitesi, YouTube kotası ve kalite kontrolüyle sınırlıdır; kota dolunca koşu sys.exit(0) ile atlanır. Teknik olarak mümkün olmayan üretim veya yayın başarıyla tamamlanmış gibi gösterilemez. Yayın performansına dayalı otomatik video silme etkinleştirilmişse bu geri alınamaz bir işlemdir; yalnızca yapılandırılmış eşik ve OAuth yetkisi doğrulandığında uygulanır.
 
 Bu belge bir **ajan davranış ve iş akışı tanımıdır**. Tek başına çalışan
 bir yazılım, YouTube hesabı, API bağlantısı, bulut sunucusu veya yayın
@@ -219,9 +219,7 @@ verisi biriktikçe devreye alınacak.
 
 ### 7.5 Günlük hedef
 
-Günlük **en az 5 video**. Bu bir hedef, garanti değildir. Kalite
-kontrolünü geçmeyen video sırf hedefe ulaşmak için yayımlanmaz.
-Eksik üretim açıkça raporlanır.
+Günlük hedef **GUNLUK_HEDEF** (varsayılan 1) ile **GUNLUK_MAKS** (24) ile sınırlıdır; 'günde en az 5 video' kesin vaat DEĞİLDİR. GitHub cron güvenilir olmadığı ve YouTube kotası üretimi durdurabileceği için fiili üretim daha düşük olabilir. Kalite kontrolünü geçmeyen video sırf hedefe ulaşmak için yayımlanmaz. Eksik üretim açıkça raporlanır.
 
 ### 7.6 Üretime geçiş (100. karar → A)
 
@@ -657,4 +655,60 @@ BOBİ TV üretim hattında aşağıdaki teknik ve editoryal kurallar **değişme
    - Yayın sonrası `commentThreads.insert` ile `sabit_yorum` sorusu videonun altına gerçek ilk yorum olarak gönderilir ve üst üste metin bindirmeyen `SONUNU BEKLE!` kapağı (`thumbnails.set`) yüklenir.
    - YouTube `uploadLimitExceeded` döndüğünde iş silinmez; `bobi_tv/queue/` altına kaydedilip kota açıldığında ilk sıradan yayınlanır.
    - Otomatik yayınlar spam algısını önlemek için Türkiye altın saatlerinde (**09:03, 13:03, 18:03, 21:03 TSİ**) çalışır.
+
+---
+
+## 24. Güncel Operasyon Durumu (2026-11-10)
+
+Bu bölüm, önceki bölümlerdeki eski/yanlış iddiaları geçerli durumla değiştirir.
+
+### 24.1 Üretim cadansı ve kota
+- Cron: `hourly_production.yml` → `'*/10 * * * *'` (her 10 dakika).
+- **GitHub cron güvenilir DEĞİLDİR**: yüksek yükte atlar; eldeki kanıta göre
+  `*/15` fiilen günde 1-2 kez çalıştı. Kesin frekans vaadi VERİLMEZ.
+- Kota sınırı KORUNUR: `main_pipeline.py` günlük `GUNLUK_MAKS`'a ulaşınca
+  `sys.exit(0)` ile atlar. 10dk cron kota dolunca no-op (yeşil) döner.
+- Kota durumu `bobi_tv/state/youtube_quota.json`'a yazılır; `videos.json`'a
+  kota/kuyruk/hata durumu YAZILMAZ (orada yalnızca geçerli `video_id` kaydı).
+
+### 24.2 Silme politikası (TEK mekanizma)
+- Otomatik silme yalnızca `main_pipeline.py` içindeki mekanizma ile:
+  `IZLENME_KONTROL_DK = 1440` (24 saat), `MIN_IZLENME_ESIGI = 100`.
+- **Tek kaynak**: `main_pipeline.py` varsayılanı; workflow override etmez.
+- `cleanup_low_views.yml` cron'u KALDIRILDI (yorum satırı); yalnızca manuel
+  `workflow_dispatch`. İkinci otomatik mekanizma yok.
+- Silinen video arşivden SİLİNMEZ; `durum: "kaldirildi"` olarak işaretlenir
+  (neden/silinme alanları korunur). `durum: "yayinda"` = kanalda.
+
+### 24.3 Arşiv — gerçeğin kaynağı
+- `bobi_tv/archive/videos.json` kanal gerçeğiyle eşitlenir (oembed ile).
+- Kayıtlar asla silinmez; `durum` alanıyla işaretlenir.
+- Bütünlük testi: `tests/test_archive_integrity.py` (şema + tekillik + durum).
+
+### 24.4 Arena oturum yönetimi
+- Otomatik çerez yenileme **KALDIRILDI** (Bölüm 3-A): eski zincir
+  `_guncel_cerezleri_kaydet` ham Set-Cookie yazıyor, `gh secret set` ile
+  secret'ı bozuyordu. Artık yok.
+- Çerez düşünce `arena_smoke_test.yml` (manuel) exit 2 (`oturum-gecersiz`)
+  verir; kullanıcı Cookie-Editor ile elle yeniler.
+- Tanılama: `skills/arena-playwright-agent/scripts/arena-selftest.mjs`
+  (8 çıkış kodu, `docs/ARENA_COMPOSER_TESHIS.md`).
+- Gelecek: Seçenek B (GitHub App token + doğru format) / C (Telegram uyarılı
+  yarı-otomatik) — `docs/TODO_ajana.md` ve `docs/GITHUB_APP_TOKEN.md`.
+
+### 24.5 Telegram güvenlik kuralları
+- Token/chat ID secret olarak saklanır, loglara/dokümana yazılmaz.
+- Panel çıktısında HTML escape (tek nokta, `<b>` etiketleri korunur) —
+  `modules/telegram_bot.py`.
+
+### 24.6 Kabul kriterleri (her commit öncesi)
+- `python3 -m pytest -q` yeşil; test sayısı DÜŞMEZ (mevcut: 116 passed,
+  1 skipped). `pytest.mark.integration` render testi normal koşuda skip.
+- `ruff check` + `ruff format --check` (ilgili dosyalar).
+- `mypy --strict` (ilgili dosyalar).
+- `pyflakes` temiz: kullanılmayan import, tanımsız ad, placeholder'siz
+  f-string YOK.
+- Workflow YAML'leri parse olur; `arena_self_repair.yml` izleme listesi
+  tüm workflow isimlerini içerir.
+- Secret/token/cookie değeri ASLA commit'e/log'a/dokümana girmez.
 

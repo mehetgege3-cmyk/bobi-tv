@@ -75,3 +75,20 @@ def test_secim_arena_varsa_ilk_kare_adayini_secer(tmp_path, monkeypatch):
     assert sonuc["secilen"] == "A"
     assert Path(sonuc["kapak"]).exists()
     assert paket["kapak_dosyasi"] == sonuc["kapak"]
+
+
+def test_json_ayiklayici_duz_metin_icinden_bulur():
+    """Arena yanıtı JSON'u düz metin/kod bloğu içinde döndürebilir; kapak
+    önerisi ayıklayıcısı bunu bulmalı (canlı koşuda 'JSON ayrıştırılamadı'
+    hatası yaşandı — senaryo ayıklayıcısı 'diyaloglar' aradığı için bulamıyordu)."""
+    from modules.arena_api import _json_nesnesi_ayikla
+
+    metin = 'Elbette!\n```json\n{"sok_baslik":"SIR ÇIKTI","vurgu_kelime":"SIR","renk":"#FF2D55"}\n```'
+    r = _json_nesnesi_ayikla(metin, ("sok_baslik", "vurgu_kelime", "renk"))
+    assert r is not None and r["sok_baslik"] == "SIR ÇIKTI"
+
+
+def test_json_ayiklayici_alakasiz_metinde_none():
+    from modules.arena_api import _json_nesnesi_ayikla
+
+    assert _json_nesnesi_ayikla("kapak öneremem", ("sok_baslik",)) is None

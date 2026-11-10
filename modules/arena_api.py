@@ -155,6 +155,34 @@ def build_clean_arena_cookie(cookies: list) -> str:
     return f"base64-{encoded}"
 
 
+def _json_nesnesi_ayikla(metin: str, gerekli_anahtarlar: tuple[str, ...]) -> dict | None:
+    """Metindeki JSON nesnesini, verilen anahtarlardan birini içeren ilk/ son
+    nesne olarak ayıklar. Kapak önerisi gibi TEK NESNE döndüren yanıtlar için
+    kullanılır (senaryo ayıklayıcısı "diyaloglar" arar, kapak yanıtında yok)."""
+    if not metin:
+        return None
+    aday_metin = metin.strip()
+    if "```json" in aday_metin:
+        aday_metin = aday_metin.split("```json", 1)[1].split("```", 1)[0].strip()
+    elif "```" in aday_metin:
+        parcalar = aday_metin.split("```")
+        if len(parcalar) >= 3:
+            aday_metin = parcalar[1].strip()
+
+    decoder = json.JSONDecoder()
+    bulunanlar = []
+    for i, ch in enumerate(aday_metin):
+        if ch != "{":
+            continue
+        try:
+            nesne, _ = decoder.raw_decode(aday_metin[i:])
+        except Exception:
+            continue
+        if isinstance(nesne, dict) and any(k in nesne for k in gerekli_anahtarlar):
+            bulunanlar.append(nesne)
+    return bulunanlar[-1] if bulunanlar else None
+
+
 def _ic_ice_json_ayikla(metin: str) -> dict | None:
     """İç içe (nested) diyalog dizisi barındıran JSON nesnesini güvenle ayıklar."""
     aday_metin = metin.strip()
@@ -331,7 +359,7 @@ async def arena_kapak_onerisi_al_async(paket: dict) -> dict | None:
 
     if not cevap:
         return None
-    ham = _ic_ice_json_ayikla(cevap)
+    ham = _json_nesnesi_ayikla(cevap, ("sok_baslik", "vurgu_kelime", "renk"))
     if not isinstance(ham, dict) or not ham.get("sok_baslik"):
         print("[Arena Kapak] JSON ayrıştırılamadı — yerel üreticiye geçiliyor")
         return None

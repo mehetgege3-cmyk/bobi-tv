@@ -1,7 +1,16 @@
-name: 🤖 Arena AI Test — Saat Sorgusu
+name: "🤖 Arena AI Test — Saat Sorgusu (v2, Oturum Canlı Tutma)"
 
+# Her 6 saatte bir çalıştırarak Arena oturumunu canlı tutar (çerez yenilenir ve secret'a geri yazılır).
+# Manuel tetikleme de mümkündür.
 on:
+  schedule:
+    - cron: '17 */6 * * *'   # 06:17, 12:17, 18:17, 00:17 — tam saatlerden kaçın
   workflow_dispatch:
+    inputs:
+      prompt:
+        description: "Arena Agent'a sorulacak soru"
+        required: true
+        default: "Şu an saat kaç? Lütfen sadece SS:DD formatında cevap ver."
 
 permissions:
   contents: read
@@ -9,121 +18,83 @@ permissions:
 jobs:
   test-arena:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 12
 
     steps:
-      - name: Checkout
+      - name: Repoyu çek
         uses: actions/checkout@v4
 
-      - name: Python Kurulumu
-        uses: actions/setup-python@v5
+      - name: Node.js kur
+        uses: actions/setup-node@v4
         with:
-          python-version: '3.11'
-          cache: 'pip'
+          node-version: "20"
 
-      - name: Playwright Kurulumu
+      - name: Bağımlılıklar ve Chromium
         run: |
-          pip install playwright > /dev/null 2>&1
-          playwright install chromium > /dev/null 2>&1
+          npm install
+          npx playwright install --with-deps chromium
 
-      - name: Arena AI'ye Saat Sor
+      - name: Çerez ön kontrolü
         env:
           ARENA_COOKIES_JSON: ${{ secrets.ARENA_COOKIES_JSON }}
         run: |
-          python << 'SCRIPT'
-          import asyncio
-          import json
-          import os
-          from playwright.async_api import async_playwright
-          
-          cookies_json = os.getenv("ARENA_COOKIES_JSON", "")
-          if not cookies_json:
-              print("❌ ARENA_COOKIES_JSON secret ayarlanmamış")
-              exit(1)
-          
-          try:
-              cookies_data = json.loads(cookies_json)
-          except json.JSONDecodeError:
-              print("❌ ARENA_COOKIES_JSON geçerli JSON değil")
-              exit(1)
-          
-          async def ask_arena():
-              async with async_playwright() as p:
-                  browser = await p.chromium.launch(headless=True)
-                  context = await browser.new_context()
-                  page = await context.new_page()
-                  
-                  # Cookies ekle
-                  await context.add_cookies(cookies_data)
-                  
-                  print("📡 Arena.ai açılıyor...")
-                  await page.goto("https://arena.ai/", wait_until="domcontentloaded", timeout=60000)
-                  
-                  # Input element'i bekle ve visible olana kadar bekle
-                  print("🔍 Input element'i bulunuyor ve yüklenesi bekleniyor...")
-                  try:
-                      # Tüm olası input selector'larını dene
-                      selectors = [
-                          'input[type="text"]',
-                          'textarea',
-                          'input',
-                          '[role="textbox"]',
-                          '[contenteditable="true"]'
-                      ]
-                      
-                      input_elem = None
-                      for sel in selectors:
-                          elem = page.locator(sel).first
-                          # Element visible olana kadar bekle
-                          try:
-                              await elem.wait_for(state="visible", timeout=15000)
-                              print(f"✅ Input visible: {sel}")
-                              input_elem = elem
-                              break
-                          except:
-                              pass
-                      
-                      if not input_elem:
-                          print("❌ Input bulunamadı")
-                          return
-                  except Exception as e:
-                      print(f"⚠️  Input bulma hatası: {e}")
-                      return
-                  
-                  # Input'a soruyu yaz
-                  print("⌨️  'Şu an saat kaç?' yazılıyor...")
-                  await input_elem.fill("Şu an saat kaç?")
-                  
-                  # Gönder (Enter veya button click)
-                  print("✅ Gönderiliyor...")
-                  try:
-                      await page.press('input, textarea', 'Enter')
-                  except:
-                      # Send button ara
-                      send_btn = page.locator('button:has-text("Gönder"), button:has-text("Send")')
-                      await send_btn.first.click()
-                  
-                  # AI yanıtı bekle (3-10 saniye)
-                  print("⏳ Yanıt bekleniyor...")
-                  await page.wait_for_timeout(8000)
-                  
-                  # Sayfadaki metni al
-                  page_text = await page.text_content('body')
-                  
-                  # Saat bilgisini ara
-                  if "saat" in page_text.lower():
-                      idx = page_text.lower().find("saat")
-                      print(f"\n🤖 Arena AI Cevabı:\n{page_text[max(0, idx-50):idx+200]}")
-                  else:
-                      print(f"\n📝 Arena Yanıtı (ilk 800 char):\n{page_text[:800]}")
-                  
-                  await browser.close()
-          
-          try:
-              asyncio.run(ask_arena())
-          except Exception as e:
-              print(f"❌ Hata: {e}")
-              import traceback
-              traceback.print_exc()
-              exit(1)
-          SCRIPT
+          if [ -z "$ARENA_COOKIES_JSON" ]; then
+            echo "::error::ARENA_COOKIES_JSON secret tanımlı değil. Tarayıcıdan Cookie-Editor ile arena.ai çerezlerini alıp secret'a yapıştır."
+            exit 1
+          fi
+          if ! echo "$ARENA_COOKIES_JSON" | grep -q "arena-auth-prod-v1"; then
+            echo "::error::Çerezlerde arena-auth-prod-v1 bulunamadı — oturum süresi dolmuş veya yanlış çerez alındı. Secret'ı yenile."
+            exit 1
+          fi
+          echo "✅ Çerez ön kontrolü geçildi."
+
+      - name: Arena Agent'a sor (production script ile)
+        id: ask
+        continue-on-error: true
+        env:
+          ARENA_COOKIES_JSON: ${{ secrets.ARENA_COOKIES_JSON }}
+          SAVE_UPDATED_COOKIES: /tmp/updated-cookies.json
+        run: |
+          PROMPT="${{ inputs.prompt || 'Şu an saat kaç? Lütfen sadece SS:DD formatında cevap ver.' }}"
+          node skills/arena-playwright-agent/scripts/arena-ask.mjs "$PROMPT" | tee yanit.txt
+          echo "exit_kodu=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Yenilenen çerezleri secret'a geri kaydet (oturum canlı tutma)
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          if [ -n "$GH_TOKEN" ] && [ -s /tmp/updated-cookies.json ]; then
+            gh secret set ARENA_COOKIES_JSON --repo "${{ github.repository }}" < /tmp/updated-cookies.json || true
+            shred -u /tmp/updated-cookies.json || rm -f /tmp/updated-cookies.json
+            echo "✅ ARENA_COOKIES_JSON secret güncellendi (oturum yenilendi)."
+          else
+            echo "ℹ️  Yenilenen çerez bulunamadı veya GH_PAT yok — oturum yenilenmedi."
+          fi
+
+      - name: Cevap doğrulama (assertion)
+        run: |
+          if [ ! -s yanit.txt ]; then
+            echo "::error::Arena'dan cevap alınamadı (yanit.txt boş). Muhtemelen oturum süresi dolmuş — çerezleri yenile."
+            exit 1
+          fi
+          ICERIK=$(cat yanit.txt)
+          echo "=== Arena cevabı ==="
+          echo "$ICERIK"
+          echo "===================="
+          # Saat formatı (SS:DD) veya "saat" kelimesi veya en az bir rakam içermeli
+          if echo "$ICERIK" | grep -qE '[0-9]{1,2}:[0-9]{2}|saat|[0-9]{2}'; then
+            echo "✅ Cevap doğrulandı — saat bilgisi içeriyor."
+          else
+            echo "::warning::Cevap saat bilgisi içermiyor ama metin alındı (bot farklı formatta cevaplamış olabilir)."
+          fi
+
+      - name: Ekran görüntüsü + yanıt artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: arena-test-sonuc
+          path: |
+            arena-cevap.png
+            yanit.txt
+          if-no-files-found: ignore

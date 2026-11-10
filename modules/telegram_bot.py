@@ -75,6 +75,64 @@ def process_update(update: dict) -> bool:
     return True
 
 
+def updates_isle(updates: list[dict], offset: int) -> tuple[int, int, int, bool]:
+    """Güncelleme yığınını sırayla işler (TODO 3 — offset kaybı koruması).
+
+    Offset YALNIZCA update başarılı şekilde ele alındığında ilerler:
+    - process_update True dönerse (işlendi) offset ilerler.
+    - process_update False dönerse (yetkisiz — bilinçli red kararı) offset
+      ilerler; aksi halde aynı yetkisiz mesaj her koşuda sonsuza dek yeniden
+      gelirdi.
+    - process_update İSTİSNA fırlatırsa döngü durur, offset o update'ten ÖNCE
+      kalır: mesaj kaybolmaz, bir sonraki koşuda yeniden denemek için korunur
+      (sıralı yeniden deneme — kalan update'ler de yeniden gelir).
+
+    Döner: (yeni_offset, islenen, reddedilen, kesinti_olustu)
+    """
+    islenen = 0
+    reddedilen = 0
+    kesinti = False
+    for update in updates:
+        try:
+            ok = process_update(update)
+        except Exception as e:
+            print(f"::error::process_update başarısız (update_id={update.get('update_id')}): {e}")
+            kesinti = True
+            break
+        if ok:
+            islenen += 1
+        else:
+            reddedilen += 1
+        offset = update["update_id"] + 1
+    return offset, islenen, reddedilen, kesinti
+
+
+def bosuk_uyarisi_gonder(bosuk: int, onceki_guncelleme: Optional[str]) -> bool:
+    """Uzun kesinti sonrası ilk koşuda düşen update sayısını raporlar (TODO 3a).
+
+    getUpdates 24 saatlik pencere nedeniyle ölü aralıktaki mesajlar Telegram'da
+    kalıcı olarak kaybolur; kullanıcı bunu en az bir kez açıkça bilmeli.
+    onceki_guncelleme: offset state dosyasındaki son koşu damgası (ISO); yoksa
+    süre "bilinmeyen süre" olarak raporlanır.
+    """
+    sure_metni = "bilinmeyen süre"
+    if onceki_guncelleme:
+        try:
+            gz = datetime.fromisoformat(str(onceki_guncelleme))
+            if gz.tzinfo is None:
+                gz = gz.replace(tzinfo=timezone.utc)
+            dk = int((datetime.now(timezone.utc) - gz).total_seconds() / 60)
+            sure_metni = f"~{dk} dakika" if dk < 120 else f"~{dk // 60} saat"
+        except Exception:
+            pass
+    metin = (
+        "⚠️ <b>BOBİ TV — Mesaj kaybı uyarısı</b>\n"
+        f"Bot {sure_metni} çalışmadı; aradaki {bosuk} güncelleme Telegram kuyruğundan "
+        "düştü (getUpdates 24 saatlik pencere). Kayıp mesajlar geri getirilemez."
+    )
+    return send_message(metin)
+
+
 def api_call(method: str, data: dict) -> Optional[dict]:
     if not BOT_TOKEN:
         print("[Telegram Bot] Token eksik")

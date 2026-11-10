@@ -1,0 +1,99 @@
+name: "Arena Smoke Test — Tanılama (manuel tetik)"
+# Manuel tetiklenen Arena.ai uçtan uca tanılama. SALT OKUNUR izin; secret geri
+# yazma YOK (gh secret set yok). Çerez düşünce exit 2 (oturum-gecersiz) verir,
+# kullanıcı elle yeniler. Çıktı arena-diagnostics/ artifact + job summary verdict.
+on:
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: "Arena'ya gönderilecek test mesajı"
+        required: false
+        default: "Merhaba, lütfen sadece 'pong' yanıtını ver."
+      url:
+        description: "Arena URL'i"
+        required: false
+        default: "https://arena.ai/agent/"
+      editor_timeout_ms:
+        description: "Editör görünme zaman aşımı (ms)"
+        required: false
+        default: "30000"
+      answer_timeout_ms:
+        description: "Cevap büyüme zaman aşımı (ms)"
+        required: false
+        default: "120000"
+      accept_tos:
+        description: "ToS onay butonuna otomatik bas (0=hayır, 1=evet)"
+        required: false
+        default: "0"
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Bağımlılıklar ve Chromium
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Arena tanılamayı çalıştır
+        id: diag
+        continue-on-error: true
+        env:
+          ARENA_COOKIES_JSON: ${{ secrets.ARENA_COOKIES_JSON }}
+          PROMPT: ${{ inputs.prompt }}
+          ARENA_URL: ${{ inputs.url }}
+          EDITOR_TIMEOUT: ${{ inputs.editor_timeout_ms }}
+          ANSWER_TIMEOUT: ${{ inputs.answer_timeout_ms }}
+          ACCEPT_TOS: ${{ inputs.accept_tos }}
+          OUT_DIR: arena-diagnostics
+        run: |
+          node skills/arena-playwright-agent/scripts/arena-selftest.mjs
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Verdict'i job özetine yaz
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          summary = Path(os.environ["GITHUB_STEP_SUMMARY"])
+          report = Path("arena-diagnostics/report.json")
+          if report.exists():
+              data = json.loads(report.read_text(encoding="utf-8"))
+              summary.write_text(
+                  f"## Arena Smoke Test Sonucu\n\n"
+                  f"- **Verdict:** `{data.get('verdict')}` (exit `{data.get('exitCode')}`)\n"
+                  f"- **Not:** {data.get('note') or '-'}\n"
+                  f"- **Adım sayısı:** {len(data.get('steps', []))}\n\n"
+                  f"Detaylar `arena-diagnostics` artifact'ında (report.json + adım bazlı PNG/DOM).\n",
+                  encoding="utf-8",
+              )
+          else:
+              summary.write_text("## Arena Smoke Test Sonucu\n\nreport.json üretilmedi (script başlamadan önce hata).\n", encoding="utf-8")
+          PY
+          if [ "${{ steps.diag.outputs.exit_code }}" != "0" ]; then
+            echo "::error::Arena smoke tanılama başarısız (exit ${{ steps.diag.outputs.exit_code }}). Detay: arena-diagnostics artifact'ı."
+            exit 1
+          fi
+
+      - name: Tanılama artifact'ını yükle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: arena-diagnostics
+          path: arena-diagnostics/
+          if-no-files-found: ignore
+          retention-days: 14

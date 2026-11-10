@@ -13,6 +13,7 @@ on:
       - "🤖 Arena AI Test — Saat Sorgusu (v2, Oturum Canlı Tutma)"
       - "BOBİ TV v6.0 — Uçtan Uca Kalite Testi"
       - "BOBİ TV — Haftalık Performans Raporu"
+      - "Arena Smoke Test — Tanılama (manuel tetik)"
     types: [completed]
 
 concurrency:

@@ -48,8 +48,10 @@ def kota_state_oku() -> dict:
         return {"doldu": False, "kalan_saat": 0, "video_sayisi": 0}
 
 
-def kota_dolu_mu() -> bool:
-    """Kota dolu mu kontrol et."""
+def kota_dolu_mu(simdi=None) -> bool:
+    """Kota dolu mu kontrol et. simdi=None ise şimdiki zaman kullanılır (test için enjekte edilebilir)."""
+    if simdi is None:
+        simdi = datetime.now(timezone.utc)
     state = kota_state_oku()
 
     if not state.get("doldu"):
@@ -60,7 +62,7 @@ def kota_dolu_mu() -> bool:
     if guncelleme:
         try:
             guncel_zaman = datetime.fromisoformat(guncelleme.replace("Z", "+00:00"))
-            gecen_saat = (datetime.now(timezone.utc) - guncel_zaman).total_seconds() / 3600
+            gecen_saat = (simdi - guncel_zaman).total_seconds() / 3600
 
             if gecen_saat >= 24:
                 # 24 saat geçti, kota sıfırlanmış olmalı

@@ -102,8 +102,31 @@ jobs:
               f.write(f"devam={devam}\n")
           PYEOF
 
+
+      - name: Kota doluysa bildir ve durdur
+        if: steps.kota.outputs.kota_doldu == 'true' && github.event.inputs.force != 'true'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python -c "
+          import os, requests, sys
+          token = os.environ.get('TELEGRAM_BOT_TOKEN','')
+          chat_id = os.environ.get('TELEGRAM_CHAT_ID','')
+          if token and chat_id:
+              try:
+                  requests.post(f'https://api.telegram.org/bot{token}/sendMessage',
+                    json={'chat_id': chat_id,
+                          'text': '🚫 <b>YouTube kota dolu</b> — bu çalıştırmada üretim atlandı. Kota UTC 00:00\'da sıfırlanır.',
+                          'parse_mode': 'HTML'}, timeout=10)
+              except Exception as e:
+                  print(f'Telegram bildirim hatası: {e}', file=sys.stderr)
+          print('::warning::Kota dolu, üretim atlandı (bildirim gönderildi)')
+          sys.exit(1)
+          "
+
       - name: Klasör yapısını hazırla
-        if: steps.kapasite.outputs.devam == 'true' || github.event.inputs.force == 'true'
+        if: steps.kota.outputs.devam == 'true' || github.event.inputs.force == 'true'
         run: |
           mkdir -p bobi_tv/{queue,assets/{fonts,sfx},production/{scripts/arena,tts,render},output,archive/published,logs,config}
 
@@ -198,7 +221,7 @@ jobs:
           git status --short || true
 
           # Arşiv ve state dosyalarını ekle
-          git add -f bobi_tv/archive/ bobi_tv/state/ bobi_tv/logs/ bobi_tv/production/scripts/arena/ 2>/dev/null || true
+          git add -f bobi_tv/archive/ bobi_tv/state/ bobi_tv/production/scripts/arena/ 2>/dev/null || true
 
           # Kuyruk JSON'larını zorla ekle (.gitignore override)
           git add -f bobi_tv/queue/*.json 2>/dev/null || true
@@ -214,7 +237,7 @@ jobs:
           fi
 
       - name: Hata bildirimi
-        if: failure()
+        if: failure() && steps.kota.outputs.kota_doldu != 'true'
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}

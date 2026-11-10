@@ -217,13 +217,19 @@ def test_10_etkilesim_tek_mesaj_kurali(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_start_yeni_panel_mesaji_acar(monkeypatch: pytest.MonkeyPatch) -> None:
-    """/start → yeni mesaj (TODO 4 istisnası b): iki /start → iki yeni panel."""
+    """/start artık YENİ panel AÇMAZ — kayıtlı panel varsa onu düzenler.
+
+    2026-11-11 düzeltmesi: kuyrukta biriken N adet /start art arda işlenince
+    ekrana N panel düşüyordu (kanıt: 5 × "/start" tek koşuda). Sözleşme artık:
+    2 × /start → 1 sendMessage + 1 editMessageText (ilk çağrı paneli doğurur).
+    """
     cagrilar = _takip_et(monkeypatch)
     tb.handle_message("/start")
     tb.handle_message("/start")
     sends = sum(1 for y, _ in cagrilar if y == "sendMessage")
     edits = sum(1 for y, _ in cagrilar if y == "editMessageText")
-    assert sends == 2 and edits == 0
+    assert sends == 1, f"2 /start → tek panel olmalı, sendMessage: {sends}"
+    assert edits == 1, f"ikinci /start paneli düzenlemeli, editMessageText: {edits}"
 
 
 def test_menu_metni_ayni_mesaji_duzenler(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -69,14 +69,33 @@ def test_gunluk_maks_seceneklerinin_maksimumu_6() -> None:
     assert YOUTUBE_GUNLUK_KOTA_BIRIM // VIDEO_INSERT_MALIYETI == KOTA_TAVANI
 
 
-def test_temizlik_grubu_etkili_degil_ve_goruntuleme_modunda() -> None:
-    """TODO 11: temizlik ayarları etkili DEĞİLDİR (H1) — yalan söyleme yasağı."""
+def test_temizlik_grubu_etkili_ama_kilitli() -> None:
+    """TODO 11 düzeltmesi (2026-11-11): temizlik ayarları ETKİLİDİR, kilitlidir.
+
+    Önceki sözleşme "etkili DEĞİLDİR (H1)" diyordu — YANLIŞTI. Gerçek:
+    main_pipeline.py:145-152 bu env'leri okuyup dusuk_izlenmeli_videolari_temizle()
+    çağırıyor ve youtube_upload.py:279-290 videos.delete ile GERÇEK video siliyor.
+    H1 yalnızca İKİNCİ mekanizma (cleanup_low_views.yml) için geçerlidir.
+
+    Kilit (sadece_goruntule + degistirilebilir_mi False) korunur: kaza koruması.
+    Açıklama, kullanıcıyı yanlış yönlendirmemek için "SİLER" demek ZORUNDA.
+    """
     temizlik = grup_ayarlari("temizlik")
     assert len(temizlik) == 3
     for a in temizlik:
-        assert a["etkili"] is False, a["anahtar"]
+        assert a["etkili"] is True, f"{a['anahtar']} gerçekten etkili (video siler)"
         assert a["tip"] == "sadece_goruntule", a["anahtar"]
         assert degistirilebilir_mi(a) is False, a["anahtar"]
+        assert "SİLER" in a["aciklama"], f"{a['anahtar']}: açıklama silme uyarısı içermeli"
+
+
+def test_belgede_etkilemez_yalani_yok() -> None:
+    """docs/AYARLAR.md temizlik ayarları için 'ETKİLEMEZ' dememeli (yanlış bilgi)."""
+    belge = Path("docs/AYARLAR.md")
+    assert belge.exists(), "docs/AYARLAR.md yok"
+    icerik = belge.read_text(encoding="utf-8")
+    assert "ETKİLEMEZ" not in icerik, "belge hâlâ yanlış 'ETKİLEMEZ' ifadesini içeriyor"
+    assert "SİLER" in icerik, "belge gerçek silme davranışını yazmalı"
 
 
 def test_katalog_semasi_tam_ve_gecerli() -> None:

@@ -185,9 +185,17 @@ KATALOG: list[dict[str, Any]] = [
         "env_adi": "OTOMATIK_SIL_AKTIF",
         "risk": "yuksek",
         "kalici": False,
-        "etkili": False,
+        "etkili": True,
         "secret": False,
         "mevcut": "1",
+    
+        "aciklama": (
+            "KİLİTLİ — bu ayar KANALDA GERÇEK VİDEO SİLER: main_pipeline.py "
+            "dusuk_izlenmeli_videolari_temizle() çağrısına geçirilir ve "
+            "youtube_upload.py videos.delete ile siler. Değiştirmek için kod "
+            "değişikliği gerekir (kaza koruması). İKİNCİ silme mekanizması "
+            "cleanup_low_views.yml kendi sabitini kullanır (H1) — ayrı sorun."
+        ),
     },
     {
         "anahtar": "MIN_IZLENME_ESIGI",
@@ -201,9 +209,17 @@ KATALOG: list[dict[str, Any]] = [
         "env_adi": "MIN_IZLENME_ESIGI",
         "risk": "yuksek",
         "kalici": False,
-        "etkili": False,
+        "etkili": True,
         "secret": False,
         "mevcut": "100",
+    
+        "aciklama": (
+            "KİLİTLİ — bu ayar KANALDA GERÇEK VİDEO SİLER: main_pipeline.py "
+            "dusuk_izlenmeli_videolari_temizle() çağrısına geçirilir ve "
+            "youtube_upload.py videos.delete ile siler. Değiştirmek için kod "
+            "değişikliği gerekir (kaza koruması). İKİNCİ silme mekanizması "
+            "cleanup_low_views.yml kendi sabitini kullanır (H1) — ayrı sorun."
+        ),
     },
     {
         "anahtar": "IZLENME_KONTROL_DK",
@@ -217,9 +233,16 @@ KATALOG: list[dict[str, Any]] = [
         "env_adi": "IZLENME_KONTROL_DK",
         "risk": "dusuk",
         "kalici": False,
-        "etkili": False,
+        "etkili": True,
         "secret": False,
         "mevcut": "1440",
+        "aciklama": (
+            "KİLİTLİ — bu ayar KANALDA GERÇEK VİDEO SİLER: main_pipeline.py "
+            "dusuk_izlenmeli_videolari_temizle() çağrısına geçirilir ve "
+            "youtube_upload.py videos.delete ile siler. Değiştirmek için kod "
+            "değişikliği gerekir (kaza koruması). İKİNCİ silme mekanizması "
+            "cleanup_low_views.yml kendi sabitini kullanır (H1) — ayrı sorun."
+        ),
     },
     # ---------- Grup 4 — sistem (SADECE GÖRÜNTÜLE, değer asla yazdırılmaz) ----------
     {

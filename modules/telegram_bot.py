@@ -283,6 +283,36 @@ def _panel_temizle() -> None:
         MENU_STATE_YOLU.unlink(missing_ok=True)
 
 
+def eski_panelleri_sil(adet: int = 10) -> int:
+    """Telegram'dan son N mesajı silerek birikmiş panelleri temizler.
+
+    Neden gerekli: poller uzun süre çalışmadığında kuyrukta biriken /start'lar
+    toplu işlenir ve ekranda art arda paneller birikir (2026-11-11'de 5 panel).
+    Tek panel felsefesi yalnızca ileriye dönük çalışır — geçmiş birikimi bu
+    fonksiyon temizler. Silme başarısız olursa (48 saatten eski mesaj vb.)
+    sessizce geçilir; asla exception fırlatmaz.
+
+    Döner: silinen mesaj sayısı (en iyi gayretle).
+    """
+    silinen = 0
+    # Paneli kaydımızdan başlayarak geriye doğru dene: kayıtlı panel + öncesi.
+    for mesaj_id in range(_panel_son_id(), _panel_son_id() - adet, -1):
+        if mesaj_id <= 0:
+            break
+        sonuc = api_call("deleteMessage", {"chat_id": CHAT_ID, "message_id": mesaj_id})
+        if sonuc is not None and sonuc.get("ok"):
+            silinen += 1
+    if silinen:
+        print(f"[Panel] {silinen} eski mesaj silindi")
+        _panel_temizle()
+    return silinen
+
+
+def _panel_son_id() -> int:
+    panel_id, _ = _panel_oku()
+    return int(panel_id or 0)
+
+
 def _panel_yeni_gonder(metin: str, butonlar: list[list[dict[str, Any]]]) -> bool:
     """Taze panel mesajı açar ve kimliğini izler (tek panel felsefesi)."""
     resp = api_call(
@@ -306,37 +336,42 @@ def panel_goster(metin: str, butonlar: list[list[dict[str, Any]]], yeni_mesaj: b
     """Panelde HER etkileşim aynı mesajı düzenler (TODO 4 — istisnasız).
 
     editMessageText + reply_markup kullanılır. Yeni mesaj yalnızca:
-    (a) kullanıcı /start yazdı (yeni_mesaj=True),
-    (b) panel kaydı yok / >48 saat / düzenlenecek mesaj bulunamadı.
+    (a) panel kaydı yok / kayıt >48 saat,
+    (b) düzenlenecek mesaj Telegram'da bulunamadı (kullanıcı silmiş).
+
+    `yeni_mesaj` parametresi geriye dönük uyumluluk içindir ve YOK SAYILIR
+    (2026-11-11 düzeltmesi). Sebep: kuyrukta biriken N adet /start art arda
+    işlenince N taze panel açılıyordu — kullanıcının gördüğü "üst üste menüler".
+
     "message is not modified" hatası değişiklik-yok demektir: yakalanır, sessizce
     yutulur (hata sayılmaz).
 
     Döner: True = panel güncellendi/oluşturuldu.
     """
-    if not yeni_mesaj:
-        panel_id, zaman = _panel_oku()
-        if panel_id is not None and zaman is not None:
-            if datetime.now(UTC) - zaman <= PANEL_48_SAAT:
-                sonuc = api_call(
-                    "editMessageText",
-                    {
-                        "chat_id": CHAT_ID,
-                        "message_id": panel_id,
-                        "text": _html_guvenli(metin),
-                        "parse_mode": "HTML",
-                        "reply_markup": {"inline_keyboard": butonlar},
-                    },
-                )
-                if sonuc is not None and sonuc.get("ok"):
-                    return True
-                aciklama = str(sonuc.get("description", "")) if isinstance(sonuc, dict) else ""
-                if "message is not modified" in aciklama.lower():
-                    print("[Panel] İçerik zaten güncel — sessizce geçildi")
-                    return True
-                print("[Panel] Panel mesajı düzenlenemedi — taze panel açılıyor")
-            else:
-                print("[Panel] Panel mesajı 48 saatten eski — taze panel açılıyor")
-            _panel_temizle()
+    del yeni_mesaj  # kasıtlı olarak yok sayılır — aşağıdaki mantık tek doğru kaynaktır
+    panel_id, zaman = _panel_oku()
+    if panel_id is not None and zaman is not None:
+        if datetime.now(UTC) - zaman <= PANEL_48_SAAT:
+            sonuc = api_call(
+                "editMessageText",
+                {
+                    "chat_id": CHAT_ID,
+                    "message_id": panel_id,
+                    "text": _html_guvenli(metin),
+                    "parse_mode": "HTML",
+                    "reply_markup": {"inline_keyboard": butonlar},
+                },
+            )
+            if sonuc is not None and sonuc.get("ok"):
+                return True
+            aciklama = str(sonuc.get("description", "")) if isinstance(sonuc, dict) else ""
+            if "message is not modified" in aciklama.lower():
+                print("[Panel] İçerik zaten güncel — sessizce geçildi")
+                return True
+            print("[Panel] Panel mesajı düzenlenemedi — taze panel açılıyor")
+        else:
+            print("[Panel] Panel mesajı 48 saatten eski — taze panel açılıyor")
+        _panel_temizle()
     return _panel_yeni_gonder(metin, butonlar)
 
 
@@ -356,7 +391,12 @@ def get_main_menu_buttons() -> list[list[dict[str, Any]]]:
 
 
 def menyu_gonder(yeni_mesaj: bool = False) -> bool:
-    """Ana menüyü göster — /start için yeni mesaj, diğer komutlarda edit-in-place."""
+    """Ana menüyü göster — edit-in-place (tek panel felsefesi).
+
+    `yeni_mesaj` parametresi geriye dönük uyumluluk için durur ama artık YOK SAYILIR:
+    panel geçerliyse her zaman aynı mesaj düzenlenir. Yeni mesaj kararı yalnızca
+    panel_goster'in kayıt/48 saat/edit-404 mantığıyla verilir.
+    """
     return panel_goster(MENU_BASLIGI, get_main_menu_buttons(), yeni_mesaj=yeni_mesaj)
 
 
@@ -576,6 +616,39 @@ def _son_kosu_ozeti() -> str:
     olusturma = str(k.get("created_at", ""))[:16]
     sonuc = k.get("conclusion") or k.get("status") or BILINMIYOR
     return f"{olusturma} UTC · {sonuc}"
+
+
+def _poller_ozeti() -> str:
+    """Bot poller'ının son koşusu ve gecikmesi — 'tepki yok' şikâyetinin kökü.
+
+    Telegram update'leri poller çalışana kadar kuyrukta bekler; poller 3 saat
+    susarsa kullanıcı 3 saat cevap alamaz ve sonra tüm mesajlar toplu işlenir.
+    Bu satır durumu panelde görünür kılar (uydurma sayı yok).
+    """
+    veri = _github_get("actions/workflows/telegram_bot.yml/runs?per_page=1")
+    kosular = (veri or {}).get("workflow_runs") or []
+    if not kosular:
+        return f"{BILINMIYOR} (koşu kaydı okunamadı)"
+    k = kosular[0]
+    damga = str(k.get("created_at", ""))
+    sonuc = k.get("conclusion") or k.get("status") or BILINMIYOR
+    gecikme = _gecen_dakika(damga)
+    if gecikme is None:
+        return f"{damga[:16]} UTC · {sonuc}"
+    return f"{damga[:16]} UTC · {sonuc} · {gecikme} dk önce"
+
+
+def _gecen_dakika(iso_damga: str) -> int | None:
+    """ISO zaman damgasından bu yana geçen dakika; okunamazsa None."""
+    if not iso_damga:
+        return None
+    try:
+        an = datetime.fromisoformat(iso_damga.replace("Z", "+00:00"))
+    except Exception:
+        return None
+    if an.tzinfo is None:
+        an = an.replace(tzinfo=UTC)
+    return int((datetime.now(UTC) - an).total_seconds() // 60)
 
 
 def _tetikleyici_sagligi() -> str:
@@ -847,12 +920,14 @@ def ekran_sistem() -> tuple[str, list[list[dict[str, Any]]]]:
     satirlar += [
         "",
         f"🎬 Son üretim koşusu: {_son_kosu_ozeti()}",
+        f"📡 Bot poller: {_poller_ozeti()}",
         f"🧭 Tetikleyici: {_tetikleyici_sagligi()}",
         f"🚫 {_kota_birim_ozeti()}",
         f"📐 Günlük yükleme tavanı: {KOTA_TAVANI} (10000/1600 birim)",
     ]
     butonlar = [
         [{"text": "🔄 Yenile", "callback_data": "sistem_goster"}],
+        [{"text": "🧹 Panelleri temizle", "callback_data": "panelleri_temizle"}],
         [{"text": "← Geri", "callback_data": "ay:kok"}, {"text": "🏠 Menü", "callback_data": "menu_main"}],
     ]
     return "\n".join(satirlar), butonlar
@@ -1024,6 +1099,15 @@ def _handle_callback_icerde(callback_data: str, callback_id: str, kullanici_id: 
         answer_callback(callback_id, "Sistem durumu yükleniyor...")
         _ekran_goster(ekran_sistem())
         return
+    if callback_data == "panelleri_temizle":
+        # Poller gecikince biriken panelleri ekrandan siler (geçmiş birikim temizliği).
+        silinen = eski_panelleri_sil()
+        answer_callback(
+            callback_id,
+            f"{silinen} mesaj silindi" if silinen else "Silinecek eski panel bulunamadı",
+        )
+        _ekran_goster(ekran_sistem())
+        return
     parcalar = callback_data.split(":")
     if len(parcalar) == 3 and parcalar[0] == "ay" and parcalar[1] == "g":
         grup = parcalar[2]
@@ -1133,16 +1217,18 @@ MENU_KOMUTLARI = {"/start", "/menu", "menü", "menu"}
 def handle_message(text: str) -> str:
     """Metin komutlarını işler.
 
-    - /start: panelin BİLİNÇLİ sıfırlama noktası — HER SEFERİNDE taze panel mesajı
-      açar (TODO 4 istisnası b).
-    - /menu, menu, menü: panel varsa AYNI mesajı düzenler (tek mesaj kuralı).
+    - /start ve /menu: paneli GÖSTERİR. Kayıtlı panel varsa AYNI mesaj düzenlenir.
+      Yeni panel yalnızca kayıt yok / >48 saat / mesaj silinmiş (edit 404) ise açılır.
     - Diğer tanınan komutlar reply_markup OLMAYAN düz mesajla cevap verir.
     - Tanınmayan metne cevap VERİLMEZ: klavye açıkken her tuş vuruşu spam üretmesin.
+
+    NOT (2026-11-11 düzeltmesi): /start "her seferinde yeni panel" davranışı
+    KALDIRILDI. Poller saatlerce çalışmadığında Telegram update'leri kuyruklar;
+    kuyruk boşalınca N adet /start art arda işleniyor ve ekrana N panel düşüyordu
+    (kanıt: 2026-11-11 koşusu — 5 × "/start" tek koşuda, ekranda üst üste paneller).
+    Panel sıfırlama artık yalnızca kayıt geçersizse olur.
     """
     text = text.strip().lower()
-    if text == "/start":
-        menyu_gonder(yeni_mesaj=True)
-        return ""
     if text in MENU_KOMUTLARI:
         menyu_gonder()
         return ""

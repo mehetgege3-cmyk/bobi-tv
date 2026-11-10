@@ -197,10 +197,13 @@ def test_menu_komutu_tek_menyu_gonderir_ve_id_saklanir(
 
 
 def test_uc_ust_uste_menyu_toplam_bir_mesaj(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    """TODO 4(b) istisnası: /start panelin BİLİNÇLİ sıfırlama noktasıdır — her
-    /start taze panel mesajı açar (3 /start → 3 sendMessage, 0 düzenleme).
-    Spam koruması edit-yolunda korunur: bkz. test_telegram_menu.py
-    (menu metni tekrarları tek mesajı düzenler)."""
+    """3 × /start → TAM 1 panel + 2 düzenleme (ekranda tek menü).
+
+    2026-11-11 düzeltmesi: önceki sözleşme "her /start yeni panel" idi ve
+    kullanıcının şikâyeti olan "üst üste menüler"i bizzat üretiyordu.
+    Poller geciktiğinde biriken /start'lar toplu işlenir (kanıt: tek koşuda
+    5 × "/start"); bu yüzden tekrar eden /start panel ÇOĞALTMAZ.
+    """
     monkeypatch.setattr(tb, "MENU_STATE_YOLU", tmp_path / "menu.json")
     cagrilar, sahte_post = _telegram_yakalayici()
     monkeypatch.setattr("modules.telegram_bot.requests.post", sahte_post)
@@ -209,8 +212,9 @@ def test_uc_ust_uste_menyu_toplam_bir_mesaj(monkeypatch: pytest.MonkeyPatch, tmp
     yeni_menuler = sum(1 for yontem, _ in cagrilar if yontem == "sendMessage")
     guncellemeler = sum(1 for yontem, _ in cagrilar if yontem == "editMessageText")
     eski_yol = sum(1 for yontem, _ in cagrilar if yontem == "editMessageReplyMarkup")
-    assert yeni_menuler == 3, f"her /start yeni panel açmalı, gelen: {yeni_menuler}"
-    assert guncellemeler == 0 and eski_yol == 0
+    assert yeni_menuler == 1, f"3 /start tek panel olmalı, gelen: {yeni_menuler}"
+    assert guncellemeler == 2, f"sonraki 2 /start düzenlemeli, gelen: {guncellemeler}"
+    assert eski_yol == 0
 
 
 def test_bayat_menu_silinmisse_yeni_menyu_acilir(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

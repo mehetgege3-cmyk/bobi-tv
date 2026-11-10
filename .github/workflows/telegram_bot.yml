@@ -15,7 +15,7 @@ jobs:
   poll-messages:
     name: Telegram Bot Poll
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 350
 
     steps:
       - name: Repo'yu çek
@@ -33,21 +33,30 @@ jobs:
           python -m pip install --upgrade pip -q
           python -m pip install -q requests
 
-      - name: Bot mesajlarını kontrol et ve işle
+      - name: Bot mesajlarını kontrol et ve işle (uzun ömürlü döngü)
+        # NEDEN DÖNGÜ: GitHub cron '*/5' fiilen çalışmıyor (ölçüm 2026-11-10:
+        # poller günde 2 koşu, aralarında 168 dk; kullanıcı 3 saat cevap alamadı).
+        # Kullanıcı mesajı Telegram'da bekler; poller çalışana kadar "tepki yok"
+        # görünür ve biriken mesajlar toplu işlenir. Çözüm cron'a güvenmek değil,
+        # tek koşuyu ~5.5 saat ayakta tutup 20 sn'de bir getUpdates çağırmak.
+        # Adım 330 dk, job 350 dk; süre dolunca TEMİZ çıkış (exit 0) ve yeni koşu
+        # devralır. TELEGRAM_DONGU_DK=0 → eski tek-seferlik davranış.
+        timeout-minutes: 330
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           GH_TOKEN: ${{ secrets.GH_PAT }}
+          TELEGRAM_DONGU_DK: '330'
+          TELEGRAM_YOKLAMA_SN: '20'
         run: |
           python - << 'PYEOF'
-          import os, json, sys, requests
+          import os, json, sys, time, requests
           from datetime import datetime, timezone
           from pathlib import Path
 
           BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
           CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 
-          # HATA DURUMLARINDA exit(1) — bot ölürse kırmızı tik, sessiz yeşil değil
           if not BOT_TOKEN:
               print("::error::TELEGRAM_BOT_TOKEN secret tanımlı değil")
               sys.exit(1)
@@ -69,71 +78,93 @@ jobs:
               except Exception:
                   pass
 
-          try:
-              resp = requests.post(
-                  f"{BASE_URL}/getUpdates",
-                  json={"timeout": 5, "offset": offset, "allowed_updates": ["message", "callback_query"]},
-                  timeout=15,
+          DONGU_DK = int(os.environ.get("TELEGRAM_DONGU_DK", "0"))
+          YOKLAMA_SN = int(os.environ.get("TELEGRAM_YOKLAMA_SN", "20"))
+          baslangic = time.monotonic()
+
+          def dongu_bitti() -> bool:
+              """Döngü süresi doldu mu? DONGU_DK<=0 → tek seferlik (eski davranış)."""
+              if DONGU_DK <= 0:
+                  return True
+              return (time.monotonic() - baslangic) >= DONGU_DK * 60
+
+          ardisik_hata: list[str] = []
+          print(f"[dongu] {DONGU_DK} dk boyunca {YOKLAMA_SN} sn aralıkla yoklanacak")
+
+          while True:
+              if dongu_bitti():
+                  print("[dongu] sure doldu — temiz cikis (yeni kosu devralacak)")
+                  sys.exit(0)
+
+              try:
+                  resp = requests.post(
+                      f"{BASE_URL}/getUpdates",
+                      json={"timeout": 5, "offset": offset, "allowed_updates": ["message", "callback_query"]},
+                      timeout=15,
+                  )
+              except Exception as e:
+                  # Ağ hatasi donguyu OLDURMEZ: 3 kez ust uste basarisiz olursa cik.
+                  ardisik_hata.append(str(e)[:120])
+                  if len(ardisik_hata) >= 3:
+                      print(f"::error::Telegram API bağlantı hatası (3 deneme): {ardisik_hata[-1]}")
+                      sys.exit(1)
+                  print(f"::warning::Telegram API hatası, {YOKLAMA_SN} sn sonra tekrar: {ardisik_hata[-1]}")
+                  time.sleep(YOKLAMA_SN)
+                  continue
+
+              if resp.status_code != 200:
+                  print(f"::error::Telegram API HTTP hatası: {resp.status_code}")
+                  sys.exit(1)
+
+              data = resp.json()
+              if not data.get("ok"):
+                  print(f"::error::Telegram API başarısız: {data}")
+                  sys.exit(1)
+              ardisik_hata.clear()
+
+              updates = data.get("result", [])
+              if not updates:
+                  time.sleep(YOKLAMA_SN)
+                  continue
+
+              from modules.telegram_bot import (
+                  bekleyen_ayarlari_yeniden_dene,
+                  bosuk_uyarisi_gonder,
+                  updates_isle,
               )
-          except Exception as e:
-              print(f"::error::Telegram API bağlantı hatası: {e}")
-              sys.exit(1)
 
-          if resp.status_code != 200:
-              print(f"::error::Telegram API HTTP hatası: {resp.status_code}")
-              sys.exit(1)
+              try:
+                  bekleyen_durum = bekleyen_ayarlari_yeniden_dene()
+                  if bekleyen_durum:
+                      print(f"[ayar] bekleyen: {bekleyen_durum}")
+              except Exception as bekleyen_hata:
+                  print(f"::warning::Bekleyen ayar denemesi hata verdi: {bekleyen_hata}")
 
-          data = resp.json()
-          if not data.get("ok"):
-              print(f"::error::Telegram API başarısız: {data}")
-              sys.exit(1)
+              bosuk_esigi = int(os.environ.get("TELEGRAM_BOSUK_ESIGI", "3"))
+              bosuk = updates[0]["update_id"] - offset
+              if offset > 0 and bosuk > bosuk_esigi:
+                  if bosuk_uyarisi_gonder(bosuk, offset_guncelleme):
+                      print(f"[bosluk] uyari gonderildi: {bosuk} guncelleme kayip")
+                  else:
+                      print("[bosluk] uyari gonderilemedi (logda kalir)")
 
-          updates = data.get("result", [])
-          if not updates:
-              print("ℹ️ Yeni mesaj yok")
-              sys.exit(0)  # mesaj yok = başarı
+              yeni_offset, islenen, reddedildi, kesinti = updates_isle(updates, offset)
+              offset = yeni_offset
+              offset_guncelleme = datetime.now(timezone.utc).isoformat()
 
-          from modules.telegram_bot import (
-              bekleyen_ayarlari_yeniden_dene,
-              bosuk_uyarisi_gonder,
-              updates_isle,
-          )
+              offset_file.write_text(json.dumps({
+                  "offset": yeni_offset,
+                  "guncelleme": offset_guncelleme,
+              }))
+              print(f"[offset] {yeni_offset} (islenen: {islenen}, reddedilen: {reddedildi})")
 
-          # TODO 8: önceki koşudan push edilememiş ayar değişikliği varsa tekrar dene.
-          # Başarısızlık burada YUTULMAZ: log + workflow uyarısı (koşu kırmızıya gitmez,
-          # bekleyen kuyruk korunur ve sonraki koşu yeniden dener).
-          try:
-              bekleyen_durum = bekleyen_ayarlari_yeniden_dene()
-              if bekleyen_durum:
-                  print(f"🔁 Bekleyen ayar: {bekleyen_durum}")
-          except Exception as bekleyen_hata:
-              print(f"::warning::Bekleyen ayar denemesi hata verdi: {bekleyen_hata}")
+              if reddedildi > 0:
+                  print(f"::warning:: {reddedildi} yetkisiz mesaj reddedildi — bot kullanıcı adı sızdırmış olabilir")
+              if kesinti:
+                  print("::error::Bir update işlenemedi; offset güvenli noktada tutuldu, kalan update'ler sonraki turda yeniden denenecek")
+                  sys.exit(1)
 
-          # TODO 3a: ölü aralık tespiti — beklenen ile gelen update_id arasındaki boşluk.
-          # getUpdates 24 saatlik pencere nedeniyle aradaki mesajlar kalıcı kayıptır;
-          # kullanıcı bunu en az bir kez açıkça bilmeli.
-          bosuk_esigi = int(os.environ.get("TELEGRAM_BOSUK_ESIGI", "3"))
-          bosuk = updates[0]["update_id"] - offset
-          if offset > 0 and bosuk > bosuk_esigi:
-              if bosuk_uyarisi_gonder(bosuk, offset_guncelleme):
-                  print(f"⚠️ Boşluk uyarısı gönderildi: {bosuk} güncelleme kayıp olmuş")
-              else:
-                  print("⚠️ Boşluk uyarısı gönderilemedi (logda kalır)")
-
-          # TODO 3b: offset yalnızca başarılı işlemde ilerler (istisna → o update'ten önce kalır)
-          yeni_offset, islenen, reddedildi, kesinti = updates_isle(updates, offset)
-
-          offset_file.write_text(json.dumps({
-              "offset": yeni_offset,
-              "guncelleme": datetime.now(timezone.utc).isoformat(),
-          }))
-          print(f"📝 Offset kaydedildi: {yeni_offset} (işlenen: {islenen}, reddedilen: {reddedildi})")
-
-          if reddedildi > 0:
-              print(f"::warning:: {reddedildi} yetkisiz mesaj reddedildi — bot kullanıcı adı sızdırmış olabilir")
-          if kesinti:
-              print("::error::Bir update işlenemedi; offset güvenli noktada tutuldu, kalan update'ler sonraki koşuda yeniden denenecek")
-              sys.exit(1)
+              time.sleep(1)
           PYEOF
 
       - name: State dosyasını commit et

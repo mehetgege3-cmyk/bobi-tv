@@ -33,7 +33,7 @@ Panel, her değerin hangi katmandan geldiğini etiketle gösterir: `6 (state)` /
 | Kota dolunca | `KOTA_DOLU_DAVRANIS` | seçim | `sessiz_dur`, `hata` | **`sessiz_dur`** | **yüksek** | `sessiz_dur` → koşu **exit 0** ile biter (C2'deki `exit(1)` self-repair fırtınası — günde ~144 deneme + main'e otonom push — biter). `hata` → **exit 1**, kırmızı tik (eski davranış). |
 | Kota rezerv eşiği | `KOTA_REZERV` | sayı | 0–2000 (ön ayarlar) | `500` | düşük | Birim cinsinden rezerv eşiği. Workflow kota birimini henüz rapor etmediği için panelde etkin kullanım `bilinmiyor` görünür. |
 
-## 🧹 Temizlik — SADECE GÖRÜNTÜLE (`etkili=False`)
+## 🧹 Temizlik — KİLİTLİ (etkili, ama değiştirilemez)
 
 | Ayar | Env | Mevcut değer | Risk |
 |---|---|---|---|
@@ -41,10 +41,17 @@ Panel, her değerin hangi katmandan geldiğini etiketle gösterir: `6 (state)` /
 | Minimum izlenme eşiği | `MIN_IZLENME_ESIGI` | `100` | yüksek |
 | İzlenme kontrol süresi | `IZLENME_KONTROL_DK` | `1440` | düşük |
 
-> ⚠️ Bu değerleri değiştirmek otomatik temizlemeyi **ETKİLEMEZ**. Temizleme workflow'u kendi sabitini
-> kullanıyor (`cleanup_low_views.yml` → `if views < 100`). Bilinen sorun **(H1)**, ayrı görevde çözülecek.
-> Bu grupta panel hiçbir değiştirme düğmesi ÜRETMEZ (`sadece_goruntule`); değişiklik denemesi reddedilir
-> ve değişiklik geçmişine yazılmaz. Yalan söyleme yasağı: etkisiz olana "etkili" denmez.
+> ⛔ **BU AYARLAR KANALDA GERÇEK VİDEO SİLER.** `main_pipeline.py:145-152` bu üç env'i
+> okuyup `dusuk_izlenmeli_videolari_temizle()` çağırır; `youtube_upload.py:279-290` da
+> `videos.delete` ile videoyu **kalıcı olarak** siler. Yani bu üçü **etkilidir** (`etkili=True`).
+>
+> 🔒 **KİLİTLİ olmalarının sebebi kaza korumasıdır**, etkisizlik değil: panel bu grupta hiçbir
+> değiştirme düğmesi ÜRETMEZ (`sadece_goruntule`), değişiklik denemesi reddedilir ve geçmişe
+> yazılmaz. Değiştirmek için kod değişikliği gerekir.
+>
+> ⚠️ Ayrıca **ikinci** bir silme mekanizması vardır: `cleanup_low_views.yml` kendi sabitini
+> kullanır (`if views < 100`) ve yaş filtresi yoktur — bu **H1** sorunudur, ayrı görevde çözülecek.
+> H1 yalnızca o workflow için geçerlidir; yukarıdaki üç ayarın gerçek silme davranışıyla ilgisi yoktur.
 
 ## 🔑 Sistem durumu — SADECE GÖRÜNTÜLE (değer asla yazdırılmaz)
 

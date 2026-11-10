@@ -1,42 +1,95 @@
 """
-BOBİ TV — İnteraktif Telegram Kontrol Paneli (güvenlik düzeltmeli)
-- Inline button'lar ile tam kontrol
-- Manuel tetikleme, durum sorgulama, istatistikler
+BOBİ TV — İnteraktif Telegram Kontrol Paneli (hiyerarşik ayarlar sürümü)
+- Hiyerarşik menü: Ana(4 düğme) → Rapor → Üret → Ayarlar → Grup → Ayar → Onay
+- TEK MESAJ KURALI (TODO 4): her etkileşim AYNI panel mesajını düzenler
+  (editMessageText + reply_markup). Yeni mesaj yalnızca: /start, panel >48 saat,
+  düzenlenecek mesaj bulunamadı.
+- callback_data ASLA değer taşımaz, sadece kimlik taşır; değer sunucuda
+  katalog + state'ten çözülür (uydurma payload işe yaramaz).
 - GÜVENLİK: gelen her update CHAT_ID ile doğrulanır (process_update)
-- GÜVENLİK: GH_TOKEN asla argv'ye girmez (requests header)
+- GÜVENLİK: GH_TOKEN asla argv'ye girmez (requests header); secret değeri
+  panelde ASLA gösterilmez (yalnız ✅ tanımlı / ⛔ eksik)
+- GÜVENLİK: subprocess import EDİLMEZ (PAT argv sızıntısı tuzağı); git işleri
+  modules/ayar_deposu.commit_ve_yukle içinde kalır.
 """
-import os
+
 import html
 import json
-import requests
-from datetime import datetime, timezone
+import os
+from contextlib import suppress
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
+
+import requests
+
+import modules.ayar_deposu as ayar_deposu
+from modules.ayar_katalogu import (
+    GRUPLAR,
+    KOTA_TAVANI,
+    TEMIZLIK_UYARI,
+    ayar_getir,
+    degistirilebilir_mi,
+    grup_ayarlari,
+)
 
 BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
-CALLBACK_PREFIX = {
-    "status": "status_", "trigger": "trigger_", "stats": "stats_",
-    "quality": "quality_", "quota": "quota_", "help": "help_", "menu": "menu_",
+MENU_STATE_YOLU = Path("bobi_tv/state/telegram_menu.json")
+AYARLAR_STATE_YOLU = ayar_deposu.AYARLAR_YOLU
+GECMIS_YOLU = ayar_deposu.GECMIS_YOLU
+BEKLEYEN_YOLU = ayar_deposu.BEKLEYEN_YOLU
+KOTA_YOLU = Path("bobi_tv/state/youtube_quota.json")
+
+MENU_BASLIGI = "🎬 <b>BOBİ TV Kontrol Paneli</b>\n\nHoş geldiniz! Bir işlem seçin:"
+PANEL_48_SAAT = timedelta(hours=48)
+BILINMIYOR = "bilinmiyor"
+
+GERI_MENUSU: list[dict[str, str]] = [
+    {"text": "← Geri", "callback_data": "menu_main"},
+    {"text": "🏠 Menü", "callback_data": "menu_main"},
+]
+
+# TODO 3 — menü derinliği: ana(0) → ayarlar(1) → grup(2) → ayar/onay(3).
+# Onay/dry-run ekranları derinlik 3'ün EŞİDİR (ay-detay ekranının yerine geçer).
+CALLBACK_DERINLIK: dict[str, int] = {
+    "menu_main": 0,
+    "rapor_goster": 1,
+    "uret_menu": 1,
+    "status_now": 1,
+    "trigger_now": 1,
+    "stats_today": 1,
+    "quality_today": 1,
+    "quota_status": 1,
+    "help_show": 1,
+    "ay:kok": 1,
+    "ay:gecmis": 2,
+    "sistem_goster": 2,
+    "ay:g": 2,
+    "ay:s": 3,
+    "ay:v": 3,
+    "ay:onay": 3,
+    "ay:iptal": 3,
+    "ay:test": 3,
+    "uret_baslat": 2,
+    "uret_render_test": 2,
 }
 
 
 def _izinli_chat_idleri() -> set[int]:
-    """TELEGRAM_CHAT_ID virgülle ayrılmış olabilir; int kümesi döndürür."""
+    """TELEGRAM_CHAT_ID virgülla ayrılmış olabilir; int kümesi döndürür."""
     out = set()
     for parca in CHAT_ID.split(","):
         parca = parca.strip()
         if parca:
-            try:
+            with suppress(ValueError):
                 out.add(int(parca))
-            except ValueError:
-                pass
     return out
 
 
-def update_authorized(update: dict) -> bool:
+def update_authorized(update: dict[str, Any]) -> bool:
     """Gelen update'in izinli sohbetten geldiğini doğrular (güvenlik kapısı)."""
     izinli = _izinli_chat_idleri()
     if not izinli:
@@ -53,7 +106,7 @@ def update_authorized(update: dict) -> bool:
     return False
 
 
-def process_update(update: dict) -> bool:
+def process_update(update: dict[str, Any]) -> bool:
     """Tek tüketim noktası: önce yetki kontrolü, sonra dispatch.
     True = işlendi, False = reddedildi (yetkisiz)."""
     if not update_authorized(update):
@@ -64,7 +117,8 @@ def process_update(update: dict) -> bool:
         callback_id = cq["id"]
         callback_data = cq.get("data", "")
         if callback_data:
-            handle_callback(callback_data, callback_id)
+            kullanici_id = cq.get("from", {}).get("id")
+            handle_callback(callback_data, callback_id, kullanici_id)
             print(f"✅ Callback işlendi: {callback_data}")
     elif "message" in update:
         msg = update["message"]
@@ -76,16 +130,13 @@ def process_update(update: dict) -> bool:
 
 
 def updates_isle(updates: list[dict[str, Any]], offset: int) -> tuple[int, int, int, bool]:
-    """Güncelleme yığınını sırayla işler (TODO 3 — offset kaybı koruması).
+    """Güncelleme yığınını sırayla işler (offset kaybı koruması).
 
     Offset YALNIZCA update başarılı şekilde ele alındığında ilerler:
     - process_update True dönerse (işlendi) offset ilerler.
-    - process_update False dönerse (yetkisiz — bilinçli red kararı) offset
-      ilerler; aksi halde aynı yetkisiz mesaj her koşuda sonsuza dek yeniden
-      gelirdi.
-    - process_update İSTİSNA fırlatırsa döngü durur, offset o update'ten ÖNCE
-      kalır: mesaj kaybolmaz, bir sonraki koşuda yeniden denemek için korunur
-      (sıralı yeniden deneme — kalan update'ler de yeniden gelir).
+    - process_update False dönerse (yetkisiz — bilinçli red kararı) offset ilerler.
+    - process_update İSTİSNA fırlatırsa döngü durur, offset o update'ten ÖNCE kalır:
+      mesaj kaybolmaz, bir sonraki koşuda yeniden denemek için korunur.
 
     Döner: (yeni_offset, islenen, reddedilen, kesinti_olustu)
     """
@@ -107,21 +158,15 @@ def updates_isle(updates: list[dict[str, Any]], offset: int) -> tuple[int, int, 
     return offset, islenen, reddedilen, kesinti
 
 
-def bosuk_uyarisi_gonder(bosuk: int, onceki_guncelleme: Optional[str]) -> bool:
-    """Uzun kesinti sonrası ilk koşuda düşen update sayısını raporlar (TODO 3a).
-
-    getUpdates 24 saatlik pencere nedeniyle ölü aralıktaki mesajlar Telegram'da
-    kalıcı olarak kaybolur; kullanıcı bunu en az bir kez açıkça bilmeli.
-    onceki_guncelleme: offset state dosyasındaki son koşu damgası (ISO); yoksa
-    süre "bilinmeyen süre" olarak raporlanır.
-    """
+def bosuk_uyarisi_gonder(bosuk: int, onceki_guncelleme: str | None) -> bool:
+    """Uzun kesinti sonrası ilk koşuda düşen update sayısını raporlar."""
     sure_metni = "bilinmeyen süre"
     if onceki_guncelleme:
         try:
             gz = datetime.fromisoformat(str(onceki_guncelleme))
             if gz.tzinfo is None:
-                gz = gz.replace(tzinfo=timezone.utc)
-            dk = int((datetime.now(timezone.utc) - gz).total_seconds() / 60)
+                gz = gz.replace(tzinfo=UTC)
+            dk = int((datetime.now(UTC) - gz).total_seconds() / 60)
             sure_metni = f"~{dk} dakika" if dk < 120 else f"~{dk // 60} saat"
         except Exception:
             pass
@@ -133,35 +178,51 @@ def bosuk_uyarisi_gonder(bosuk: int, onceki_guncelleme: Optional[str]) -> bool:
     return send_message(metin)
 
 
-def api_call(method: str, data: dict) -> Optional[dict]:
+# ---------------------------------------------------------------------------
+# Telegram API yardımcıları
+# ---------------------------------------------------------------------------
+
+
+def api_call(method: str, data: dict[str, Any]) -> dict[str, Any] | None:
     if not BOT_TOKEN:
         print("[Telegram Bot] Token eksik")
         return None
     try:
         resp = requests.post(f"{BASE_URL}/{method}", json=data, timeout=15)
         try:
-            body = resp.json()
+            json_degeri: Any = resp.json()
         except ValueError:
-            body = None
+            json_degeri = None
+        body: dict[str, Any] | None = json_degeri if isinstance(json_degeri, dict) else None
         if resp.status_code == 200:
             return body
         # Hata gövdesi de döndürülür: çağıran "message is not modified" gibi
-        # durumlara ayırt edici davranabilsin diye (menü güncelleme yolu buna muhtaç).
-        aciklama = str(body.get("description", "")) if isinstance(body, dict) else ""
+        # durumlara ayırt edici davranabilsin diye (tek mesaj kuralı buna muhtaç).
+        aciklama = str(body.get("description", "")) if body else ""
         print(f"[Telegram Bot] API hatası: {resp.status_code} {aciklama}")
-        return body if isinstance(body, dict) else None
+        return body
     except Exception as e:
         print(f"[Telegram Bot] İstisna: {e}")
         return None
 
 
-def send_message_with_buttons(text: str, buttons: list[list[dict]], parse_mode: str = "HTML") -> bool:
-    # TEK escape noktası: veri alanlarını (& < >) kaçır, <b></b> etiketlerini koru
-    guvenli_metin = html.escape(text, quote=False).replace("&lt;b&gt;", "<b>").replace("&lt;/b&gt;", "</b>")
-    result = api_call("sendMessage", {
-        "chat_id": CHAT_ID, "text": guvenli_metin, "parse_mode": parse_mode,
-        "reply_markup": {"inline_keyboard": buttons},
-    })
+def _html_guvenli(text: str) -> str:
+    """TEK escape noktası: veri alanlarını (& < >) kaçır, <b></b> etiketlerini koru."""
+    return html.escape(text, quote=False).replace("&lt;b&gt;", "<b>").replace("&lt;/b&gt;", "</b>")
+
+
+def send_message_with_buttons(
+    text: str, buttons: list[list[dict[str, Any]]], parse_mode: str = "HTML"
+) -> bool:
+    result = api_call(
+        "sendMessage",
+        {
+            "chat_id": CHAT_ID,
+            "text": _html_guvenli(text),
+            "parse_mode": parse_mode,
+            "reply_markup": {"inline_keyboard": buttons},
+        },
+    )
     return result is not None and result.get("ok", False)
 
 
@@ -171,104 +232,166 @@ def send_message(text: str, parse_mode: str = "HTML") -> bool:
 
 
 def answer_callback(callback_id: str, text: str = "", show_alert: bool = False) -> bool:
-    result = api_call("answerCallbackQuery", {
-        "callback_query_id": callback_id, "text": text, "show_alert": show_alert,
-    })
+    result = api_call(
+        "answerCallbackQuery",
+        {
+            "callback_query_id": callback_id,
+            "text": text,
+            "show_alert": show_alert,
+        },
+    )
     return result is not None and result.get("ok", False)
 
 
-def get_main_menu_buttons() -> list[list[dict]]:
-    return [
-        [{"text": "📊 Durum", "callback_data": "status_now"},
-         {"text": "🎬 Üret", "callback_data": "trigger_now"}],
-        [{"text": "📈 İstatistik", "callback_data": "stats_today"},
-         {"text": "🎯 Kalite", "callback_data": "quality_today"}],
-        [{"text": "🚫 Kota", "callback_data": "quota_status"},
-         {"text": "❓ Yardım", "callback_data": "help_show"}],
-    ]
+# ---------------------------------------------------------------------------
+# TODO 4 — TEK MESAJ KURALI: panel mesajı izleme + edit-in-place
+# ---------------------------------------------------------------------------
 
 
-MENU_STATE_YOLU = Path("bobi_tv/state/telegram_menu.json")
-MENU_BASLIGI = "🎬 <b>BOBİ TV Kontrol Paneli</b>\n\nHoş geldiniz! Bir işlem seçin:"
-
-
-def _menu_durumu_oku() -> Optional[int]:
-    """Saklanan ana menü mesaj id'si (hedef sohbet eşleşiyorsa) ya da None."""
+def _panel_oku() -> tuple[int | None, datetime | None]:
+    """Saklanan panel mesaj id'si + zamanı (hedef sohbet eşleşiyorsa)."""
     try:
         if MENU_STATE_YOLU.exists():
             veri = json.loads(MENU_STATE_YOLU.read_text(encoding="utf-8"))
             if str(veri.get("chat_id", "")) == str(CHAT_ID):
-                return int(veri.get("message_id"))
+                mesaj_id = int(veri.get("message_id"))
+                zaman = datetime.fromisoformat(str(veri.get("zaman")))
+                if zaman.tzinfo is None:
+                    zaman = zaman.replace(tzinfo=UTC)
+                return mesaj_id, zaman
     except Exception:
         pass
-    return None
+    return None, None
 
 
-def _menu_durumu_yaz(message_id: int) -> None:
+def _panel_yaz(message_id: int) -> None:
     try:
         MENU_STATE_YOLU.parent.mkdir(parents=True, exist_ok=True)
         MENU_STATE_YOLU.write_text(
-            json.dumps({"chat_id": CHAT_ID, "message_id": message_id}), encoding="utf-8"
+            json.dumps(
+                {"chat_id": CHAT_ID, "message_id": message_id, "zaman": datetime.now(UTC).isoformat()}
+            ),
+            encoding="utf-8",
         )
     except Exception:
         pass
 
 
-def _menu_durumu_temizle() -> None:
-    try:
+def _panel_temizle() -> None:
+    with suppress(Exception):
         MENU_STATE_YOLU.unlink(missing_ok=True)
-    except Exception:
-        pass
 
 
-def menyu_gonder() -> bool:
-    """Ana menüyü göster — menü spam'inin TEK çıkış kapısı.
-
-    Saklanan menü mesajı hâlâ açıksa YENİ MESAJ GÖNDERİLMEZ; aynı mesajın
-    klavyesi editMessageReplyMarkup ile güncellenir ("message is not modified"
-    değişiklik-yok demektir, başarılı sayılır). Menü mesajı silinmiş/düzenlenemez
-    ise bayat kayıt düşülür ve tek yeni menü açılır.
-
-    Döner: yeni menü mesajı gönderildi ise True, güncelleme/yok sayma ise False.
-    """
-    mevcut = _menu_durumu_oku()
-    if mevcut is not None:
-        sonuc = api_call("editMessageReplyMarkup", {
-            "chat_id": CHAT_ID, "message_id": mevcut,
-            "reply_markup": {"inline_keyboard": get_main_menu_buttons()},
-        })
-        if sonuc is not None and sonuc.get("ok"):
-            print("[Telegram Bot] Menü zaten açık — aynı mesaj güncellendi, yeni menü gönderilmedi")
-            return False
-        aciklama = str(sonuc.get("description", "")) if isinstance(sonuc, dict) else ""
-        if "message is not modified" in aciklama.lower():
-            print("[Telegram Bot] Menü zaten açık ve güncel — yeni menü gönderilmedi")
-            return False
-        # Mesaj silinmiş / düzenlenemiyor: bayat kaydı düş, taze menü aç
-        _menu_durumu_temizle()
-    resp = api_call("sendMessage", {
-        "chat_id": CHAT_ID,
-        "text": MENU_BASLIGI,
-        "parse_mode": "HTML",
-        "reply_markup": {"inline_keyboard": get_main_menu_buttons()},
-    })
+def _panel_yeni_gonder(metin: str, butonlar: list[list[dict[str, Any]]]) -> bool:
+    """Taze panel mesajı açar ve kimliğini izler (tek panel felsefesi)."""
+    resp = api_call(
+        "sendMessage",
+        {
+            "chat_id": CHAT_ID,
+            "text": _html_guvenli(metin),
+            "parse_mode": "HTML",
+            "reply_markup": {"inline_keyboard": butonlar},
+        },
+    )
     if resp is not None and resp.get("ok"):
         mesaj_id = (resp.get("result") or {}).get("message_id")
         if mesaj_id:
-            _menu_durumu_yaz(int(mesaj_id))
+            _panel_yaz(int(mesaj_id))
         return True
     return False
 
 
+def panel_goster(metin: str, butonlar: list[list[dict[str, Any]]], yeni_mesaj: bool = False) -> bool:
+    """Panelde HER etkileşim aynı mesajı düzenler (TODO 4 — istisnasız).
+
+    editMessageText + reply_markup kullanılır. Yeni mesaj yalnızca:
+    (a) kullanıcı /start yazdı (yeni_mesaj=True),
+    (b) panel kaydı yok / >48 saat / düzenlenecek mesaj bulunamadı.
+    "message is not modified" hatası değişiklik-yok demektir: yakalanır, sessizce
+    yutulur (hata sayılmaz).
+
+    Döner: True = panel güncellendi/oluşturuldu.
+    """
+    if not yeni_mesaj:
+        panel_id, zaman = _panel_oku()
+        if panel_id is not None and zaman is not None:
+            if datetime.now(UTC) - zaman <= PANEL_48_SAAT:
+                sonuc = api_call(
+                    "editMessageText",
+                    {
+                        "chat_id": CHAT_ID,
+                        "message_id": panel_id,
+                        "text": _html_guvenli(metin),
+                        "parse_mode": "HTML",
+                        "reply_markup": {"inline_keyboard": butonlar},
+                    },
+                )
+                if sonuc is not None and sonuc.get("ok"):
+                    return True
+                aciklama = str(sonuc.get("description", "")) if isinstance(sonuc, dict) else ""
+                if "message is not modified" in aciklama.lower():
+                    print("[Panel] İçerik zaten güncel — sessizce geçildi")
+                    return True
+                print("[Panel] Panel mesajı düzenlenemedi — taze panel açılıyor")
+            else:
+                print("[Panel] Panel mesajı 48 saatten eski — taze panel açılıyor")
+            _panel_temizle()
+    return _panel_yeni_gonder(metin, butonlar)
+
+
+def get_main_menu_buttons() -> list[list[dict[str, Any]]]:
+    """Ana menü: 6 düğmeden 4'e iner (TODO 3).
+    İstatistik + Kalite + Kota 'Rapor' altına girer."""
+    return [
+        [
+            {"text": "📊 Durum", "callback_data": "status_now"},
+            {"text": "🎬 Üret", "callback_data": "uret_menu"},
+        ],
+        [
+            {"text": "📈 Rapor", "callback_data": "rapor_goster"},
+            {"text": "⚙️ Ayarlar", "callback_data": "ay:kok"},
+        ],
+    ]
+
+
+def menyu_gonder(yeni_mesaj: bool = False) -> bool:
+    """Ana menüyü göster — /start için yeni mesaj, diğer komutlarda edit-in-place."""
+    return panel_goster(MENU_BASLIGI, get_main_menu_buttons(), yeni_mesaj=yeni_mesaj)
+
+
+# ---------------------------------------------------------------------------
+# Durum / rapor metinleri
+# ---------------------------------------------------------------------------
+
+
+def _kota_birim_ozeti() -> str:
+    """TODO 10 panel satırı. Birim bilgisi youtube_quota.json'da YOKSA
+    'bilinmiyor' yazar — sayı UYDURULMAZ."""
+    if not KOTA_YOLU.exists():
+        return "Kota: bilinmiyor (durum dosyası yok)"
+    try:
+        state = json.loads(KOTA_YOLU.read_text(encoding="utf-8"))
+    except Exception:
+        return "Kota: bilinmiyor (dosya okunamadı)"
+    kalan_birim = state.get("kalan_birim")
+    toplam_birim = state.get("toplam_birim")
+    if not isinstance(kalan_birim, int) or not isinstance(toplam_birim, int) or toplam_birim <= 0:
+        return "Kota: bilinmiyor (birim kaydı yok)"
+    kullanilan = max(0, toplam_birim - kalan_birim)
+    yukleme_kaldi = max(0, kalan_birim // 1600)
+    return f"Kota: {kullanilan}/{toplam_birim} birim · ~{yukleme_kaldi} yükleme kaldı"
+
+
 def get_status_text() -> str:
     from modules.kota_state import kota_dolu_mu
+
     arsiv = Path("bobi_tv/archive/videos.json")
-    bugun = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    bugun = datetime.now(UTC).strftime("%Y-%m-%d")
     bugunki = 0
     if arsiv.exists():
         try:
             kayitlar = json.loads(arsiv.read_text(encoding="utf-8"))
-            bugunki = sum(1 for k in kayitlar if k.get("tarih", "")[:10] == bugun)
+            bugunki = sum(1 for k in kayitlar if str(k.get("tarih", ""))[:10] == bugun)
         except Exception:
             pass
     kota_durum = "🚫 DOLU" if kota_dolu_mu() else "✅ BOŞ"
@@ -278,7 +401,7 @@ def get_status_text() -> str:
     son_calisma = "Bilinmiyor"
     if log_dosya.exists():
         try:
-            with open(log_dosya, "r", encoding="utf-8") as f:
+            with open(log_dosya, encoding="utf-8") as f:
                 for line in reversed(f.readlines()):
                     if "===" in line:
                         son_calisma = line.split("[")[1].split("]")[0] if "[" in line else "Bilinmiyor"
@@ -287,15 +410,21 @@ def get_status_text() -> str:
             pass
     return (
         f"📊 <b>BOBİ TV Sistem Durumu</b>\n\n"
-        f"📅 Tarih: {bugun}\n🎬 Bugün Üretilen: {bugunki}/24\n"
-        f"📦 Kuyrukta: {kuyruk_sayisi} video\n🚫 YouTube Kota: {kota_durum}\n"
-        f"⏰ Son Çalışma: {son_calisma}\n\n⚙️ Pipeline: v6.4 PRO"
+        f"📅 Tarih: {bugun}\n"
+        f"🎬 Bugün üretilen: {bugunki}\n"
+        f"🚧 Günlük tavan: {KOTA_TAVANI} yükleme (10000/1600 birim)\n"
+        f"📦 Kuyrukta: {kuyruk_sayisi} video\n"
+        f"🚫 YouTube kota: {kota_durum}\n"
+        f"{_kota_birim_ozeti()}\n"
+        f"⏰ Son çalışma: {son_calisma}\n\n"
+        f"⚙️ Pipeline: v6.4 PRO"
     )
 
 
 def get_stats_text() -> str:
     from modules.kalite_log import kalite_istatistik
-    bugun = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+    bugun = datetime.now(UTC).strftime("%Y-%m-%d")
     istatistik = kalite_istatistik(bugun)
     if istatistik["toplam"] == 0:
         return f"📈 <b>İstatistik ({bugun})</b>\n\nBugün için veri yok."
@@ -310,11 +439,14 @@ def get_stats_text() -> str:
 
 def get_quality_text() -> str:
     from modules.kalite_log import kalite_istatistik
-    bugun = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+    bugun = datetime.now(UTC).strftime("%Y-%m-%d")
     istatistik = kalite_istatistik(bugun)
     if istatistik["toplam"] == 0:
         return f"🎯 <b>Kalite Raporu ({bugun})</b>\n\nBugün için kalite verisi yok."
-    gecme_orani = round(istatistik['gecen'] / istatistik['toplam'] * 100, 1) if istatistik['toplam'] > 0 else 0
+    gecme_orani = (
+        round(istatistik["gecen"] / istatistik["toplam"] * 100, 1) if istatistik["toplam"] > 0 else 0
+    )
     return (
         f"🎯 <b>Kalite Raporu ({bugun})</b>\n\n"
         f"📊 Ortalama: {istatistik['ortalama_puan']}/100\n✅ Geçme Oranı: {gecme_orani}%\n\n"
@@ -323,7 +455,8 @@ def get_quality_text() -> str:
 
 
 def get_quota_text() -> str:
-    from modules.kota_state import kota_state_oku, kota_dolu_mu
+    from modules.kota_state import kota_dolu_mu, kota_state_oku
+
     state = kota_state_oku()
     kota_durum = "🚫 DOLU" if kota_dolu_mu() else "✅ BOŞ"
     guncelleme = state.get("guncelleme", "Bilinmiyor")
@@ -333,19 +466,29 @@ def get_quota_text() -> str:
         f"🚫 <b>YouTube Kota Durumu</b>\n\nDurum: {kota_durum}\n"
         f"📅 Son Güncelleme: {guncelleme[:16] if guncelleme else 'Bilinmiyor'}\n"
         f"🎬 Bugün Yüklenen: {video_sayisi}\n⏰ Kalan Süre: ~{kalan_saat} saat\n\n"
+        f"{_kota_birim_ozeti()}\n\n"
         f"💡 Kota her gün UTC 00:00'da sıfırlanır."
     )
 
 
 def get_help_text() -> str:
     return (
-        "❓ <b>BOBİ TV Kontrol Paneli</b>\n\n<b>Komutlar:</b>\n"
-        "📊 <b>Durum</b> - Sistem durumu\n🎬 <b>Üret</b> - Manuel video üret\n"
-        "📈 <b>İstatistik</b> - Günlük istatistikler\n🎯 <b>Kalite</b> - Kalite raporu\n"
-        "🚫 <b>Kota</b> - YouTube kota durumu\n\n<b>Otomatik Üretim:</b>\n"
-        "• Her saat başı (cron: 0 * * * *)\n• Günlük hedef: 24 video\n"
-        "• Kalite eşiği: 70/100\n\n<b>Not:</b> Kota doluyken üretim duraklar.\n⏰ <b>Not:</b> Komutlar her 5 dakikada bir kontrol edilir; GitHub cron gecikmesiyle cevap genellikle 15-60 dakika icinde gelir."
+        "❓ <b>BOBİ TV Kontrol Paneli</b>\n\n<b>Düğmeler:</b>\n"
+        "📊 <b>Durum</b> - Sistem durumu\n🎬 <b>Üret</b> - Manuel üretim + render testi\n"
+        "📈 <b>Rapor</b> - İstatistik + Kalite + Kota\n⚙️ <b>Ayarlar</b> - Hiyerarşik ayar menüsü\n\n"
+        "<b>Üretim:</b>\n"
+        f"• Günlük yükleme tavanı: {KOTA_TAVANI} (YouTube kota matematiği)\n"
+        "• Günlük hedef / mod: Ayarlar → Üretim &amp; Kota\n"
+        "• Kalite eşiği: 70/100\n\n"
+        "<b>Not:</b> Kota doluyken üretim duraklar (davranışı Ayarlar'dan seçilir).\n"
+        "⏰ <b>Not:</b> Komutlar GitHub cron zamanlamasıyla işlenir; GitHub gecikmesiyle "
+        "cevap genellikle 15-60 dakika içinde gelir."
     )
+
+
+# ---------------------------------------------------------------------------
+# GitHub tetikleme (workflow_dispatch + repository_dispatch)
+# ---------------------------------------------------------------------------
 
 
 def trigger_production() -> str:
@@ -375,73 +518,657 @@ def trigger_production() -> str:
     return f"❌ Hata {resp.status_code}: {resp.text[:120]}"
 
 
-def handle_callback(callback_data: str, callback_id: str) -> str:
+def render_testi_tetikle() -> str:
+    """TODO 12 — YÜKLEMSİZ test düğmesi.
+
+    repository_dispatch (bobi-tv-produce) + client_payload:
+      yukleme_atla=1, force=true
+    → hourly_production.yml videoları YERELDE üretir, YouTube'a YÜKLEME YAPMAZ.
+    Canlı kanalı riske atmadan 'video üretiliyor mu?' cevabı budur."""
+    tok = os.environ.get("GH_TOKEN", "")
+    if not tok:
+        return "❌ Hata: GH_TOKEN tanımlı değil, render testi tetiklenemedi."
+    repo = "mehetgege3-cmyk/bobi-tv"
+    url = f"https://api.github.com/repos/{repo}/dispatches"
+    try:
+        resp = requests.post(
+            url,
+            headers={
+                "Accept": "application/vnd.github+json",
+                "Authorization": f"Bearer {tok}",
+                "X-GitHub-Api-Version": "2022-11-28",
+            },
+            json={
+                "event_type": "bobi-tv-produce",
+                "client_payload": {"yukleme_atla": "1", "force": "true"},
+            },
+            timeout=30,
+        )
+    except Exception as e:
+        return f"❌ İstisna: {str(e)[:100]}"
+    if resp.status_code == 204:
+        return (
+            "🧪 Render testi başlatıldı — YouTube'a yükleme yapılmadı.\n"
+            "Süre, çıktı boyutu ve QC sonucu koşu bitince ayrı mesajla gelir."
+        )
+    return f"❌ Hata {resp.status_code}: {resp.text[:120]}"
+
+
+def _github_get(yol: str) -> dict[str, Any] | None:
+    """GitHub API GET yardımcısı; hata/eksik token → None (panel bilinmiyor der)."""
+    tok = os.environ.get("GH_TOKEN", "")
+    if not tok:
+        return None
+    try:
+        resp = requests.get(
+            f"https://api.github.com/repos/mehetgege3-cmyk/bobi-tv/{yol}",
+            headers={
+                "Accept": "application/vnd.github+json",
+                "Authorization": f"Bearer {tok}",
+                "X-GitHub-Api-Version": "2022-11-28",
+            },
+            timeout=15,
+        )
+        if resp.status_code != 200:
+            return None
+        veri = resp.json()
+        return veri if isinstance(veri, dict) else None
+    except Exception:
+        return None
+
+
+def _son_kosu_ozeti() -> str:
+    """Son üretim koşusu (dürüst: veri yoksa 'bilinmiyor')."""
+    veri = _github_get("actions/workflows/hourly_production.yml/runs?per_page=1")
+    kosular = (veri or {}).get("workflow_runs") or []
+    if not kosular:
+        return f"{BILINMIYOR} (koşu kaydı okunamadı)"
+    k = kosular[0]
+    olusturma = str(k.get("created_at", ""))[:16]
+    sonuc = k.get("conclusion") or k.get("status") or BILINMIYOR
+    return f"{olusturma} UTC · {sonuc}"
+
+
+def _tetikleyici_sagligi() -> str:
+    """repository_dispatch ile gelen koşu sayısı (dış tetikleyici kanıtı)."""
+    veri = _github_get("actions/runs?event=repository_dispatch&per_page=1")
+    toplam = (veri or {}).get("total_count")
+    if toplam is None:
+        return f"{BILINMIYOR} (API okunamadı)"
+    if toplam == 0:
+        return "dış tetikleyici (repository_dispatch) hiç çalışmamış — cron yedeği aktif"
+    return f"dış tetikleyici aktif ({toplam} koşu)"
+
+
+# ---------------------------------------------------------------------------
+# TODO 3 — ekran üreticileri (metin + düğmeler; callback_data kimlik taşır)
+# ---------------------------------------------------------------------------
+
+
+def _grup_etiketleri() -> dict[str, str]:
+    return {
+        "tetikleme": "🚀 Tetikleme",
+        "uretim_kota": "🎯 Üretim & Kota",
+        "temizlik": "🧹 Temizlik",
+        "sistem": "🔑 Sistem durumu",
+    }
+
+
+def _deger_ve_kaynak(anahtar: str) -> tuple[Any | None, str]:
+    """Ayarın etkin değeri + katmanı: '6 (state)' / '5 (env)' / '6 (varsayılan)'."""
+    a = ayar_getir(anahtar)
+    if a is None:
+        return None, BILINMIYOR
+    ham = ayar_deposu.state_ham_ayarlari(AYARLAR_STATE_YOLU)
+    if anahtar in ham:
+        return ham[anahtar], "state"
+    env_deger = os.environ.get(str(a["env_adi"]))
+    if env_deger is not None and degistirilebilir_mi(a):
+        return env_deger, "env"
+    return a.get("varsayilan"), "varsayılan"
+
+
+def ekran_ayar_kok() -> tuple[str, list[list[dict[str, Any]]]]:
+    satirlar = ["⚙️ <b>AYARLAR</b>", ""]
+    butonlar: list[list[dict[str, Any]]] = []
+    for grup in GRUPLAR:
+        ayarlar = grup_ayarlari(grup)
+        etiket = _grup_etiketleri()[grup]
+        if grup == "temizlik":
+            satirlar.append(f"{etiket} (görüntü)")
+            butonlar.append([{"text": "🧹 Temizlik (görüntü)", "callback_data": f"ay:g:{grup}"}])
+        elif grup == "sistem":
+            satirlar.append(f"{etiket} (secret var/yok)")
+            butonlar.append([{"text": "🔑 Sistem durumu", "callback_data": "sistem_goster"}])
+        else:
+            satirlar.append(f"{etiket} ({len(ayarlar)} ayar)")
+            kisa = "🚀 Tetikleme" if grup == "tetikleme" else "🎯 Üretim & Kota"
+            butonlar.append([{"text": kisa, "callback_data": f"ay:g:{grup}"}])
+    satirlar.append("")
+    butonlar.append([{"text": "🕘 Son değişiklikler", "callback_data": "ay:gecmis"}])
+    butonlar.append(list(GERI_MENUSU))
+    return "\n".join(satirlar), butonlar
+
+
+def ekran_ayar_grup(grup: str) -> tuple[str, list[list[dict[str, Any]]]]:
+    etiket = _grup_etiketleri().get(grup, grup)
+    satirlar = [f"{etiket}", ""]
+    butonlar: list[list[dict[str, Any]]] = []
+    for a in grup_ayarlari(grup):
+        deger, kaynak = _deger_ve_kaynak(str(a["anahtar"]))
+        if a["tip"] == "sadece_goruntule" and a.get("secret"):
+            tanimli = bool(os.environ.get(str(a["env_adi"]), ""))
+            gosterim = "✅ tanımlı" if tanimli else "⛔ eksik"
+        elif a["tip"] == "sadece_goruntule":
+            gosterim = str(a.get("mevcut", BILINMIYOR))
+        else:
+            gosterim = f"{deger} ({kaynak})"
+        satirlar.append(f"• {a['etiket']}: {gosterim}")
+        butonlar.append([{"text": str(a["etiket"])[:20], "callback_data": f"ay:s:{a['anahtar']}"}])
+    if grup == "temizlik":
+        satirlar += ["", TEMIZLIK_UYARI]
+    satirlar.append("")
+    satirlar.append("Değiştirmek için ayar adına dokun:")
+    butonlar.append(
+        [
+            {"text": "← Geri", "callback_data": "ay:kok"},
+            {"text": "🏠 Menü", "callback_data": "menu_main"},
+        ]
+    )
+    return "\n".join(satirlar), butonlar
+
+
+def _secenek_dugmeleri(a: dict[str, Any]) -> list[list[dict[str, Any]]]:
+    """Seçenek düğmeleri — callback_data İNDEKS taşır, değer taşımaz."""
+    anahtar = str(a["anahtar"])
+    satir: list[dict[str, str]] = []
+    butonlar: list[list[dict[str, str]]] = []
+    if a["tip"] == "anahtar":
+        mevcut, _ = _deger_ve_kaynak(anahtar)
+        for indeks, (etiket, deger) in enumerate((("Kapat", "0"), ("Aç", "1"))):
+            isaret = "✓ " if str(mevcut) == deger else ""
+            satir.append({"text": f"{isaret}{etiket}", "callback_data": f"ay:v:{anahtar}:{indeks}"})
+        butonlar.append(satir)
+        return butonlar
+    secenekler = a.get("secenekler") or []
+    mevcut, _ = _deger_ve_kaynak(anahtar)
+    for indeks, deger in enumerate(secenekler):
+        isaret = "✓ " if str(mevcut) == str(deger) else ""
+        satir.append({"text": f"{isaret}{deger}", "callback_data": f"ay:v:{anahtar}:{indeks}"})
+        if len(satir) == 3:
+            butonlar.append(satir)
+            satir = []
+    if satir:
+        butonlar.append(satir)
+    return butonlar
+
+
+def ekran_ayar_detay(anahtar: str) -> tuple[str, list[list[dict[str, Any]]]]:
+    a = ayar_getir(anahtar)
+    if a is None:
+        return ekran_ana()
+    deger, kaynak = _deger_ve_kaynak(anahtar)
+    satirlar = [f"⚙️ <b>{a['etiket']}</b>", f"Grup: {_grup_etiketleri().get(str(a['grup']), '?')}", ""]
+    butonlar: list[list[dict[str, Any]]] = []
+    if a["tip"] == "sadece_goruntule" and a.get("secret"):
+        tanimli = bool(os.environ.get(str(a["env_adi"]), ""))
+        satirlar.append(f"Durum: {'✅ tanımlı' if tanimli else '⛔ eksik'}")
+        satirlar.append("Kaynak: GitHub Secrets")
+        satirlar.append("")
+        satirlar.append("🔒 Secret değeri güvenlik gereği ASLA gösterilmez.")
+    elif a["tip"] == "sadece_goruntule":
+        satirlar.append(f"Mevcut: {a.get('mevcut', BILINMIYOR)}")
+        satirlar.append("")
+        satirlar.append(TEMIZLIK_UYARI)
+    else:
+        satirlar.append(f"Mevcut: {deger} ({kaynak})")
+        aciklama = a.get("aciklama")
+        if aciklama:
+            satirlar.append("")
+            satirlar.append(str(aciklama))
+        if a["risk"] == "yuksek":
+            satirlar.append("")
+            satirlar.append("⚠️ Bu ayar RİSKLİ: seçtiğinizde onay istenecek.")
+        butonlar.extend(_secenek_dugmeleri(a))
+    satirlar.append("")
+    butonlar.append(
+        [
+            {"text": "← Geri", "callback_data": f"ay:g:{a['grup']}"},
+            {"text": "🏠 Menü", "callback_data": "menu_main"},
+        ]
+    )
+    return "\n".join(satirlar), butonlar
+
+
+def etki_onizlemesi(anahtar: str, deger: Any) -> str:
+    """TODO 5 — riskli ayarın GERÇEK etkisini hesaplar.
+    Yalnızca OKUMA yapar: hiçbir dosya silmez, yükleme/deneme yapmaz."""
+    if anahtar == "force":
+        degerler, _ = ayar_deposu.yukle(AYARLAR_STATE_YOLU)
+        try:
+            hedef = int(degerler.get("GUNLUK_HEDEF", "1"))
+        except (TypeError, ValueError):
+            hedef = 1
+        return (
+            "'Kota kapısını atla' günlük yükleme sınırını aşar.\n"
+            f"Bu ayar bugünkü ~{hedef} yüklemeyi zorlar (tavan {KOTA_TAVANI}).\n"
+            f"{_kota_birim_ozeti()}"
+        )
+    if anahtar == "KOTA_DOLU_DAVRANIS":
+        if str(deger) == "hata":
+            return (
+                "Kota dolunca koşu KIRMIZI TİK alır (exit 1).\n"
+                "Self-repair otomasyonu tetiklenebilir (günde ~144 deneme + "
+                "main'e otonom push riski)."
+            )
+        return "Kota dolunca koşu SESSİZCE durur (exit 0) — kırmızı tik yok."
+    return "Etki önizlemesi yok."
+
+
+def ekran_onay(anahtar: str, indeks: int) -> tuple[str, list[list[dict[str, Any]]]]:
+    """Riskli ayar için onay ekranı — DURUM YAZMAZ (yalnızca gösterir)."""
+    a = ayar_getir(anahtar)
+    if a is None or not degistirilebilir_mi(a) or a["risk"] != "yuksek":
+        return ekran_ana()
+    deger, _ = _secenek_coz(a, indeks)
+    if deger is None:
+        return ekran_ana()
+    satirlar = [
+        "⚠️ <b>ONAY GEREKİYOR</b>",
+        "",
+        f"{a['etiket']} → {deger}",
+        "",
+        etki_onizlemesi(anahtar, deger),
+        "",
+        "Değişiklik yalnızca onayınızdan sonra uygulanır.",
+    ]
+    butonlar = [
+        [{"text": "✅ Onayla", "callback_data": f"ay:onay:{anahtar}:{indeks}"}],
+        [{"text": "← Vazgeç", "callback_data": f"ay:iptal:{anahtar}"}],
+        [
+            {"text": "← Geri", "callback_data": f"ay:s:{anahtar}"},
+            {"text": "🏠 Menü", "callback_data": "menu_main"},
+        ],
+    ]
+    return "\n".join(satirlar), butonlar
+
+
+def ekran_ayar_test(anahtar: str) -> tuple[str, list[list[dict[str, Any]]]]:
+    """TODO 5 — dry-run ön izleme: HİÇBİR YAZMA YAPMAZ."""
+    a = ayar_getir(anahtar)
+    if a is None:
+        return ekran_ana()
+    deger, kaynak = _deger_ve_kaynak(anahtar)
+    satirlar = [
+        f"🧪 <b>Dry-run ön izleme</b> — {a['etiket']}",
+        "",
+        f"Mevcut: {deger} ({kaynak})",
+        "",
+        etki_onizlemesi(anahtar, a["varsayilan"] if a["tip"] == "anahtar" else deger),
+        "",
+        "Bu ekran hiçbir dosyaya yazmadı; ayar değişmedi.",
+    ]
+    butonlar = [
+        [{"text": "← Geri", "callback_data": f"ay:s:{anahtar}"}],
+        [{"text": "🏠 Menü", "callback_data": "menu_main"}],
+    ]
+    return "\n".join(satirlar), butonlar
+
+
+def _gecmis_kaynak_metni(kayit: dict[str, Any]) -> str:
+    try:
+        zaman = datetime.fromisoformat(str(kayit.get("zaman")))
+        if zaman.tzinfo is None:
+            zaman = zaman.replace(tzinfo=UTC)
+        dk = int((datetime.now(UTC) - zaman).total_seconds() / 60)
+        if dk < 1:
+            return "şimdi"
+        if dk < 60:
+            return f"{dk} dk önce"
+        return f"{dk // 60} saat önce"
+    except Exception:
+        return ""
+
+
+def ekran_gecmis() -> tuple[str, list[list[dict[str, Any]]]]:
+    kayitlar = ayar_deposu.gecmisi_oku(10, GECMIS_YOLU)
+    satirlar = ["🕘 <b>Son değişiklikler</b>", ""]
+    if not kayitlar:
+        satirlar.append("Henüz değişiklik yok.")
+    else:
+        for k in kayitlar:
+            kaynak_metin = _gecmis_kaynak_metni(k)
+            zaman_etiketi = f" · {kaynak_metin}" if kaynak_metin else ""
+            satirlar.append(
+                f"• {k.get('anahtar', '?')}: {k.get('eski', '?')} → {k.get('yeni', '?')}{zaman_etiketi}"
+            )
+    butonlar = [
+        [{"text": "🔄 Yenile", "callback_data": "ay:gecmis"}],
+        [{"text": "← Geri", "callback_data": "ay:kok"}, {"text": "🏠 Menü", "callback_data": "menu_main"}],
+    ]
+    return "\n".join(satirlar), butonlar
+
+
+def ekran_sistem() -> tuple[str, list[list[dict[str, Any]]]]:
+    """TODO 7 — secret durumu: yalnız ✅ tanımlı / ⛔ eksik; değer ASLA yazdırılmaz."""
+    satirlar = ["🔑 <b>Sistem durumu</b>", ""]
+    for a in grup_ayarlari("sistem"):
+        tanimli = bool(os.environ.get(str(a["env_adi"]), ""))
+        satirlar.append(f"• {a['etiket']}: {'✅ tanımlı' if tanimli else '⛔ eksik'} (GitHub Secrets)")
+    satirlar += [
+        "",
+        f"🎬 Son üretim koşusu: {_son_kosu_ozeti()}",
+        f"🧭 Tetikleyici: {_tetikleyici_sagligi()}",
+        f"🚫 {_kota_birim_ozeti()}",
+        f"📐 Günlük yükleme tavanı: {KOTA_TAVANI} (10000/1600 birim)",
+    ]
+    butonlar = [
+        [{"text": "🔄 Yenile", "callback_data": "sistem_goster"}],
+        [{"text": "← Geri", "callback_data": "ay:kok"}, {"text": "🏠 Menü", "callback_data": "menu_main"}],
+    ]
+    return "\n".join(satirlar), butonlar
+
+
+def ekran_rapor() -> tuple[str, list[list[dict[str, Any]]]]:
+    """İstatistik + Kalite + Kota tek ekranda (ana menü sadeleşmesi)."""
+    metin = f"📈 <b>BOBİ TV Rapor</b>\n\n{get_stats_text()}\n\n{get_quality_text()}\n\n{get_quota_text()}"
+    butonlar = [
+        [{"text": "🔄 Yenile", "callback_data": "rapor_goster"}],
+        [{"text": "← Geri", "callback_data": "menu_main"}, {"text": "⚙️ Ayarlar", "callback_data": "ay:kok"}],
+    ]
+    return metin, butonlar
+
+
+def ekran_uret() -> tuple[str, list[list[dict[str, Any]]]]:
+    metin = (
+        "🎬 <b>Üretim</b>\n\n"
+        "▶️ Üretimi başlat: pipeline'ı workflow_dispatch ile koşturur.\n"
+        f"🧪 Render testi: YouTube'a YÜKLEME YAPMADAN üretim zincirini test eder "
+        f"(kotasız, kanala çıkışsız).\n\n"
+        f"{_kota_birim_ozeti()}\n"
+        f"📐 Günlük tavan: {KOTA_TAVANI} yükleme"
+    )
+    butonlar = [
+        [{"text": "▶️ Üretimi başlat", "callback_data": "uret_baslat"}],
+        [{"text": "🧪 Render testi", "callback_data": "uret_render_test"}],
+        [{"text": "← Geri", "callback_data": "menu_main"}, {"text": "🏠 Menü", "callback_data": "menu_main"}],
+    ]
+    return metin, butonlar
+
+
+def ekran_ana() -> tuple[str, list[list[dict[str, Any]]]]:
+    return MENU_BASLIGI, get_main_menu_buttons()
+
+
+def ekran_metin_dugme(metin: str) -> tuple[str, list[list[dict[str, Any]]]]:
+    """Basit sonuç ekranları (tetikleme cevabı vb.)."""
+    return metin, [
+        [{"text": "🔄 Yenile", "callback_data": "uret_menu"}],
+        [{"text": "← Geri", "callback_data": "menu_main"}, {"text": "🏠 Menü", "callback_data": "menu_main"}],
+    ]
+
+
+# ---------------------------------------------------------------------------
+# TODO 5/8 — ayar uygulama + bekleyen kuyruk
+# ---------------------------------------------------------------------------
+
+
+def _secenek_coz(a: dict[str, Any], indeks: int | str) -> tuple[Any | None, str]:
+    """callback_data'daki İNDEKSİ katalogdaki değere çevirir.
+    İndeks aralık dışıysa (None, sebep) — uydurma payload işe yaramaz."""
+    try:
+        i = int(indeks)
+    except (TypeError, ValueError):
+        return None, "indeks sayı değil"
+    if a["tip"] == "anahtar":
+        if i not in (0, 1):
+            return None, "geçersiz indeks"
+        return ("0" if i == 0 else "1"), ""
+    secenekler = a.get("secenekler") or []
+    if i < 0 or i >= len(secenekler):
+        return None, "geçersiz indeks"
+    return secenekler[i], ""
+
+
+def ayar_uygula(anahtar: str, deger: Any, kullanici_id: int | None) -> tuple[bool, str]:
+    """Ayarı state'e yazar, geçmişe ekler ve AYRI bir commit ile push eder (TODO 8).
+
+    Push başarısızsa: bekleyen kuyruğa yazılır + panel uyarısı döner.
+    Başarısızlık SESSİZCE YUTULMAZ."""
+    a = ayar_getir(anahtar)
+    if a is None or not degistirilebilir_mi(a):
+        return False, "ayar değiştirilemez veya bilinmiyor"
+    eski = ayar_deposu.state_ham_ayarlari(AYARLAR_STATE_YOLU).get(anahtar, a.get("varsayilan"))
+    uygulanan, uyarilar = ayar_deposu.kaydet({anahtar: deger}, AYARLAR_STATE_YOLU)
+    if anahtar not in uygulanan:
+        return False, "; ".join(uyarilar) or "değişiklik uygulanamadı"
+    ayar_deposu.gecmise_ekle(kullanici_id, anahtar, eski, uygulanan[anahtar], "telegram", GECMIS_YOLU)
+    ok, sebep = ayar_deposu.commit_ve_yukle(
+        [str(AYARLAR_STATE_YOLU), str(GECMIS_YOLU)],
+        f"⚙️ ayar: {anahtar} → {uygulanan[anahtar]} (telegram) [skip ci]",
+    )
+    if ok:
+        return True, ""
+    ayar_deposu.bekleyene_yaz({anahtar: uygulanan[anahtar]}, sebep, kullanici_id, BEKLEYEN_YOLU)
+    return True, f"⚠️ kaydedilemedi, tekrar denenecek ({sebep})"
+
+
+def bekleyen_ayarlari_yeniden_dene() -> str:
+    """Önceki koşudan push edilememiş ayar değişikliğini tekrar dener (TODO 8)."""
+    bekleyen = ayar_deposu.bekleyenleri_al(BEKLEYEN_YOLU)
+    if not bekleyen:
+        return ""
+    degisiklikler = bekleyen.get("degisiklikler") or {}
+    if not degisiklikler:
+        ayar_deposu.bekleyenleri_temizle(BEKLEYEN_YOLU)
+        return "boş bekleyen kayıt temizlendi"
+    uygulanan, uyarilar = ayar_deposu.kaydet(degisiklikler, AYARLAR_STATE_YOLU)
+    if not uygulanan:
+        return f"bekleyen ayar uygulanamadı: {'; '.join(uyarilar) or 'bilinmeyen'}"
+    ok, sebep = ayar_deposu.commit_ve_yukle(
+        [str(AYARLAR_STATE_YOLU), str(GECMIS_YOLU)],
+        "⚙️ ayar: bekleyen değişiklik tamamlandı [skip ci]",
+    )
+    if ok:
+        ayar_deposu.bekleyenleri_temizle(BEKLEYEN_YOLU)
+        return "bekleyen ayar değişikliği push edildi"
+    return f"bekleyen ayar hâlâ push edilemedi: {sebep}"
+
+
+# ---------------------------------------------------------------------------
+# Callback yönlendirme (TODO 3) — bilinmeyen payload çökmeden menüye döner
+# ---------------------------------------------------------------------------
+
+
+def _bilinmeyen_komut(callback_id: str) -> str:
+    answer_callback(callback_id, "Bilinmeyen komut")
+    panel_goster(*ekran_ana())
+    return "bilinmeyen komut"
+
+
+def _ekran_goster(metin_dugmeler: tuple[str, list[list[dict[str, Any]]]]) -> None:
+    panel_goster(metin_dugmeler[0], metin_dugmeler[1])
+
+
+def handle_callback(callback_data: str, callback_id: str, kullanici_id: int | None = None) -> str:
+    try:
+        _handle_callback_icerde(callback_data, callback_id, kullanici_id)
+    except Exception as e:
+        # Çökme YOK: hatayı bildir, paneli ana menüye döndür.
+        print(f"::error::Panel hatası ({callback_data}): {e}")
+        answer_callback(callback_id, "Bir hata oluştu")
+        panel_goster(*ekran_ana())
+        return "hata"
+    return ""
+
+
+def _handle_callback_icerde(callback_data: str, callback_id: str, kullanici_id: int | None) -> None:
     if callback_data == "menu_main":
         answer_callback(callback_id)
-        menyu_gonder()  # menü zaten açıksa yeni mesaj göndermez (spam önleme)
-        return ""
-    if callback_data == "status_now":
-        answer_callback(callback_id, "Durum yükleniyor...")
-        send_message_with_buttons(get_status_text(), [
-            [{"text": "🔄 Yenile", "callback_data": "status_now"}],
-            [{"text": "🏠 Menü", "callback_data": "menu_main"}],
-        ]); return ""
-    if callback_data == "trigger_now":
-        answer_callback(callback_id, "Üretim tetikleniyor...")
-        send_message_with_buttons(trigger_production(), [
-            [{"text": "📊 Durum", "callback_data": "status_now"}],
-            [{"text": "🏠 Menü", "callback_data": "menu_main"}],
-        ]); return ""
-    if callback_data == "stats_today":
-        answer_callback(callback_id, "İstatistik yükleniyor...")
-        send_message_with_buttons(get_stats_text(), [
-            [{"text": "🔄 Yenile", "callback_data": "stats_today"}],
-            [{"text": "🏠 Menü", "callback_data": "menu_main"}],
-        ]); return ""
-    if callback_data == "quality_today":
-        answer_callback(callback_id, "Kalite raporu yükleniyor...")
-        send_message_with_buttons(get_quality_text(), [
-            [{"text": "🔄 Yenile", "callback_data": "quality_today"}],
-            [{"text": "🏠 Menü", "callback_data": "menu_main"}],
-        ]); return ""
-    if callback_data == "quota_status":
-        answer_callback(callback_id, "Kota durumu yükleniyor...")
-        send_message_with_buttons(get_quota_text(), [
-            [{"text": "🔄 Yenile", "callback_data": "quota_status"}],
-            [{"text": "🏠 Menü", "callback_data": "menu_main"}],
-        ]); return ""
-    if callback_data == "help_show":
+        _ekran_goster(ekran_ana())
+        return
+    if callback_data == "rapor_goster":
+        answer_callback(callback_id, "Rapor yükleniyor...")
+        _ekran_goster(ekran_rapor())
+        return
+    if callback_data == "uret_menu":
         answer_callback(callback_id)
-        send_message_with_buttons(get_help_text(), [[{"text": "🏠 Menü", "callback_data": "menu_main"}]])
-        return ""
-    answer_callback(callback_id, "Bilinmeyen komut")
-    return "❌ Bilinmeyen komut"
+        _ekran_goster(ekran_uret())
+        return
+    if callback_data == "uret_baslat":
+        answer_callback(callback_id, "Üretim tetikleniyor...")
+        _ekran_goster(ekran_metin_dugme(trigger_production()))
+        return
+    if callback_data == "uret_render_test":
+        answer_callback(callback_id, "Render testi başlatılıyor...")
+        _ekran_goster(ekran_metin_dugme(render_testi_tetikle()))
+        return
+    if callback_data == "ay:kok":
+        answer_callback(callback_id)
+        _ekran_goster(ekran_ayar_kok())
+        return
+    if callback_data == "ay:gecmis":
+        answer_callback(callback_id, "Geçmiş yükleniyor...")
+        _ekran_goster(ekran_gecmis())
+        return
+    if callback_data == "sistem_goster":
+        answer_callback(callback_id, "Sistem durumu yükleniyor...")
+        _ekran_goster(ekran_sistem())
+        return
+    parcalar = callback_data.split(":")
+    if len(parcalar) == 3 and parcalar[0] == "ay" and parcalar[1] == "g":
+        grup = parcalar[2]
+        if grup not in GRUPLAR:
+            _bilinmeyen_komut(callback_id)
+            return
+        answer_callback(callback_id)
+        _ekran_goster(ekran_ayar_grup(grup))
+        return
+    if len(parcalar) == 3 and parcalar[0] == "ay" and parcalar[1] == "s":
+        anahtar = parcalar[2]
+        a = ayar_getir(anahtar)
+        if a is None:
+            _bilinmeyen_komut(callback_id)
+            return
+        answer_callback(callback_id)
+        _ekran_goster(ekran_ayar_detay(anahtar))
+        return
+    if len(parcalar) == 3 and parcalar[0] == "ay" and parcalar[1] == "test":
+        anahtar = parcalar[2]
+        if ayar_getir(anahtar) is None:
+            _bilinmeyen_komut(callback_id)
+            return
+        answer_callback(callback_id, "Dry-run: hiçbir şey yazılmıyor...")
+        _ekran_goster(ekran_ayar_test(anahtar))
+        return
+    if len(parcalar) == 3 and parcalar[0] == "ay" and parcalar[1] == "iptal":
+        anahtar = parcalar[2]
+        if ayar_getir(anahtar) is None:
+            _bilinmeyen_komut(callback_id)
+            return
+        # Vazgeç: HİÇBİR YAZMA YOK — state bit bit aynı kalır.
+        answer_callback(callback_id, "Vazgeçildi — değişiklik yapılmadı")
+        _ekran_goster(ekran_ayar_detay(anahtar))
+        return
+    if len(parcalar) == 4 and parcalar[0] == "ay" and parcalar[1] in ("v", "onay"):
+        _, eylem, anahtar, indeks_metin = parcalar
+        a = ayar_getir(anahtar)
+        if a is None or not degistirilebilir_mi(a):
+            _bilinmeyen_komut(callback_id)
+            return
+        deger, sebep = _secenek_coz(a, indeks_metin)
+        if deger is None:
+            _bilinmeyen_komut(callback_id)
+            return
+        if eylem == "v" and a["risk"] == "yuksek":
+            # Riskli ayar tek dokunuşla DEĞİŞMEZ — onay ekranı (yazma yok).
+            answer_callback(callback_id, "Onay gerekiyor")
+            _ekran_goster(ekran_onay(anahtar, int(indeks_metin)))
+            return
+        if eylem == "onay" and a["risk"] == "yuksek":
+            answer_callback(callback_id, "Uygulanıyor...")
+            ok, durum = ayar_uygula(anahtar, deger, kullanici_id)
+            if not ok:
+                _ekran_goster(ekran_metin_dugme(f"❌ Uygulanamadı: {durum}"))
+                return
+            metin, dugmeler = ekran_ayar_detay(anahtar)
+            if durum:
+                metin += f"\n\n{durum}"
+            panel_goster(metin, dugmeler)
+            return
+        # riskli olmayan doğrudan uygulama
+        answer_callback(callback_id, "Uygulanıyor...")
+        ok, durum = ayar_uygula(anahtar, deger, kullanici_id)
+        if not ok:
+            _ekran_goster(ekran_metin_dugme(f"❌ Uygulanamadı: {durum}"))
+            return
+        metin, dugmeler = ekran_ayar_detay(anahtar)
+        if durum:
+            metin += f"\n\n{durum}"
+        panel_goster(metin, dugmeler)
+        return
+    # Eski düğmeler (panel mesajı eski kalanlar için) — ekran olarak gösterilir
+    eski_ekranlar: dict[str, str] = {
+        "status_now": "status",
+        "trigger_now": "trigger",
+        "stats_today": "stats",
+        "quality_today": "quality",
+        "quota_status": "quota",
+        "help_show": "help",
+    }
+    if callback_data in eski_ekranlar:
+        ekran = eski_ekranlar[callback_data]
+        metinler: dict[str, str] = {
+            "status": get_status_text(),
+            "stats": get_stats_text(),
+            "quality": get_quality_text(),
+            "quota": get_quota_text(),
+            "help": get_help_text(),
+            "trigger": trigger_production(),
+        }
+        answer_callback(callback_id, "Yükleniyor...")
+        panel_goster(
+            metinler[ekran],
+            [
+                [{"text": "🔄 Yenile", "callback_data": callback_data}],
+                [{"text": "🏠 Menü", "callback_data": "menu_main"}],
+            ],
+        )
+        return
+    _bilinmeyen_komut(callback_id)
 
 
 MENU_KOMUTLARI = {"/start", "/menu", "menü", "menu"}
 
 
 def handle_message(text: str) -> str:
-    """Metin komutlarını işler (TODO 2 — menü spam'i düzeltmesi).
+    """Metin komutlarını işler.
 
-    - Yalnızca menü komutları ana menüyü (butonlu) gösterir; menü zaten açıksa
-      yeni menü GÖNDERİLMEZ (menyu_gonder tekilleştirmesi).
+    - /start: panelin BİLİNÇLİ sıfırlama noktası — HER SEFERİNDE taze panel mesajı
+      açar (TODO 4 istisnası b).
+    - /menu, menu, menü: panel varsa AYNI mesajı düzenler (tek mesaj kuralı).
     - Diğer tanınan komutlar reply_markup OLMAYAN düz mesajla cevap verir.
-    - Tanınmayan metne cevap VERİLMEZ: klavye açıkken her tuş vuruşu yeni menü
-      + "Anlamadım" üretiyordu (ekranda üst üste menüler). Sadece loglanır.
+    - Tanınmayan metne cevap VERİLMEZ: klavye açıkken her tuş vuruşu spam üretmesin.
     """
     text = text.strip().lower()
+    if text == "/start":
+        menyu_gonder(yeni_mesaj=True)
+        return ""
     if text in MENU_KOMUTLARI:
         menyu_gonder()
         return ""
     if text in ["/status", "durum", "status"]:
-        send_message(get_status_text()); return ""
+        send_message(get_status_text())
+        return ""
     if text in ["/trigger", "üret", "uret", "produce"]:
-        send_message(trigger_production()); return ""
+        send_message(trigger_production())
+        return ""
     if text in ["/stats", "istatistik", "stats"]:
-        send_message(get_stats_text()); return ""
+        send_message(get_stats_text())
+        return ""
     if text in ["/help", "yardım", "yardim", "help"]:
-        send_message(get_help_text()); return ""
+        send_message(get_help_text())
+        return ""
     print(f"[Telegram Bot] Tanınmayan metin yok sayıldı (cevap verilmedi): {text[:40]!r}")
     return ""
 

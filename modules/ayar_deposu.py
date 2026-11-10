@@ -177,12 +177,14 @@ def kaydet(
 ) -> tuple[dict[str, Any], list[str]]:
     """Değişiklikleri doğrular ve ATOMİK yazar. Döner: (uygulanan, uyarilar).
 
+    State YALNIZCA değişen anahtarları tutar (katalog varsayılanları state'e
+    kopyalanmaz — 'kaynak' etiketi böylece doğru kalır: 6 (state) / 6 (varsayılan)).
     Bozuk mevcut dosya önce `yukle` içinde .bozuk'a arşivlenir, ardından bu
     çağrı taze bir geçerli dosya yazar (kurtarma yolu)."""
     uyarilar: list[str] = []
-    mevcut, okuma_uyarlari = yukle(state_yolu)
+    _, okuma_uyarlari = yukle(state_yolu)  # yan etki: bozuk dosyayı .bozuk'a arşivler
     uyarilar.extend(okuma_uyarlari)
-    yeni = dict(mevcut)
+    yeni: dict[str, Any] = dict(state_ham_ayarlari(state_yolu))
     uygulanan: dict[str, Any] = {}
     for k, v in degisiklikler.items():
         temiz, hata = _dogrula(str(k), v)

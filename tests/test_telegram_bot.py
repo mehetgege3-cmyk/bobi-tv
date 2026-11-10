@@ -107,11 +107,16 @@ def test_trigger_subprocess_kaldirilmis():
 
 # ---------- 4. Saf fonksiyonlar ----------
 def test_ana_menu_butonlari_yapisi():
+    """TODO 3: ana menü 6 düğmeden 4'e iner (2 satır). İstatistik + Kalite +
+    Kota 'Rapor' altına girer; Ayarlar kendi düğmesini alır."""
     buttons = tb.get_main_menu_buttons()
-    assert len(buttons) == 3
+    assert len(buttons) == 2
     callback_datalar = [b["callback_data"] for satir in buttons for b in satir]
-    assert "trigger_now" in callback_datalar
+    assert len(callback_datalar) == 4, f"4 düğme beklenir, gelen: {callback_datalar}"
     assert "status_now" in callback_datalar
+    assert "uret_menu" in callback_datalar
+    assert "rapor_goster" in callback_datalar
+    assert "ay:kok" in callback_datalar
 
 
 def test_run_bot_entry_point_kaldirilmis():
@@ -192,22 +197,25 @@ def test_menu_komutu_tek_menyu_gonderir_ve_id_saklanir(
 
 
 def test_uc_ust_uste_menyu_toplam_bir_mesaj(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    """3 kez /start üst üste → toplam 1 yeni menü mesajı; diğerleri
-    editMessageReplyMarkup ile AYNI mesajı günceller."""
+    """TODO 4(b) istisnası: /start panelin BİLİNÇLİ sıfırlama noktasıdır — her
+    /start taze panel mesajı açar (3 /start → 3 sendMessage, 0 düzenleme).
+    Spam koruması edit-yolunda korunur: bkz. test_telegram_menu.py
+    (menu metni tekrarları tek mesajı düzenler)."""
     monkeypatch.setattr(tb, "MENU_STATE_YOLU", tmp_path / "menu.json")
     cagrilar, sahte_post = _telegram_yakalayici()
     monkeypatch.setattr("modules.telegram_bot.requests.post", sahte_post)
     for _ in range(3):
         tb.handle_message("/start")
     yeni_menuler = sum(1 for yontem, _ in cagrilar if yontem == "sendMessage")
-    guncellemeler = sum(1 for yontem, _ in cagrilar if yontem == "editMessageReplyMarkup")
-    assert yeni_menuler == 1, f"3 /start için {yeni_menuler} yeni menü gönderildi (≤1 olmalı)"
-    assert guncellemeler == 2
+    guncellemeler = sum(1 for yontem, _ in cagrilar if yontem == "editMessageText")
+    eski_yol = sum(1 for yontem, _ in cagrilar if yontem == "editMessageReplyMarkup")
+    assert yeni_menuler == 3, f"her /start yeni panel açmalı, gelen: {yeni_menuler}"
+    assert guncellemeler == 0 and eski_yol == 0
 
 
 def test_bayat_menu_silinmisse_yeni_menyu_acilir(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    """Saklanan menü mesajı Telegram'da silinmişse (edit 404) bayat kayıt
-    düşülür ve tek yeni menü açılır."""
+    """TODO 4: saklanan panel mesajı Telegram'da silinmişse (edit 404) bayat kayıt
+    düşülür ve tek yeni panel açılır (editMessageText yolu)."""
     menu_yolu = tmp_path / "menu.json"
     monkeypatch.setattr(tb, "MENU_STATE_YOLU", menu_yolu)
     cagrilar: list[str] = []
@@ -220,7 +228,7 @@ def test_bayat_menu_silinmisse_yeni_menyu_acilir(monkeypatch: pytest.MonkeyPatch
             status_code = 200
 
             def json(self) -> dict[str, Any]:
-                if yontem == "editMessageReplyMarkup":
+                if yontem == "editMessageText":
                     return {"ok": False, "description": "Bad Request: message to edit not found"}
                 return {"ok": True, "result": {"message_id": 888}}
 
@@ -229,7 +237,7 @@ def test_bayat_menu_silinmisse_yeni_menyu_acilir(monkeypatch: pytest.MonkeyPatch
     monkeypatch.setattr("modules.telegram_bot.requests.post", sahte_post)
     tb.handle_message("/menu")  # ilk menü → sendMessage
     tb.handle_message("/menu")  # bayat id → edit bulunamadı → yeni menü
-    assert cagrilar == ["sendMessage", "editMessageReplyMarkup", "sendMessage"]
+    assert cagrilar == ["sendMessage", "editMessageText", "sendMessage"]
     assert json.loads(menu_yolu.read_text(encoding="utf-8"))["message_id"] == 888
 
 

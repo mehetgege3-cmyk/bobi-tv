@@ -6,6 +6,7 @@ BOBİ TV — İnteraktif Telegram Kontrol Paneli (güvenlik düzeltmeli)
 - GÜVENLİK: GH_TOKEN asla argv'ye girmez (requests header)
 """
 import os
+import html
 import json
 import requests
 from datetime import datetime, timezone
@@ -90,8 +91,10 @@ def api_call(method: str, data: dict) -> Optional[dict]:
 
 
 def send_message_with_buttons(text: str, buttons: list[list[dict]], parse_mode: str = "HTML") -> bool:
+    # TEK escape noktası: veri alanlarını (& < >) kaçır, <b></b> etiketlerini koru
+    guvenli_metin = html.escape(text, quote=False).replace("&lt;b&gt;", "<b>").replace("&lt;/b&gt;", "</b>")
     result = api_call("sendMessage", {
-        "chat_id": CHAT_ID, "text": text, "parse_mode": parse_mode,
+        "chat_id": CHAT_ID, "text": guvenli_metin, "parse_mode": parse_mode,
         "reply_markup": {"inline_keyboard": buttons},
     })
     return result is not None and result.get("ok", False)

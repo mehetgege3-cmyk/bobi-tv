@@ -101,3 +101,24 @@ def test_ana_menu_butonlari_yapisi():
 def test_run_bot_entry_point_kaldirilmis():
     """Ölü tüketici noktası kaldırılmalı (çift getUpdates çakışması)."""
     assert not hasattr(tb, "run_bot")
+
+
+def test_panel_html_escape_veri_alanlari_ama_b_etiketi_korunur(monkeypatch):
+    """TODO6: panel metnindeki & < > escape edilir ama <b></b> etiketleri korunur."""
+    import modules.telegram_bot as tb
+    monkeypatch.setattr(tb, "BOT_TOKEN", "fake:token")
+    monkeypatch.setattr(tb, "CHAT_ID", "12345")
+    yakalanan = {}
+    def sahte_post(url, json=None, timeout=None):
+        yakalanan.update(json or {})
+        class R:
+            status_code = 200
+            def json(self): return {"ok": True}
+        return R()
+    monkeypatch.setattr(tb.requests, "post", sahte_post)
+    tb.send_message_with_buttons("Merhaba & <b>dünya</b> < 5", [[{"text": "x", "callback_data": "y"}]])
+    gonderilen = yakalanan["text"]
+    assert "&amp;" in gonderilen          # & escape edildi
+    assert "&lt; 5" in gonderilen         # tek başına < escape edildi
+    assert "<b>dünya</b>" in gonderilen   # <b> etiketi korundu
+    assert "&lt;b&gt;" not in gonderilen  # escape edilmiş <b> kalmamalı

@@ -1,5 +1,5 @@
 """
-BOBİ TV — Otonom Üretim, Dönen Konular, En Az 15sn ve 15 Dakika Pipeline v6.3 PRO
+BOBİ TV — Otonom Üretim, Dönen Konular, En Az 15sn ve 15 Dakika Pipeline v6.4 PRO
 Mimari:
 1. Otomatik Performans Temizliği: Kanalda yayınlanalı >= 60 dk (1 saat) olmuş ve < 100 görüntüleme
    almış videoları YouTube Data API v3 ile otomatik siler (kanal algoritmasını yüksek izlenmeli tutar).
@@ -7,7 +7,8 @@ Mimari:
 3. Birleşik v6.3 Üretim: Dönen kategori havuzu -> gerçek TTS süresi <15sn ise uzat -> Ahmet+Emel Çift Ses TTS ->
    1. Kareye (Frame 0) Profesyonel VS/Clash Kapak Gömme + İlk Kareden Kapak Seçme ->
    Vektör Kartlı & Karaoke Altyazılı & SFX+BGM (-14 LUFS) Render -> ffprobe QC
-4. Her 15 Dakikada 1 Video Isındırma: YouTube + Otomatik İlk Yorum + 1. Kare Özel Kapak.
+4. Kota Takibi: YouTube kotası dolduğunda state dosyasına yazar, workflow'u başarısız işaretler.
+5. Her Saatte 1 Video Isındırma: YouTube + Otomatik İlk Yorum + 1. Kare Özel Kapak.
 """
 import os
 import sys
@@ -23,10 +24,11 @@ from modules.video_render import video_render
 from modules.kapak_uret import kapak_uret
 from modules.telegram_notify import notify_error, send_message
 from modules.youtube_upload import toplu_yukle, dusuk_izlenmeli_videolari_temizle
+from modules.kota_state import kota_state_yaz, kota_dolu_mu
 
 GUNLUK_HEDEF = int(os.environ.get("GUNLUK_HEDEF", "1"))
 GUNLUK_MAKS = int(os.environ.get("GUNLUK_MAKS", "96"))
-MOD = os.environ.get("MOD", "isindirma_15dk")
+MOD = os.environ.get("MOD", "isindirma_saatlik")
 YUKLEME_ATLA = os.environ.get("YUKLEME_ATLA", "0") == "1"
 
 OTOMATIK_SIL_AKTIF = os.environ.get("OTOMATIK_SIL_AKTIF", "1") == "1"
@@ -204,10 +206,13 @@ def pipeline_calistir():
 
             if yeni_kuyruga_alinan > 0:
                 send_message(
-                    f"⏳ <b>BOBİ TV v6.2 PRO — Kuyruğa Alındı</b>\n"
+                    f"⏳ <b>BOBİ TV v6.4 PRO — Kuyruğa Alındı</b>\n"
                     f"🎥 {kota_paketleri[0]['baslik'][:65]}\n"
                     f"YouTube yükleme limiti dolduğu için video kuyruğa kaydedildi; kota açıldığında otomatik yayınlanacak."
                 )
+                # Kota doldu işaretle
+                kota_state_yaz(doldu=True, kalan_saat=24, video_sayisi=yayinlanan)
+                log_yaz("⚠️ YouTube günlük kota doldu!", "WARN")
         except Exception as e:
             hata = f"YouTube yükleme hatası: {e}"
             log_yaz(hata, "ERROR")
@@ -219,7 +224,24 @@ def pipeline_calistir():
         f"=== Tamamlandı: {yayinlanan} yayınlandı, {kuyruga_alinan} kuyrukta ({gecen_sn}sn) ==="
     )
 
+    # Kota kontrolü
+    if kuyruga_alinan > 0 and yayinlanan == 0:
+        log_yaz("❌ YouTube kotası dolu, hiçbir video yüklenemedi!", "ERROR")
+        kota_state_yaz(doldu=True, kalan_saat=24, video_sayisi=0)
+        # Telegram bildirimi
+        send_message(
+            f"🚫 <b>BOBİ TV — YouTube Kota Dolu</b>\n"
+            f"Bugün hiç video yüklenemedi, {kuyruga_alinan} video kuyrukta bekliyor.\n"
+            f"Kota açılana kadar yeni üretim duraklatılacak."
+        )
+        sys.exit(1)  # Başarısız işaretle
+
     basarili_toplam = yayinlanan + kuyruga_alinan
+    
+    # Başarılı yükleme varsa kota state'i güncelle
+    if yayinlanan > 0:
+        kota_state_yaz(doldu=False, kalan_saat=0, video_sayisi=yayinlanan)
+    
     sys.exit(0 if basarili_toplam >= GUNLUK_HEDEF else 1)
 
 

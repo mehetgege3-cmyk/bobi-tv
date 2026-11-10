@@ -7,12 +7,18 @@ bobi_tv/production/tts/
 bobi_tv/production/render/
 bobi_tv/production/animation/
 bobi_tv/output/
-bobi_tv/logs/
-bobi_tv/queue/
+bobi_tv/logs/*.log
+bobi_tv/logs/*.jsonl
 __pycache__/
 *.pyc
 bobi_tv/output/*.mp4
 bobi_tv/output/*.jpg
 bobi_tv/production/tts/*
 bobi_tv/production/render/*
+
+# Kuyruk JSON'larını takip et (ignore'dan çıkar)
+!bobi_tv/queue/*.json
+
+# State dosyalarını takip et
+!bobi_tv/state/
 

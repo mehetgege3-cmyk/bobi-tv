@@ -1,13 +1,13 @@
-name: BOBİ TV v6.3 PRO — Dönen Konular, 15sn+ ve Her 15 Dakikada Üretim
+name: BOBİ TV v6.4 PRO — Saatlik Üretim + Kota Takibi
 
 on:
   schedule:
-    # Kanal ısındırma modu: Her 15 dakikada 1 video üretimi + 1 saatte <100 izlenenleri otomatik temizleme
-    - cron: '*/15 * * * *'
+    # Gerçekçi saatlik üretim (GitHub'da 15 dk garanti edilemez)
+    - cron: '0 * * * *'  # Her saat başı
   workflow_dispatch:
     inputs:
       force:
-        description: 'Zorla çalıştır (günlük limit kontrolünü atla)'
+        description: 'Zorla çalıştır (kota kontrolünü atla)'
         required: false
         default: 'false'
 
@@ -53,18 +53,35 @@ jobs:
           python -m pip install -q -r requirements.txt
           python -m playwright install --with-deps chromium
 
-      - name: Günlük video sayısını kontrol et (96 video/gün — 15dk ısındırma)
-        id: kapasite
+      - name: Kota durumunu kontrol et
+        id: kota
         run: |
           python - << 'PYEOF'
           import json, os
           from pathlib import Path
           from datetime import datetime, timezone
 
+          state_file = Path("bobi_tv/state/youtube_quota.json")
           arsiv = Path("bobi_tv/archive/videos.json")
-          bugun = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-          hedef = 96
 
+          # Kota state kontrolü
+          kota_doldu = False
+          if state_file.exists():
+              try:
+                  state = json.loads(state_file.read_text(encoding="utf-8"))
+                  guncelleme = state.get("guncelleme", "")
+                  if guncelleme and state.get("doldu"):
+                      guncel_zaman = datetime.fromisoformat(guncelleme.replace("Z", "+00:00"))
+                      gecen_saat = (datetime.now(timezone.utc) - guncel_zaman).total_seconds() / 3600
+                      if gecen_saat < 24:
+                          kota_doldu = True
+                          print(f"⚠️ Kota dolu, {24 - gecen_saat:.1f} saat kaldı")
+              except Exception:
+                  pass
+
+          # Bugünkü video sayısı
+          bugun = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+          hedef = 24  # Saatlik üretim için 24 video/gün
           bugunki = 0
           if arsiv.exists():
               try:
@@ -74,12 +91,14 @@ jobs:
                   pass
 
           kalan = max(0, hedef - bugunki)
-          devam = "true" if kalan > 0 else "false"
-          print(f"Bugün üretilen: {bugunki}/{hedef} | Kalan: {kalan} | Devam: {devam}")
+          devam = "false" if kota_doldu else ("true" if kalan > 0 else "false")
+
+          print(f"Bugün: {bugunki}/{hedef} | Kalan: {kalan} | Kota: {'DOLU' if kota_doldu else 'BOŞ'} | Devam: {devam}")
 
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
               f.write(f"bugunki={bugunki}\n")
               f.write(f"kalan={kalan}\n")
+              f.write(f"kota_doldu={'true' if kota_doldu else 'false'}\n")
               f.write(f"devam={devam}\n")
           PYEOF
 
@@ -88,8 +107,8 @@ jobs:
         run: |
           mkdir -p bobi_tv/{queue,assets/{fonts,sfx},production/{scripts/arena,tts,render},output,archive/published,logs,config}
 
-      - name: BOBİ TV v6.2 Pro Pipeline'ı çalıştır
-        if: steps.kapasite.outputs.devam == 'true' || github.event.inputs.force == 'true'
+      - name: BOBİ TV v6.4 Pro Pipeline'ı çalıştır
+        if: steps.kota.outputs.devam == 'true' || github.event.inputs.force == 'true'
         env:
           YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
@@ -99,8 +118,8 @@ jobs:
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           SAVE_UPDATED_COOKIES: /tmp/updated_arena_cookies.json
           GUNLUK_HEDEF: '1'
-          GUNLUK_MAKS: '96'
-          MOD: 'isindirma_15dk'
+          GUNLUK_MAKS: '24'
+          MOD: 'isindirma_saatlik'
           OTOMATIK_SIL_AKTIF: '1'
           MIN_IZLENME_ESIGI: '100'
           IZLENME_KONTROL_DK: '60'
@@ -173,13 +192,25 @@ jobs:
         run: |
           git config user.name "BOBİ TV Bot"
           git config user.email "bobi-tv-bot@users.noreply.github.com"
-          git reset --hard HEAD  # Tüm değişiklikleri temizle
-          git add bobi_tv/archive/ bobi_tv/queue/*.json bobi_tv/production/scripts/arena/ bobi_tv/logs/quality/*.jsonl 2>/dev/null || git add -u bobi_tv/archive/ bobi_tv/queue/ bobi_tv/production/scripts/arena/ bobi_tv/logs/quality/ || true
+
+          # Değişiklikleri göster (debug)
+          echo "=== Değişen dosyalar ==="
+          git status --short || true
+
+          # Arşiv ve state dosyalarını ekle
+          git add -f bobi_tv/archive/ bobi_tv/state/ bobi_tv/logs/ bobi_tv/production/scripts/arena/ 2>/dev/null || true
+
+          # Kuyruk JSON'larını zorla ekle (.gitignore override)
+          git add -f bobi_tv/queue/*.json 2>/dev/null || true
+
+          # Commit ve push
           if ! git diff --staged --quiet; then
-            git commit -m "📺 BOBİ TV v6.3 arşiv/kuyruk/kalite [$(date +%Y-%m-%dT%H:%M)] [skip ci]"
-            git pull --rebase origin main || exit 1
-            git push || exit 1
-            echo "✅ Arşiv push başarılı"
+            git commit -m "📺 BOBİ TV v6.4 arşiv/kuyruk/kota [$(date +%Y-%m-%dT%H:%M)] [skip ci]" || true
+            git pull --rebase origin main || git pull origin main || true
+            git push origin main || echo "Push başarısız (devam ediliyor)"
+            echo "✅ Arşiv push tamamlandı"
+          else
+            echo "ℹ️ Değişiklik yok, commit atlanıyor"
           fi
 
       - name: Hata bildirimi

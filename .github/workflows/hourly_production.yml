@@ -413,3 +413,101 @@ jobs:
                   print(f'Telegram hatası: {e}', file=sys.stderr)
                   sys.exit(1)
           "
+
+      # =====================================================================
+      # 15 DAKİKA KADANSINI ZİNCİRLE (kullanıcı kararı 2026-11-11:
+      # "her 15 dakikada video üretilecek ve yüklenecek").
+      #
+      # NEDEN: GitHub'ın kendi cron'u GÜVENİLMEZ. Ölçüm (2026-11-10):
+      # '*/15' yazılı olduğu halde fiilen günde 2-3 koşu oldu
+      # (13:06, 13:17, 16:55, 19:41, 22:07). Cron tek başına 96 koşu/gün
+      # üretmiyor; bu yüzden her koşu bir SONRAKİNİ kendisi tetikler.
+      #
+      # GÜVENLİK / DÖNGÜ KIRICI:
+      #   • Her zaman `always()` çalışır — üretim hatası olsa bile kadans durmaz.
+      #   • 30 sn bekler; sonra "son 12 dk içinde bu workflow başka bir
+      #     tetikleme ile çalıştı mı" kontrol edilir. Çalıştıysa ÇİFT tetikleme
+      #     olur, atlanır (GitHub cron'u araya girerse kuyruk şişmez).
+      #   • Zamanlanmış koşular arasında en az 8 dk bırakılır (6 dk üretim
+      #     süresi + pay).
+      #   • GH_PAT yoksa adım sessizce geçer (cron yine çalışır).
+      # =====================================================================
+      - name: Bir sonraki 15 dk turunu zincirle
+        if: always()
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import subprocess
+          import time
+          import urllib.error
+          import urllib.request
+          from datetime import datetime, timedelta, timezone
+
+          token = os.environ.get("GH_PAT", "").strip()
+          if not token:
+              print("zincir: GH_PAT yok — atlandı (GitHub cron'una bırakıldı)")
+              raise SystemExit(0)
+
+          repo = "mehetgege3-cmyk/bobi-tv"
+          api = f"https://api.github.com/repos/{repo}/actions"
+          basliklar = {
+              "Authorization": f"token {token}",
+              "Accept": "application/vnd.github+json",
+          }
+
+          def istek(url, veri=None, yontem="GET"):
+              r = urllib.request.Request(
+                  url,
+                  data=json.dumps(veri).encode() if veri else None,
+                  headers=basliklar,
+                  method=yontem,
+              )
+              with urllib.request.urlopen(r, timeout=30) as c:
+                  govde = c.read()
+                  return json.loads(govde) if govde else {}
+
+          # Devam filminde koşunun kendisi "in_progress" görünür; bu yüzden
+          # çakışma kontrolünde kendimizi ve eski koşuları eleriz.
+          mevcut_run = os.environ.get("GITHUB_RUN_ID", "")
+          simdi = datetime.now(timezone.utc)
+          time.sleep(30)
+
+          try:
+              kosular = istek(f"{api}/workflows/hourly_production.yml/runs?per_page=10")["workflow_runs"]
+          except Exception as e:
+              print(f"zincir: koşular okunamadı ({e}) — yine de tetiklenecek")
+
+              kosular = []
+
+          cakisma = False
+          for k in kosular:
+              if str(k["id"]) == mevcut_run:
+                  continue
+              if k["status"] in ("queued", "in_progress"):
+                  cakisma = True
+                  print(f"zincir: zaten çalışan koşu var (#{k['run_number']}, {k['status']}) — atlandı")
+                  break
+              basla = datetime.fromisoformat(k["created_at"].replace("Z", "+00:00"))
+              if simdi - basla < timedelta(minutes=8):
+                  cakisma = True
+                  print(f"zincir: son 8 dk içinde koşu var (#{k['run_number']}) — atlandı")
+                  break
+
+          if cakisma:
+              raise SystemExit(0)
+
+          try:
+              istek(
+                  f"{api}/workflows/hourly_production.yml/dispatches",
+                  {"ref": "main", "inputs": {"force": "false"}},
+                  "POST",
+              )
+              print("zincir: ✅ bir sonraki tur tetiklendi")
+          except urllib.error.HTTPError as e:
+              print(f"zincir: tetikleme hatası HTTP {e.code} — {e.read()[:200]!r}")
+          except Exception as e:
+              print(f"zincir: tetikleme hatası {e}")
+          PY

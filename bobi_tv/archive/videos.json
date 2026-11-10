@@ -110,12 +110,15 @@
     "dosya_adi": "20261110_0005_diyet_kavrami_arena",
     "baslik": "Üç Günde Dört Kilo Sırrı 😱 #shorts",
     "video_id": "N4brCbcS3gM",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "diyet_kavrami",
     "url": "https://www.youtube.com/shorts/N4brCbcS3gM",
     "senaryo_ozeti": "Üç günde dört kilo verdim, tartı bile bana şaşırdı. Nasıl olur, dün koca bir pideyi tek başına bitirdin.",
     "hash": "",
-    "tarih": "2026-11-10T22:48:31.102578+00:00"
+    "tarih": "2026-11-10T22:48:31.102578+00:00",
+    "silinme_izlenme": 2,
+    "silinme_yas_dk": 62.6,
+    "silinme_tarihi": "2026-11-10T23:51:25.256279+00:00"
   },
   {
     "dosya_adi": "20261110_0006_kulturlar_arasi_mizah_arena",
@@ -160,5 +163,16 @@
     "senaryo_ozeti": "Kahvemi bitirdim, fincan yine kendiliğinden doldu işte! Sanırım makine bozuk, kahve akmaya devam ediyor.",
     "hash": "",
     "tarih": "2026-11-10T23:10:37.808668+00:00"
+  },
+  {
+    "dosya_adi": "20261110_0010_kurumsal_hayat_arena",
+    "baslik": "Şirketin Ayın Çalışanı Hiç Beklemediğin Biri 😱 #shorts",
+    "video_id": "8LFb5HrkXnM",
+    "durum": "yayinda",
+    "kategori": "kurumsal_hayat",
+    "url": "https://www.youtube.com/shorts/8LFb5HrkXnM",
+    "senaryo_ozeti": "Ayın Çalışanı ödülünü bizim klavye robotu aldı. Tolga, bu şaka mı, ödülü bir cihaza mı verdik?",
+    "hash": "",
+    "tarih": "2026-11-10T23:54:21.629744+00:00"
   }
 ]

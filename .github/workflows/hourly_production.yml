@@ -142,75 +142,32 @@ jobs:
 
       - name: Kota durumunu kontrol et
         id: kota
-        run: |
-          python - << 'PYEOF'
-          import json, os
-          from pathlib import Path
-          from datetime import datetime, timezone
-
-          state_file = Path("bobi_tv/state/youtube_quota.json")
-          arsiv = Path("bobi_tv/archive/videos.json")
-
-          # Kota state kontrolü
-          kota_doldu = False
-          if state_file.exists():
-              try:
-                  state = json.loads(state_file.read_text(encoding="utf-8"))
-                  guncelleme = state.get("guncelleme", "")
-                  if guncelleme and state.get("doldu"):
-                      guncel_zaman = datetime.fromisoformat(guncelleme.replace("Z", "+00:00"))
-                      gecen_saat = (datetime.now(timezone.utc) - guncel_zaman).total_seconds() / 3600
-                      if gecen_saat < 24:
-                          kota_doldu = True
-                          print(f"⚠️ Kota dolu, {24 - gecen_saat:.1f} saat kaldı")
-              except Exception:
-                  pass
-
-          # Bugünkü video sayısı
-          bugun = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-          hedef = 24  # Saatlik üretim için 24 video/gün
-          bugunki = 0
-          if arsiv.exists():
-              try:
-                  kayitlar = json.loads(arsiv.read_text(encoding="utf-8"))
-                  bugunki = sum(1 for k in kayitlar if k.get("tarih","")[:10] == bugun)
-              except Exception:
-                  pass
-
-          kalan = max(0, hedef - bugunki)
-          devam = "false" if kota_doldu else ("true" if kalan > 0 else "false")
-
-          print(f"Bugün: {bugunki}/{hedef} | Kalan: {kalan} | Kota: {'DOLU' if kota_doldu else 'BOŞ'} | Devam: {devam}")
-
-          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-              f.write(f"bugunki={bugunki}\n")
-              f.write(f"kalan={kalan}\n")
-              f.write(f"kota_doldu={'true' if kota_doldu else 'false'}\n")
-              f.write(f"devam={devam}\n")
-          PYEOF
-
-
-      - name: Kota doluysa bildir ve durdur
-        if: steps.kota.outputs.kota_doldu == 'true' && steps.tetik.outputs.force != 'true'
         env:
+          FORCE_TETIK: ${{ steps.tetik.outputs.force }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          python -c "
-          import os, requests, sys
-          token = os.environ.get('TELEGRAM_BOT_TOKEN','')
-          chat_id = os.environ.get('TELEGRAM_CHAT_ID','')
-          if token and chat_id:
-              try:
-                  requests.post(f'https://api.telegram.org/bot{token}/sendMessage',
-                    json={'chat_id': chat_id,
-                          'text': '🚫 <b>YouTube kota dolu</b> — bu çalıştırmada üretim atlandı. Kota UTC 00:00\'da sıfırlanır.',
-                          'parse_mode': 'HTML'}, timeout=10)
-              except Exception as e:
-                  print(f'Telegram bildirim hatası: {e}', file=sys.stderr)
-          print('::warning::Kota dolu, üretim atlandı (bildirim gönderildi)')
-          sys.exit(1)
-          "
+          python - << 'PYEOF'
+          # TODO 10: kota kapısı. Davranış ayarı state'ten köprüyle gelir:
+          #   sessiz_dur (varsayılan) → exit 0 — C2 self-repair fırtınası biter
+          #   hata → exit 1 — kırmızı tik (eski davranış, bilinçli seçim)
+          import os
+          import sys
+
+          from modules.kota_kapisi import kota_dolu_bildir, kota_dolu_cikis_kodu, kota_kontrol_yap
+
+          force = str(os.environ.get("FORCE_TETIK", "")).strip().lower() in ("true", "1")
+          sonuc = kota_kontrol_yap(hedef=int(os.environ.get("GUNLUK_HEDEF", "1") or "1"))
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+              for anahtar, deger in sonuc.items():
+                  f.write(f"{anahtar}={deger}\n")
+          print(f"Kota kapısı: {sonuc}")
+          if sonuc["kota_doldu"] == "true" and not force:
+              kota_dolu_bildir()
+              cikis = kota_dolu_cikis_kodu(os.environ.get("KOTA_DOLU_DAVRANIS", "sessiz_dur"))
+              print(f"Kota dolu — KOTA_DOLU_DAVRANIS çıkışı: {cikis}")
+              sys.exit(cikis)
+          PYEOF
 
       - name: Klasör yapısını hazırla
         if: steps.kota.outputs.devam == 'true' || steps.tetik.outputs.force == 'true'
@@ -232,6 +189,20 @@ jobs:
           # Secret satırları köprüye girmez; burada kalır.
         run: |
           python main_pipeline.py
+
+      - name: Tek kullanımlık force bayrağını tüket
+        if: always()
+        run: |
+          python3 - << 'PYEOF'
+          # force tek kullanımlıktır (TODO 1): bu koşu tüketti, state'i 0'a çeker.
+          # Değişiklik 'Arşivi ve kuyruk durumunu commit et' adımıyla push edilir.
+          from modules.ayar_deposu import force_sifirla
+
+          if force_sifirla():
+              print("🔁 force=1 tüketildi → state'te 0'a çekildi")
+          else:
+              print("ℹ️ force bayrağı 1 değildi — işlem yok")
+          PYEOF
 
       - name: Üretilen Pro MP4 ve 1. Kare Kapağı Artifact olarak yükle
         if: always()
@@ -281,6 +252,83 @@ jobs:
                   print(f"Geçen: {gecen}/{toplam} ({round(gecen/toplam*100) if toplam > 0 else 0}%)")
                   print(f"Min puan: {min(puanlar) if puanlar else 0}")
                   print(f"Max puan: {max(puanlar) if puanlar else 0}")
+          PYEOF
+
+      - name: Render testi sonucu bildir (yükleme yok)
+        if: always() && env.YUKLEME_ATLA == '1'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python - << 'PYEOF'
+          # TODO 12: 'video üretiliyor mu?' sorusunun kotasız ve yayınsız cevabı.
+          # Sonuç mesajı: süre · çıktı boyutu · QC sonucu · 'yükleme yapılmadı'.
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          import requests
+
+          def _mp4_boyutu() -> int:
+              cikti = Path("bobi_tv/output")
+              if not cikti.exists():
+                  return 0
+              return sum(f.stat().st_size for f in cikti.glob("*.mp4") if f.is_file())
+
+          def _qc_ozeti() -> str:
+              tarih = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+              yolu = Path(f"bobi_tv/logs/quality/{tarih}.jsonl")
+              if not yolu.exists():
+                  return "bilgi yok"
+              try:
+                  kayitlar = [
+                      json.loads(s)
+                      for s in yolu.read_text(encoding="utf-8").splitlines()
+                      if s.strip()
+                  ]
+              except Exception:
+                  return "bilgi yok"
+              if not kayitlar:
+                  return "bilgi yok"
+              puanlar = [int(k.get("toplam_puan", 0)) for k in kayitlar]
+              gecen = sum(1 for k in kayitlar if k.get("gecti"))
+              return f"ortalama {round(sum(puanlar) / len(puanlar))}/100 · {gecen}/{len(kayitlar)} geçti"
+
+          def _sure_ozeti() -> str:
+              tarih = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+              yolu = Path(f"bobi_tv/logs/{tarih}.log")
+              if not yolu.exists():
+                  return "bilinmiyor"
+              try:
+                  for satir in reversed(yolu.read_text(encoding="utf-8").splitlines()):
+                      if "=== Tamamlandı" in satir and "(" in satir and "sn)" in satir:
+                          return satir.split("(")[1].split(")")[0]
+              except Exception:
+                  pass
+              return "bilinmiyor"
+
+          metin = (
+              "🧪 <b>Render testi tamamlandı</b>\n"
+              f"⏱️ Süre: {_sure_ozeti()}\n"
+              f"📦 Çıktı: {_mp4_boyutu() / 1048576:.1f} MB MP4\n"
+              f"🎯 QC: {_qc_ozeti()}\n"
+              "✅ YouTube'a yükleme yapılmadı (test koşusu — canlı kanal etkilenmedi)."
+          )
+          token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+          chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
+          if token and chat_id:
+              try:
+                  resp = requests.post(
+                      f"https://api.telegram.org/bot{token}/sendMessage",
+                      json={"chat_id": chat_id, "text": metin, "parse_mode": "HTML"},
+                      timeout=10,
+                  )
+                  print(f"Render testi bildirimi HTTP {resp.status_code}")
+              except Exception as e:
+                  print(f"Bildirim hatası (koşuyu etkilemez): {e}")
+          else:
+              print(metin)
           PYEOF
 
       - name: Arşivi ve kuyruk durumunu commit et

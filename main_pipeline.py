@@ -29,11 +29,19 @@ from modules.youtube_upload import (
     zaten_yuklendi_mi,
 )
 from modules.kota_state import kota_state_yaz
+from modules.kota_kapisi import kota_dolu_cikis_kodu
+from modules.ayar_katalogu import etkin_gunluk_maks
 
 GUNLUK_HEDEF = int(os.environ.get("GUNLUK_HEDEF", "1"))
-GUNLUK_MAKS = int(os.environ.get("GUNLUK_MAKS", "96"))
+# TODO 10: GUNLUK_MAKS tavan savunması — env/state ne derse desin etkin değer ≤ 6
+# (10000 birim / 1600 birim = 6 yükleme). Katalog varsayılanı 6'dır; 96 gibi eski
+# sabitler artık köprüden gelmez, yine de gelen aşırı değer UYARIYLA kırpılır.
+GUNLUK_MAKS = etkin_gunluk_maks(os.environ.get("GUNLUK_MAKS", "6"))
 MOD = os.environ.get("MOD", "isindirma_saatlik")
 YUKLEME_ATLA = os.environ.get("YUKLEME_ATLA", "0") == "1"
+# TODO 10: kota dolunca davranış — sessiz_dur (varsayılan) → exit 0,
+# hata → exit 1. Değer ayarlar.json'dan köprüyle gelir.
+KOTA_DOLU_DAVRANIS = os.environ.get("KOTA_DOLU_DAVRANIS", "sessiz_dur")
 
 OTOMATIK_SIL_AKTIF = os.environ.get("OTOMATIK_SIL_AKTIF", "1") == "1"
 # Silme eşiği TEK KAYNAK (burada). hourly_production.yml artık override
@@ -255,7 +263,7 @@ def pipeline_calistir():
             f"Bugün hiç video yüklenemedi, {kuyruga_alinan} video kuyrukta bekliyor.\n"
             f"Kota açılana kadar yeni üretim duraklatılacak."
         )
-        sys.exit(1)  # Başarısız işaretle
+        sys.exit(kota_dolu_cikis_kodu(KOTA_DOLU_DAVRANIS))  # TODO 10: sessiz_dur → 0, hata → 1
 
     basarili_toplam = yayinlanan + kuyruga_alinan
     

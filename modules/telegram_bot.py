@@ -32,6 +32,7 @@ from modules.ayar_katalogu import (
     degistirilebilir_mi,
     grup_ayarlari,
 )
+from modules.kota_kapisi import kota_durumu_ozeti
 
 BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
@@ -365,21 +366,9 @@ def menyu_gonder(yeni_mesaj: bool = False) -> bool:
 
 
 def _kota_birim_ozeti() -> str:
-    """TODO 10 panel satırı. Birim bilgisi youtube_quota.json'da YOKSA
-    'bilinmiyor' yazar — sayı UYDURULMAZ."""
-    if not KOTA_YOLU.exists():
-        return "Kota: bilinmiyor (durum dosyası yok)"
-    try:
-        state = json.loads(KOTA_YOLU.read_text(encoding="utf-8"))
-    except Exception:
-        return "Kota: bilinmiyor (dosya okunamadı)"
-    kalan_birim = state.get("kalan_birim")
-    toplam_birim = state.get("toplam_birim")
-    if not isinstance(kalan_birim, int) or not isinstance(toplam_birim, int) or toplam_birim <= 0:
-        return "Kota: bilinmiyor (birim kaydı yok)"
-    kullanilan = max(0, toplam_birim - kalan_birim)
-    yukleme_kaldi = max(0, kalan_birim // 1600)
-    return f"Kota: {kullanilan}/{toplam_birim} birim · ~{yukleme_kaldi} yükleme kaldı"
+    """TODO 10 panel satırı — modules/kota_kapisi.kota_durumu_ozeti'ne delegasyon.
+    Birim bilgisi youtube_quota.json'da YOKSA 'bilinmiyor' yazar — sayı UYDURULMAZ."""
+    return kota_durumu_ozeti(KOTA_YOLU)
 
 
 def get_status_text() -> str:

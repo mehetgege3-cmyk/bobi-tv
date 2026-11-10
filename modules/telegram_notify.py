@@ -34,7 +34,7 @@ def send_message(text: str, parse_mode: str = "HTML") -> bool:
         return False
 
 
-def notify_start(gun: str = None):
+def notify_start(gun: str | None = None) -> None:
     gun = gun or datetime.now().strftime("%d.%m.%Y")
     send_message(
         f"🎬 <b>BOBİ TV Günlük Üretim Başladı</b>\n"
@@ -44,7 +44,7 @@ def notify_start(gun: str = None):
     )
 
 
-def notify_video_ready(baslik: str, video_no: int, toplam: int):
+def notify_video_ready(baslik: str, video_no: int, toplam: int) -> None:
     send_message(
         f"✅ <b>Video Hazır #{video_no}/{toplam}</b>\n"
         f"🎬 {html.escape(baslik)}\n"
@@ -52,7 +52,7 @@ def notify_video_ready(baslik: str, video_no: int, toplam: int):
     )
 
 
-def notify_video_published(baslik: str, video_id: str, video_no: int, toplam: int):
+def notify_video_published(baslik: str, video_id: str, video_no: int, toplam: int) -> None:
     send_message(
         f"🚀 <b>Video Yayınlandı #{video_no}/{toplam}</b>\n"
         f"🎬 {html.escape(baslik)}\n"
@@ -60,7 +60,7 @@ def notify_video_published(baslik: str, video_id: str, video_no: int, toplam: in
     )
 
 
-def notify_daily_report(hedef: int, uretilen: int, yayinlanan: int, hatalar: list):
+def notify_daily_report(hedef: int, uretilen: int, yayinlanan: int, hatalar: list[str]) -> None:
     durum = "✅" if yayinlanan >= hedef else "⚠️"
     hata_metni = ""
     if hatalar:
@@ -77,7 +77,7 @@ def notify_daily_report(hedef: int, uretilen: int, yayinlanan: int, hatalar: lis
     )
 
 
-def notify_error(modul: str, hata: str, kritik: bool = False):
+def notify_error(modul: str, hata: str, kritik: bool = False) -> None:
     emoji = "🔴" if kritik else "🟡"
     send_message(
         f"{emoji} <b>BOBİ TV {'KRİTİK ' if kritik else ''}Hata</b>\n"
@@ -86,14 +86,14 @@ def notify_error(modul: str, hata: str, kritik: bool = False):
     )
 
 
-def notify_token_renewed():
+def notify_token_renewed() -> None:
     send_message(
         "🔑 <b>YouTube Token Yenilendi</b>\n"
         "OAuth token başarıyla yenilendi. Sistem çalışmaya devam ediyor."
     )
 
 
-def notify_production_start_approval():
+def notify_production_start_approval() -> None:
     send_message(
         "🟢 <b>BOBİ TV Sistem Hazır!</b>\n\n"
         "Tüm kurulum tamamlandı:\n"

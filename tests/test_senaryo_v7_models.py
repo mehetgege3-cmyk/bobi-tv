@@ -1,3 +1,4 @@
+import sys
 """Tests for the expanded v7 line and character schema."""
 
 from __future__ import annotations
@@ -134,3 +135,21 @@ def test_legacy_twist_index_becomes_line_role() -> None:
     assert template.diyaloglar[1].rol is DiyalogRolu.TWIST
     assert template.diyaloglar[1].twist
     assert template.to_dict()["twist_indeksi"] == 1  # legacy serialization alias
+
+
+def test_star_import_calisir():
+    """from modules.senaryo_v7.models import * AttributeError vermemeli (TODO 1)."""
+    import subprocess
+    r = subprocess.run(
+        [sys.executable, "-c", "from modules.senaryo_v7.models import *; print('ok')"],
+        capture_output=True, text=True,
+    )
+    assert r.returncode == 0, r.stderr
+    assert "ok" in r.stdout
+
+
+def test_all_icindeki_isimler_gercekten_var():
+    """__all__'daki her isim modülde tanımlı olmalı."""
+    import modules.senaryo_v7.models as m
+    for isim in m.__all__:
+        assert hasattr(m, isim), f"__all__ içinde tanımsız isim: {isim}"

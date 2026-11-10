@@ -98,7 +98,9 @@ def _dogrula(anahtar: str, deger: Any) -> tuple[Any, str | None]:
         return None, f"aralık dışı: {anahtar}={n} < {mn} — reddedildi, varsayılan etkin kalır"
     if mx is not None and n > int(mx):
         return None, f"aralık dışı: {anahtar}={n} > {mx} — reddedildi, varsayılan etkin kalır"
-    return n, None
+    # Dönüş tipi TEK: string. env katmanı da string döndürdüğü için karışık tip
+    # (int/str) hataları önlenir; pipeline tarafı int() ile çevirir.
+    return str(n), None
 
 
 def yukle(
@@ -123,7 +125,9 @@ def yukle(
             else:
                 aday = veri.get("ayarlar")
                 if isinstance(aday, dict):
-                    ham = aday
+                    # Eski dosyalarda sayılar int yazılmış olabilir — normalize et.
+                    ham = {str(k): (str(v) if isinstance(v, (int, float)) else v)
+                           for k, v in aday.items()}
         except Exception as e:
             yedek = _yedek_yolu(state_yolu)
             try:

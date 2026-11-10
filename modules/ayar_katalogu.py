@@ -114,11 +114,11 @@ KATALOG: list[dict[str, Any]] = [
         "anahtar": "KADANS_DK",
         "etiket": "Üretim kadansı (dk)",
         "grup": "uretim_kota",
-        "tip": "secim",
+        "tip": "sayi",
         "secenekler": ["15", "30", "60"],
         "varsayilan": "15",
-        "min": None,
-        "max": None,
+        "min": 5,
+        "max": 1440,
         "env_adi": "KADANS_DK",
         "risk": "orta",
         "kalici": True,
@@ -136,11 +136,11 @@ KATALOG: list[dict[str, Any]] = [
         "anahtar": "GUNLUK_HEDEF",
         "etiket": "Günlük hedef",
         "grup": "uretim_kota",
-        "tip": "secim",
+        "tip": "sayi",
         "secenekler": ["1", "2", "4"],
         "varsayilan": "1",
-        "min": None,
-        "max": None,
+        "min": 1,
+        "max": 6,
         "env_adi": "GUNLUK_HEDEF",
         "risk": "dusuk",
         "kalici": True,
@@ -152,18 +152,22 @@ KATALOG: list[dict[str, Any]] = [
         "anahtar": "GUNLUK_MAKS",
         "etiket": "Günlük üst sınır",
         "grup": "uretim_kota",
-        "tip": "secim",
+        "tip": "sayi",
         "secenekler": ["2", "5", "6"],
         "varsayilan": "6",
-        "min": None,
-        "max": None,
+        "min": 1,
+        "max": 6,
         "env_adi": "GUNLUK_MAKS",
         "risk": "orta",
         "kalici": True,
         "etkili": True,
         "secret": False,
-        "aciklama": "Günlük yükleme tavanı. Kota matematiği: 10000/1600 = 6 — "
-        "7 ve üzeri seçenek bilinçli olarak YOK; kod ayrıca min(değer, 6) savunması yapar.",
+        "aciklama": (
+            "Günlük yükleme tavanı (1-6). Serbest giriş — istediğin değeri yaz. "
+            "ÜST SINIR 6'dır çünkü YouTube kotası 10.000 birim, videos.insert 1.600 "
+            "birim: 6'dan fazlası her koşuda reddedilir. Kadans 15 dk olsa bile "
+            "günlük YÜKLEME sayısını bu ayar belirler."
+        ),
     },
     {
         "anahtar": "KOTA_DOLU_DAVRANIS",
@@ -204,9 +208,9 @@ KATALOG: list[dict[str, Any]] = [
         "anahtar": "OTOMATIK_SIL_AKTIF",
         "etiket": "Otomatik silme",
         "grup": "temizlik",
-        "tip": "sadece_goruntule",
+        "tip": "anahtar",
         "secenekler": None,
-        "varsayilan": None,
+        "varsayilan": "1",
         "min": None,
         "max": None,
         "env_adi": "OTOMATIK_SIL_AKTIF",
@@ -217,58 +221,55 @@ KATALOG: list[dict[str, Any]] = [
         "mevcut": "1",
     
         "aciklama": (
-            "KİLİTLİ — bu ayar KANALDA GERÇEK VİDEO SİLER: main_pipeline.py "
-            "dusuk_izlenmeli_videolari_temizle() çağrısına geçirilir ve "
-            "youtube_upload.py videos.delete ile siler. Değiştirmek için kod "
-            "değişikliği gerekir (kaza koruması). İKİNCİ silme mekanizması "
-            "cleanup_low_views.yml kendi sabitini kullanır (H1) — ayrı sorun."
+            "GERÇEK VİDEO SİLER. 1 saatte 100 izlenme almayan video kalıcı silinir "
+            "(main_pipeline.py → dusuk_izlenmeli_videolari_temizle, videos.delete). "
+            "Değer düşükse çok video gider, yüksekse az. Değişiklik çift onay ister "
+            "ve onay ekranı SİLİNECEK video sayısını önizler. Geri alınamaz."
         ),
     },
     {
         "anahtar": "MIN_IZLENME_ESIGI",
         "etiket": "Min izlenme eşiği",
         "grup": "temizlik",
-        "tip": "sadece_goruntule",
+        "tip": "sayi",
         "secenekler": None,
-        "varsayilan": None,
-        "min": None,
-        "max": None,
+        "varsayilan": "100",
         "env_adi": "MIN_IZLENME_ESIGI",
         "risk": "yuksek",
-        "kalici": False,
+        "kalici": True,
         "etkili": True,
         "secret": False,
         "mevcut": "100",
+        "min": 0,
+        "max": 100000,
     
         "aciklama": (
-            "KİLİTLİ — bu ayar KANALDA GERÇEK VİDEO SİLER: main_pipeline.py "
-            "dusuk_izlenmeli_videolari_temizle() çağrısına geçirilir ve "
-            "youtube_upload.py videos.delete ile siler. Değiştirmek için kod "
-            "değişikliği gerekir (kaza koruması). İKİNCİ silme mekanizması "
-            "cleanup_low_views.yml kendi sabitini kullanır (H1) — ayrı sorun."
+            "GERÇEK VİDEO SİLER. 1 saatte 100 izlenme almayan video kalıcı silinir "
+            "(main_pipeline.py → dusuk_izlenmeli_videolari_temizle, videos.delete). "
+            "Değer düşükse çok video gider, yüksekse az. Değişiklik çift onay ister "
+            "ve onay ekranı SİLİNECEK video sayısını önizler. Geri alınamaz."
         ),
     },
     {
         "anahtar": "IZLENME_KONTROL_DK",
         "etiket": "İzlenme kontrolü",
         "grup": "temizlik",
-        "tip": "sadece_goruntule",
+        "tip": "sayi",
         "secenekler": None,
-        "varsayilan": None,
-        "min": None,
-        "max": None,
+        "varsayilan": "60",
         "env_adi": "IZLENME_KONTROL_DK",
-        "risk": "dusuk",
-        "kalici": False,
+        "risk": "orta",
+        "kalici": True,
         "etkili": True,
         "secret": False,
-        "mevcut": "1440",
+        "mevcut": "60",
+        "min": 15,
+        "max": 10080,
         "aciklama": (
-            "KİLİTLİ — bu ayar KANALDA GERÇEK VİDEO SİLER: main_pipeline.py "
-            "dusuk_izlenmeli_videolari_temizle() çağrısına geçirilir ve "
-            "youtube_upload.py videos.delete ile siler. Değiştirmek için kod "
-            "değişikliği gerekir (kaza koruması). İKİNCİ silme mekanizması "
-            "cleanup_low_views.yml kendi sabitini kullanır (H1) — ayrı sorun."
+            "GERÇEK VİDEO SİLER. 1 saatte 100 izlenme almayan video kalıcı silinir "
+            "(main_pipeline.py → dusuk_izlenmeli_videolari_temizle, videos.delete). "
+            "Değer düşükse çok video gider, yüksekse az. Değişiklik çift onay ister "
+            "ve onay ekranı SİLİNECEK video sayısını önizler. Geri alınamaz."
         ),
     },
     # ---------- Grup 4 — sistem (SADECE GÖRÜNTÜLE, değer asla yazdırılmaz) ----------

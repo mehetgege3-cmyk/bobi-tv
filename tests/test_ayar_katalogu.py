@@ -69,7 +69,7 @@ def test_gunluk_maks_seceneklerinin_maksimumu_6() -> None:
     assert YOUTUBE_GUNLUK_KOTA_BIRIM // VIDEO_INSERT_MALIYETI == KOTA_TAVANI
 
 
-def test_temizlik_grubu_etkili_ama_kilitli() -> None:
+def test_temizlik_grubu_etkili_ve_degistirilebilir() -> None:
     """TODO 11 düzeltmesi (2026-11-11): temizlik ayarları ETKİLİDİR, kilitlidir.
 
     Önceki sözleşme "etkili DEĞİLDİR (H1)" diyordu — YANLIŞTI. Gerçek:
@@ -84,9 +84,20 @@ def test_temizlik_grubu_etkili_ama_kilitli() -> None:
     assert len(temizlik) == 3
     for a in temizlik:
         assert a["etkili"] is True, f"{a['anahtar']} gerçekten etkili (video siler)"
-        assert a["tip"] == "sadece_goruntule", a["anahtar"]
-        assert degistirilebilir_mi(a) is False, a["anahtar"]
+        # 2026-11-11: kilit kaldırıldı — kullanıcı eşiği kendisi girer
+        assert a["tip"] in ("sayi", "anahtar"), a["anahtar"]
+        assert degistirilebilir_mi(a) is True, a["anahtar"]
         assert "SİLER" in a["aciklama"], f"{a['anahtar']}: açıklama silme uyarısı içermeli"
+
+
+def test_izlenme_kontrol_1_saat() -> None:
+    """Kullanıcı kararı: 1 saatte 100 izlenme almayan video silinir (1440 değil 60)."""
+    a = ayar_getir("IZLENME_KONTROL_DK")
+    assert a["varsayilan"] == "60"
+    assert a["min"] == 15 and a["max"] == 10080
+    esik = ayar_getir("MIN_IZLENME_ESIGI")
+    assert esik["varsayilan"] == "100"
+    assert esik["min"] == 0 and esik["max"] == 100000
 
 
 def test_belgede_etkilemez_yalani_yok() -> None:
@@ -132,8 +143,10 @@ def test_katalog_semasi_tam_ve_gecerli() -> None:
             mn, mx = a["min"], a["max"]
             assert mn is not None and mx is not None, a["anahtar"]
             assert int(mn) <= int(a["varsayilan"]) <= int(mx), a["anahtar"]
-            oneriler = a["secenekler"]
-            assert isinstance(oneriler, list) and oneriler, a["anahtar"]
+            # 2026-11-11: serbest sayı girişi — öneri listesi ZORUNLU DEĞİL,
+            # varsa seçenekler aralıkta olmalı.
+            oneriler = a["secenekler"] or []
+            assert isinstance(oneriler, list), a["anahtar"]
             for o in oneriler:
                 assert int(mn) <= int(o) <= int(mx), f"{a['anahtar']} öneri aralık dışı: {o}"
         if a["tip"] == "anahtar":
@@ -145,7 +158,10 @@ def test_riskli_degistirilebilir_ayarlar_belli() -> None:
     """risk=yuksek olan değiştirilebilir ayarlar yalnızca force ve KOTA_DOLU_DAVRANIS'tır;
     ikisi de onay ekranı istisnasız kullanmalı."""
     riskli = [a["anahtar"] for a in tumu() if a["risk"] == "yuksek" and degistirilebilir_mi(a)]
-    assert sorted(riskli) == ["KOTA_DOLU_DAVRANIS", "force"]
+    # 2026-11-11: IZLENME_KONTROL_DK "orta" (süre değişimi doğrudan silmez;
+    # eşiği MIN_IZLENME_ESIGI belirler → o "yuksek" ve onay ister).
+    assert sorted(riskli) == ["KOTA_DOLU_DAVRANIS", "MIN_IZLENME_ESIGI",
+                              "OTOMATIK_SIL_AKTIF", "force"]
 
 
 def test_sadece_goruntuleme_ayarlarina_degistirme_yolu_yok() -> None:

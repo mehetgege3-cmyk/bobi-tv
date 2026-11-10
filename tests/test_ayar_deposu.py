@@ -123,14 +123,23 @@ def test_state_env_varsayilan_onceligi(tmp_path: Path) -> None:
     assert degerler["MOD"] == "normal"
 
 
-def test_sadece_goruntule_state_uzerine_yazilamaz(tmp_path: Path) -> None:
+def test_temizlik_ayarlari_artik_degistirilebilir(tmp_path: Path) -> None:
+    """2026-11-11 kararı: temizlik ayarları KİLİTLİ DEĞİL — kullanıcı istediği
+    eşiği girer (1 saatte 100 izlenme kuralı). Sınırlar (min/max) korunur."""
     yol = tmp_path / "ayarlar.json"
     uygulanan, uyarilar = ad.kaydet({"MIN_IZLENME_ESIGI": 50, "GUNLUK_HEDEF": "2"}, yol)
-    assert "MIN_IZLENME_ESIGI" not in uygulanan
+    assert "MIN_IZLENME_ESIGI" in uygulanan
     assert "GUNLUK_HEDEF" in uygulanan
-    assert any("yazılamaz" in u for u in uyarilar)
     ham = ad.state_ham_ayarlari(yol)
-    assert "MIN_IZLENME_ESIGI" not in ham
+    assert str(ham["MIN_IZLENME_ESIGI"]) == "50"
+
+
+def test_temizlik_ayari_sinir_disi_reddedilir(tmp_path: Path) -> None:
+    """Serbest giriş = sınırsız değil: 0-100000 dışı reddedilir, varsayılan kalır."""
+    yol = tmp_path / "ayarlar.json"
+    uygulanan, uyarilar = ad.kaydet({"MIN_IZLENME_ESIGI": 999999}, yol)
+    assert "MIN_IZLENME_ESIGI" not in uygulanan
+    assert uyarilar, "sınır dışı değer sessizce kabul edilmemeli"
 
 
 # ---------- TODO 2: atomik yazma ----------
@@ -160,12 +169,12 @@ def test_atomik_yazma_yarida_kesilse_eski_dosya_bozulmaz(
 def test_kaydet_atomik_sonuc_gecerli_json(tmp_path: Path) -> None:
     yol = tmp_path / "ayarlar.json"
     uygulanan, uyarilar = ad.kaydet({"KOTA_REZERV": 750}, yol)
-    assert uygulanan == {"KOTA_REZERV": 750}
+    assert uygulanan == {"KOTA_REZERV": "750"}
     assert uyarilar == []
     veri = json.loads(yol.read_text(encoding="utf-8"))
     assert veri["sur"] == ad.SEMA_SURUMU
     assert "guncelleme" in veri and "ayarlar" in veri
-    assert veri["ayarlar"]["KOTA_REZERV"] == 750
+    assert veri["ayarlar"]["KOTA_REZERV"] == "750"
 
 
 def test_kaydet_sayi_aralik_disini_duser(tmp_path: Path) -> None:
@@ -191,12 +200,16 @@ def test_degisiklik_gecmise_yazilir_sema_tam(tmp_path: Path) -> None:
     assert son["kullanici_id"] == 42
 
 
-def test_sadece_goruntule_gecmise_yazilmaz(tmp_path: Path) -> None:
+def test_degistirilebilir_gecmise_yazilir_secret_yazilmaz(tmp_path: Path) -> None:
+    """2026-11-11: MIN_IZLENME_ESIGI değiştirilebilir oldu → geçmişe YAZILIR.
+    Secret (YOUTUBE_TOKEN) hiçbir koşulda geçmişe yazılmaz."""
     yol = tmp_path / "ayar_gecmisi.jsonl"
     ad.gecmise_ekle(42, "MIN_IZLENME_ESIGI", "100", "50", "telegram", yol)
     ad.gecmise_ekle(42, "YOUTUBE_TOKEN", None, "sifre", "telegram", yol)
-    assert yol.exists() is False or yol.read_text(encoding="utf-8").strip() == ""
-    assert ad.gecmisi_oku(10, yol) == []
+    kayitlar = ad.gecmisi_oku(10, yol)
+    assert len(kayitlar) == 1
+    assert kayitlar[0]["anahtar"] == "MIN_IZLENME_ESIGI"
+    assert "sifre" not in yol.read_text(encoding="utf-8")
 
 
 def test_gecmis_200_satir_rotasyonu(tmp_path: Path) -> None:
@@ -332,12 +345,14 @@ def test_env_satirlari_state_degerini_tasir(tmp_path: Path) -> None:
     assert "GUNLUK_MAKS=6" in satirlar, "state'te olmayan ayar varsayılanla geçer"
 
 
-def test_env_satirlari_temizlik_ve_etkisizleri_gecirmez() -> None:
-    """etkili=False (temizlik, H1) ayarları köprüden geçmez — env'e etiketli
-    yalan yazılmaz."""
+def test_env_satirlari_temizlik_ayarlarini_gecirir() -> None:
+    """2026-11-11: temizlik ayarları etkili ve değiştirilebilir → env'e geçer.
+    Kullanıcı 1 saatte 100 izlenme kuralını panelden ayarlayabilsin.
+    Secret'lar köprüden ASLA geçmez."""
     metin = "\n".join(ad.env_satirlari())
     for anahtar in ("OTOMATIK_SIL_AKTIF=", "MIN_IZLENME_ESIGI=", "IZLENME_KONTROL_DK="):
-        assert anahtar not in metin
+        assert anahtar in metin
+    assert "YOUTUBE_TOKEN=" not in metin
 
 
 def test_force_sifirla_tek_kullanim_tuketir(tmp_path: Path) -> None:

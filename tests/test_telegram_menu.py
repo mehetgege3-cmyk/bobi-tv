@@ -376,19 +376,27 @@ def test_dry_run_hicbir_yazma_yapmaz(monkeypatch: pytest.MonkeyPatch) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_temizlik_ayari_icin_degistirme_yolu_uretilmez() -> None:
+def test_temizlik_ayari_degistirme_yolu_URETIR() -> None:
+    """2026-11-11 kararı: temizlik ayarları kilitli DEĞİL — kullanıcı girer.
+
+    Önceki spec değiştirme düğmesini YASAKLIYORDU; kullanıcı bunu "muhafazakâr
+    dayatma" olarak reddetti. Artık düğme VAR, ama riskli ayar olduğu için
+    değişiklik ONAY ekranından geçer (ay:onay:...).
+    """
     for anahtar in ("OTOMATIK_SIL_AKTIF", "MIN_IZLENME_ESIGI", "IZLENME_KONTROL_DK"):
         _metin, butonlar = tb.ekran_ayar_detay(anahtar)
         callbacklar = [d["callback_data"] for satir in butonlar for d in satir]
-        yasakli = [cb for cb in callbacklar if cb.startswith(("ay:v:", "ay:onay:"))]
-        assert yasakli == [], f"{anahtar} görüntüleme modunda — değiştirme düğmesi YOK"
+        giris = [cb for cb in callbacklar
+                 if cb.startswith(("ay:v:", "ay:onay:", "ay:gir:"))]
+        assert giris, f"{anahtar}: değiştirme yolu ÜRETİLMELİ (kilit kaldırıldı)"
 
 
 def test_temizlik_uyari_metni_panelde_gosterilir(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Panel, videonun GERÇEKTEN silineceğini söylemeli (yalan yasak)."""
     cagrilar = _takip_et(monkeypatch)
     tb.handle_callback("ay:s:MIN_IZLENME_ESIGI", "cb1")
     metin = _son_panel_metni(cagrilar)
-    assert "ETKİLEMEZ" in metin and "H1" in metin
+    assert "SİLER" in metin, "silme uyarısı panelde olmalı"
     assert "100" in metin, "mevcut değer (100) gösterilir"
 
 

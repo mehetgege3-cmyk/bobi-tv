@@ -48,7 +48,8 @@ OTOMATIK_SIL_AKTIF = os.environ.get("OTOMATIK_SIL_AKTIF", "1") == "1"
 # etmez; env var isteğe bağlı geçersiz kılma için kullanılabilir.
 # Yaş eşiği 24 saat (1440 dk); izlenme eşiği 100 korunur.
 MIN_IZLENME_ESIGI = int(os.environ.get("MIN_IZLENME_ESIGI", "100"))
-IZLENME_KONTROL_DK = int(os.environ.get("IZLENME_KONTROL_DK", "1440"))
+# 2026-11-11 kullanıcı kuralı: 1 saatte 100 izlenme almayan video silinir.
+IZLENME_KONTROL_DK = int(os.environ.get("IZLENME_KONTROL_DK", "60"))
 
 LOG_YOLU = Path("bobi_tv/logs")
 ARSIV = Path("bobi_tv/archive/videos.json")
@@ -79,9 +80,24 @@ def bugunki_video_sayisi() -> int:
 
 
 def kuyruga_kaydet(paket: dict):
-    """YouTube kotasına takılan paketin hafif senaryo verisini bobi_tv/queue/ altına yazar."""
+    """Yüklenemeyen paketi STOĞA alır (kota / geçici / kalıcı sebep ayrımıyla).
+
+    Kullanıcı kararı (2026-11-11): "yüklesin, başarısız olursa sebebine bakalım;
+    eğer gerçekten kotaysa stok olsun." Stok kaydı MP4'ü (final_video) de saklar,
+    böylece kota açıldığında YENİDEN RENDER alınmaz — sadece yükleme yapılır.
+    """
     KUYRUK_YOLU.mkdir(parents=True, exist_ok=True)
+    sebep = paket.get("stok_sebep") or "kota"
+    mevcut = KUYRUK_YOLU / f"{paket['dosya_adi']}.json"
+    deneme = 0
+    if mevcut.exists():
+        # Stokta bekleyen kayıt varsa deneme sayacını koru (tekrar tekrar ekleme).
+        with suppress(Exception):
+            deneme = int(json.loads(mevcut.read_text(encoding="utf-8")).get("deneme", 0))
     kayit = {
+        "stok_sebep": sebep,
+        "deneme": deneme,
+        "son_hata": paket.get("son_hata", ""),
         "video_no": paket.get("video_no", 1),
         "dosya_adi": paket["dosya_adi"],
         "baslik": paket["baslik"],

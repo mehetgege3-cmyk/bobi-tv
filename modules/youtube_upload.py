@@ -30,6 +30,39 @@ class KotaDolduHatasi(RuntimeError):
     """YouTube günlük yükleme veya API kotası dolduğunda fırlatılır."""
 
 
+#: Kota DIŞI hata sebepleri → stok kaydında görünür, tekrar denemeyi yönetir.
+STOK_SEBEP_KOTA = "kota"          # yarın otomatik devam eder
+STOK_SEBEP_GECICI = "gecici"      # 5xx / ağ / "işleniyor" → sonraki koşuda tekrar denenir
+STOK_SEBEP_KALICI = "kalici"      # 400/403 doğrulama → OTOMATİK denenmez, kullanıcıya bildirilir
+
+
+def hata_siniflandir(hata: Exception) -> str:
+    """Yükleme hatasını sebebe ayırır — 'gerçekten kota mı?' sorusunun cevabı.
+
+    Kullanıcı kararı (2026-11-11): "yüklesin, başarısız olursa sebebine bakalım;
+    eğer gerçekten kotaysa stoğa al." Bu fonksiyon o ayrımı yapar.
+
+    Args:
+        hata: Yükleme sırasında oluşan istisna.
+
+    Döner:
+        STOK_SEBEP_KOTA / STOK_SEBEP_GECICI / STOK_SEBEP_KALICI
+    """
+    if isinstance(hata, KotaDolduHatasi):
+        return STOK_SEBEP_KOTA
+    metin = str(hata).lower()
+    # Kota göstergeleri (farklı HTTP kodlarıyla gelebilir)
+    if any(x in metin for x in ("quotaexceeded", "uploadlimitexceeded", "daily limit", "kota dolu")):
+        return STOK_SEBEP_KOTA
+    # Geçici: sunucu tarafı / ağ / henüz işlenmedi
+    if any(x in metin for x in ("500", "502", "503", "504", "timeout", "timed out",
+                                "connection", "processing", "işleniyor", "try again",
+                                "backend error", "internal error", "unavailable")):
+        return STOK_SEBEP_GECICI
+    # Kalan her şey kalıcı: 400/401/403, doğrulama, telif, kanal kapalı
+    return STOK_SEBEP_KALICI
+
+
 HASHTAG_HARITASI = {
     "kurumsal_hayat":     ["#shorts", "#kurumsalhayat", "#beyazyaka", "#ofishalleri", "#komedi", "#mizah"],
     "pazartesi_sendromu": ["#shorts", "#pazartesisendromu", "#pazartesi", "#ofishalleri", "#komedi", "#türkçemizah"],
@@ -164,7 +197,7 @@ def _arsivde_silindi_isaretle(video_id: str, izlenme: int, yas_dk: float):
                 continue
 
 
-def dusuk_izlenmeli_videolari_temizle(min_izlenme: int = 100, kontrol_suresi_dk: int = 1440) -> list:
+def dusuk_izlenmeli_videolari_temizle(min_izlenme: int = 100, kontrol_suresi_dk: int = 60) -> list:
     # Tek kaynak main_pipeline.py'dır (env var); buradaki varsayılan yalnızca
     # doğrudan çağrı fallback'idir. Yaş eşiği 24 saat (1440 dk).
     """
@@ -510,8 +543,13 @@ def toplu_yukle(senaryo_paketleri: list) -> tuple:
             kuyruga_alinacaklar.extend(senaryo_paketleri[idx:])
             break
         except Exception as e:
+            # KOTA DIŞI HATA: video üretildi ama yüklenemedi (403, 400, ağ, işleniyor).
+            # Eski davranış: sadece loglanıp GEÇİLİYORDU → render edilmiş MP4 çöpe
+            # gidiyordu. Yeni: sebebi sınıflandır, videoyu STOĞA al, sebebi kaydet.
+            sebep = hata_siniflandir(e)
             hata = f"{paket.get('dosya_adi', '?')}: {e}"
-            print(f"[YouTube] ❌ Yükleme hatası: {hata}")
-            hatalar.append(hata)
+            print(f"[YouTube] ❌ Yükleme hatası [{sebep}]: {hata}")
+            hatalar.append(f"[{sebep}] {hata}")
+            kuyruga_alinacaklar.append({**paket, "stok_sebep": sebep})
 
     return sonuclar, hatalar, kuyruga_alinacaklar

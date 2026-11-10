@@ -265,12 +265,50 @@ def _panel_oku() -> tuple[int | None, datetime | None]:
     return None, None
 
 
+#: Panelde "değer yaz" bekleyen ayar (kullanıcı sayı yazacak).
+#: Ayrı dosya değil, telegram_menu.json içinde tek alan — ek commit üretmez.
+def _bekleyen_giris_yaz(anahtar: str | None) -> None:
+    """Hangi ayar için klavyeden değer beklendiğini kaydeder (None = temizle)."""
+    try:
+        veri: dict[str, Any] = {}
+        if MENU_STATE_YOLU.exists():
+            with suppress(Exception):
+                veri = json.loads(MENU_STATE_YOLU.read_text(encoding="utf-8"))
+        if anahtar:
+            veri["bekleyen_giris"] = anahtar
+        else:
+            veri.pop("bekleyen_giris", None)
+        MENU_STATE_YOLU.parent.mkdir(parents=True, exist_ok=True)
+        MENU_STATE_YOLU.write_text(json.dumps(veri), encoding="utf-8")
+    except Exception:
+        pass
+
+
+def _bekleyen_giris_oku() -> str | None:
+    """Klavyeden değer beklenen ayarın anahtarı (yoksa None)."""
+    try:
+        if MENU_STATE_YOLU.exists():
+            veri = json.loads(MENU_STATE_YOLU.read_text(encoding="utf-8"))
+            deger = veri.get("bekleyen_giris")
+            return str(deger) if deger else None
+    except Exception:
+        return None
+    return None
+
+
 def _panel_yaz(message_id: int) -> None:
     try:
         MENU_STATE_YOLU.parent.mkdir(parents=True, exist_ok=True)
         MENU_STATE_YOLU.write_text(
             json.dumps(
-                {"chat_id": CHAT_ID, "message_id": message_id, "zaman": datetime.now(UTC).isoformat()}
+                {
+                    "chat_id": CHAT_ID,
+                    "message_id": message_id,
+                    "zaman": datetime.now(UTC).isoformat(),
+                    # bekleyen_giris KORUNUR: kullanıcı paneli yenilerken değer
+                    # girişi kaybolmasın.
+                    **({"bekleyen_giris": g} if (g := _bekleyen_giris_oku()) else {}),
+                }
             ),
             encoding="utf-8",
         )
@@ -752,6 +790,23 @@ def _secenek_dugmeleri(a: dict[str, Any]) -> list[list[dict[str, Any]]]:
             satir.append({"text": f"{isaret}{etiket}", "callback_data": f"ay:v:{anahtar}:{indeks}"})
         butonlar.append(satir)
         return butonlar
+    # SERBEST GİRİŞ (2026-11-11 kullanıcı kararı): sayı ayarlarında hazır seçenek
+    # dayatılmaz. Öneri varsa hızlı seçim olarak gösterilir + "✏️ Değer gir".
+    if a["tip"] == "sayi":
+        mevcut, _ = _deger_ve_kaynak(anahtar)
+        # Not: düğme metni ≤20 karakter (mobilde kesilmesin); aralık ekranda yazılır.
+        butonlar.append([{"text": "✏️ Değer gir", "callback_data": f"ay:gir:{anahtar}"}])
+        for indeks, deger in enumerate(a.get("secenekler") or []):
+            isaret = "✓ " if str(mevcut) == str(deger) else ""
+            satir.append(
+                {"text": f"{isaret}{deger}", "callback_data": f"ay:v:{anahtar}:{indeks}"}
+            )
+            if len(satir) == 3:
+                butonlar.append(satir)
+                satir = []
+        if satir:
+            butonlar.append(satir)
+        return butonlar
     secenekler = a.get("secenekler") or []
     mevcut, _ = _deger_ve_kaynak(anahtar)
     for indeks, deger in enumerate(secenekler):
@@ -788,6 +843,11 @@ def ekran_ayar_detay(anahtar: str) -> tuple[str, list[list[dict[str, Any]]]]:
         if aciklama:
             satirlar.append("")
             satirlar.append(str(aciklama))
+        if str(a["grup"]) == "temizlik":
+            # Kullanıcı kararı (2026-11-11): kilit kaldırıldı, ama silme riski
+            # panelde AÇIKÇA yazılır ve değişiklik onay ekranından geçer.
+            satirlar.append("")
+            satirlar.append(TEMIZLIK_UYARI)
         if a["risk"] == "yuksek":
             satirlar.append("")
             satirlar.append("⚠️ Bu ayar RİSKLİ: seçtiğinizde onay istenecek.")
@@ -824,7 +884,169 @@ def etki_onizlemesi(anahtar: str, deger: Any) -> str:
                 "main'e otonom push riski)."
             )
         return "Kota dolunca koşu SESSİZCE durur (exit 0) — kırmızı tik yok."
+    if anahtar in ("MIN_IZLENME_ESIGI", "IZLENME_KONTROL_DK"):
+        return _silme_onizlemesi(anahtar, deger)
     return "Etki önizlemesi yok."
+
+
+def _arsiv_kayitlari() -> list[dict[str, Any]]:
+    """Okuma amaçlı arşiv kayıtları (yoksa boş liste — çökme yok)."""
+    try:
+        yol = Path("bobi_tv/archive/videos.json")
+        if not yol.exists():
+            return []
+        veri = json.loads(yol.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    return [k for k in veri if isinstance(k, dict)] if isinstance(veri, list) else []
+
+
+def _silme_onizlemesi(anahtar: str, deger: Any) -> str:
+    """Kaç video silinir? Yalnızca OKUR — hiçbir şey silmez, API çağırmaz.
+
+    Sınır: arşivde izlenme sayısı saklanmıyorsa gerçek sayı VERİLEMEZ; o durumda
+    uydurma sayı yazılmaz, "bilinmiyor" denir (yalan söyleme yasağı).
+    """
+    degerler, _ = ayar_deposu.yukle(AYARLAR_STATE_YOLU)
+    try:
+        esik = int(deger if anahtar == "MIN_IZLENME_ESIGI" else degerler.get("MIN_IZLENME_ESIGI", 100))
+        sure = int(deger if anahtar == "IZLENME_KONTROL_DK" else degerler.get("IZLENME_KONTROL_DK", 60))
+    except (TypeError, ValueError):
+        return "⚠️ Etki hesaplanamadı (değer sayı değil)."
+    kayitlar = _arsiv_kayitlari()
+    yayinda = [k for k in kayitlar if k.get("durum") == "yayinda"]
+    izlenmeli = [k for k in yayinda if isinstance(k.get("izlenme"), (int, float))]
+    basliklar = (
+        f"Kural: yayından {sure} dk sonra <{esik} izlenme → SİLİNİR.\n"
+        f"Arşivde yayında: {len(yayinda)} video (izlenme verisi olan: {len(izlenmeli)})."
+    )
+    if not izlenmeli:
+        # Arşivde izlenme yok → CANLI sayım (1 kota birimi, 50 videoya kadar).
+        # Sadece OKUMA: hiçbir video silinmez, hiçbir yükleme yapılmaz.
+        canli, hata = _canli_izlenme_ozeti(esik, sure)
+        if canli is not None:
+            return f"{basliklar}\n\n{canli}"
+        return (
+            f"{basliklar}\n\n"
+            "⛔ <b>Silinecek video sayısı BİLİNMİYOR</b>: arşivde izlenme sayısı "
+            f"kaydedilmiyor. Canlı sayım da yapılamadı: {hata}\n"
+            "Uydurma sayı yazmıyoruz: karar senin."
+        )
+    etkilenen = [k for k in izlenmeli if k.get("izlenme", 0) < esik]
+    liste = "\n".join(
+        f"• {str(k.get('baslik', k.get('video_id', '?')))[:38]} ({k.get('izlenme')} izlenme)"
+        for k in etkilenen[:5]
+    )
+    return (
+        f"{basliklar}\n\n"
+        f"🗑️ <b>Bu ayarla {len(etkilenen)} video silinir.</b>"
+        + (f"\n{liste}" if liste else "\n(silme listesi boş)")
+    )
+
+
+def _canli_izlenme_ozeti(esik: int, sure_dk: int) -> tuple[str | None, str]:
+    """YouTube'dan izlenme sayılarını OKUR (1 kota birimi) — silme YAPMAZ.
+
+    Kullanıcının "kaç video silinecek?" sorusuna gerçek cevap. Hata olursa
+    (token yok, kota dolu, ağ) uydurma sayı yerine (None, sebep) döner.
+    """
+    if not os.environ.get("YOUTUBE_TOKEN", "").strip():
+        return None, "YOUTUBE_TOKEN yok (bu ekran yalnız bot içinde çalışır)"
+    try:
+        import requests
+
+        from modules.youtube_upload import (
+            VIDEOS_URI,
+            token_yenile,
+            token_yukle,
+        )
+
+        erisim = token_yenile(token_yukle())
+        kayitlar = _arsiv_kayitlari()
+        idler = [str(k["video_id"]) for k in kayitlar
+                 if k.get("durum") == "yayinda" and k.get("video_id")][:50]
+        if not idler:
+            return "Yayında kayıt yok — silinecek video da yok.", ""
+        yanit = requests.get(
+            f"{VIDEOS_URI}?part=statistics,snippet&id={','.join(idler)}",
+            headers={"Authorization": f"Bearer {erisim}"},
+            timeout=20,
+        )
+        if yanit.status_code != 200:
+            return None, f"YouTube API {yanit.status_code}"
+        satirlar = ["🗑️ <b>Bu ayarla silinecek (canlı sayım):</b>"]
+        sayac = 0
+        for oge in yanit.json().get("items", []):
+            izlenme = int(oge.get("statistics", {}).get("viewCount", 0))
+            if izlenme < esik:
+                sayac += 1
+                baslik = str(oge.get("snippet", {}).get("title", oge.get("id")))[:38]
+                if sayac <= 5:
+                    satirlar.append(f"• {baslik} ({izlenme} izlenme)")
+        satirlar.insert(1, f"<b>{sayac}</b> video ({sure_dk} dk / {esik} izlenme kuralı)")
+        return "\n".join(satirlar), ""
+    except Exception as e:
+        return None, str(e)[:80]
+
+
+def ekran_giris(anahtar: str) -> tuple[str, list[list[dict[str, Any]]]]:
+    """Serbest değer girişi ekranı — kullanıcı klavyeden sayı yazar.
+
+    Seçenek dayatması yok (kullanıcı kararı 2026-11-11). Aralık ve BİRİM
+    gösterilir; sınır dışı değer sonraki adımda reddedilir.
+    """
+    a = ayar_getir(anahtar)
+    if a is None or a["tip"] != "sayi":
+        return ekran_ana()
+    mevcut, kaynak = _deger_ve_kaynak(anahtar)
+    satirlar = [
+        f"✏️ <b>{a['etiket']}</b> — değer gir",
+        "",
+        f"Mevcut: <b>{mevcut}</b> ({kaynak})",
+        f"Aralık: {a.get('min')} – {a.get('max')}",
+        "",
+        "👇 Şimdi mesaj olarak sadece sayıyı yaz (örn. <code>60</code>).",
+    ]
+    aciklama = a.get("aciklama")
+    if aciklama:
+        satirlar += ["", str(aciklama)]
+    butonlar = [
+        [{"text": "← Vazgeç", "callback_data": f"ay:s:{anahtar}"}],
+        [
+            {"text": "← Geri", "callback_data": f"ay:g:{a['grup']}"},
+            {"text": "🏠 Menü", "callback_data": "menu_main"},
+        ],
+    ]
+    return "\n".join(satirlar), butonlar
+
+
+def ekran_onay_deger(anahtar: str, deger: str) -> tuple[str, list[list[dict[str, Any]]]]:
+    """Serbest girilen RİSKLİ değer için onay ekranı — YAZMAZ, yalnız gösterir.
+
+    Canlı etki önizlemesi: "bu eşikle şu an N video silinir" (gerçek arşiv okunur,
+    hiçbir şey silinmez). Kullanıcı onaylarsa değer uygulanır.
+    """
+    a = ayar_getir(anahtar)
+    if a is None or not degistirilebilir_mi(a):
+        return ekran_ana()
+    satirlar = [
+        "⚠️ <b>ONAY GEREKİYOR</b>",
+        "",
+        f"{a['etiket']} → <b>{deger}</b>",
+        "",
+        etki_onizlemesi(anahtar, deger),
+        "",
+        "Değişiklik yalnızca onayınızdan sonra uygulanır. Geri alınamaz.",
+    ]
+    butonlar = [
+        [{"text": "✅ Onayla", "callback_data": f"ay:onayd:{anahtar}"}],
+        [{"text": "← Vazgeç", "callback_data": f"ay:s:{anahtar}"}],
+        [
+            {"text": "← Geri", "callback_data": f"ay:g:{a['grup']}"},
+            {"text": "🏠 Menü", "callback_data": "menu_main"},
+        ],
+    ]
+    return "\n".join(satirlar), butonlar
 
 
 def ekran_onay(anahtar: str, indeks: int) -> tuple[str, list[list[dict[str, Any]]]]:
@@ -991,7 +1213,29 @@ def _secenek_coz(a: dict[str, Any], indeks: int | str) -> tuple[Any | None, str]
     secenekler = a.get("secenekler") or []
     if i < 0 or i >= len(secenekler):
         return None, "geçersiz indeks"
+    # sayi tipinde öneri listesi varsa o değer; yoksa "ay:gir" akışı kullanılır.
+    if a["tip"] == "sayi":
+        secilen = secenekler[i]
+        return _sayi_dogrula(a, secilen)
     return secenekler[i], ""
+
+
+def _sayi_dogrula(a: dict[str, Any], ham: Any) -> tuple[str | None, str]:
+    """Klavyeden/öneriden gelen değeri doğrular — aralık dışı REDDEDİLİR.
+
+    Serbest giriş = sınırsız DEĞİL: min/max aralığı korunur (katalogda tanımlı).
+    Döner: (geçerli_değer | None, sebep)
+    """
+    try:
+        deger = int(str(ham).strip())
+    except (TypeError, ValueError):
+        return None, "sayı değil"
+    mn, mx = a.get("min"), a.get("max")
+    if mn is not None and deger < int(mn):
+        return None, f"en az {mn} olmalı"
+    if mx is not None and deger > int(mx):
+        return None, f"en fazla {mx} olabilir"
+    return str(deger), ""
 
 
 def ayar_uygula(anahtar: str, deger: Any, kullanici_id: int | None) -> tuple[bool, str]:
@@ -1126,6 +1370,32 @@ def _handle_callback_icerde(callback_data: str, callback_id: str, kullanici_id: 
         answer_callback(callback_id)
         _ekran_goster(ekran_ayar_detay(anahtar))
         return
+    if len(parcalar) == 3 and parcalar[0] == "ay" and parcalar[1] == "onayd":
+        anahtar = parcalar[2]
+        beklemede = _bekleyen_giris_oku() or ""
+        if not beklemede.startswith(f"{anahtar}#"):
+            _bilinmeyen_komut(callback_id)
+            return
+        onaylanan = beklemede.split("#", 1)[1]
+        _bekleyen_giris_yaz(None)
+        answer_callback(callback_id, "Uygulanıyor...")
+        ok, durum = ayar_uygula(anahtar, onaylanan, None)
+        metin, dugmeler = ekran_ayar_detay(anahtar)
+        if ok:
+            panel_goster(f"{metin}\n\n✅ <b>Kaydedildi:</b> {onaylanan}", dugmeler)
+        else:
+            panel_goster(f"{metin}\n\n❌ <b>Uygulanamadı:</b> {durum}", dugmeler)
+        return
+    if len(parcalar) == 3 and parcalar[0] == "ay" and parcalar[1] == "gir":
+        anahtar = parcalar[2]
+        a = ayar_getir(anahtar)
+        if a is None or a["tip"] != "sayi" or not degistirilebilir_mi(a):
+            _bilinmeyen_komut(callback_id)
+            return
+        _bekleyen_giris_yaz(anahtar)
+        answer_callback(callback_id, "Sayıyı yazın")
+        _ekran_goster(ekran_giris(anahtar))
+        return
     if len(parcalar) == 3 and parcalar[0] == "ay" and parcalar[1] == "test":
         anahtar = parcalar[2]
         if ayar_getir(anahtar) is None:
@@ -1228,7 +1498,37 @@ def handle_message(text: str) -> str:
     (kanıt: 2026-11-11 koşusu — 5 × "/start" tek koşuda, ekranda üst üste paneller).
     Panel sıfırlama artık yalnızca kayıt geçersizse olur.
     """
-    text = text.strip().lower()
+    ham_metin = text.strip()
+    text = ham_metin.lower()
+
+    # SERBEST DEĞER GİRİŞİ (2026-11-11): panelde "✏️ Değer gir" seçildiyse
+    # kullanıcının yazdığı sayı o ayara uygulanır. Komut/menü öncelikli DEĞİL:
+    # kullanıcı beklerken yazdığı her şey değer sayılır, '/' ile başlamadıkça.
+    bekleyen = _bekleyen_giris_oku()
+    if bekleyen and not ham_metin.startswith("/"):
+        a = ayar_getir(bekleyen)
+        if a is not None:
+            deger, sebep = _sayi_dogrula(a, ham_metin)
+            if deger is None:
+                # Sınır dışı → REDDET, ekranı tekrar göster (kaydetme YOK).
+                metin, dugmeler = ekran_giris(bekleyen)
+                panel_goster(f"{metin}\n\n❌ <b>Geçersiz:</b> {sebep}", dugmeler)
+                return ""
+            _bekleyen_giris_yaz(None)
+            if a["risk"] == "yuksek":
+                # Riskli ayar (video silebilir): ONAY ekranı — değeri beklemede tut.
+                _bekleyen_giris_yaz(f"{bekleyen}#{deger}")
+                panel_goster(*ekran_onay_deger(bekleyen, deger))
+                return ""
+            ok, durum = ayar_uygula(bekleyen, deger, None)
+            metin, dugmeler = ekran_ayar_detay(bekleyen)
+            if ok:
+                ek = f"\n{durum}" if durum else ""
+                panel_goster(f"{metin}\n\n✅ <b>Kaydedildi:</b> {deger}{ek}", dugmeler)
+            else:
+                panel_goster(f"{metin}\n\n❌ <b>Uygulanamadı:</b> {durum}", dugmeler)
+            return ""
+
     if text in MENU_KOMUTLARI:
         menyu_gonder()
         return ""

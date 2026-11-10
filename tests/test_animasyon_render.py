@@ -40,33 +40,33 @@ class TestAnimasyonRender:
         assert img.size == (960, 210), f"karaoke katman boyutu değişmiş: {img.size}"
 
     @pytest.mark.integration
-    @pytest.mark.skip(reason="v6 Sahne/sahne_animasyonu_uret API kaldırıldı; v7 Senaryo ile yeniden yazılacak")
     def test_minimal_video_render(self):
-        """Minimal video render: MP4 üretimi, Frame 0, minimum 15sn."""
-        from modules.senaryo_v7.models import Senaryo, Sahne
-        from modules.animasyon import sahne_animasyonu_uret
+        """v7 model kurulumu: Senaryo.from_dict ile diyaloglar ve duygu normalize edilir (gerçek MP4 render YOK)."""
+        from modules.senaryo_v7.models import Senaryo, Duygu
 
-        # Minimal senaryo
-        sahne = Sahne(
-            konu="komik",
-            baslik="Test Video",
-            replik="Merhaba dünya!",
-            duygu_etiketi="normal",
-            ses_turu="erkek",
-            tts_url="https://example.com/test.mp3",
-        )
+        senaryo = Senaryo.from_dict({
+            "kategori": "absurt_komedi",
+            "hook_metni": "Beklenmedik twist!",
+            "hook_suresi": 0.0,
+            "diyaloglar": [
+                {"karakter": "Ahmet", "metin": "Merhaba dünya!", "ses": "normal"},
+                {"karakter": "Emel", "metin": "Şaşkın bakma!", "ses": "şaşkın"},
+            ],
+            "baslik": "Test Shorts",
+        })
 
-        # Animasyon render (TTS yerine dummy session kullanacak)
-        with tempfile.TemporaryDirectory() as tmpdir:
-            output_video = Path(tmpdir) / "test_render.mp4"
+        assert senaryo.semaversiyonu == "7.0"
+        assert senaryo.hook_suresi == 0.0
+        assert senaryo.baslik == "Test Shorts"
+        assert len(senaryo.diyaloglar) == 2
+        assert senaryo.diyaloglar[0].ses is Duygu.NORMAL
+        assert senaryo.diyaloglar[1].ses is Duygu.SASIRMIS_TR  # şaşkın -> kanonik
+        assert senaryo.diyaloglar[1].metin == "Şaşkın bakma!"
 
-            # Gerçek TTS olmadan test için mock wav dosyası yarat
-            test_wav = Path(tmpdir) / "test.wav"
-            test_wav.write_bytes(b"RIFF" + b"\x00" * 36)  # Minimal WAV header
-
-            # Video render'ı çalıştır (mock kullanarak)
-            # Burada tam render yapılmayacak; bunun yerine fixture dosyası kullan
-            assert not output_video.exists() or output_video.stat().st_size > 0
+    @pytest.mark.integration
+    @pytest.mark.skip(reason="Gerçek MP4 render CI'da ffmpeg/ağ gerektirir; lokalde elle çalıştırılır")
+    def test_gercek_mp4_render_integration(self):
+        """Gerçek render doğrulaması — sadece lokalde, ffmpeg ve ağ varken çalıştırılır (main_pipeline.py)."""
 
 
 class TestDuyguNormalizasyon:

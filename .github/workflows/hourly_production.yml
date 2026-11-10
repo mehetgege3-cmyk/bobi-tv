@@ -434,23 +434,39 @@ jobs:
       # =====================================================================
       - name: Bir sonraki 15 dk turunu zincirle
         if: always()
+        timeout-minutes: 22
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
+          KADANS_DK: "15"
         run: |
           python - <<'PY'
           import json
           import os
-          import subprocess
           import time
           import urllib.error
           import urllib.request
           from datetime import datetime, timedelta, timezone
 
+          # =================================================================
+          # 15 DAKİKA KADANSI — MUTLAK ZAMAN DİLİMİ (slot) YÖNTEMİ
+          #
+          # ÖLÇÜM 1: GitHub cron '*/15' yazılıyken günde 2-3 koşu yaptı
+          #          (13:06, 13:17, 16:55, 19:41, 22:07) → cron'a güvenilmez.
+          # ÖLÇÜM 2: "son 8 dk içinde koşu varsa atla" kuralı YANLIŞTI: kendi
+          #          önceki turunu (4 dk önce başlamış) çakışma sanıp zinciri
+          #          kırdı (23:04:23 'son 8 dk içinde koşu var (#25) — atlandı').
+          #
+          # ÇÖZÜM: kadans mutlak slota oturur. Slot = son koşunun başlangıcı
+          # + KADANS_DK. Bu adım, slot zamana kadar BEKLER, sonra tetikler.
+          # Böylece koşular tam 15 dk arayla başlar; çift tetikleme de olmaz
+          # (slot dolduysa yeni koşu zaten vardır → atlanır).
+          # =================================================================
           token = os.environ.get("GH_PAT", "").strip()
           if not token:
               print("zincir: GH_PAT yok — atlandı (GitHub cron'una bırakıldı)")
               raise SystemExit(0)
 
+          kadans_dk = int(os.environ.get("KADANS_DK", "15") or "15")
           repo = "mehetgege3-cmyk/bobi-tv"
           api = f"https://api.github.com/repos/{repo}/actions"
           basliklar = {
@@ -469,35 +485,45 @@ jobs:
                   govde = c.read()
                   return json.loads(govde) if govde else {}
 
-          # Devam filminde koşunun kendisi "in_progress" görünür; bu yüzden
-          # çakışma kontrolünde kendimizi ve eski koşuları eleriz.
-          mevcut_run = os.environ.get("GITHUB_RUN_ID", "")
-          simdi = datetime.now(timezone.utc)
-          time.sleep(30)
+          def kosulari_al():
+              try:
+                  return istek(
+                      f"{api}/workflows/hourly_production.yml/runs?per_page=10"
+                  )["workflow_runs"]
+              except Exception as e:
+                  print(f"zincir: koşular okunamadı ({e})")
+                  return []
 
-          try:
-              kosular = istek(f"{api}/workflows/hourly_production.yml/runs?per_page=10")["workflow_runs"]
-          except Exception as e:
-              print(f"zincir: koşular okunamadı ({e}) — yine de tetiklenecek")
+          def zaman(metin):
+              return datetime.fromisoformat(metin.replace("Z", "+00:00"))
 
-              kosular = []
+          benim_id = os.environ.get("GITHUB_RUN_ID", "")
 
-          cakisma = False
+          kosular = kosulari_al()
+          if kosular:
+              son_basla = zaman(kosular[0]["created_at"])
+              sonraki_slot = son_basla + timedelta(minutes=kadans_dk)
+              simdi = datetime.now(timezone.utc)
+              bekle = (sonraki_slot - simdi).total_seconds()
+              if bekle > 0:
+                  bekle = min(bekle, kadans_dk * 60)
+                  print(f"zincir: sonraki slot {sonraki_slot:%H:%M:%S} UTC — {bekle:.0f} sn bekleniyor")
+                  time.sleep(bekle)
+
+          # Slot geldi: benden YENİ bir koşu başladıysa (cron araya girdiyse)
+          # ya da biri hâlâ çalışıyorsa tetikleme.
+          kosular = kosulari_al()
+          benim = next((k for k in kosular if str(k["id"]) == benim_id), None)
+          benim_basla = zaman(benim["created_at"]) if benim else None
           for k in kosular:
-              if str(k["id"]) == mevcut_run:
+              if str(k["id"]) == benim_id:
                   continue
               if k["status"] in ("queued", "in_progress"):
-                  cakisma = True
-                  print(f"zincir: zaten çalışan koşu var (#{k['run_number']}, {k['status']}) — atlandı")
-                  break
-              basla = datetime.fromisoformat(k["created_at"].replace("Z", "+00:00"))
-              if simdi - basla < timedelta(minutes=8):
-                  cakisma = True
-                  print(f"zincir: son 8 dk içinde koşu var (#{k['run_number']}) — atlandı")
-                  break
-
-          if cakisma:
-              raise SystemExit(0)
+                  print(f"zincir: çalışan koşu var (#{k['run_number']}, {k['status']}) — atlandı")
+                  raise SystemExit(0)
+              if benim_basla and zaman(k["created_at"]) > benim_basla:
+                  print(f"zincir: benden yeni koşu var (#{k['run_number']}) — atlandı")
+                  raise SystemExit(0)
 
           try:
               istek(
@@ -505,7 +531,7 @@ jobs:
                   {"ref": "main", "inputs": {"force": "false"}},
                   "POST",
               )
-              print("zincir: ✅ bir sonraki tur tetiklendi")
+              print("zincir: ✅ bir sonraki tur tetiklendi (slot tamam)")
           except urllib.error.HTTPError as e:
               print(f"zincir: tetikleme hatası HTTP {e.code} — {e.read()[:200]!r}")
           except Exception as e:

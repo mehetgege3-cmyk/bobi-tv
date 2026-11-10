@@ -25,12 +25,29 @@ def test_zincir_adimi_var_ve_her_zaman_calisir():
     assert adim[-1].get("if") == "always()"
 
 
+def test_zincir_mutlak_slot_kullanir():
+    """Kadans MUTLAK slota oturmalı: son koşu başlangıcı + KADANS_DK.
+
+    NEDEN: 'son 8 dk içinde koşu varsa atla' kuralı kendi önceki turunu
+    çakışma sanıp zinciri kırdı (canlı log 23:04:23, 'son 8 dk içinde koşu
+    var (#25) — atlandı') → kadans durdu. Slot yöntemi bunu imkânsız kılar.
+    """
+    adim = [a for a in _adimlar() if "zincirle" in str(a.get("name", "")).lower()][-1]
+    kod = adim["run"]
+    assert "KADANS_DK" in kod
+    assert "sonraki_slot" in kod and "timedelta(minutes=kadans_dk)" in kod
+    assert 'KADANS_DK: "15"' in str(adim.get("env", {})) or adim["env"]["KADANS_DK"] == "15"
+    # 15 dk bekleyebilmek için adım zaman aşımı yeterli olmalı
+    assert int(adim.get("timeout-minutes", 0)) >= 16
+
+
 def test_zincir_cift_tetiklemeyi_engeller():
     adim = [a for a in _adimlar() if "zincirle" in str(a.get("name", "")).lower()][-1]
     kod = adim["run"]
     assert "GITHUB_RUN_ID" in kod, "kendi koşusunu elemezse sonsuz/çift tetikleme olur"
     assert "in_progress" in kod and "queued" in kod
-    assert "timedelta(minutes=8)" in kod, "8 dk koruması yok — çift tur riski"
+    # Benden YENİ koşu başladıysa (cron araya girdi) tetikleme
+    assert "benim_basla" in kod
 
 
 def test_zincir_dispatch_cagirir_ve_token_yoksa_sessiz_gecer():

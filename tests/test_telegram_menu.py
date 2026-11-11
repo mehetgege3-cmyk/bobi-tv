@@ -355,7 +355,7 @@ def test_force_onay_ekrani_gercek_etkiyi_hesaplar(monkeypatch: pytest.MonkeyPatc
     # "günlük sınırı aşar" demez; tavan olmadığı için "tavan 6" beklentisi de
     # kaldırıldı. Etki yine GERÇEK hedeften hesaplanır (uydurma sayı yok).
     assert "Zorla üretim" in metin
-    assert "~1 yükleme" in metin, "etki: GUNLUK_HEDEF varsayılanı 1"
+    assert "~3 yükleme" in metin, "etki: GUNLUK_HEDEF varsayılanı 3 (8 saat kadans)"
     assert "yükleme tavanı yok" in metin.lower()
     assert "tavan 6" not in metin
     assert not tb.AYARLAR_STATE_YOLU.exists(), "onay ekranı HİÇBİR YAZMA yapmaz"
@@ -518,7 +518,7 @@ def test_push_basarisizsa_bekleyen_kuyruk_ve_panel_uyarisi(monkeypatch: pytest.M
         return False, "git push başarısız: simülasyon"
 
     monkeypatch.setattr(ad, "commit_ve_yukle", basarisiz)
-    tb.handle_callback("ay:v:GUNLUK_HEDEF:2", "cb1")  # değer "4", riskli değil → uygula
+    tb.handle_callback("ay:v:GUNLUK_HEDEF:3", "cb1")  # değer "4", riskli değil → uygula
     bekleyen = ad.bekleyenleri_al(tb.BEKLEYEN_YOLU)
     assert bekleyen is not None, "push başarısız → bekleyen kuyruğa yazılmalı"
     assert bekleyen["degisiklikler"] == {"GUNLUK_HEDEF": "4"}

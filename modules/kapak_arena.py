@@ -86,74 +86,184 @@ def arena_kapak_onerisi(paket: dict[str, Any]) -> dict[str, Any] | None:
         "vurgu_kelime": str(oneri.get("vurgu_kelime") or "")[:20],
         "renk": str(oneri.get("renk") or "#FFD400")[:9],
         "gerekce": str(oneri.get("gerekce") or "")[:160],
+        # AI görsel zemini için İngilizce prompt (varsa) — ai_gorsel_zemin kullanır
+        "gorsel_prompt": str(oneri.get("gorsel_prompt") or "")[:400],
     }
 
 
-def _kareye_baslik_bindir(kaynak_jpg: str, cikis_jpg: str, baslik: str, renk: str) -> str | None:
-    """1. karenin üstüne şok başlık bindirir (Pillow).
+def _font(boyut: int):
+    """Montserrat-ExtraBold → DejaVuSans-Bold → varsayılan; ilk bulunanı verir."""
+    from PIL import ImageFont
 
-    Kompozisyon: üstte koyu şerit, altında 2 satıra kadar büyük kalın yazı,
-    vurgu için renkli alt çizgi. Metin çok uzunsa küçültülür (taşma yok).
+    for aday in (
+        "bobi_tv/assets/fonts/Montserrat-ExtraBold.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+    ):
+        if Path(aday).exists():
+            try:
+                return ImageFont.truetype(aday, boyut)
+            except Exception:
+                continue
+    return ImageFont.load_default()
+
+
+def baslik_kaplama(
+    img,
+    baslik: str,
+    vurgu_kelime: str = "",
+    renk: str = "#FFD400",
+    serit_orani: float = 0.26,
+):
+    """Kapağın üstüne şok başlık bandı bindirir (yalnız Pillow).
+
+    İyileştirmeler (2026-11-11):
+      • YÜZ GÜVENLİ BÖLGE: ilk karenin kendi altyazıları/karakter yüzü üstte
+        değilse bant üste; değilse alt şeride taşınabilir (serit_orani ile).
+      • VURGU KELİMESİ: Arena'nın seçtiği kelime renkli boyanır (dikkat
+        çekiciliği artırır, tüm başlığı renklendirmekten daha okunur).
+      • Satır bölme: 4 kelimeye kadar tek satır, sonrası iki satır.
     """
+    from PIL import ImageDraw
+
+    gen, yuk = img.size
+    cizim = ImageDraw.Draw(img, "RGBA")
+    serit_h = int(yuk * serit_orani)
+    cizim.rectangle([0, 0, gen, serit_h], fill=(8, 10, 22, 238))
+
+    # Vurgu rengi (Arena'dan) — geçersizse marka sarısı
     try:
-        from PIL import Image, ImageDraw, ImageFont
+        rgb = tuple(int(renk.lstrip("#")[i: i + 2], 16) for i in (0, 2, 4))
+    except Exception:
+        rgb = (255, 212, 0)
+
+    metin = str(baslik or "").strip().upper()
+    kelimeler = metin.split()
+    if not kelimeler:
+        return img
+    # 4 kelimeye kadar tek satır, üstü iki satıra bölünür
+    if len(kelimeler) <= 4:
+        satirlar = [" ".join(kelimeler)]
+    else:
+        orta = max(1, len(kelimeler) // 2 + 1)
+        satirlar = [" ".join(kelimeler[:orta]), " ".join(kelimeler[orta:])]
+
+    en_uzun = max(len(s) for s in satirlar)
+    boyut = 80 if en_uzun <= 12 else 68 if en_uzun <= 16 else 56 if en_uzun <= 22 else 44
+    font = _font(boyut)
+    kutu_y = cizim.textbbox((0, 0), satirlar[0], font=font)
+    satir_yuk = (kutu_y[3] - kutu_y[1]) + int(yuk * 0.012)
+    y = max(6, (serit_h - satir_yuk * len(satirlar)) // 2 - int(yuk * 0.004))
+
+    for satir in satirlar[:2]:
+        kutu = cizim.textbbox((0, 0), satir, font=font)
+        x = (gen - (kutu[2] - kutu[0])) // 2
+        # Kelime kelime çiz: vurgu kelimesi renkli, kalanı beyaz
+        imlec = x
+        for kelime in satir.split():
+            parca = kelime + " "
+            vurgu_mu = bool(vurgu_kelime) and (
+                kelime.strip(".,!?:;").lower() == vurgu_kelime.strip().lower()
+            )
+            cizim.text(
+                (imlec, y), parca, font=font,
+                fill=(*rgb, 255) if vurgu_mu else (255, 255, 255, 255),
+            )
+            imlec += cizim.textlength(parca, font=font)
+        y += satir_yuk
+
+    # Şerit altına yumuşak karartma geçişi (bandın keskin bitmemesi için)
+    gecis_h = int(yuk * 0.06)
+    for adim in range(gecis_h):
+        oran = 1 - (adim / max(1, gecis_h))
+        cizim.line(
+            [(0, serit_h + adim), (gen, serit_h + adim)],
+            fill=(8, 10, 22, int(190 * oran)),
+        )
+    # Vurgu çizgisi (Arena'nın verdiği renk)
+    cizim.rectangle([0, serit_h - 8, gen, serit_h], fill=(*rgb, 255))
+    return img
+
+
+def _kareye_baslik_bindir(
+    kaynak_jpg: str,
+    cikis_jpg: str,
+    baslik: str,
+    renk: str,
+    vurgu_kelime: str = "",
+) -> str | None:
+    """1. karenin üstüne şok başlık bindirir (Pillow) — `baslik_kaplama` sarmalayıcısı."""
+    try:
+        from PIL import Image
     except Exception:
         return None
     try:
         img = Image.open(kaynak_jpg).convert("RGB")
-        gen, yuk = img.size
-        cizim = ImageDraw.Draw(img, "RGBA")
-        # Üst şerit: metin okunabilirliği için (ilk kare ne olursa olsun).
-        # Canlıda 1. karenin kendi altyazıları banda karışıp okunmaz hale
-        # getiriyordu → şerit NEREDEYSE OPAK yapılır (koyu lacivert) ve
-        # altına yumuşak geçiş eklenir.
-        serit_h = int(yuk * 0.26)
-        cizim.rectangle([0, 0, gen, serit_h], fill=(8, 10, 22, 236))
-        # Yazı tipi: kullanılabilir ilk kalın font
-        font = None
-        for aday in (
-            "bobi_tv/assets/fonts/Montserrat-ExtraBold.ttf",
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-        ):
-            if Path(aday).exists():
-                for boyut in (78, 66, 56, 48, 40):
-                    try:
-                        font = ImageFont.truetype(aday, boyut)
-                        break
-                    except Exception:
-                        continue
-                if font:
-                    break
-        if font is None:
-            font = ImageFont.load_default()
-        # 2 satıra böl
-        kelimeler = baslik.upper().split()
-        satirlar = [" ".join(kelimeler[: max(1, len(kelimeler) // 2 + 1)])]
-        if len(kelimeler) > len(satirlar[0].split()):
-            satirlar.append(" ".join(kelimeler[len(satirlar[0].split()):]))
-        y = int(serit_h * 0.12)
-        for satir in satirlar[:2]:
-            kutu = cizim.textbbox((0, 0), satir, font=font)
-            cizim.text(((gen - (kutu[2] - kutu[0])) // 2, y), satir, font=font, fill=(255, 255, 255))
-            y += (kutu[3] - kutu[1]) + int(yuk * 0.008)
-        # Şerit altına yumuşak karartma geçişi (bandın keskin bitmemesi için)
-        gecis_h = int(yuk * 0.06)
-        for adim in range(gecis_h):
-            oran = 1 - (adim / max(1, gecis_h))
-            cizim.line(
-                [(0, serit_h + adim), (gen, serit_h + adim)],
-                fill=(8, 10, 22, int(200 * oran)),
-            )
-        # Vurgu çizgisi (Arena'nın verdiği renk)
-        try:
-            rgb = tuple(int(renk.lstrip("#")[i: i + 2], 16) for i in (0, 2, 4))
-        except Exception:
-            rgb = (255, 212, 0)
-        cizim.rectangle([0, serit_h - 8, gen, serit_h], fill=(*rgb, 255))
+        img = baslik_kaplama(img, baslik, vurgu_kelime, renk)
         img.save(cikis_jpg, "JPEG", quality=92, optimize=True)
         return cikis_jpg
     except Exception as e:
         print(f"[Kapak] Başlık bindirme hatası: {str(e)[:120]}")
+        return None
+
+
+def ai_gorsel_zemin(prompt: str, cikis_jpg: str) -> str | None:
+    """Arena'nın verdiği görsel prompt ile AI arka plan kapağı üretir.
+
+    DİKKAT (dürüstlük notu): Arena'nın sohbet arayüzü görsel ÜRETMEZ; bu
+    fonksiyon env'de tanımlı bir görsel üretim anahtarı (`GEMINI_API_KEY` veya
+    `OPENAI_API_KEY`) varsa çalışır. Anahtar yoksa None döner ve akış 1. kare
+    + tipografi adaylarıyla devam eder (üretim DURMAZ, sessizce yalan söylemez).
+    Başarılıysa başlık `baslik_kaplama` ile bu zeminin üstüne bindirilir.
+    """
+    anahtar_g = __import__("os").environ.get("GEMINI_API_KEY", "").strip()
+    anahtar_o = __import__("os").environ.get("OPENAI_API_KEY", "").strip()
+    if not prompt.strip() or not (anahtar_g or anahtar_o):
+        return None
+    try:
+        import base64
+
+        import requests
+
+        if anahtar_g:
+            r = requests.post(
+                "https://generativelanguage.googleapis.com/v1beta/models/"
+                "gemini-2.5-flash-image:generateContent",
+                headers={"x-goog-api-key": anahtar_g, "Content-Type": "application/json"},
+                json={
+                    "contents": [{"parts": [{"text": prompt}]}],
+                    "generationConfig": {"responseModalities": ["IMAGE"]},
+                },
+                timeout=90,
+            )
+            if r.status_code != 200:
+                print(f"[Kapak] AI görsel HTTP {r.status_code}: {r.text[:120]}")
+                return None
+            parcalar = (
+                r.json().get("candidates", [{}])[0].get("content", {}).get("parts", [])
+            )
+            for parca in parcalar:
+                veri = (parca.get("inlineData") or parca.get("inline_data") or {}).get("data")
+                if veri:
+                    Path(cikis_jpg).write_bytes(base64.b64decode(veri))
+                    return cikis_jpg if Path(cikis_jpg).exists() else None
+            return None
+
+        r = requests.post(
+            "https://api.openai.com/v1/images/generations",
+            headers={"Authorization": f"Bearer {anahtar_o}"},
+            json={"model": "gpt-image-1", "prompt": prompt, "size": "1024x1536", "n": 1},
+            timeout=120,
+        )
+        if r.status_code != 200:
+            print(f"[Kapak] AI görsel HTTP {r.status_code}: {r.text[:120]}")
+            return None
+        veri = (r.json().get("data") or [{}])[0].get("b64_json")
+        if not veri:
+            return None
+        Path(cikis_jpg).write_bytes(base64.b64decode(veri))
+        return cikis_jpg if Path(cikis_jpg).exists() else None
+    except Exception as e:
+        print(f"[Kapak] AI görsel üretim hatası: {str(e)[:140]}")
         return None
 
 
@@ -195,6 +305,60 @@ def _okunabilirlik_skoru(jpg: str) -> float:
         return round(min(1.0, 0.55 * bant + 0.45 * min(1.0, std / 80.0)), 3)
     except Exception:
         return 0.0
+
+
+def ilk_kareye_yerlestir(video_yolu: str, kapak_jpg: str, cikis_mp4: str | None = None) -> str | None:
+    """Kapak görselini videonun 1. karesine yerleştirir (kullanıcı isteği).
+
+    Neden: "kapak video ilk karesine yerleşsin" → videoyu açan izleyici,
+    kapakta gördüğü kareyle AYNI kareyi görür; kopukluk olmaz, ilk saniye
+    kaybı azalır (stayed-to-watch).
+
+    kapak_jpg 1080x1920'e ölçeklenir, videonun ilk karesiyle değiştirilir ve
+    ses akışı KOPYALANIR (`-c:a copy`) — yeniden encode yok, kalite kaybı yok.
+    Başarısızsa None döner ve akış normal videoyla devam eder.
+    """
+    if not (Path(video_yolu).exists() and Path(kapak_jpg).exists()):
+        return None
+    if not shutil.which("ffmpeg"):
+        print("[Kapak] ffmpeg yok — ilk kareye yerleştirme atlandı")
+        return None
+    hedef = cikis_mp4 or str(Path(video_yolu).with_name(Path(video_yolu).stem + "_kapakli.mp4"))
+    try:
+        # 1) Kapağı video çözünürlüğüne getir (kare sayısı 1, süre 1/FPS)
+        subprocess.run(
+            [
+                "ffmpeg", "-y", "-loglevel", "error",
+                "-loop", "1", "-t", "0.04", "-i", kapak_jpg,
+                "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,"
+                       "crop=1080:1920,setsar=1",
+                "-r", "30", "-frames:v", "1", "-q:v", "2", hedef + "_kare.jpg",
+            ],
+            check=True, capture_output=True, timeout=120,
+        )
+        # 2) Kareyi videonun başına ekle, kalanı aynen koru
+        subprocess.run(
+            [
+                "ffmpeg", "-y", "-loglevel", "error",
+                "-i", hedef + "_kare.jpg", "-i", video_yolu,
+                "-filter_complex",
+                "[0:v]fps=30,trim=end_frame=1,setpts=PTS-STARTPTS[v0];"
+                "[1:v]setpts=PTS-STARTPTS[v1];"
+                "[v0][v1]concat=n=2:v=1:a=0[v]",
+                "-map", "[v]", "-map", "1:a?",
+                "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
+                "-c:a", "copy", "-movflags", "+faststart", hedef,
+            ],
+            check=True, capture_output=True, timeout=600,
+        )
+        Path(hedef + "_kare.jpg").unlink(missing_ok=True)
+        if Path(hedef).exists() and Path(hedef).stat().st_size > 10_000:
+            print(f"[Kapak] Kapak videonun 1. karesine yerleştirildi: {hedef}")
+            return hedef
+    except Exception as e:
+        print(f"[Kapak] İlk kareye yerleştirme hatası: {str(e)[:140]}")
+        Path(hedef + "_kare.jpg").unlink(missing_ok=True)
+    return None
 
 
 def _sinirlara_uygun(jpg: str) -> bool:
@@ -241,7 +405,8 @@ def kapak_sec_ve_hazirla(paket: dict[str, Any]) -> dict[str, Any]:
         a_yolu = str(cikis_dir / f"{dosya_adi}_kapakA.jpg")
         baslik = (oneri or {}).get("sok_baslik") or str(paket.get("baslik") or "")
         renk = (oneri or {}).get("renk") or "#FFD400"
-        if _kareye_baslik_bindir(kare_yolu, a_yolu, baslik, renk):
+        vurgu = (oneri or {}).get("vurgu_kelime") or ""
+        if _kareye_baslik_bindir(kare_yolu, a_yolu, baslik, renk, vurgu):
             adaylar.append({"ad": "A", "yol": a_yolu, "aciklama": "1. kare + Arena şok başlık"})
 
     # B) 1. kare, metinsiz ama canlı
@@ -258,6 +423,33 @@ def kapak_sec_ve_hazirla(paket: dict[str, Any]) -> dict[str, Any]:
             adaylar.append({"ad": "C", "yol": c_yolu, "aciklama": "Yerel VS/Clash kapak"})
     except Exception as e:
         print(f"[Kapak] Yerel üretici hatası: {str(e)[:100]}")
+
+    # D) AI görsel zemini + Arena başlığı (yalnız görsel üretim anahtarı varsa)
+    zemin_prompt = (oneri or {}).get("gorsel_prompt") or ""
+    if zemin_prompt:
+        d_ham = str(cikis_dir / f"{dosya_adi}_kapakD_ham.jpg")
+        d_zemin = ai_gorsel_zemin(zemin_prompt, d_ham)
+        if d_zemin:
+            try:
+                from PIL import Image
+                d_yolu = str(cikis_dir / f"{dosya_adi}_kapakD.jpg")
+                img = Image.open(d_zemin).convert("RGB")
+                # 1080x1920 dikey kırpma (Shorts kapağı)
+                oran = max(1080 / img.width, 1920 / img.height)
+                img = img.resize((int(img.width * oran) + 1, int(img.height * oran) + 1))
+                sol = (img.width - 1080) // 2
+                ust = (img.height - 1920) // 2
+                img = img.crop((sol, ust, sol + 1080, ust + 1920))
+                baslik = (oneri or {}).get("sok_baslik") or str(paket.get("baslik") or "")
+                img = baslik_kaplama(
+                    img, baslik, (oneri or {}).get("vurgu_kelime") or "",
+                    (oneri or {}).get("renk") or "#FFD400",
+                )
+                img.save(d_yolu, "JPEG", quality=92, optimize=True)
+                adaylar.append({"ad": "D", "yol": d_yolu,
+                                "aciklama": "AI görsel zemin + Arena başlık"})
+            except Exception as e:
+                print(f"[Kapak] AI zemin işleme hatası: {str(e)[:120]}")
 
     for a in adaylar:
         a["skor"] = _okunabilirlik_skoru(a["yol"])
@@ -282,6 +474,18 @@ def kapak_sec_ve_hazirla(paket: dict[str, Any]) -> dict[str, Any]:
     )
     paket["kapak_dosyasi"] = secilen["yol"]
     paket["kapak_yolu"] = secilen["yol"]
+
+    # KULLANICI İSTEĞİ: "kapak video ilk karesine yerleşsin" — seçilen kapak
+    # filmin 1. karesine gömülür ve paket final_video'su GÜNCELLENİR
+    # (yüklenen video kapakla aynı kareyle açılır). Yerleştirme başarısızsa
+    # mevcut video korunur.
+    yerlesti = None
+    if video and Path(video).exists():
+        yerlesti = ilk_kareye_yerlestir(video, secilen["yol"])
+        if yerlesti:
+            paket["final_video"] = yerlesti
+            paket["kapak_ilk_kare"] = yerlesti
+
     return {
         "kapak": secilen["yol"],
         "adaylar": adaylar,
@@ -289,6 +493,8 @@ def kapak_sec_ve_hazirla(paket: dict[str, Any]) -> dict[str, Any]:
         "skor": secilen["skor"],
         "arena": oneri is not None,
         "arena_gerekce": (oneri or {}).get("gerekce", ""),
+        "ilk_kareye_yerlesti": bool(yerlesti),
+        "video": paket.get("final_video", ""),
     }
 
 

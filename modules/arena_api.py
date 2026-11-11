@@ -330,8 +330,11 @@ async def arena_kapak_onerisi_al_async(paket: dict) -> dict | None:
         "2) vurgu_kelime: sok_baslik içinden renklendirilecek TEK kelime.\n"
         "3) renk: vurgu için yüksek kontrastlı HEX renk (örn #FF2D55).\n"
         "4) gerekce: neden bu başlık kaydırma durdurur, 1 cümle.\n"
+        "5) gorsel_prompt: kapak ARKA PLANI için İngilizce tek cümlelik görsel "
+        "prompt (karakter + mekân + duygu; METİN İÇERMEZ; 9:16 dikey çekim).\n"
         "Şema: {\"sok_baslik\":\"MAKS 4 KELİME\",\"vurgu_kelime\":\"KELİME\","
-        "\"renk\":\"#FF2D55\",\"gerekce\":\"tek cümle\"}"
+        "\"renk\":\"#FF2D55\",\"gerekce\":\"tek cümle\","
+        "\"gorsel_prompt\":\"english prompt\"}"
     )
 
     try:
@@ -402,6 +405,23 @@ async def arena_video_uret(video_no: int, output_dir: str = "bobi_tv/output") ->
     if not paket:
         paket = senaryo_paketi_olustur(video_no)
 
+    # 1.5. KANCA MOTORU (A1 — 2026-11-11): ilk 1.5 saniye kancası zorunlu.
+    #      TTS'den ÖNCE çalışır; üst bant + ilk replik + tts[0] kancayla yazılır.
+    #      Kanca hatası üretimi DURDURMAZ (ölçüm loglanır, eski metin kalır).
+    try:
+        from modules.senaryo_v7.kanca_motoru import paket_kancasini_uygula
+
+        kanca_ozeti = paket_kancasini_uygula(paket, video_no)
+        if kanca_ozeti.get("uygulandi"):
+            print(
+                f"[Kanca] ✅ {kanca_ozeti['form']} formu ({kanca_ozeti['puan']}/100): "
+                f"\"{kanca_ozeti['metin']}\""
+            )
+        else:
+            print(f"[Kanca] ⚠️  uygulanamadı: {kanca_ozeti.get('gerekce')}")
+    except Exception as e:
+        print(f"[Kanca] Motor hatası (devam ediliyor): {str(e)[:120]}")
+
     # 2. Kalite Kontrolü (YENİ)
     senaryo_raw = paket.get("senaryo", paket)
     try:
@@ -423,7 +443,12 @@ async def arena_video_uret(video_no: int, output_dir: str = "bobi_tv/output") ->
                 "toplam_puan": kalite_raporu.toplam_puan,
                 "gecti": kalite_raporu.gecti,
                 "loop_sonuc": {"puan": kalite_raporu.loop_sonuc.puan},
-                "kanca_sonuc": {"puan": kalite_raporu.kanca_sonuc.puan},
+                "kanca_sonuc": {
+                    "puan": kalite_raporu.kanca_sonuc.puan,
+                    "form": (paket.get("kanca_ozeti") or {}).get("form", ""),
+                    "motor_puan": (paket.get("kanca_ozeti") or {}).get("puan", 0),
+                    "metin": (paket.get("kanca_ozeti") or {}).get("metin", ""),
+                },
                 "zamanlama_sonuc": {"puan": kalite_raporu.zamanlama_sonuc.puan},
                 "diyalog_sonuc": {"puan": kalite_raporu.diyalog_sonuc.puan},
                 "oneriler": kalite_raporu.oneriler,

@@ -1,5 +1,5 @@
 {
-  "zaman": "2026-11-11T07:10:21.538604+00:00",
+  "zaman": "2026-11-11T07:41:01.108607+00:00",
   "gun": 7,
   "uretilen": 41,
   "silinen": 22,
@@ -11,5 +11,10 @@
   "akisa_girme_orani": 0,
   "kalite_ornek": 0,
   "kalite_ortalama": null,
+  "kanca": {
+    "form_verisi": {},
+    "en_iyi_form": "",
+    "ornek": 0
+  },
   "yorum": "🔴 akışa giriş yok — algoritma hâlâ dağıtmıyor; içerik/kanca gözden geçir"
 }

@@ -142,14 +142,24 @@ def test_katalog_semasi_tam_ve_gecerli() -> None:
             assert str(a["varsayilan"]) in [str(s) for s in secenekler], a["anahtar"]
         if a["tip"] == "sayi":
             mn, mx = a["min"], a["max"]
-            assert mn is not None and mx is not None, a["anahtar"]
-            assert int(mn) <= int(a["varsayilan"]) <= int(mx), a["anahtar"]
+            # 2026-11-11 KULLANICI KURALI: "günlük yükleme tavanı 6 İSTEMİYORUM".
+            # Üst sınır `None` = SINIRSIZ olabilir (GUNLUK_HEDEF artık tavan
+            # değil, günlük toplam HEDEF/alt sınır). Alt sınır her zaman zorunlu.
+            assert mn is not None, a["anahtar"]
+            assert mx is None or int(mn) <= int(mx), a["anahtar"]
+            if mx is not None:
+                assert int(mn) <= int(a["varsayilan"]) <= int(mx), a["anahtar"]
+            else:
+                assert int(a["varsayilan"]) >= int(mn), a["anahtar"]
             # 2026-11-11: serbest sayı girişi — öneri listesi ZORUNLU DEĞİL,
             # varsa seçenekler aralıkta olmalı.
             oneriler = a["secenekler"] or []
             assert isinstance(oneriler, list), a["anahtar"]
             for o in oneriler:
-                assert int(mn) <= int(o) <= int(mx), f"{a['anahtar']} öneri aralık dışı: {o}"
+                # Üst sınır None = tavan yok (kullanıcı kuralı) → yalnız alt sınır
+                assert int(o) >= int(mn), f"{a['anahtar']} öneri alt sınır altı: {o}"
+                if mx is not None:
+                    assert int(o) <= int(mx), f"{a['anahtar']} öneri aralık dışı: {o}"
         if a["tip"] == "anahtar":
             assert a["secenekler"] is None, a["anahtar"]
     assert len(gorulen) == len(KATALOG), "katalogda tekrarlanan anahtar var"

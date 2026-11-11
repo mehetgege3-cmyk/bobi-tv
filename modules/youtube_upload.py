@@ -157,6 +157,12 @@ def arsive_ekle(dosya_adi: str, baslik: str, senaryo: dict, video_id: str):
         "senaryo_ozeti": senaryo.get("acilis", "")[:200],
         "hash": senaryo.get("hash", ""),
         "tarih": datetime.now(timezone.utc).isoformat(),
+        # KANCA ÖLÇÜMÜ (A1, 2026-11-11): hangi kanca formu izlenme getiriyor?
+        # Bu alanlar olmadan kanca öğrenmesi imkânsız (form bazında rapor boş kalır).
+        "kanca_formu": senaryo.get("kanca_formu", ""),
+        "kanca_ab": senaryo.get("kanca_ab", ""),
+        "kanca_puan": senaryo.get("kanca_puan"),
+        "hook_ust_bant": senaryo.get("hook_ust_bant", ""),
     }
     arsiv.append(kayit)
 

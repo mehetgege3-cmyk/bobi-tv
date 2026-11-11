@@ -147,16 +147,22 @@ KATALOG: list[dict[str, Any]] = [
         "etiket": "Günlük hedef",
         "grup": "uretim_kota",
         "tip": "sayi",
-        "secenekler": ["1", "2", "4"],
-        "varsayilan": "1",
+        # KULLANICI KURALI (2026-11-11): "günlük yükleme tavanı 6 İSTEMİYORUM".
+        # Bu ayar artık GÜNLÜK TOPLAM HEDEF'tir (hedef = alt sınır, tavan DEĞİL).
+        # 8 saatlik kadans = günde 3 koşu → varsayılan 3.
+        "secenekler": ["1", "2", "3", "4"],
+        "varsayilan": "3",
         "min": 1,
-        "max": 6,
+        "max": None,
         "env_adi": "GUNLUK_HEDEF",
         "risk": "dusuk",
         "kalici": True,
         "etkili": True,
         "secret": False,
-        "aciklama": "Her koşuda hedeflenen yükleme sayısı. Kota tavanını (6) aşamaz.",
+        "aciklama": (
+            "Günlük TOPLAM yayın hedefi (alt sınır). Tavan YOK: hedef dolsa da "
+            "üretim/yükleme sürer. 8 saatlik kadans = günde 3 koşu."
+        ),
     },
     {
         "anahtar": "KOTA_DOLU_DAVRANIS",

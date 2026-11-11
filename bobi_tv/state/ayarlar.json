@@ -1,9 +1,9 @@
 {
   "sur": 1,
-  "guncelleme": "2026-11-11T04:10:53.930425+00:00",
+  "guncelleme": "2026-11-11T08:00:00+00:00",
   "ayarlar": {
-    "GUNLUK_HEDEF": "6",
-    "IZLENME_KONTROL_DK": "60",
+    "GUNLUK_HEDEF": "3",
+    "IZLENME_KONTROL_DK": "360",
     "MIN_IZLENME_ESIGI": "100"
   }
 }

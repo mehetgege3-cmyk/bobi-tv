@@ -51,14 +51,42 @@ def test_gunluk_hedef_iki_dokunusta_degisir(monkeypatch):
     assert kaydedilen.get("GUNLUK_HEDEF") == "5"
 
 
-def test_stepper_ust_sinirda_durur(monkeypatch):
+def test_stepper_gunluk_hedefte_tavan_yok(monkeypatch):
+    """KULLANICI KURALI (2026-11-11): "günlük yükleme tavanı 6 İSTEMİYORUM".
+
+    GUNLUK_HEDEF artık günlük TOPLAM hedeftir; 6'da durmaz. Gerçek bir üst
+    sınır varsa stepper yine durur (aşağıdaki ikinci bölüm)."""
     kaydedilen = {}
     monkeypatch.setattr(tb, "ayar_uygula", lambda a, d, k: kaydedilen.update({a: d}) or (True, ""))
-    monkeypatch.setattr(tb, "_deger_ve_kaynak", lambda a: ("6", "state"))  # GUNLUK_HEDEF max 6
     monkeypatch.setattr(tb, "answer_callback", lambda *a, **k: True)
     monkeypatch.setattr(tb, "_ekran_goster", lambda *a, **k: True)
+    monkeypatch.setattr(tb, "_deger_ve_kaynak", lambda a: ("6", "state"))
     tb._hizli_stepper("GUNLUK_HEDEF", +1, "cb")
-    assert "GUNLUK_HEDEF" not in kaydedilen, "sınır aşıldı"
+    assert kaydedilen.get("GUNLUK_HEDEF") == "7", "tavan yok → artırılabilir"
+
+
+def test_stepper_tanimsiz_ust_sinirda_durmaz_gercek_sinirda_durur(monkeypatch):
+    """Üst sınırı tanımlı bir ayarda (varsa) stepper sınırı korur."""
+    from modules.ayar_katalogu import ayar_getir
+
+    # GUNLUK_HEDEF dışında üst sınırı olan bir sayı ayarı ara
+    aday = None
+    from modules.ayar_katalogu import tumu
+
+    for a in tumu():
+        if a["tip"] == "sayi" and a.get("max") is not None and a["anahtar"] != "GUNLUK_HEDEF":
+            aday = a
+            break
+    if aday is None:  # böyle bir ayar yoksa test anlamsız
+        return
+    kaydedilen = {}
+    monkeypatch.setattr(tb, "ayar_uygula", lambda a, d, k: kaydedilen.update({a: d}) or (True, ""))
+    monkeypatch.setattr(tb, "answer_callback", lambda *a, **k: True)
+    monkeypatch.setattr(tb, "_ekran_goster", lambda *a, **k: True)
+    monkeypatch.setattr(tb, "_deger_ve_kaynak", lambda a: (str(aday["max"]), "state"))
+    tb._hizli_stepper(aday["anahtar"], +1, "cb")
+    assert aday["anahtar"] not in kaydedilen, "gerçek tavan korunmalı"
+    assert ayar_getir(aday["anahtar"]) is not None
 
 
 def test_riskli_ayar_hizli_yolda_da_onaya_gider(monkeypatch):

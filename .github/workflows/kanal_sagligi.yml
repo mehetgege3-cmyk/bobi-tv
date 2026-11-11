@@ -44,7 +44,7 @@ jobs:
         run: |
           git config user.name "bobi-saglik"
           git config user.email "saglik@bobi.local"
-          git add bobi_tv/state/kanal_sagligi.json
+          git add bobi_tv/state/kanal_sagligi.json bobi_tv/state/kanal_sagligi_gecmis.json
           git diff --cached --quiet && echo "Değişiklik yok" && exit 0
           git commit -m "chore(saglik): günlük kanal sağlığı ölçümü [skip ci]"
           for deneme in 1 2 3; do

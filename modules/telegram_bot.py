@@ -2552,6 +2552,7 @@ def ekran_kanal_sagligi() -> tuple[str, list[list[dict[str, Any]]]]:
         "🎯 <b>İçerik</b>",
         f"│ ⭐ Kalite ortalaması: {_sayi(ozet.get('kalite_ortalama'))} "
         f"({ozet.get('kalite_ornek') or 0} senaryo)",
+        f"│ 🪝 Kanca: {_kanca_ozeti(ozet)}",
         ayirici,
         f"📐 Kadans: <b>{_kadans_etiketi()}</b> · 🗑 Silme eşiği: "
         f"<b>{_izlenme_kurali_ozeti()}</b>",
@@ -2572,6 +2573,25 @@ def ekran_kanal_sagligi() -> tuple[str, list[list[dict[str, Any]]]]:
         ],
         list(GERI_MENUSU),
     ]
+
+
+def _kanca_ozeti(ozet: dict[str, Any]) -> str:
+    """Kanca formu ölçümü tek satır (A1): hangi form daha çok izlenme getirdi?
+
+    Veri yoksa "ölçüm sürüyor" der — uydurma yok.
+    """
+    kanca = ozet.get("kanca") or {}
+    form_verisi = kanca.get("form_verisi") or {}
+    if not form_verisi:
+        return "<i>ölçüm sürüyor (yeni kancalı videolar bekleniyor)</i>"
+    parcalar = [
+        f"{form} {veri['ortalama']} ({veri['video']})"
+        for form, veri in sorted(form_verisi.items(), key=lambda kv: -kv[1]["ortalama"])[:3]
+    ]
+    en_iyi = kanca.get("en_iyi_form")
+    if en_iyi:
+        return f"<b>{en_iyi}</b> önde · " + " · ".join(parcalar)
+    return " · ".join(parcalar) + " <i>(kazanan için ≥2 video/form)</i>"
 
 
 def _izlenme_kurali_ozeti() -> str:

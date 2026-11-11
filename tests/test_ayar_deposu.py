@@ -96,9 +96,11 @@ def test_aralik_disi_deger_reddedilir_varsayilan_doner(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     degerler, uyarilar = ad.yukle(yol)
-    assert degerler["GUNLUK_HEDEF"] == "1", "99 aralık dışı → varsayılana döner"
+    # 2026-11-11: GUNLUK_HEDEF'in üst sınırı YOK (kullanıcı: "tavan istemiyorum")
+    # → 99 artık "aralık dışı" değil, hedef olarak geçerli kalır.
+    assert degerler["GUNLUK_HEDEF"] == "99", "tavan yok → değer korunur"
     assert degerler["MOD"] == "isindirma_saatlik"
-    assert any("aralık dışı" in u for u in uyarilar)
+    assert any("aralık dışı" in u for u in uyarilar), "MOD hâlâ aralık dışı"
 
 
 def test_bilinmeyen_anahtar_yok_sayilir(tmp_path: Path) -> None:

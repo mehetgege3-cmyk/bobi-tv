@@ -1,7 +1,35 @@
 # TODO — Ajan İçin Kalan İşler
 
-Güncel: **2026-11-11**. Bölüm 6'daki 7 madde `f4d2ca1` ile main'de; TEKRAR
-YAPILMAZ. Bu dosya yalnız gerçekten kalan işleri tutar.
+Güncel: **2026-11-11 (akşam)**. Bölüm 6'daki 7 madde `f4d2ca1` ile main'de;
+TEKRAR YAPILMAZ. Bu dosya yalnız gerçekten kalan işleri tutar.
+
+## ✅ Bu turda kapatılan (A1 + A2 — "A ile yapalım")
+
+Kullanıcı önceliği: **kanca + içerik** (nöbetçi/B maddesi sonraya).
+Detay: `docs/KANCA_VE_KAPAK.md`.
+
+- **A1 Kanca sertleştirme** — `modules/senaryo_v7/kanca_motoru.py` (yeni),
+  `arena_api.arena_video_uret` içinde TTS'den ÖNCE çağrılıyor.
+  - Eski motorun uydurma sayı üretmesi (`random.choice([3,5,7,10])`) kaldırıldı.
+  - Clickbait artık metne UYGULANIYOR (önerilmiyor).
+  - Kanca senaryoya yazılıyor (üst bant + ilk replik + tts[0]).
+  - Form rotasyonu (soru/sahne/iddia/itiraf) + `kanca_formu` arşive yazılıyor.
+- **A1 ölçüm** — `kanal_sagligi.kanca_formu_performansi()` + panelde `🪝 Kanca`
+  satırı + `bobi_tv/state/kanal_sagligi_gecmis.json` (günlük tek satır).
+- **A2 Kapak** — seçilen kapak artık videonun **1. karesine gömülüyor**
+  (`kapak_arena.ilk_kareye_yerlestir`), vurgu kelimesi renkleniyor
+  (`baslik_kaplama`), AI görsel zemini için D adayı (anahtar varsa).
+- **Ayar düzeltmesi** — `GUNLUK_HEDEF` varsayılanı 1→3, üst sınır 6→**yok**
+  (kullanıcı: "tavan istemiyorum"); `state/ayarlar.json` içinde
+  `IZLENME_KONTROL_DK: 60 → 360` (kullanıcı kuralı: 6 saatte 100 izlenme).
+
+## ⏳ Kullanıcı girdisi bekleyenler (2 madde — değişmedi)
+
+1. **Canlı Arena çerez smoke testi**: Actions → *Arena Smoke Test* →
+   `Run workflow`. Geçerli `ARENA_COOKIES_JSON` secret'ı gerekir.
+   Beklenen verdict: `oturum-gecerli`.
+2. **Çerez yenileme Seçenek B (GitHub App)**: `APP_ID`, `APP_PRIVATE_KEY`,
+   `APP_INSTALLATION_ID` secret'ları gerekiyor (`docs/GITHUB_APP_TOKEN.md`).
 
 ## ✅ Tamamlandı (Bölüm 6 — dokunma)
 

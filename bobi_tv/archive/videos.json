@@ -278,12 +278,15 @@
     "dosya_adi": "20261111_0006_pazartesi_sendromu_arena",
     "baslik": "Pazartesi Sabahı Salonda At Buldum 😱 #shorts",
     "video_id": "XFrbpVlhBzs",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "pazartesi_sendromu",
     "url": "https://www.youtube.com/shorts/XFrbpVlhBzs",
     "senaryo_ozeti": "Kapıyı açtım, salonda kocaman bir at duruyordu. Gördün mü, o benim oğluma doğum günü sürprizim.",
     "hash": "",
-    "tarih": "2026-11-11T01:27:40.093668+00:00"
+    "tarih": "2026-11-11T01:27:40.093668+00:00",
+    "silinme_izlenme": 0,
+    "silinme_yas_dk": 73.0,
+    "silinme_tarihi": "2026-11-11T02:40:54.114673+00:00"
   },
   {
     "dosya_adi": "20261111_0007_ik_toplantisi_arena",
@@ -328,5 +331,16 @@
     "senaryo_ozeti": "Dokuz saat boyunca çaysız oturdum, hâlâ şok içindeyim. Marco, çayı getirdim ama sen 'hayır teşekkürler' dedin.",
     "hash": "",
     "tarih": "2026-11-11T02:28:34.229345+00:00"
+  },
+  {
+    "dosya_adi": "20261111_0011_absurt_komedi",
+    "baslik": "Yazıcı Baskı Yapmayı Reddedip İzin İstedi! 🖨️ #shorts",
+    "video_id": "I6wFS07Fh-I",
+    "durum": "yayinda",
+    "kategori": "absurt_komedi",
+    "url": "https://www.youtube.com/shorts/I6wFS07Fh-I",
+    "senaryo_ozeti": "Yazıcı bugün çıktı vermedi, önce izin formumu istedi! Tonerim bitmiş olabilir, insan kaynaklarına sor!",
+    "hash": "1265961a7c2578c4b6d05493b962853d",
+    "tarih": "2026-11-11T02:44:20.234257+00:00"
   }
 ]

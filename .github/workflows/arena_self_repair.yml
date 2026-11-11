@@ -15,6 +15,7 @@ on:
       - "BOBİ TV — Haftalık Performans Raporu"
       - "Arena Smoke Test — Tanılama (manuel tetik)"
       - "Canlı Test — 1 video üret + yükle (tek seferlik)"
+      - "Yorum Cevaplama — Arena AI (saatlik)"
       - "Mini App verisi (salt okunur özet)"
       - "Mini App yayını (GitHub Pages)"
       - "Arşiv ↔ Kanal Eşitleme (haftalık)"

@@ -1,0 +1,113 @@
+name: "Yorum Cevaplama — Arena AI (saatlik)"
+
+# KULLANICI FİKRİ (2026-11-11): izleyici yorumlarını Arena AI'ye gönderip
+# gelen cevabı yoruma yazmak → kanal "interaktif" olur, düzeltmeler ikinci
+# dalga etkileşime dönüşür.
+#
+# GÜVENLİK KAPILARI (modules/yorum_cevap.py):
+#   • Sağlık/para/güvenlik kategorilerinde otomatik cevap YOK.
+#   • Arena'ya videonun DOĞRU bilgisi verilir → yanlış bilgi savunulmaz.
+#   • Arena erişilemezse %100 doğru şablon cevap.
+#   • Kişi başına günde 1, saatte 6, video başına 10 tavan (comment spam yok).
+#   • Spam/hakaret/link içeren yorumlara cevap yok.
+#
+# Bu iş ÜRETİM HATTINDAN BAĞIMSIZDIR: hata verse bile video üretimini etkilemez.
+
+on:
+  schedule:
+    # Saatlik. Üretim 8 saatte bir; yorumlar daha sık gelir.
+    - cron: '17 * * * *'
+  workflow_dispatch:
+    inputs:
+      kuru:
+        description: "Kuru çalışma (hiçbir yorum yazma, sadece ne yapacağını göster)"
+        required: false
+        default: "false"
+      video_sayisi:
+        description: "Kaç son videoya bakılsın"
+        required: false
+        default: "5"
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: yorum-cevap
+  cancel-in-progress: false
+
+jobs:
+  yorum-cevapla:
+    name: Son yayınların yorumlarını cevapla (Arena AI)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Repo'yu çek
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT || github.token }}
+
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Bağımlılıklar ve Chromium
+        run: |
+          python -m pip install -q --upgrade pip
+          if [ -f requirements.txt ]; then pip install -q -r requirements.txt; fi
+          pip install -q playwright requests
+          python -m playwright install --with-deps chromium
+
+      - name: Yorumları cevapla
+        env:
+          YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          ARENA_COOKIES_JSON: ${{ secrets.ARENA_COOKIES_JSON }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          YORUM_KURU: ${{ inputs.kuru == 'true' && '1' || '0' }}
+          YORUM_VIDEO_SAYISI: ${{ inputs.video_sayisi || '5' }}
+          PYTHONUNBUFFERED: "1"
+        run: python -m modules.yorum_cevap --kuru=$([ "$YORUM_KURU" = "1" ] && echo 1 || true)
+
+      - name: Özeti job summary'ye yaz
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          ozet_yolu = Path("bobi_tv/state/yorum_cevaplari.json")
+          satir = ["## Yorum Cevaplama\n"]
+          if ozet_yolu.exists():
+              d = json.loads(ozet_yolu.read_text(encoding="utf-8"))
+              cevaplar = d.get("cevaplar") or []
+              satir.append(f"- **Toplam cevap (birikimli):** {len(cevaplar)}\n")
+              son = cevaplar[-3:]
+              for c in son:
+                  satir.append(
+                      f"\n**İzleyici:** {str(c.get('yorum'))[:120]}\n\n"
+                      f"**Cevap:** {str(c.get('cevap'))[:200]}\n"
+                  )
+          else:
+              satir.append("_Henüz cevap kaydı yok._\n")
+          Path(os.environ["GITHUB_STEP_SUMMARY"]).write_text("".join(satir), encoding="utf-8")
+          PY
+
+      - name: Durum dosyasını commit et
+        if: always()
+        run: |
+          git config user.name "bobi-agent"
+          git config user.email "agent@bobi.tv"
+          git add -A bobi_tv/state/yorum_cevaplari.json 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "commit edilecek değişiklik yok"
+            exit 0
+          fi
+          git commit -m "yorum cevapları: state güncellemesi ($(date -u +%H:%M) UTC)"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push && break || sleep 5
+          done

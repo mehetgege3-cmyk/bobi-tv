@@ -370,6 +370,74 @@ async def arena_kapak_onerisi_al_async(paket: dict) -> dict | None:
     return ham
 
 
+async def arena_kisa_cevap_al_async(prompt: str) -> str | None:
+    """Arena'ya serbest metin sorusu sorar ve DÜZ METİN cevap döndürür.
+
+    KULLANICI FİKRİ (2026-11-11): izleyici yorumlarını Arena'ya gönderip
+    gelen cevabı yoruma yazmak. Bu fonksiyon "serbest sohbet" yoludur
+    (senaryo JSON'u ya da kapak JSON'u değil).
+
+    Çerez yoksa/erişilemezse None döner → çağıran taraf güvenli yedek metne
+    düşer (`modules/yorum_cevap.guvenli_yedek_cevap`). Üretim DURMAZ.
+    """
+    cookies_raw = os.environ.get("ARENA_COOKIES_JSON", "").strip()
+    if not cookies_raw:
+        print("[Arena Cevap] ARENA_COOKIES_JSON yok — güvenli yedeğe düşülecek")
+        return None
+    try:
+        from playwright.async_api import async_playwright
+    except ImportError:
+        print("[Arena Cevap] Playwright kurulu değil — güvenli yedeğe düşülecek")
+        return None
+
+    try:
+        clean_cookie = _arena_sayfasi_hazirla(cookies_raw)
+    except Exception as e:
+        print(f"[Arena Cevap] Çerez hazırlama uyarısı: {str(e)[:100]}")
+        return None
+
+    try:
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            context = await browser.new_context(viewport={"width": 1366, "height": 900})
+            await context.add_cookies([
+                {"name": "arena-auth-prod-v1.0", "value": clean_cookie,
+                 "domain": "arena.ai", "path": "/"},
+                {"name": "arena_build_bucket", "value": "stable",
+                 "domain": "arena.ai", "path": "/"},
+                {"name": "user_country_code", "value": "TR",
+                 "domain": "arena.ai", "path": "/"},
+            ])
+            page = await context.new_page()
+            print("[Arena Cevap] İzleyici yorumu için cevap isteniyor...")
+            cevap = await _arena_sorgusu_yap(page, prompt, min_cevap_uzunlugu=20)
+            await browser.close()
+    except Exception as e:
+        print(f"[Arena Cevap] Tarayıcı hatası: {str(e)[:120]}")
+        return None
+
+    if not cevap:
+        return None
+    print(f"[Arena Cevap] ✅ {cevap[:80]!r}")
+    return cevap
+
+
+def arena_kisa_cevap_al(prompt: str) -> str | None:
+    """Sync sarmalayıcı — `modules/yorum_cevap.py` bunu çağırır."""
+    try:
+        return asyncio.run(arena_kisa_cevap_al_async(prompt))
+    except RuntimeError:
+        import concurrent.futures
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as havuz:
+            return havuz.submit(
+                lambda: asyncio.run(arena_kisa_cevap_al_async(prompt))
+            ).result()
+    except Exception as e:
+        print(f"[Arena Cevap] Sync sarmalayıcı hatası: {str(e)[:120]}")
+        return None
+
+
 def arena_kapak_onerisi_al(paket: dict) -> dict | None:
     """Sync sarmalayıcı — kapak_arena.py bunu çağırır."""
     try:

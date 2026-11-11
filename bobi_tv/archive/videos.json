@@ -441,13 +441,16 @@
     "dosya_adi": "20261111_0017_eglenceli_replikler_arena",
     "baslik": "Kedim Ehliyet Aldı, Güvercinim Taksici 😱 #shorts",
     "video_id": "nrElerkcwjc",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "eglenceli_replikler",
     "url": "https://www.youtube.com/shorts/nrElerkcwjc",
     "senaryo_ozeti": "Az önce kedim senin güvercinine korna çaldı! Normal, o güvercin artık taksici ilan edildi.",
     "hash": "",
     "tarih": "2026-11-11T05:03:56.931205+00:00",
-    "izlenme_snapshots": {}
+    "izlenme_snapshots": {},
+    "silinme_izlenme": 2,
+    "silinme_yas_dk": 67.4,
+    "silinme_tarihi": "2026-11-11T06:11:38.679625+00:00"
   },
   {
     "dosya_adi": "20261111_0018_kulturlar_arasi_mizah_arena",
@@ -481,5 +484,16 @@
     "senaryo_ozeti": "Anahtarımı kaybettim ama kapı her akşam kendi kendine kilitleniyor. Kendi kendine mi? Evde kimse yok mu?",
     "hash": "",
     "tarih": "2026-11-11T05:59:09.171335+00:00"
+  },
+  {
+    "dosya_adi": "20261111_0021_kahve_hayati_arena",
+    "baslik": "Bölüm 21 | Espresso Makinesi Hiç Çalışmamış 😱 #shorts #kahve #komedi #gündelikhayat",
+    "video_id": "eyfXa3EJvX0",
+    "durum": "yayinda",
+    "kategori": "kahve_hayati",
+    "url": "https://www.youtube.com/shorts/eyfXa3EJvX0",
+    "senaryo_ozeti": "Bu espresso değil, çaydan bile yumuşak çıktı! Espresso istemiştiniz, gelen başka bir şey.",
+    "hash": "",
+    "tarih": "2026-11-11T06:14:09.269143+00:00"
   }
 ]

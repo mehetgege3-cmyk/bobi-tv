@@ -113,7 +113,6 @@ CALLBACK_DERINLIK: dict[str, int] = {
     "panelleri_temizle": 1,
     "rapor_7gun": 2,
     "kuyruk_liste": 2,
-    "performans": 2,
     "ay:gecmis": 2,
     "sistem_goster": 2,
     "ay:g": 2,

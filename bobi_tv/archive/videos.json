@@ -250,12 +250,15 @@
     "dosya_adi": "20261111_0004_ters_kose_fikralar",
     "baslik": "Sihirbaz Şapkadan Tavşan Değil, Fatura Çıkardı! 🎩 #shorts",
     "video_id": "7cTTL-VhItY",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "ters_kose_fikralar",
     "url": "https://www.youtube.com/shorts/7cTTL-VhItY",
     "senaryo_ozeti": "Sihirbaz şapkasından tavşan çıkaracağını söyledi, salon nefesini tuttu! Birazdan en büyük numaramla herkesi şaşırtacağım!",
     "hash": "e61f161fe9b69e322e334559ade512db",
-    "tarih": "2026-11-11T00:59:25.384323+00:00"
+    "tarih": "2026-11-11T00:59:25.384323+00:00",
+    "silinme_izlenme": 0,
+    "silinme_yas_dk": 70.4,
+    "silinme_tarihi": "2026-11-11T02:10:05.446236+00:00"
   },
   {
     "dosya_adi": "20261111_0005_eglenceli_replikler_arena",
@@ -300,5 +303,16 @@
     "senaryo_ozeti": "Girdim, ama karşımda bizim büro tam duruyordu. Ne demek? Aslında girdik mi, bir türlü anlayamadım.",
     "hash": "",
     "tarih": "2026-11-11T01:58:30.929357+00:00"
+  },
+  {
+    "dosya_adi": "20261111_0009_spor_hayati",
+    "baslik": "Yıllık Spor Salonu Üyeliğimin 10. Dakikasında Yaşananlar! 🏋️‍♂️😂 #shorts",
+    "video_id": "rsr6Y741hhA",
+    "durum": "yayinda",
+    "kategori": "spor_hayati",
+    "url": "https://www.youtube.com/shorts/rsr6Y741hhA",
+    "senaryo_ozeti": "Ve yıllık spor salonu üyeliğim tam onuncu dakikada iptal edildi! Çünkü koşu bandının üstüne bağdaş kurup poğaça açtın!",
+    "hash": "867dcfdbd3b1d10ecfe8b7889b54ce46",
+    "tarih": "2026-11-11T02:13:29.187573+00:00"
   }
 ]

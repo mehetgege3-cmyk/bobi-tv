@@ -508,7 +508,12 @@
     "senaryo_ozeti": "Anahtarımı kaybettim ama kapı her akşam kendi kendine kilitleniyor. Kendi kendine mi? Evde kimse yok mu?",
     "hash": "",
     "tarih": "2026-11-11T05:59:09.171335+00:00",
-    "izlenme_snapshots": {}
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 0,
+        "zaman": "2026-11-11T10:01:40.870101+00:00"
+      }
+    }
   },
   {
     "dosya_adi": "20261111_0021_kahve_hayati_arena",
@@ -520,7 +525,12 @@
     "senaryo_ozeti": "Bu espresso değil, çaydan bile yumuşak çıktı! Espresso istemiştiniz, gelen başka bir şey.",
     "hash": "",
     "tarih": "2026-11-11T06:14:09.269143+00:00",
-    "izlenme_snapshots": {}
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 0,
+        "zaman": "2026-11-11T10:01:40.870101+00:00"
+      }
+    }
   },
   {
     "dosya_adi": "20261111_0022_yapay_zeka_arena",
@@ -532,7 +542,12 @@
     "senaryo_ozeti": "Yapay zekâ ev arkadaşlığından resmen istifa etti bugün. Ne yaptık yine, kahve makinesine mi bağırdın?",
     "hash": "",
     "tarih": "2026-11-11T06:26:04.973268+00:00",
-    "izlenme_snapshots": {}
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 3,
+        "zaman": "2026-11-11T10:01:40.870101+00:00"
+      }
+    }
   },
   {
     "dosya_adi": "20261111_0023_saglik_sorunu_arena",
@@ -544,7 +559,12 @@
     "senaryo_ozeti": "Eczacı hanım, ilacı içmeden üç yan etkiyi birden yaşadım! Nasıl olur, kutu daha dün akşam elinize geçti.",
     "hash": "",
     "tarih": "2026-11-11T06:41:28.993585+00:00",
-    "izlenme_snapshots": {}
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 0,
+        "zaman": "2026-11-11T10:01:40.870101+00:00"
+      }
+    }
   },
   {
     "dosya_adi": "20261111_0024_absurt_sakalar_arena",
@@ -555,6 +575,28 @@
     "url": "https://www.youtube.com/shorts/jKEPXkzoyLs",
     "senaryo_ozeti": "Dün kayıp eşyalar bürosunda kendimi buldum. Kimliğinizi gösterin, sizi sahibinize teslim edelim.",
     "hash": "",
-    "tarih": "2026-11-11T06:56:36.513766+00:00"
+    "tarih": "2026-11-11T06:56:36.513766+00:00",
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 0,
+        "zaman": "2026-11-11T10:01:40.870101+00:00"
+      }
+    }
+  },
+  {
+    "dosya_adi": "20261111_0025_ik_toplantisi_arena",
+    "baslik": "Buzdolabı Hırsızı Çıkan İsim Herkesi Şoke Etti 😱 #shorts",
+    "video_id": "XSoVlWV304s",
+    "durum": "yayinda",
+    "kategori": "ik_toplantisi",
+    "url": "https://www.youtube.com/shorts/XSoVlWV304s",
+    "senaryo_ozeti": "İki aylık soruşturma bitti, hırsız sonunda bulundu! Nihayet! Kimmiş o her gün makarnamı yiyen kişi?",
+    "hash": "",
+    "tarih": "2026-11-11T10:01:40.485270+00:00",
+    "kanca_formu": "sahne",
+    "kanca_ab": "C",
+    "kanca_puan": 95,
+    "hook_ust_bant": "MAKARNAMI YİYEN BENMİŞİM",
+    "izlenme_snapshots": {}
   }
 ]

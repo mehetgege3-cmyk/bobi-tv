@@ -222,12 +222,15 @@
     "dosya_adi": "20261111_0002_absurt_komedi_arena",
     "baslik": "Park Bankası Artık Dilekçe İstiyor 😱 #shorts",
     "video_id": "zDsSZHhz_eQ",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "absurt_komedi",
     "url": "https://www.youtube.com/shorts/zDsSZHhz_eQ",
     "senaryo_ozeti": "Bu bank oturmak için dilekçe istiyor, imza da şart. Ben sadece on dakika dinleneyim, sonra gideceğim.",
     "hash": "",
-    "tarih": "2026-11-11T00:27:40.330933+00:00"
+    "tarih": "2026-11-11T00:27:40.330933+00:00",
+    "silinme_izlenme": 0,
+    "silinme_yas_dk": 72.4,
+    "silinme_tarihi": "2026-11-11T01:40:23.714863+00:00"
   },
   {
     "dosya_adi": "20261111_0003_wifi_kavgasi",
@@ -272,5 +275,16 @@
     "senaryo_ozeti": "Kapıyı açtım, salonda kocaman bir at duruyordu. Gördün mü, o benim oğluma doğum günü sürprizim.",
     "hash": "",
     "tarih": "2026-11-11T01:27:40.093668+00:00"
+  },
+  {
+    "dosya_adi": "20261111_0007_ik_toplantisi_arena",
+    "baslik": "Öğle Arasını Tost Makinesi Yönetti 😱 #shorts",
+    "video_id": "8mECCf8X0ms",
+    "durum": "yayinda",
+    "kategori": "ik_toplantisi",
+    "url": "https://www.youtube.com/shorts/8mECCf8X0ms",
+    "senaryo_ozeti": "İK toplantısında bugün herkesin öğle arasını kaybettik. Nasıl yani, takvimden mi sildin, yoksa?",
+    "hash": "",
+    "tarih": "2026-11-11T01:42:13.971968+00:00"
   }
 ]

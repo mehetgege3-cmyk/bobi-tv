@@ -326,6 +326,24 @@ def dusuk_izlenmeli_videolari_temizle(min_izlenme: int = 100, kontrol_suresi_dk:
                     f"{yas_dk:.0f} dk sonunda {izlenme} görüntüleme (<{min_izlenme})"
                 )
                 _arsivde_silindi_isaretle(vid_id, izlenme, yas_dk)
+                # TODO 27: video silme GERİ ALINAMAZ → denetim kaydı zorunlu.
+                # Kayıt yazılamazsa silme yine de yapılmıştır; durum loglanır.
+                try:
+                    from modules.denetim import kaydet as _denetim_kaydet
+
+                    _denetim_kaydet(
+                        "video_sil",
+                        "ok",
+                        ayrinti={
+                            "video_id": vid_id,
+                            "baslik": baslik[:80],
+                            "izlenme": izlenme,
+                            "yas_dk": round(yas_dk, 1),
+                            "esik": min_izlenme,
+                        },
+                    )
+                except Exception as _e:  # denetim asla silmeyi engellemez
+                    print(f"[Denetim] Silme kaydı yazılamadı: {_e}")
                 silinenler.append({
                     "video_id": vid_id,
                     "baslik": baslik,

@@ -25,7 +25,7 @@ from typing import Any
 import requests
 
 import modules.ayar_deposu as ayar_deposu
-from modules import rehber, render_karti, tekillestirme
+from modules import denetim, rehber, render_karti, tekillestirme
 from modules.ayar_katalogu import (
     GRUPLAR,
     TEMIZLIK_UYARI,
@@ -941,6 +941,9 @@ def ekran_yardim() -> tuple[str, list[list[dict[str, Any]]]]:
 #: olmasın; ayrıca ücretli/kotalı bir işi yanlışlıkla iki kez başlatmayı keser.
 URETIM_COOLDOWN_SN = 120
 
+#: TODO 26 — yanlış tetiklemeyi 10 dakika içinde İPTAL edebilme penceresi.
+IPTAL_PENCERESI_SN = 600
+
 
 def _cooldown_dosyasi() -> Path:
     return Path(os.environ.get("BOBI_COOLDOWN_YOLU", "bobi_tv/state/uretim_cooldown.json"))
@@ -1089,7 +1092,81 @@ def trigger_production_kontrollu() -> str:
     # Yalnız BAŞARILI tetiklemede cooldown başlat (hata → tekrar denenebilsin).
     if sonuc.startswith("✅") or "tetiklendi" in sonuc.lower():
         uretim_cooldown_baslat()
+        # TODO 26/27: iptal penceresi + denetim kaydı (geri alınamaz aksiyon).
+        _iptal_penceresi_baslat()
+        denetim.kaydet(
+            "uretim_tetikle",
+            "ok",
+            ayrinti={"iptal_penceresi_sn": IPTAL_PENCERESI_SN},
+        )
+    else:
+        denetim.kaydet("uretim_tetikle", "basarisiz", ayrinti={"mesaj": sonuc[:120]})
     return sonuc
+
+
+# ---------------------------------------------------------------------------
+# TODO 26 — 10 dk cool-off + İPTAL
+# ---------------------------------------------------------------------------
+
+
+def _iptal_dosyasi() -> Path:
+    return Path(os.environ.get("BOBI_IPTAL_YOLU", "bobi_tv/state/uretim_iptal.json"))
+
+
+def _iptal_penceresi_baslat(simdi: float | None = None) -> None:
+    """Tetikleme sonrası iptal penceresini açar (yanlış tetikleme telafisi)."""
+    import time as _time
+
+    simdi = simdi if simdi is not None else _time.time()
+    yol = _iptal_dosyasi()
+    try:
+        yol.parent.mkdir(parents=True, exist_ok=True)
+        yol.write_text(
+            json.dumps({"tetikleme": simdi, "bitis": simdi + IPTAL_PENCERESI_SN}),
+            encoding="utf-8",
+        )
+    except OSError:
+        pass
+
+
+def iptal_kalan_sn(simdi: float | None = None) -> int:
+    """İptal penceresi açıksa kalan saniye; kapalıysa 0."""
+    import time as _time
+
+    simdi = simdi if simdi is not None else _time.time()
+    try:
+        veri = json.loads(_iptal_dosyasi().read_text(encoding="utf-8"))
+        bitis = float(veri.get("bitis", 0))
+    except (OSError, ValueError, TypeError, AttributeError):
+        return 0
+    return max(0, int(bitis - simdi))
+
+
+def uretim_iptal_et() -> tuple[bool, str]:
+    """Son tetiklemeyi İPTAL eder (10 dk içinde). Döner: (başarılı, mesaj).
+
+    Video üretimi çoktan başladıysa yükleme yine de olabilir; bu yüzden mesaj
+    bunu AÇIKÇA söyler — yalan vaat yok.
+    """
+    kalan = iptal_kalan_sn()
+    if kalan <= 0:
+        return False, (
+            "⛔ İptal penceresi kapandı (10 dk geçti).\n"
+            "Koşu GitHub Actions'ta görünüyorsa oradan elle iptal edilebilir."
+        )
+    yol = _iptal_dosyasi()
+    try:
+        veri = json.loads(yol.read_text(encoding="utf-8"))
+        veri["iptal"] = True
+        yol.write_text(json.dumps(veri), encoding="utf-8")
+    except (OSError, ValueError):
+        return False, "⛔ İptal kaydı yazılamadı."
+    denetim.kaydet("uretim_iptal", "ok", ayrinti={"kalan_sn": kalan})
+    return True, (
+        f"🛑 İptal kaydedildi (pencereden {kalan} sn kaldı).\n"
+        "Pipeline bu turda yüklemeyi durdurur. Zaten render alınmışsa video "
+        "stoğa yazılır, KAYBOLMAZ."
+    )
 
 
 def ekran_uret_onay() -> tuple[str, list[list[dict[str, Any]]]]:
@@ -1882,6 +1959,15 @@ def ekran_ayar_nedir(anahtar: str) -> tuple[str, list[list[dict[str, Any]]]]:
     return metin, butonlar
 
 
+def ekran_denetim() -> tuple[str, list[list[dict[str, Any]]]]:
+    """📋 Denetim kaydı (TODO 27) — geri alınamaz işlemlerin izi."""
+    butonlar = [
+        [{"text": "🔄 Yenile", "callback_data": "denetim_goster"}],
+        list(GERI_MENUSU),
+    ]
+    return denetim.panel_metni(), butonlar
+
+
 def ekran_sistem_nedir() -> tuple[str, list[list[dict[str, Any]]]]:
     """❓ "Bu sistem ne işe yarıyor?" — uçtan uca akış + dürüst sınırlar."""
     butonlar = [
@@ -1981,6 +2067,12 @@ def ekran_kuyruk_at_uygula() -> tuple[str, list[list[dict[str, Any]]]]:
     from modules.kuyruk_yonetimi import toplu_at
 
     sonuc = toplu_at(None)
+    # TODO 27: geri alınabilir ama iz bırakır (kaç kayıt, ne zaman).
+    denetim.kaydet(
+        "stok_at",
+        "ok" if sonuc["atilan"] else "bos",
+        ayrinti={"atilan": sonuc["atilan"], "basarisiz": sonuc["basarisiz"]},
+    )
     if sonuc["atilan"] == 0:
         metin = "ℹ️ <b>Atılacak kayıt yok</b>\n\nKuyruk zaten boş."
     else:
@@ -2046,8 +2138,23 @@ def ekran_uret() -> tuple[str, list[list[dict[str, Any]]]]:
         f"{_kota_birim_ozeti()}\n"
         "📐 Günlük tavan: YOK — üretilen her video yüklenir"
     )
-    butonlar = [
+    butonlar: list[list[dict[str, Any]]] = [
         [{"text": "▶️ Üretimi başlat", "callback_data": "uret_baslat"}],
+    ]
+    # TODO 26: son tetikleme 10 dk içindeyse İPTAL düğmesi görünür.
+    kalan = iptal_kalan_sn()
+    if kalan > 0:
+        butonlar.insert(
+            0,
+            [
+                renkli_buton(
+                    f"🛑 İptal ({max(1, kalan // 60)} dk)",
+                    "uret_iptal",
+                    "riskli",
+                )
+            ],
+        )
+    butonlar += [
         [
             {"text": "🧪 Render testi", "callback_data": "uret_render_test"},
             {"text": "📈 Test kartı", "callback_data": "render_kart"},
@@ -2125,6 +2232,13 @@ def ayar_uygula(anahtar: str, deger: Any, kullanici_id: int | None) -> tuple[boo
     ok, sebep = ayar_deposu.commit_ve_yukle(
         [str(AYARLAR_STATE_YOLU), str(GECMIS_YOLU)],
         f"⚙️ ayar: {anahtar} → {uygulanan[anahtar]} (telegram) [skip ci]",
+    )
+    # TODO 27: ayar değişikliği geri alınabilir ama İZLENEBİLİR olmalı.
+    denetim.kaydet(
+        "ayar_degistir",
+        "ok" if ok else "beklemede",
+        kullanici_id=kullanici_id,
+        ayrinti={"anahtar": anahtar, "eski": eski, "yeni": uygulanan[anahtar], "sebep": sebep},
     )
     if ok:
         return True, ""
@@ -2204,6 +2318,10 @@ def _handle_callback_icerde(callback_data: str, callback_id: str, kullanici_id: 
         answer_callback(callback_id)
         _ekran_goster(ekran_ana())
         return
+    if callback_data == "denetim_goster":
+        answer_callback(callback_id)
+        _ekran_goster(ekran_denetim())
+        return
     if callback_data == "sistem_nedir":
         answer_callback(callback_id)
         _ekran_goster(ekran_sistem_nedir())
@@ -2245,6 +2363,11 @@ def _handle_callback_icerde(callback_data: str, callback_id: str, kullanici_id: 
     if callback_data == "uret_onay":
         answer_callback(callback_id, "Üretim tetikleniyor...")
         _ekran_goster(ekran_metin_dugme(trigger_production_kontrollu()))
+        return
+    if callback_data == "uret_iptal":
+        ok, mesaj = uretim_iptal_et()
+        answer_callback(callback_id, "İptal edildi" if ok else "Pencere kapalı")
+        _ekran_goster(ekran_metin_dugme(mesaj))
         return
     if callback_data == "uret_render_test":
         answer_callback(callback_id, "Render testi başlatılıyor...")

@@ -197,3 +197,65 @@ def test_canli_test_kapak_kaniti_loglar():
     """Yükleme sonrası 'kapak yüklendi mi + ilk kareye gömüldü mü' loglanmalı."""
     kaynak = (KOK / "main_pipeline.py").read_text(encoding="utf-8")
     assert "ilk kareye gömüldü" in kaynak
+
+
+# ---------------------------------------------------------------------------
+# 5) Canlı testten çıkan İÇERİK düzeltmeleri (döngü + kapak kanıtı)
+# ---------------------------------------------------------------------------
+
+
+def test_dongu_uygula_son_cumleye_uc_nokta_ekler():
+    """CANLI TEST BULGUSU: kalite raporu 68/100 ile KALDI, döngü puanı 0'dı.
+
+    Son cümle '...' ile bitmiyordu, ilk cümle bağlaçla başlamıyordu ve
+    öneri UYGULANMIYORDU (kanca motorundaki hatanın kardeşi)."""
+    from modules.senaryo_v7.loop_validator import dongu_uygula, loop_dogrula
+    from modules.senaryo_v7.models import Diyalog, Senaryo
+
+    senaryo = Senaryo(
+        diyaloglar=[Diyalog(metin="MAKARNAMI YİYEN BENMİŞİM"),
+                    Diyalog(metin="Nihayet! Kimmiş o"),
+                    Diyalog(metin="Umarım o hırsız cezayı alır")],
+        tts_metinleri=["MAKARNAMI YİYEN BENMİŞİM"],
+    )
+    assert loop_dogrula(senaryo).puan == 0
+    sonuc = dongu_uygula(senaryo)
+    assert sonuc.uygulandi is True
+    assert sonuc.puan >= 70, "uygulama sonrası döngü kabul eşiğini geçmeli"
+    assert senaryo.diyaloglar[-1].metin.endswith("...")
+    assert senaryo.diyaloglar[0].metin.split()[0].lower() in {
+        "ve", "ama", "fakat", "çünkü", "bu", "işte", "o", "dolayısıyla"
+    }
+    assert senaryo.tts_metinleri[0] == senaryo.diyaloglar[0].metin
+
+
+def test_dongu_uygula_zaten_kusursuzsa_dokunmaz():
+    from modules.senaryo_v7.loop_validator import dongu_uygula
+    from modules.senaryo_v7.models import Diyalog, Senaryo
+
+    senaryo = Senaryo(
+        diyaloglar=[Diyalog(metin="Ve herkes bunu sordu"),
+                    Diyalog(metin="Sonra kapı açıldı...")],
+    )
+    dongu_uygula(senaryo)
+    assert senaryo.diyaloglar[0].metin == "Ve herkes bunu sordu"
+    assert senaryo.diyaloglar[-1].metin == "Sonra kapı açıldı..."
+
+
+def test_dongu_kopru_onerisi_deterministik():
+    """Eskiden random.choice idi → aynı senaryo her koşuda farklı öneri."""
+    from modules.senaryo_v7.loop_validator import _kopru_cumlesi_uret
+
+    a = _kopru_cumlesi_uret("Bir şey oldu", "Kapı açıldı", False)
+    b = _kopru_cumlesi_uret("Bir şey oldu", "Kapı açıldı", False)
+    assert a == b
+
+
+def test_kapak_yukleme_basarisizligi_sessizce_yutulmaz(tmp_path, monkeypatch, capsys):
+    """Canlı testte log 'kapak yüklendi' diyordu; başarısızlık SESSİZDİ."""
+    from modules import youtube_upload as yu
+
+    ok = yu._kapak_yukle("vid", str(tmp_path / "yok.jpg"), "tok")
+    assert ok is False
+    cikti = capsys.readouterr().out
+    assert "Kapak dosyası yok" in cikti

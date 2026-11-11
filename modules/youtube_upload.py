@@ -162,6 +162,9 @@ def arsive_ekle(dosya_adi: str, baslik: str, senaryo: dict, video_id: str):
         "kanca_formu": senaryo.get("kanca_formu", ""),
         "kanca_ab": senaryo.get("kanca_ab", ""),
         "kanca_puan": senaryo.get("kanca_puan"),
+        # Kapak kanıtı (2026-11-11): YouTube'a gerçekten yüklendi mi?
+        "kapak_dosyasi": senaryo.get("kapak_dosyasi", ""),
+        "kapak_yuklendi": senaryo.get("kapak_yuklendi"),
         "hook_ust_bant": senaryo.get("hook_ust_bant", ""),
     }
     arsiv.append(kayit)
@@ -401,11 +404,19 @@ def _ilk_yorum_at(video_id: str, yorum_metni: str, access_token: str) -> bool:
 
 
 def _kapak_yukle(video_id: str, kapak_dosyasi: str, access_token: str) -> bool:
+    """Kapak görselini YouTube'a yükler (thumbnails.set).
+
+    2026-11-11 canlı test düzeltmesi: başarısızlık SESSİZCE yutuluyordu ve
+    log her durumda "kapak yüklendi" diyordu. Artık sebep yazılır ve sonuç
+    pakete işlenir (`kapak_yuklendi`).
+    """
     if not kapak_dosyasi or not Path(kapak_dosyasi).exists():
+        print(f"[YouTube] ⚠️ Kapak dosyası yok: {kapak_dosyasi or '(boş)'}")
         return False
     try:
         veri = Path(kapak_dosyasi).read_bytes()
         if len(veri) > 2_000_000:
+            print(f"[YouTube] ⚠️ Kapak 2 MB sınırını aşıyor ({len(veri)} bayt)")
             return False
         resp = requests.post(
             f"{THUMB_URI}?videoId={video_id}",
@@ -417,10 +428,15 @@ def _kapak_yukle(video_id: str, kapak_dosyasi: str, access_token: str) -> bool:
             timeout=25,
         )
         if resp.status_code in (200, 201):
-            print("[YouTube] 🖼️ Videonun 1. karesinden seçilen profesyonel kapak yüklendi.")
+            print(f"[YouTube] 🖼️ Kapak yüklendi: {Path(kapak_dosyasi).name}")
             return True
-    except Exception:
-        pass
+        # 403: kanal doğrulanmamış / 400: geçersiz görsel → SEBEBİ YAZ
+        print(
+            f"[YouTube] ⚠️ Kapak yüklenemedi (HTTP {resp.status_code}): "
+            f"{resp.text[:200]}"
+        )
+    except Exception as e:
+        print(f"[YouTube] ⚠️ Kapak yükleme hatası: {str(e)[:150]}")
     return False
 
 
@@ -533,7 +549,9 @@ def video_yukle(senaryo_paketi: dict) -> str:
 
     time.sleep(3)
     kapak_yol = senaryo_paketi.get("kapak_dosyasi") or senaryo_paketi.get("kapak_yolu", "")
-    _kapak_yukle(video_id, kapak_yol, access_token)
+    kapak_ok = _kapak_yukle(video_id, kapak_yol, access_token)
+    senaryo_paketi["kapak_yuklendi"] = bool(kapak_ok)
+    senaryo_paketi["kapak_dosyasi"] = kapak_yol
     _ilk_yorum_at(video_id, sabit_yorum, access_token)
 
     yayin_durumu_kaydet(dosya_adi, video_id, baslik)

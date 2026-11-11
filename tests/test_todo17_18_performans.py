@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -26,14 +26,14 @@ def arsiv(monkeypatch, tmp_path):
 
 
 def _kayit(vid: str, saat_once: float, izlenme: dict | None = None, saat: int = 12) -> dict:
-    an = datetime(2026, 11, 10, saat, 0, tzinfo=timezone.utc) - timedelta(hours=saat_once)
+    an = datetime(2026, 11, 10, saat, 0, tzinfo=UTC) - timedelta(hours=saat_once)
     k = {"video_id": vid, "durum": "yayinda", "baslik": f"Video {vid}", "tarih": an.isoformat()}
     if izlenme:
         k["izlenme_snapshots"] = izlenme
     return k
 
 
-SIMDI = datetime(2026, 11, 10, 12, 0, tzinfo=timezone.utc)
+SIMDI = datetime(2026, 11, 10, 12, 0, tzinfo=UTC)
 
 
 def test_snapshot_zamani_gelmeyen_alinmaz(arsiv):
@@ -64,7 +64,11 @@ def test_alinmis_snapshot_tekrar_alinmaz(arsiv):
 def test_snapshot_guncelle_yazar(arsiv, monkeypatch):
     arsiv.write_text(json.dumps([_kayit("a", saat_once=2)]), encoding="utf-8")
     monkeypatch.setattr(pf, "izlenmeleri_oku", lambda idler: ({"a": 137}, ""))
-    sonuc = pf.snapshotlari_guncelle()
+    # TAKVİM BAĞIMSIZ (2026-11-11 düzeltmesi): fixture tarihi 2026-11-10 12:00
+    # sabit; "şimdi" gerçek saat olunca ertesi gün +24h de hak ediyor ve test
+    # yazılan=2 görüyordu. Snapshot zamanı açıkça verilir.
+    simdi = datetime(2026, 11, 10, 12, 0, tzinfo=UTC)
+    sonuc = pf.snapshotlari_guncelle(simdi=simdi)
     assert sonuc["yazilan"] == 1
     veri = json.loads(arsiv.read_text(encoding="utf-8"))
     assert veri[0]["izlenme_snapshots"]["+1h"]["izlenme"] == 137

@@ -422,6 +422,32 @@ async def arena_video_uret(video_no: int, output_dir: str = "bobi_tv/output") ->
     except Exception as e:
         print(f"[Kanca] Motor hatası (devam ediliyor): {str(e)[:120]}")
 
+    # 1.6. DÖNGÜ UYGULAMA (2026-11-11 canlı test bulgusu): kalite kapısı 68/100
+    #      ile KALDI çünkü döngü puanı 0'dı (son cümle "..." ile bitmiyor, ilk
+    #      cümle bağlaçla başlamıyor). Öneri üretiliyor ama UYGULANMIYORDU.
+    #      Burada düzeltilir; hemen ardından kalite kapısı yeniden puanlar.
+    #      Hata üretimi DURDURMAZ.
+    try:
+        from modules.senaryo_v7.loop_validator import dongu_uygula
+
+        senaryo_dict = paket.get("senaryo")
+        if isinstance(senaryo_dict, dict):
+            from modules.senaryo_v7.models import Senaryo
+
+            senaryo_obj = Senaryo.from_dict(senaryo_dict)
+            dongu = dongu_uygula(senaryo_obj)
+            if dongu.uygulandi:
+                # Düzeltilmiş diyalogları pakete geri yaz (TTS/render bunu okur)
+                senaryo_dict["diyaloglar"] = [d.to_dict() for d in senaryo_obj.diyaloglar]
+                if senaryo_obj.tts_metinleri:
+                    senaryo_dict["tts_metinleri"] = list(senaryo_obj.tts_metinleri)
+                print(
+                    f"[Döngü] ✅ Uygulandı — döngü puanı {dongu.puan}/100 "
+                    '(son cümle "...", ilk cümle bağlaçla)'
+                )
+    except Exception as e:
+        print(f"[Döngü] Uygulama hatası (devam ediliyor): {str(e)[:120]}")
+
     # 2. Kalite Kontrolü (YENİ)
     senaryo_raw = paket.get("senaryo", paket)
     try:

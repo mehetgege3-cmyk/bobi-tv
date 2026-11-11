@@ -33,6 +33,10 @@ class LoopDogrulamaSonuc:
     aciklama: str
     kopru_cumlesi: str | None = None
     sfx_offset_ms: int = 0
+    #: Öneri UYGULANDI mı (2026-11-11). Eskiden köprü cümlesi yalnız öneri
+    #: listesine yazılıyordu; senaryo hiç değişmiyordu — aynı kanca motorunda
+    #: bulunan "hesapla ama uygulama" hatasının kardeşi.
+    uygulandi: bool = False
 
 
 def loop_dogrula(senaryo: Senaryo) -> LoopDogrulamaSonuc:
@@ -142,6 +146,52 @@ def loop_dogrula(senaryo: Senaryo) -> LoopDogrulamaSonuc:
     )
 
 
+#: Köprü eklenirken kullanılan bağlaçlar (sırayla, rastgele DEĞİL — test edilebilir).
+KOPRU_BAGLACLARI = ("Ve", "Ama", "Bu yüzden", "İşte bu yüzden", "O yüzden", "Dolayısıyla")
+
+
+def dongu_uygula(senaryo: Senaryo) -> LoopDogrulamaSonuc:
+    """Döngüyü KUSURSUZLAŞTIRIR: son cümleye "..." ekler, ilk cümleye bağlaç verir.
+
+    Neden (2026-11-11 canlı test bulgusu): kalite raporu 68/100 ile KALDI ve
+    döngü puanı 0/100'dü — son cümle "..." ile bitmiyordu, ilk cümle bağlaçla
+    başlamıyordu. Öneri üretiliyor ama UYGULANMIYORDU; render/QC bunu
+    engellemediği için video yine yayına gitti (kalitesiz döngü = izleyici
+    videoyu baştan izlemez → izlenme süresi düşer → algoritma dağıtmaz).
+
+    Kanca motoruyla aynı ilke: ölç, düzelt, TEKRAR ölç.
+    """
+    diyaloglar = getattr(senaryo, "diyaloglar", None) or []
+    if len(diyaloglar) < 2:
+        return loop_dogrula(senaryo)
+
+    # 1) Son cümle "..." ile bitmiyorsa ekle (mevcut noktalamayı koru)
+    son = str(diyaloglar[-1].metin or "").rstrip()
+    if not son.endswith("..."):
+        temel = son.rstrip(".!?… ")
+        diyaloglar[-1].metin = f"{temel}..."
+
+    # 2) İlk cümle bağlaçla başlamıyorsa köprü bağlacı ekle
+    ilk = str(diyaloglar[0].metin or "").strip()
+    kucuk = ilk.lower()
+    baglaclar = ("ve ", "ama ", "fakat ", "çünkü ", "bu yüzden ", "işte bu yüzden ",
+                 "o yüzden ", "dolayısıyla ", "bu nedenle ", "bu sayede ",
+                 "öyle ki ", "hatta ", "üstelik ", "ayrıca ")
+    if ilk and not kucuk.startswith(baglaclar):
+        # Deterministik seçim: senaryo içeriğine göre (rastgele değil)
+        baglac = KOPRU_BAGLACLARI[len(ilk) % len(KOPRU_BAGLACLARI)]
+        diyaloglar[0].metin = f"{baglac} {ilk}"
+        # Konuşulan metin listesi varsa o da güncellenir (TTS bunu okur)
+        tts = list(getattr(senaryo, "tts_metinleri", None) or [])
+        if tts and str(tts[0]).strip() == ilk:
+            tts[0] = diyaloglar[0].metin
+            senaryo.tts_metinleri = tts
+
+    sonuc = loop_dogrula(senaryo)
+    sonuc.uygulandi = True
+    return sonuc
+
+
 def _gecis_akici_mi(son_cumle: str, ilk_cumle: str) -> bool:
     """
     Son → ilk cümle geçişinin dilbilgisel ve anlamsal akıcılığını kontrol et.
@@ -217,9 +267,9 @@ def _kopru_cumlesi_uret(
             "O yüzden",
             "Dolayısıyla",
         ]
-        import random
-
-        kopru = random.choice(kopru_baglaclar)
+        # Deterministik seçim (eskiden random.choice idi → test edilemez,
+        # aynı senaryo her koşuda farklı öneri veriyordu).
+        kopru = kopru_baglaclar[len(son_temiz) % len(kopru_baglaclar)]
         return f"{son_temiz}... {kopru} {ilk_temiz}"
 
 

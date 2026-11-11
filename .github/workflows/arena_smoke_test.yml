@@ -86,12 +86,22 @@ jobs:
           report = Path("arena-diagnostics/report.json")
           if report.exists():
               data = json.loads(report.read_text(encoding="utf-8"))
+              cevap = (data.get("answerExcerpt") or "").strip()
+              if cevap:
+                  cevap_blok = "### 💬 Arena'nın cevabı\n\n> " + cevap + "\n\n"
+              else:
+                  cevap_blok = (
+                      "### 💬 Arena'nın cevabı\n\n_Cevap metni yok "
+                      "(gönderim/oturum aşamasında durdu; aşağıdaki verdict'e bak). _\n\n"
+                  )
               summary.write_text(
                   f"## Arena Smoke Test Sonucu\n\n"
                   f"- **Verdict:** `{data.get('verdict')}` (exit `{data.get('exitCode')}`)\n"
                   f"- **Not:** {data.get('note') or '-'}\n"
-                  f"- **Adım sayısı:** {len(data.get('steps', []))}\n\n"
-                  f"Detaylar `arena-diagnostics` artifact'ında (report.json + adım bazlı PNG/DOM).\n",
+                  f"- **Gönderilen prompt:** {data.get('promptLength', 0)} karakter\n\n"
+                  + cevap_blok
+                  + f"Tam cevap `arena-diagnostics/report.json` içinde (`answer` alanı). "
+                    f"Adım sayısı: {len(data.get('steps', []))}.\n",
                   encoding="utf-8",
               )
           else:

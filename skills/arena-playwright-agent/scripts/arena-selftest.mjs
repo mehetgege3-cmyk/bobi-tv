@@ -34,7 +34,7 @@ import {
   acceptConsent,
   composerText,
 } from './arena-dom.mjs';
-import { buildCleanArenaCookie, sanitizeCookieJsonText } from './arena-ask.mjs';
+import { buildCleanArenaCookie, sanitizeCookieJsonText, extractCleanAnswer } from './arena-ask.mjs';
 
 const PROMPT = process.env.PROMPT || "Merhaba, lütfen sadece 'pong' yanıtını ver.";
 const ARENA_URL = process.env.ARENA_URL || 'https://arena.ai/agent/';
@@ -53,6 +53,12 @@ const report = {
   exitCode: null,
   verdict: null,
   note: '',
+  // KULLANICI SORUSU (2026-11-11): "Action'da cevap gelecek mi?"
+  // Önceden yalnız "gövde büyüdü mü" ölçülüyordu; Cevabın KENDİSİ hiçbir yere
+  // yazılmıyordu. Artık Arena'nın dönen metni kırpılıp rapora yazılır ve
+  // job summary'de gösterilir (çerez değeri yine yazılmaz).
+  answer: '',
+  answerExcerpt: '',
   cookies: [], // yalnız ad + uzunluk
   steps: [],
 };
@@ -117,6 +123,23 @@ function prepareCleanCookie() {
     return buildCleanArenaCookie(parsed);
   } catch (e) {
     finish(1, 'cookie-yapilandirma-hatasi', `Temiz çerez üretilemedi: ${e.message}`);
+  }
+}
+
+/**
+ * Arena'nın dönen metnini rapora yaz (kırpılmış).
+ * Neden: kullanıcı "Action'da cevap gelecek mi?" diye sordu — verdict tek
+ * başına bunu göstermiyordu.
+ */
+function cevabi_kaydet(bodyText) {
+  try {
+    const temiz = extractCleanAnswer(bodyText, PROMPT) || '';
+    report.answer = temiz.slice(0, 4000);
+    report.answerExcerpt = temiz.replace(/\s+/g, ' ').trim().slice(0, 400);
+    if (!temiz) report.note = (report.note || '') + ' (cevap metni ayrıştırılamadı)';
+  } catch (e) {
+    report.answerExcerpt = '';
+    log(`cevap ayrıştırma hatası: ${e.message}`);
   }
 }
 
@@ -236,11 +259,13 @@ async function main() {
     }
     if (sawGrowth && stableTicks >= 4) {
       await snapshot(page, '09-cevap-alindi', `growth=${body.length - baseline} chars`);
+      cevabi_kaydet(body);
       finish(0, 'basarili', `Uçtan uca çalıştı; gövde ${body.length - baseline} karakter büyüdü.`);
     }
     if (bitti && body.length > baseline + 40) {
       sawGrowth = true;
       await snapshot(page, '09-cevap-alindi-bitti-isareti', `growth=${body.length - baseline} chars`);
+      cevabi_kaydet(body);
       finish(0, 'basarili', "Uçtan uca çalıştı; 'Was this task successful?' işareti görüldü.");
     }
   }

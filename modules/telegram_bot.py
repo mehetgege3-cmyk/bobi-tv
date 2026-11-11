@@ -112,6 +112,9 @@ CALLBACK_DERINLIK: dict[str, int] = {
     "panelleri_temizle": 1,
     "rapor_7gun": 2,
     "kuyruk_liste": 2,
+    "kuyruk_at_onay": 3,
+    "kuyruk_at_uygula": 3,
+    "kuyruk_geri_al": 2,
     "ay:gecmis": 2,
     "sistem_goster": 2,
     "ay:g": 2,
@@ -1823,6 +1826,87 @@ def ekran_sistem() -> tuple[str, list[list[dict[str, Any]]]]:
     return "\n".join(satirlar), butonlar
 
 
+def ekran_kuyruk() -> tuple[str, list[list[dict[str, Any]]]]:
+    """📦 Stok (kuyruk) ekranı (TODO 20) — sebep dağılımı, yaş, deneme sayısı.
+
+    Metin `modules/kuyruk_yonetimi.panel_metni`den gelir; sayı uydurulmaz,
+    bozuk kayıt silinmez, kuyruk boşsa bunu açıkça söyler.
+    """
+    from modules.kuyruk_yonetimi import ozet, panel_metni
+
+    satirlar = [panel_metni(), ""]
+    o = ozet()
+    butonlar: list[list[dict[str, Any]]] = []
+    if o["toplam"]:
+        # Riskli işlem (atma) önce onay ekranından geçer — tek adımda silme YOK.
+        butonlar.append(
+            [
+                {"text": "🗑️ Hepsini at", "callback_data": "kuyruk_at_onay"},
+                {"text": "🔄 Yenile", "callback_data": "kuyruk_liste"},
+            ]
+        )
+    else:
+        # Kuyruk boşken de geri alınabilir: çöp kutusu boşsa dürüst mesaj döner.
+        butonlar.append([{"text": "↩️ Geri al", "callback_data": "kuyruk_geri_al"}])
+    butonlar.append(list(GERI_MENUSU))
+    return "\n".join(satirlar).rstrip(), butonlar
+
+
+def ekran_kuyruk_at_onay() -> tuple[str, list[list[dict[str, Any]]]]:
+    """Kuyruğu boşaltma ONAY ekranı — kaç kayıt, geri alınabilir mi."""
+    from modules.kuyruk_yonetimi import onay_metni
+
+    butonlar = [
+        [
+            renkli_buton("✅ Onayla", "kuyruk_at_uygula", "onay"),
+            renkli_buton("✖️ Vazgeç", "kuyruk_liste", "vazgec"),
+        ],
+        list(GERI_MENUSU),
+    ]
+    return onay_metni(), butonlar
+
+
+def ekran_kuyruk_at_uygula() -> tuple[str, list[list[dict[str, Any]]]]:
+    """Onaylanan atma işlemini UYGULAR (taşır) ve sonucu dürüstçe yazar."""
+    from modules.kuyruk_yonetimi import toplu_at
+
+    sonuc = toplu_at(None)
+    if sonuc["atilan"] == 0:
+        metin = "ℹ️ <b>Atılacak kayıt yok</b>\n\nKuyruk zaten boş."
+    else:
+        metin = (
+            f"🗑️ <b>{sonuc['atilan']} kayıt stoktan atıldı</b>\n\n"
+            "SİLİNMEDİ: <code>archive/atilan/</code> altına taşındı.\n"
+            "Yanlış tıkladıysan '↩️ Geri al' ile döndürebilirsin."
+        )
+        if sonuc["basarisiz"]:
+            metin += f"\n\n⚠️ {sonuc['basarisiz']} kayıt taşınamadı (YAPILMADI)."
+    butonlar = [
+        [
+            {"text": "↩️ Geri al", "callback_data": "kuyruk_geri_al"},
+            {"text": "📦 Kuyruk", "callback_data": "kuyruk_liste"},
+        ],
+        list(GERI_MENUSU),
+    ]
+    return metin, butonlar
+
+
+def ekran_kuyruk_geri_al() -> tuple[str, list[list[dict[str, Any]]]]:
+    """Son atılan kaydı kuyruğa geri koyar (yanlış tıklama telafisi)."""
+    from modules.kuyruk_yonetimi import geri_al
+
+    sonuc = geri_al()
+    if sonuc["geri_alinan"]:
+        metin = f"↩️ <b>{sonuc['geri_alinan']} kayıt geri alındı</b>\n\nStok yeniden görünüyor."
+    else:
+        metin = f"ℹ️ <b>Geri alınacak kayıt yok</b>\n\nSebep: {sonuc['sebep'] or BILINMIYOR}."
+    butonlar = [
+        [{"text": "📦 Kuyruk", "callback_data": "kuyruk_liste"}],
+        list(GERI_MENUSU),
+    ]
+    return metin, butonlar
+
+
 def ekran_rapor() -> tuple[str, list[list[dict[str, Any]]]]:
     """İstatistik + Kalite + Yükleme tek ekranda (ana menü sadeleşmesi)."""
     metin = f"📈 <b>BOBİ TV Rapor</b>\n\n{get_stats_text()}\n\n{get_quality_text()}\n\n{get_quota_text()}"
@@ -1832,8 +1916,12 @@ def ekran_rapor() -> tuple[str, list[list[dict[str, Any]]]]:
             {"text": "🔄 Yenile", "callback_data": "rapor_goster"},
         ],
         [
-            {"text": "← Geri", "callback_data": "menu_main"},
+            {"text": "📦 Kuyruk", "callback_data": "kuyruk_liste"},
             {"text": "⚙️ Ayarlar", "callback_data": "ay:kok"},
+        ],
+        [
+            {"text": "← Geri", "callback_data": "menu_main"},
+            {"text": "🏠 Menü", "callback_data": "menu_main"},
         ],
     ]
     return metin, butonlar
@@ -2002,6 +2090,23 @@ def _handle_callback_icerde(callback_data: str, callback_id: str, kullanici_id: 
     if callback_data == "menu_main":
         answer_callback(callback_id)
         _ekran_goster(ekran_ana())
+        return
+    if callback_data == "kuyruk_liste":
+        answer_callback(callback_id)
+        _ekran_goster(ekran_kuyruk())
+        return
+    if callback_data == "kuyruk_at_onay":
+        # TODO 13 kuralı: riskli işlem önce ONAY ekranından geçer.
+        answer_callback(callback_id)
+        _ekran_goster(ekran_kuyruk_at_onay())
+        return
+    if callback_data == "kuyruk_at_uygula":
+        answer_callback(callback_id, "Kuyruk boşaltılıyor...")
+        _ekran_goster(ekran_kuyruk_at_uygula())
+        return
+    if callback_data == "kuyruk_geri_al":
+        answer_callback(callback_id, "Geri alınıyor...")
+        _ekran_goster(ekran_kuyruk_geri_al())
         return
     if callback_data == "rapor_goster":
         answer_callback(callback_id, "Rapor yükleniyor...")

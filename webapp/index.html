@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="dark light" />
+<!-- Güvenlik: dış kaynak YOK. Tüm stil/JS satır içi; CSP benzeri katı politik. -->
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; connect-src 'self'" />
+<title>BOBİ TV · Mini App</title>
+<style>
+  :root {
+    --bg: #0b0f14;
+    --kart: #141b23;
+    --kart2: #1b242e;
+    --cizgi: #26313d;
+    --metin: #e8eef5;
+    --soluk: #93a3b5;
+    --iyi: #35c759;
+    --uyari: #ffb020;
+    --kotu: #ff453a;
+    --vurgu: #4aa8ff;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f4f7fa; --kart: #ffffff; --kart2: #eef3f8; --cizgi: #d8e2ec;
+      --metin: #10161d; --soluk: #5a6b7d;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; padding: 16px 14px 28px;
+    background: var(--bg); color: var(--metin);
+    font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  header h1 { font-size: 19px; margin: 0; letter-spacing: .2px; }
+  .rozet {
+    font-size: 11px; padding: 3px 8px; border-radius: 999px;
+    background: rgba(74,168,255,.15); color: var(--vurgu); font-weight: 600;
+  }
+  .altbilgi { color: var(--soluk); font-size: 12px; margin: 0 0 16px; }
+  section { margin-bottom: 16px; }
+  h2 {
+    font-size: 13px; text-transform: uppercase; letter-spacing: .8px;
+    color: var(--soluk); margin: 0 0 8px; font-weight: 700;
+  }
+  .kart {
+    background: var(--kart); border: 1px solid var(--cizgi);
+    border-radius: 14px; padding: 14px;
+  }
+  .izgara { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .olcu { background: var(--kart2); border-radius: 12px; padding: 12px; }
+  .olcu .etiket { font-size: 12px; color: var(--soluk); }
+  .olcu .deger { font-size: 26px; font-weight: 700; margin-top: 2px; }
+  .olcu .birim { font-size: 12px; color: var(--soluk); font-weight: 500; }
+  .bilinmiyor { color: var(--soluk); font-size: 20px; font-weight: 600; }
+  ul { list-style: none; margin: 0; padding: 0; }
+  li { padding: 9px 0; border-bottom: 1px solid var(--cizgi); font-size: 13px; }
+  li:last-child { border-bottom: 0; }
+  .satir { display: flex; justify-content: space-between; gap: 8px; }
+  .satir span:last-child { color: var(--soluk); white-space: nowrap; }
+  .ok { color: var(--iyi); }
+  .uy { color: var(--uyari); }
+  .no { color: var(--kotu); }
+  .cubuklar { display: flex; align-items: flex-end; gap: 6px; height: 92px; margin-top: 6px; }
+  .cubuk { flex: 1; background: var(--kart2); border-radius: 6px; position: relative; height: 100%; }
+  .cubuk > i {
+    position: absolute; bottom: 0; left: 0; right: 0; border-radius: 6px;
+    background: linear-gradient(180deg, var(--vurgu), #2b74b8); min-height: 2px;
+  }
+  .cubuk > b { position: absolute; bottom: -18px; left: 0; right: 0; text-align: center;
+    font-size: 10px; color: var(--soluk); font-weight: 500; }
+  .trend { padding-bottom: 20px; }
+  .serit {
+    display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px;
+    background: var(--kart2); border-radius: 10px; font-size: 13px; margin-bottom: 8px;
+  }
+  .serit .zaman { color: var(--soluk); font-size: 12px; white-space: nowrap; }
+  .dipnot { color: var(--soluk); font-size: 12px; margin-top: 10px; }
+  .rozet-uyari {
+    display: inline-block; font-size: 11px; padding: 3px 8px; border-radius: 999px;
+    background: rgba(53,199,89,.15); color: var(--iyi); font-weight: 600; margin-top: 8px;
+  }
+  button {
+    width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--cizgi);
+    background: var(--kart2); color: var(--metin); font-size: 14px; font-weight: 600;
+  }
+  .hata { color: var(--kotu); font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="baslik">🎬 BOBİ TV</h1>
+  <span class="rozet">salt okunur</span>
+</header>
+<p class="altbilgi" id="guncelleme">Güncelleme: bilinmiyor</p>
+
+<section>
+  <h2>Bugün</h2>
+  <div class="izgara">
+    <div class="olcu">
+      <div class="etiket">Üretilen</div>
+      <div class="deger" id="uretilen">bilinmiyor</div>
+    </div>
+    <div class="olcu">
+      <div class="etiket">Yayında</div>
+      <div class="deger" id="yayinda">bilinmiyor</div>
+    </div>
+  </div>
+  <div class="kart" style="margin-top:10px">
+    <div class="satir"><span>Günlük yükleme tavanı</span><span class="ok" id="tavan">YOK</span></div>
+    <div class="satir"><span>Stok (kuyruk)</span><span id="stok">bilinmiyor</span></div>
+  </div>
+</section>
+
+<section>
+  <h2>Son 7 gün</h2>
+  <div class="kart trend">
+    <div class="cubuklar" id="trend"></div>
+    <div class="dipnot" id="trend-not">Veri yok</div>
+  </div>
+</section>
+
+<section>
+  <h2>Stok dağılımı</h2>
+  <div class="kart"><ul id="kuyruk-liste"><li>bilinmiyor</li></ul></div>
+</section>
+
+<section>
+  <h2>Son işlemler (denetim)</h2>
+  <div id="denetim"><div class="kart"><span class="fildokuz">bilinmiyor</span></div></div>
+</section>
+
+<section>
+  <h2>Notlar</h2>
+  <div class="kart">
+    <div class="dipnot">
+      Bu ekran <b>salt okunur</b>: buradan üretim başlatılmaz, video silinmez.
+      Yazma işlemleri Telegram panelinde; her biri onay ekranından geçer ve
+      denetim kaydına yazılır.
+    </div>
+    <span class="rozet-uyari">Üretilen her video yüklenir — tavan yok</span>
+  </div>
+</section>
+
+<section>
+  <button id="yenile" type="button">🔄 Yenile</button>
+  <div class="dipnot" id="durum"></div>
+</section>
+
+<script>
+(function () {
+  "use strict";
+
+  var VERI_YOLU = "veri/mini_app_ozet.json";
+  var TR_GUN = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
+
+  // XSS savunması: dış veri ASLA HTML olarak enjekte edilmez (yalnız textContent).
+  function metin(el, deger) {
+    if (!el) return;
+    el.textContent = deger === null || deger === undefined || deger === "" ? "bilinmiyor" : String(deger);
+  }
+
+  function sayi(el, deger) {
+    if (!el) return;
+    if (deger === null || deger === undefined || isNaN(deger)) {
+      el.textContent = "bilinmiyor";
+      el.className = "deger bilinmiyor";
+      return;
+    }
+    el.textContent = String(deger);
+    el.className = "deger";
+  }
+
+  function temizle(el) {
+    while (el && el.firstChild) el.removeChild(el.firstChild);
+  }
+
+  function satir_olustur(sol, sag, sinif) {
+    var li = document.createElement("li");
+    var s = document.createElement("div");
+    s.className = "satir";
+    var a = document.createElement("span");
+    a.textContent = sol;
+    var b = document.createElement("span");
+    b.textContent = sag;
+    if (sinif) b.className = sinif;
+    s.appendChild(a); s.appendChild(b);
+    li.appendChild(s);
+    return li;
+  }
+
+  function ciz(veri) {
+    var bugun = (veri && veri.bugun) || {};
+    sayi(document.getElementById("uretilen"), bugun.uretilen);
+    sayi(document.getElementById("yayinda"), bugun.yayinda);
+
+    var kuyruk = (veri && veri.kuyruk) || {};
+    metin(document.getElementById("stok"),
+          kuyruk.toplam === null || kuyruk.toplam === undefined ? "bilinmiyor" : kuyruk.toplam + " video");
+
+    var sinirlar = (veri && veri.sinirlar) || {};
+    var tavan = document.getElementById("tavan");
+    if (sinirlar.gunluk_yukleme_tavani === null) {
+      tavan.textContent = "YOK";
+      tavan.className = "ok";
+    } else {
+      tavan.textContent = String(sinirlar.gunluk_yukleme_tavani);
+      tavan.className = "";
+    }
+
+    metin(document.getElementById("guncelleme"),
+          veri && veri.guncelleme ? "Güncelleme: " + String(veri.guncelleme).slice(0, 16).replace("T", " ") : "Güncelleme: bilinmiyor");
+
+    // --- trend çubukları ---
+    var trendEl = document.getElementById("trend");
+    var notEl = document.getElementById("trend-not");
+    temizle(trendEl);
+    var seri = (veri && veri.trend7) || null;
+    if (!seri || !seri.length) {
+      notEl.textContent = "Veri yok — sayı uydurulmuyor.";
+    } else {
+      var azami = Math.max.apply(null, seri.concat([1]));
+      var bugunTarih = new Date();
+      for (var i = 0; i < seri.length; i++) {
+        var kutu = document.createElement("div");
+        kutu.className = "cubuk";
+        var dolgu = document.createElement("i");
+        dolgu.style.height = Math.round((seri[i] / azami) * 100) + "%";
+        kutu.appendChild(dolgu);
+        var etiket = document.createElement("b");
+        var d = new Date(bugunTarih.getTime() - (seri.length - 1 - i) * 86400000);
+        etiket.textContent = TR_GUN[d.getDay()];
+        kutu.appendChild(etiket);
+        kutu.title = seri[i] + " video";
+        trendEl.appendChild(kutu);
+      }
+      var toplam = seri.reduce(function (a, b) { return a + b; }, 0);
+      notEl.textContent = "Toplam " + toplam + " video · günlük ort. " + (toplam / seri.length).toFixed(1);
+    }
+
+    // --- stok dağılımı ---
+    var liste = document.getElementById("kuyruk-liste");
+    temizle(liste);
+    var dagilim = (kuyruk && kuyruk.sebep_dagilimi) || {};
+    var anahtarlar = Object.keys(dagilim);
+    if (!anahtarlar.length) {
+      liste.appendChild(satir_olustur("Bekleyen video yok", "0"));
+    } else {
+      var ETIKET = { kota: "YouTube kotası", gecici: "Geçici hata", kalici: "Kalıcı hata", bilinmiyor: "Bilinmiyor" };
+      for (var j = 0; j < anahtarlar.length; j++) {
+        var k = anahtarlar[j];
+        liste.appendChild(satir_olustur(ETIKET[k] || k, String(dagilim[k])));
+      }
+    }
+
+    // --- denetim ---
+    var denetimEl = document.getElementById("denetim");
+    temizle(denetimEl);
+    var kayitlar = (veri && veri.denetim) || [];
+    if (!kayitlar.length) {
+      var bos = document.createElement("div");
+      bos.className = "kart";
+      bos.textContent = "Kayıt yok (henüz geri alınamaz işlem yapılmadı).";
+      denetimEl.appendChild(bos);
+    } else {
+      for (var n = 0; n < kayitlar.length; n++) {
+        var kayit = kayitlar[n] || {};
+        var serit = document.createElement("div");
+        serit.className = "serit";
+        var zaman = document.createElement("span");
+        zaman.className = "zaman";
+        zaman.textContent = String(kayit.zaman || "").replace("T", " ");
+        var olay = document.createElement("span");
+        var sonuc = String(kayit.sonuc || "");
+        olay.className = sonuc === "ok" ? "ok" : (sonuc === "bos" ? "" : "uy");
+        olay.textContent = (sonuc === "ok" ? "✅ " : sonuc === "bos" ? "• " : "⚠️ ") + String(kayit.olay || "bilinmiyor");
+        serit.appendChild(zaman);
+        serit.appendChild(olay);
+        denetimEl.appendChild(serit);
+      }
+    }
+  }
+
+  function durum_yaz(mesaj, hata) {
+    var el = document.getElementById("durum");
+    if (!el) return;
+    el.textContent = mesaj;
+    el.className = hata ? "dipnot hata" : "dipnot";
+  }
+
+  function yukle() {
+    durum_yaz("Yükleniyor…", false);
+    fetch(VERI_YOLU + "?t=" + Date.now(), { cache: "no-store" })
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      })
+      .then(function (veri) {
+        ciz(veri);
+        durum_yaz("Veri güncel: " + new Date().toLocaleTimeString("tr-TR"), false);
+      })
+      .catch(function (e) {
+        ciz(null);
+        durum_yaz("Veri okunamadı (" + e.message + ") — sayı uydurulmuyor.", true);
+      });
+  }
+
+  document.getElementById("yenile").addEventListener("click", yukle);
+
+  // Telegram WebApp varsa başlığı ve tema ipucunu al (yoksa normal tarayıcı).
+  if (window.Telegram && window.Telegram.WebApp) {
+    try {
+      window.Telegram.WebApp.ready();
+      window.Telegram.WebApp.expand();
+      var ad = window.Telegram.WebApp.initDataUnsafe;
+      if (ad && ad.user && ad.user.first_name) {
+        durum_yaz("Merhaba " + ad.user.first_name + " · salt okunur görünüm", false);
+      }
+    } catch (e) { /* Mini App yoksa sessiz geç */ }
+  }
+
+  yukle();
+})();
+</script>
+</body>
+</html>

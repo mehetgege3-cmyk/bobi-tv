@@ -14,6 +14,7 @@ on:
       - "BOBİ TV v6.0 — Uçtan Uca Kalite Testi"
       - "BOBİ TV — Haftalık Performans Raporu"
       - "Arena Smoke Test — Tanılama (manuel tetik)"
+      - "Mini App verisi (salt okunur özet)"
     types: [completed]
 
 concurrency:

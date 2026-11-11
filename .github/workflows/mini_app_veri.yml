@@ -1,0 +1,63 @@
+name: Mini App verisi (salt okunur özet)
+
+# TODO 31: Mini App statik bir sayfa (GitHub Pages). Veri dosyası buradan tazelenir.
+# Secret KULLANMAZ (yalnız arşiv/kuyruk/denetim dosyalarını okur) → ifşa riski yok.
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'   # üretim kadansıyla aynı; GitHub cron gecikirse zararsız
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mini-app-veri
+  cancel-in-progress: true
+
+jobs:
+  ozet-uret:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Repo'yu çek
+        uses: actions/checkout@v4
+
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Özeti üret
+        run: |
+          python - <<'PYEOF'
+          # Tek doğruluk kaynağı: arşiv + kuyruk + denetim. Sayı UYDURULMAZ.
+          import sys
+          from pathlib import Path
+
+          sys.path.insert(0, str(Path.cwd()))
+          from modules.mini_app_veri import yaz
+
+          veri = yaz()
+          print(f"Mini App özeti: {veri.get('guncelleme')} · bugun={veri.get('bugun')}")
+          if veri.get("yazma_hatasi"):
+              print(f"::error::Özet yazılamadı: {veri['yazma_hatasi']}")
+              sys.exit(1)
+          PYEOF
+
+      - name: Değişikliği commit et
+        run: |
+          git config user.name "BOBİ TV Bot"
+          git config user.email "bobi-tv-bot@users.noreply.github.com"
+          git add webapp/veri/mini_app_ozet.json
+          if git diff --staged --quiet; then
+            echo "Değişiklik yok"
+            exit 0
+          fi
+          git commit -m "📱 Mini App verisi [$(date -u +%Y-%m-%dT%H:%M)] [skip ci]"
+          # Push kaybı SESSİZ olmaz: Mini App bayat veri gösteriyorsa burada görünür.
+          if ! git push origin main; then
+            echo "::error::Mini App verisi push edilemedi — sayfa bayat veri gösterir"
+            exit 1
+          fi

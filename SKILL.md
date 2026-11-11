@@ -20,7 +20,7 @@ geçirmesini, YouTube Shorts için hazırlamasını ve kullanıcı tarafından
 yetkilendirilmiş koşullarda yayımlamasını tanımlar.
 
 BOBİ'nin ana hedefi YouTube kanalının abone sayısını büyütmektir. Günlük
-üretim hedefi GUNLUK_HEDEF (varsayılan 1) ile GUNLUK_MAKS (24) arasındadır; 'günde 5 video' veya 'her 15 dakika' GARANTİ DEĞİLDİR. GitHub Actions cron'u ('*/10 * * * *') güvenilir DEĞİLDİR — eldeki kanıta göre '*/15' fiilen günde yalnızca 1-2 kez çalıştırıldı. Üretim GitHub runner kapasitesi, YouTube kotası ve kalite kontrolüyle sınırlıdır; kota dolunca koşu sys.exit(0) ile atlanır. Teknik olarak mümkün olmayan üretim veya yayın başarıyla tamamlanmış gibi gösterilemez. Yayın performansına dayalı otomatik video silme etkinleştirilmişse bu geri alınamaz bir işlemdir; yalnızca yapılandırılmış eşik ve OAuth yetkisi doğrulandığında uygulanır.
+üretim hedefi GUNLUK_HEDEF'tir ve GÜNLÜK YÜKLEME TAVANI YOKTUR (kota kaldırıldı, 2026-11-11); 'günde 5 video' veya 'her 15 dakika' GARANTİ DEĞİLDİR. GitHub Actions cron'u ('*/10 * * * *') güvenilir DEĞİLDİR — eldeki kanıta göre '*/15' fiilen günde yalnızca 1-2 kez çalıştırıldı. Üretim GitHub runner kapasitesi ve kalite kontrolüyle sınırlıdır; günlük yükleme tavanı YOK, koşu kota yüzünden atlanmaz (yalnızca YouTube'un kendi 403 quotaExceeded hatasında video stoğa alınır). Teknik olarak mümkün olmayan üretim veya yayın başarıyla tamamlanmış gibi gösterilemez. Yayın performansına dayalı otomatik video silme etkinleştirilmişse bu geri alınamaz bir işlemdir; yalnızca yapılandırılmış eşik ve OAuth yetkisi doğrulandığında uygulanır.
 
 Bu belge bir **ajan davranış ve iş akışı tanımıdır**. Tek başına çalışan
 bir yazılım, YouTube hesabı, API bağlantısı, bulut sunucusu veya yayın
@@ -228,16 +228,13 @@ Workflow cron'u (`hourly_production.yml`) bu sabitle **aynı olmak zorundadır**
 | Kavram | Ne belirler | Değer | Sınır |
 |---|---|---|---|
 | **KADANS_DK** | Ne sıklıkta *deneneceği* (zamanlama, ücretsiz) | **15 dk** | — |
-| **GUNLUK_MAKS** | Günde kaç *yükleme* yapılacağı (kota tüketir) | varsayılan **6** | Kota: 10.000 / 1.600 = **6** (Google sabiti) |
-| **GUNLUK_HEDEF** | Günde *en az* kaç yayın hedeflendiği | varsayılan **2** | ≤ GUNLUK_MAKS |
+| **GUNLUK_HEDEF** | Günde *en az* kaç yayın hedeflendiği | varsayılan **2** | — |
+| **GUNLUK_MAKS** | **YOK** — kaldırıldı (2026-11-11) | — | **Tavan yok** |
 
-15 dakikalık kadans günde **96 fırsat** yaratır (24×60/15). YouTube kotası
-günde en fazla **6 yükleme** izin verir. Yani:
-
-- Günün ilk ~90 dakikasında 6 yükleme yapılır (kota dolar).
-- Kalan **90 fırsat no-op (yeşil)** döner — atıl kapasite değil, **platformun sabit sınırı**.
-- **Fiili yükleme aralığı** = 24 sa / GUNLUK_MAKS → 6 için **240 dakika (4 saatte 1)**,
-  4 için **360 dakika (6 saatte 1)**.
+15 dakikalık kadans günde **96 fırsat** yaratır (24×60/15) ve bu fırsatların
+tamamı yükleme yapabilir: **günlük yükleme tavanı yoktur** (eski `GUNLUK_MAKS=6`
+kaldırıldı — katalog, state, pipeline, panel ve workflow'dan silindi).
+**Fiili yükleme aralığı** = 24 sa / günlük yükleme sayısı → 96 için **15 dakika**.
 
 Bu fark **gizlenmez**: log, Telegram paneli ve bu doküman aynı cümleyi söyler
 (`modules/kadans.py → kota_uyarisi()`).
@@ -724,8 +721,9 @@ Bu bölüm, önceki bölümlerdeki eski/yanlış iddiaları geçerli durumla de�
 - Cron: `hourly_production.yml` → `'*/10 * * * *'` (her 10 dakika).
 - **GitHub cron güvenilir DEĞİLDİR**: yüksek yükte atlar; eldeki kanıta göre
   `*/15` fiilen günde 1-2 kez çalıştı. Kesin frekans vaadi VERİLMEZ.
-- Kota sınırı KORUNUR: `main_pipeline.py` günlük `GUNLUK_MAKS`'a ulaşınca
-  `sys.exit(0)` ile atlar. 10dk cron kota dolunca no-op (yeşil) döner.
+- **Günlük yükleme tavanı YOK** (2026-11-11): `main_pipeline.py` `GUNLUK_MAKS`
+  diye bir sınır uygulamaz, koşuyu kota yüzünden atlamaz. Yalnızca YouTube'un
+  gerçek 403 quotaExceeded hatasında video stoğa yazılır ve kota açılınca yüklenir.
 - Kota durumu `bobi_tv/state/youtube_quota.json`'a yazılır; `videos.json`'a
   kota/kuyruk/hata durumu YAZILMAZ (orada yalnızca geçerli `video_id` kaydı).
 

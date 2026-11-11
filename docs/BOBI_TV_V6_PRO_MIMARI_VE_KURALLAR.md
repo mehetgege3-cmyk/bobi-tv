@@ -234,15 +234,14 @@ Bu bölüm **bağlayıcı kuraldır** (normatif). Çelişki hâlinde bu bölüm 
 
 ### K2 — Kadans ≠ yükleme sayısı
 
-15 dakika **zamanlamadır**, yükleme kotası değildir. YouTube `videos.insert`
-≈ 1.600 birim, günlük kota 10.000 birim → **günde en fazla 6 yükleme**
-(Google sabiti, değiştirilemez). 15 dakikalık kadans günde 96 **fırsat** yaratır;
-kota dolduktan sonraki 90 fırsat **no-op (yeşil)** döner.
+15 dakika **zamanlamadır**, yükleme kotası değildir. **Günlük yükleme tavanı
+YOKTUR** (eski `GUNLUK_MAKS=6` tavanı 2026-11-11'de kullanıcı kararıyla
+kaldırıldı). 15 dakikalık kadans günde 96 **fırsat** yaratır ve üretilen her
+video yüklenir.
 
-- Fiili yükleme aralığı = `24*60 / GUNLUK_MAKS` → 6 için **240 dk (4 saatte 1)**.
-- Bu fark logda, Telegram panelinde ve dokümanda **aynı cümleyle** yazılır
-  (`kota_uyarisi()`); hiçbir yerde "her 15 dakikada bir video yayınlanıyor"
-  denmez — çünkü kota buna izin vermez.
+- Fiili yükleme aralığı = `24*60 / günlük yükleme` → 96 için **15 dk**.
+- Tek engel YouTube'un kendi 403 quotaExceeded hatasıdır: o an video stoğa
+  alınır, kota açılınca (UTC 00:00) yüklenir — üretim durmaz.
 
 ### K3 — GUNLUK_HEDEF günlük toplamdır (koşu başına DEĞİL)
 

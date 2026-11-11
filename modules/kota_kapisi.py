@@ -1,8 +1,9 @@
 """BOBİ TV — Kota Kapısı (TODO 10).
 
-- GUNLUK_MAKS tavanı: YouTube 10.000 birim/gün, videos.insert ≈ 1.600 birim →
-  günde en fazla 6 yükleme. Tavan katalogdan gelir (KOTA_TAVANI) ve kodda
-  ayrıca dayatılır (min(deger, 6) + log uyarısı — ayar_katalogu.etkin_gunluk_maks).
+- GÜNLÜK YÜKLEME TAVANI YOK (kullanıcı kararı 2026-11-11: "kotayı kaldır").
+  Eskiden GUNLUK_MAKS=6 tavanı vardı ve bu modül kapı olarak kullanılıyordu;
+  kapı workflow'dan ve pipeline'dan KALDIRILDI. Modül yalnızca YouTube API
+  hatasını sınıflandıran YARDIMCI fonksiyonlar için duruyor.
 - KOTA_DOLU_DAVRANIS:
     sessiz_dur (varsayılan) → exit 0 — C2'deki exit(1) self-repair fırtınasını
         (günde ~144 deneme + main'e otonom push) durdurur.

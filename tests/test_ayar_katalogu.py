@@ -10,8 +10,6 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-import pytest
-
 # Repo kökünü import yoluna ekle (tests/ altından çalıştırılırken)
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -57,15 +55,14 @@ def test_hicbir_secretin_varsayilan_degeri_yok() -> None:
             assert a["tip"] == "sadece_goruntule", a["anahtar"]
 
 
-def test_gunluk_maks_seceneklerinin_maksimumu_6() -> None:
-    """P4: 10000/1600 = 6 — katalogda 7+ seçenek YOK, varsayılan tavanın altında."""
-    a = ayar_getir("GUNLUK_MAKS")
-    assert a is not None, "GUNLUK_MAKS katalogda yok"
-    secenekler = a["secenekler"]
-    assert isinstance(secenekler, list) and secenekler
-    sayilar = [int(s) for s in secenekler]
-    assert max(sayilar) == 6, f"tavan 6 olmalı, gelen: {sayilar}"
-    assert KOTA_TAVANI == 6
+def test_gunluk_maks_kaldirildi_kota_yok() -> None:
+    """KULLANICI KARARI (2026-11-11): "Kota 6 istemiyorum, kotayı kaldır."
+
+    Eski spec: katalogda GUNLUK_MAKS olmalı ve seçenekleri 6'yı aşmamalı.
+    Yeni spec: yükleme tavanı KAVRAMI YOK → ayar katalogdan kaldırıldı.
+    """
+    assert ayar_getir("GUNLUK_MAKS") is None, "kota ayarı katalogda kalmamalı"
+    # Matematik sabiti bilgi olarak durabilir ama SINIR olarak kullanılmaz.
     assert YOUTUBE_GUNLUK_KOTA_BIRIM // VIDEO_INSERT_MALIYETI == KOTA_TAVANI
 
 
@@ -179,12 +176,13 @@ def test_cikarilan_ayarlar_katalogda_yok() -> None:
 
 
 def test_grup_ayarlari_sayilari_beklentiyle_uyumlu() -> None:
-    """Panel ana ekranındaki sayaçlar: tetikleme 3, üretim&kota 5, sistem 6 secret.
+    """Panel ana ekranındaki sayaçlar: tetikleme 3, üretim&kota 4, sistem 6 secret.
 
-    2026-11-11: üretim&kota 4 → 5 (KADANS_DK eklendi — "her 15 dakikada bir" kararı).
+    2026-11-11 (1): üretim&kota 4 → 5 (KADANS_DK eklendi).
+    2026-11-11 (2): 5 → 4 — kullanıcı "kotayı kaldır" dedi, GUNLUK_MAKS çıktı.
     """
     assert len(grup_ayarlari("tetikleme")) == 3
-    assert len(grup_ayarlari("uretim_kota")) == 5
+    assert len(grup_ayarlari("uretim_kota")) == 4
     assert len(grup_ayarlari("temizlik")) == 3
     sistem = grup_ayarlari("sistem")
     assert len(sistem) == 6
@@ -196,17 +194,20 @@ def test_olmayan_ayar_none_doner() -> None:
     assert "YUKLEME_ATLA" in anahtarlar()
 
 
-def test_etkin_gunluk_maks_tavani_dayatir_ve_uyarir(capsys: pytest.CaptureFixture[str]) -> None:
-    """TODO 10: env/state 24 bile derse etkin değer 6'dır + log uyarısı çıkar."""
-    assert etkin_gunluk_maks(24) == 6
-    assert etkin_gunluk_maks("96") == 6
+def test_etkin_gunluk_maks_kirpmaz_kota_yok() -> None:
+    """KULLANICI KARARI (2026-11-11): "Kota 6 istemiyorum, kotayı kaldır."
+
+    Eski spec: 24 → 6'ya kırpılır ve uyarı loglanır.
+    Yeni spec: KIRPMA YOK. Değer ne verilirse o (yalnız negatif → 0).
+    Kırpma olsaydı yükleme yine 6'da kesilirdi — istenen tam olarak bunun
+    ortadan kalkması.
+    """
+    assert etkin_gunluk_maks(24) == 24
+    assert etkin_gunluk_maks("96") == 96
     assert etkin_gunluk_maks(6) == 6
     assert etkin_gunluk_maks(3) == 3
-    assert etkin_gunluk_maks("abc") == KOTA_TAVANI
+    assert etkin_gunluk_maks("abc") == 0
     assert etkin_gunluk_maks(-7) == 0
-    cikti = capsys.readouterr().out
-    assert "kota tavanını aşıyor" in cikti, "kırpma sessiz olmamalı (log uyarısı şart)"
-    assert "6" in cikti
 
 
 def test_temizlik_uyari_metni_durstur_ve_h1_referansli() -> None:

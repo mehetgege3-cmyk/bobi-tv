@@ -7,14 +7,14 @@ on:
     # anlamına GELMEZ. Ölçüm (2026-11-10): '*/10' fiilen günde 1-2 koşuya düştü.
     # Birincil tetikleyici DIŞ DAĞITICI olmalı (cron-job.org, 15 dk) — bkz.
     # docs/TETIKLEYICI_KURULUM.md. Bu cron yalnızca YEDEKTİR.
-    # NOT: 15 dk = günde 96 koşu, ama YouTube kotası günde en fazla 6 YÜKLEME
-    # yapar (10000/1600). Yükleme sayısını GUNLUK_MAKS belirler; kadans yalnızca
+    # NOT: 15 dk = günde 96 koşu. GÜNLÜK YÜKLEME TAVANI YOK (kullanıcı kararı
+    # 2026-11-11: "kotayı kaldır"). Kadans yalnızca
     # "ne zaman deneneceğini" belirler. Kalan koşular no-op (yeşil) döner.
     - cron: '*/15 * * * *'
   workflow_dispatch:
     inputs:
       force:
-        description: 'Zorla çalıştır (kota kontrolünü atla)'
+        description: 'Zorla çalıştır (kota kontrolü artık yok — zorunlu üretim)'
         required: false
         default: 'false'
   repository_dispatch:
@@ -144,64 +144,24 @@ jobs:
           python -m pip install -q -r requirements.txt
           python -m playwright install --with-deps chromium
 
-      - name: Kota durumunu kontrol et
-        id: kota
-        env:
-          FORCE_TETIK: ${{ steps.tetik.outputs.force }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          python - << 'PYEOF'
-          # TODO 10: kota kapısı. Davranış ayarı state'ten köprüyle gelir:
-          #   sessiz_dur (varsayılan) → exit 0 — C2 self-repair fırtınası biter
-          #   hata → exit 1 — kırmızı tik (eski davranış, bilinçli seçim)
-          import os
-          import sys
-
-          from modules.kota_kapisi import kota_dolu_bildir, kota_dolu_cikis_kodu, kota_kontrol_yap
-
-          force = str(os.environ.get("FORCE_TETIK", "")).strip().lower() in ("true", "1")
-          sonuc = kota_kontrol_yap(hedef=int(os.environ.get("GUNLUK_HEDEF", "1") or "1"))
-          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
-              for anahtar, deger in sonuc.items():
-                  f.write(f"{anahtar}={deger}\n")
-          print(f"Kota kapısı: {sonuc}")
-          # =============================================================
-          # KULLANICI KARARI (2026-11-11): "her 15 dakikada video üretilsin
-          # ve yüklensin; başarısızsa sebebine bakalım, kotaysa stok olsun."
-          #
-          # ESKİ DAVRANIŞ (sabotaj): kota dolunca bu adım koşuyu sonlandırıp
-          # KOŞUYU BİTİRİYORDU → pipeline hiç çalışmıyor, hiç video üretilmiyordu.
-          # Belirti: "Üret"e basıyorsun, video çıkmıyor.
-          #
-          # YENİ: kota dolu olsa bile ÜRETİM DEVAM EDER. Video üretilir, yükleme
-          # denenir; kota reddederse video STOĞA yazılır (kuyruk), kota açılınca
-          # yeniden render ALINMADAN yüklenir. Kota artık üretimi durdurmaz.
-          # =============================================================
-          # ÖNEMLİ (2026-11-11 canlı hata): bu adım `devam` çıktısını ESKİDEN
-          # yalnız kota_doldu=true iken yazıyordu. kota_doldu=false iken çıktı
-          # BOŞ kalıyor, `steps.kota.outputs.devam == 'true'` false oluyor ve
-          # "Pipeline'ı çalıştır" adımı ATLANIYORDU → koşu "success" görünüyor
-          # ama HİÇ video üretilmiyordu (kullanıcının gördüğü "video çıkmıyor").
-          # Artık devam HER DURUMDA true: kota yalnız YÜKLEMEYİ sınırlar.
-          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
-              f.write("devam=true\n")
-
-          if sonuc["kota_doldu"] == "true" and not force:
-              kota_dolu_bildir()
-              # Davranış ayarı korunur (rapor/log): hata → kırmızı tik istenirse
-              # yükleme başarısızlığı pipeline'ın çıkış koduna yansır.
-              davranis = os.environ.get("KOTA_DOLU_DAVRANIS", "sessiz_dur")
-              print(
-                  f"Kota dolu — ÜRETİM DEVAM EDİYOR, videolar stoğa alınacak "
-                  f"(KOTA_DOLU_DAVRANIS={davranis}, çıkış kodu yükleme sonucuna bağlı)."
-              )
-              # devam=true yukarıda yazıldı; yükleme kendi kota kontrolünü yapar.
-          PYEOF
+      # =================================================================
+      # KOTA ADIMI KALDIRILDI — KULLANICI KARARI (2026-11-11):
+      # "Kota 6 istemiyorum, kotayı kaldır; hem Telegram'da hem GitHub'ta
+      #  her yerden kaldır."
+      #
+      # Eskiden burada "Kota durumunu kontrol et" adımı vardı: günlük yükleme
+      # tavanını (6) hesaplar, doluysa videoları stoğa alırdı. Artık:
+      #   • Günlük yükleme tavanı YOK.
+      #   • Üretim ile yükleme arasında kota kapısı YOK.
+      #   • Tek engel YouTube'un GERÇEK API hatasıdır (403 quotaExceeded);
+      #     o durumda video stoğa yazılır ve kota açılınca (UTC 00:00) yüklenir.
+      # Kaldırılan adımın hiçbir çıktısına başka adım bağlı değildir
+      # (pipeline/klasör koşulları render testine ve force bayrağına bakar).
+      # =================================================================
 
       - name: Klasör yapısını hazırla
-        # Kota artık ÜRETİMİ durdurmaz (devam her zaman true yazılır); force
-        # bayrağı da klasör hazırlığını garanti eder.
+        # Üretimi durduran kota kapısı YOK; force bayrağı klasör hazırlığını
+        # garanti eder.
         if: steps.rtest.outputs.render_test != '1' || steps.tetik.outputs.force == 'true'
         run: |
           mkdir -p bobi_tv/{queue,assets/{fonts,sfx},production/{scripts/arena,tts,render},output,archive/published,logs,config}
@@ -399,7 +359,8 @@ jobs:
           fi
 
       - name: Hata bildirimi
-        if: failure() && steps.kota.outputs.kota_doldu != 'true'
+        # Kota kaldırıldı → "kota doldu" istisnası yok; her hatada bildir.
+        if: failure()
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}

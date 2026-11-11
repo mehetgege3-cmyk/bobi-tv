@@ -29,8 +29,8 @@ ikisini ayrı tutar, çünkü biri ücretsiz, diğeri platform sınırına bağl
 | Kavram | Anlamı | Değer | Sınır |
 |---|---|---|---|
 | **KADANS_DK** | Ne sıklıkta **deneneceği** (zamanlama) | **15 dk** | Yok — ücretsiz |
-| **GUNLUK_MAKS** | Günde kaç **yükleme** yapılacağı | varsayılan **6** | **Kota: 10.000 / 1.600 = 6** |
-| **GUNLUK_HEDEF** | Günde **en az** kaç yayın | varsayılan **2** | ≤ GUNLUK_MAKS |
+| **GUNLUK_HEDEF** | Günde **en az** kaç yayın | varsayılan **2** | — |
+| **GUNLUK_MAKS** | **KALDIRILDI** (2026-11-11) | — | **Tavan yok** |
 
 ### Matematik (Google'ın sabiti, değiştirilemez)
 
@@ -54,8 +54,8 @@ vardır); o güne kadar 6 tavanı geçerlidir.
 
 Hiçbir yerde "her 15 dakikada bir video **yayınlanıyor**" denmez. Doğru cümle:
 
-> "Her 15 dakikada bir üretim denenir; kota günde 6 yükleme izin verdiği için
-> gerçekte 4 saatte 1 video yayınlanır."
+> "Her 15 dakikada bir üretim denenir; günlük yükleme tavanı olmadığı için
+> üretilen her video yüklenir."
 
 Bu cümle `modules/kadans.py → kota_uyarisi()` tarafından üretilir ve log ile
 Telegram panelinde aynen görünür.
@@ -110,13 +110,11 @@ Kota 6'da keser → 378 koşu boşa, her biri video render maliyeti
 
 ```python
 kalan_hedef = max(0, GUNLUK_HEDEF - bugunki)
-kalan_kota  = max(0, GUNLUK_MAKS  - bugunki)
-bu_tur      = min(kalan_hedef, kalan_kota)   # 0 ise no-op, exit 0
+bu_tur      = kalan_hedef                    # kota tavanı YOK — kırpma yok
 ```
 
-Kadans sıkılaşsa bile **günlük yükleme sayısı değişmez**. Yalnızca 6 yüklemeyi
-günün hangi saatlerinde yaptığın değişir (15 dk kadansta ilk 90 dakikada,
-saatlikte 6 saate yayılmış).
+Kadans sıkılaşınca **günlük yükleme sayısı da artar** (tavan yok): yükleme
+gün içine yayılır, herhangi bir tavana çarpmaz.
 
 **Çıkış kodu da düzeltildi:** eski kod `basarili_toplam >= GUNLUK_HEDEF` idi;
 bu turda 1 video yükleyip hedef 4 ise koşu **kırmızı** oluyordu → 96 kırmızı
@@ -131,8 +129,8 @@ tik + 96 otonom self-repair denemesi. Artık günlük toplama bakıyor.
 | Ayar | Seçenekler | Varsayılan | Etkisi |
 |---|---|---|---|
 | `KADANS_DK` | 15 / 30 / 60 | **15** | Workflow cron'u da değişmeli (kod değişikliği) |
-| `GUNLUK_HEDEF` | 1 / 2 / 4 | **2** | Günlük toplam hedef (kota tavanına kırpılır) |
-| `GUNLUK_MAKS` | 2 / 5 / 6 | **6** | Kota tavanı — 6'yı geçemez (Google sabiti) |
+| `GUNLUK_HEDEF` | 1 / 2 / 4 | **2** | Günlük toplam hedef (kırpılmaz) |
+| `GUNLUK_MAKS` | — | — | **Kaldırıldı** — günlük yükleme tavanı yok |
 | `KOTA_DOLU_DAVRANIS` | `sessiz_dur` / `hata` | **sessiz_dur** | Dolu → yeşil no-op / kırmızı tik |
 
 > ⚠️ `KADANS_DK` panelden değiştirmek workflow cron'unu **değiştirmez** —
@@ -157,8 +155,8 @@ sayı **kopyalanmaz** — kopyalanan sayı zamanla çürür.
 
 ## 7. Bilinen sınırlar
 
-1. **Günde 6 yükleme** — kota sabiti. 15 dakikalık kadans bunu değiştirmez.
-   Kota artırımı için YouTube API başvurusu gerekir.
+1. **Günlük yükleme tavanı YOK** (2026-11-11'de kaldırıldı). Tek sınır
+   YouTube'un kendi API hatasıdır (403 quotaExceeded → video stoğa alınır).
 2. **GitHub cron güvenilmez** — dış dağıtıcı kurulmadan kadans kâğıt üzerinde kalır.
 3. **Render maliyeti** — no-op turlar kodun kota kapısına çarpıp `exit 0`
    yaptığı için ucuzdur, ama yine de bir runner açar (~30–60 sn).

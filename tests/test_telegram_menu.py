@@ -169,19 +169,24 @@ def test_bilinmeyen_callback_cokmeden_menuye_doner(monkeypatch: pytest.MonkeyPat
 
 
 def test_gecersiz_indeksli_uydurma_payload_uygulanmaz(monkeypatch: pytest.MonkeyPatch) -> None:
-    """`ay:v:GUNLUK_MAKS:99` — indeks katalog aralığı dışında → uygulanmaz, state yok."""
+    """`ay:v:GUNLUK_HEDEF:99` — indeks katalog aralığı dışında → uygulanmaz, state yok.
+
+    NOT (2026-11-11): GUNLUK_MAKS kaldırıldı ("kotayı kaldır" kararı); aynı
+    test sayı tipi kalan GUNLUK_HEDEF ile yürütülüyor.
+    """
     cagrilar = _takip_et(monkeypatch)
-    tb.handle_callback("ay:v:GUNLUK_MAKS:99", "cbz")
+    tb.handle_callback("ay:v:GUNLUK_HEDEF:99", "cbz")
     assert not tb.AYARLAR_STATE_YOLU.exists(), "uydurma indeks state'e yazılamaz"
     assert "BOBİ TV" in _son_panel_metni(cagrilar)
 
 
 def test_indeks_sunucuda_katalogdan_cozulur() -> None:
     """Şema sözleşmesi: callback_data İNDEKS taşır; değer yalnız sunucuda çözülür."""
-    a = ayar_getir("GUNLUK_MAKS")
+    a = ayar_getir("GUNLUK_HEDEF")
     assert a is not None
     deger, _ = tb._secenek_coz(a, 2)
-    assert deger == "6", "indeks 2 → katalog sırasındaki değer"
+    # GUNLUK_HEDEF secenekleri ["1","2","4"] → indeks 2 = "4"
+    assert deger == a["secenekler"][2], "indeks → katalog sırasındaki değer"
     deger_oob, sebep = tb._secenek_coz(a, 42)
     assert deger_oob is None and sebep
     yukleme_atla = ayar_getir("YUKLEME_ATLA")
@@ -203,7 +208,7 @@ def test_10_etkilesim_tek_mesaj_kurali(monkeypatch: pytest.MonkeyPatch) -> None:
     tiklamalar = [
         "ay:kok",
         "ay:g:uretim_kota",
-        "ay:s:GUNLUK_MAKS",
+        "ay:s:GUNLUK_HEDEF",
         "menu_main",
         "rapor_goster",
         "ay:kok",
@@ -324,9 +329,13 @@ def test_force_onay_ekrani_gercek_etkiyi_hesaplar(monkeypatch: pytest.MonkeyPatc
     cagrilar = _takip_et(monkeypatch)
     tb.handle_callback("ay:v:force:1", "cb1")
     metin = _son_panel_metni(cagrilar)
-    assert "Kota kapısını atla" in metin
-    assert "~1 yüklemeyi zorlar" in metin, "etki: GUNLUK_HEDEF varsayılanı 1"
-    assert "tavan 6" in metin
+    # SPEC DEĞİŞTİ (2026-11-11, kullanıcı: "kotayı kaldır"): onay metni artık
+    # "günlük sınırı aşar" demez; tavan olmadığı için "tavan 6" beklentisi de
+    # kaldırıldı. Etki yine GERÇEK hedeften hesaplanır (uydurma sayı yok).
+    assert "Zorla üretim" in metin
+    assert "~1 yükleme" in metin, "etki: GUNLUK_HEDEF varsayılanı 1"
+    assert "yükleme tavanı yok" in metin.lower()
+    assert "tavan 6" not in metin
     assert not tb.AYARLAR_STATE_YOLU.exists(), "onay ekranı HİÇBİR YAZMA yapmaz"
 
 
@@ -371,7 +380,7 @@ def test_dry_run_hicbir_yazma_yapmaz(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(ad, "kaydet", yazmamali)
     monkeypatch.setattr(ad, "commit_ve_yukle", commitmamali)
     tb.handle_callback("ay:test:force", "cb1")
-    tb.handle_callback("ay:test:GUNLUK_MAKS", "cb2")
+    tb.handle_callback("ay:test:GUNLUK_HEDEF", "cb2")
     metin = _son_panel_metni(cagrilar)
     assert "hiçbir dosyaya yazmadı" in metin
     assert not tb.AYARLAR_STATE_YOLU.exists()
@@ -521,12 +530,18 @@ def test_bekleyen_hala_basarısızsa_kuyruk_kalir(monkeypatch: pytest.MonkeyPatc
     assert ad.bekleyenleri_al(tb.BEKLEYEN_YOLU) is not None, "kuyruk temizlenmemeli"
 
 
-def test_kaynak_etiketi_duruma_gore_degisir() -> None:
-    _metin, butonlar = tb.ekran_ayar_detay("GUNLUK_MAKS")
-    metin = _metin
-    assert "6 (varsayılan)" in metin
-    ad.kaydet({"GUNLUK_MAKS": "5"}, tb.AYARLAR_STATE_YOLU)
-    metin2, _ = tb.ekran_ayar_detay("GUNLUK_MAKS")
+def test_kaynak_etiketi_duruma_gore_degisir(tmp_path) -> None:
+    """Kaynak etiketi katmanı doğru göstermeli: (varsayılan) vs (state).
+
+    NOT (2026-11-11): sabit "6" beklentisi GUNLUK_MAKS döneminden kalmaydı;
+    GUNLUK_HEDEF varsayılanı "1". Sabit sayı yerine katalog varsayılanı
+    kullanılıyor ki katalog değişince test yanlış kırılmasın.
+    """
+    varsayilan = ayar_getir("GUNLUK_HEDEF")["varsayilan"]
+    metin = tb.ekran_ayar_detay("GUNLUK_HEDEF")[0]
+    assert f"{varsayilan} (varsayılan)" in metin
+    ad.kaydet({"GUNLUK_HEDEF": "5"}, tb.AYARLAR_STATE_YOLU)
+    metin2, _ = tb.ekran_ayar_detay("GUNLUK_HEDEF")
     assert "5 (state)" in metin2
 
 
@@ -612,4 +627,6 @@ def test_rapor_ekrani_uc_bolumu_birlestirir(monkeypatch: pytest.MonkeyPatch) -> 
     cagrilar = _takip_et(monkeypatch)
     tb.handle_callback("rapor_goster", "cb1")
     metin = _son_panel_metni(cagrilar)
-    assert "İstatistik" in metin and "Kalite Raporu" in metin and "Kota" in metin
+    # SPEC DEĞİŞTİ (2026-11-11): raporun 3. bölümü artık "Kota" değil
+    # "Yükleme" — tavan kaldırıldı, bölüm sayıyı korur ("tavan YOK" yazar).
+    assert "İstatistik" in metin and "Kalite Raporu" in metin and "Yükleme" in metin

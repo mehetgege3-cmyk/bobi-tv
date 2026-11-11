@@ -48,7 +48,10 @@ def _gecici_git_repo(tmp_path: Path) -> tuple[Path, Path]:
 def test_yokluk_varsayilanlari_uyarisiz_dondurur(tmp_path: Path) -> None:
     degerler, uyarilar = ad.yukle(tmp_path / "yok.json")
     assert uyarilar == []
-    assert degerler["GUNLUK_MAKS"] == "6"
+    # GÜNCELLEME (2026-11-11, gerekçe): kullanıcı "kotayı kaldır" dedi →
+    # GUNLUK_MAKS katalogdan ÇIKARILDI, artık varsayılanı yok.
+    # Testin özü korunuyor: eksik dosyada varsayılanlar uyarısız döner.
+    assert "GUNLUK_MAKS" not in degerler, "kota ayarı katalogda kalmamalı"
     assert degerler["KOTA_DOLU_DAVRANIS"] == "sessiz_dur"
     assert degerler["MOD"] == "isindirma_saatlik"
 
@@ -60,7 +63,7 @@ def test_bozuk_json_cokmez_vey_ezmez_yedekler(tmp_path: Path) -> None:
     bozuk_icerik = '{"sur": 1, "guncelleme": "...", "ayarlar": {"GUNLUK_MA'
     yol.write_text(bozuk_icerik, encoding="utf-8")
     degerler, uyarilar = ad.yukle(yol)
-    assert degerler["GUNLUK_MAKS"] == "6", "varsayılana dönmeli"
+    assert "GUNLUK_MAKS" not in degerler, "kota ayarı varsayılana dönmemeli (kaldırıldı)"
     assert any("bozuk" in u for u in uyarilar)
     yedek = Path(str(yol) + ".bozuk")
     assert yedek.exists(), "bozuk dosya saklanmalı (EZME yok)"
@@ -71,7 +74,7 @@ def test_kok_dict_degilse_de_tolerans(tmp_path: Path) -> None:
     yol = tmp_path / "ayarlar.json"
     yol.write_text("[1, 2, 3]\n", encoding="utf-8")
     degerler, uyarilar = ad.yukle(yol)
-    assert degerler["GUNLUK_MAKS"] == "6"
+    assert "GUNLUK_MAKS" not in degerler
     assert uyarilar, "kök liste uyarı üretmeli"
 
 
@@ -82,18 +85,18 @@ def test_sema_surumu_farkliyse_uyar_ve_varsayilan(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     degerler, uyarilar = ad.yukle(yol)
-    assert degerler["GUNLUK_MAKS"] == "6", "farklı şema sürümü → varsayılan"
+    assert "GUNLUK_MAKS" not in degerler, "farklı şema sürümü → varsayılan"
     assert any("şema sürümü" in u for u in uyarilar)
 
 
 def test_aralik_disi_deger_reddedilir_varsayilan_doner(tmp_path: Path) -> None:
     yol = tmp_path / "ayarlar.json"
     yol.write_text(
-        json.dumps({"sur": 1, "guncelleme": "x", "ayarlar": {"GUNLUK_MAKS": "24", "MOD": "yok_boyle"}}),
+        json.dumps({"sur": 1, "guncelleme": "x", "ayarlar": {"GUNLUK_HEDEF": "99", "MOD": "yok_boyle"}}),
         encoding="utf-8",
     )
     degerler, uyarilar = ad.yukle(yol)
-    assert degerler["GUNLUK_MAKS"] == "6", "24 katalog seçeneği değil → varsayılan 6"
+    assert degerler["GUNLUK_HEDEF"] == "1", "99 aralık dışı → varsayılana döner"
     assert degerler["MOD"] == "isindirma_saatlik"
     assert any("aralık dışı" in u for u in uyarilar)
 
@@ -116,10 +119,11 @@ def test_state_env_varsayilan_onceligi(tmp_path: Path) -> None:
         json.dumps({"sur": 1, "guncelleme": "x", "ayarlar": {"GUNLUK_HEDEF": "2"}}),
         encoding="utf-8",
     )
-    env = {"GUNLUK_HEDEF": "4", "GUNLUK_MAKS": "5", "MOD": "normal"}
+    # GUNLUK_MAKS kaldırıldı (kota yok) → env önceliği başka bir sayı ayarıyla test edilir.
+    env = {"GUNLUK_HEDEF": "4", "KADANS_DK": "5", "MOD": "normal"}
     degerler, _ = ad.yukle(yol, env=env)
     assert degerler["GUNLUK_HEDEF"] == "2", "state env'i yener"
-    assert degerler["GUNLUK_MAKS"] == "5", "env state'te yoksa devreye girer"
+    assert degerler["KADANS_DK"] == "5", "env state'te yoksa devreye girer"
     assert degerler["MOD"] == "normal"
 
 
@@ -189,7 +193,7 @@ def test_kaydet_sayi_aralik_disini_duser(tmp_path: Path) -> None:
 
 def test_degisiklik_gecmise_yazilir_sema_tam(tmp_path: Path) -> None:
     yol = tmp_path / "ayar_gecmisi.jsonl"
-    ad.gecmise_ekle(42, "GUNLUK_MAKS", "24", "6", "telegram", yol)
+    ad.gecmise_ekle(42, "GUNLUK_HEDEF", "2", "1", "telegram", yol)
     ad.gecmise_ekle(42, "MOD", "normal", "isindirma_saatlik", "telegram", yol)
     kayitlar = ad.gecmisi_oku(10, yol)
     assert len(kayitlar) == 2
@@ -331,7 +335,9 @@ def test_env_satirlari_secretlari_icermez() -> None:
         "TELEGRAM_BOT_TOKEN=",
     ):
         assert yasak not in metin, f"köprü secret yazdı: {yasak}"
-    assert "GUNLUK_MAKS=6" in satirlar
+    # Kota ayarı kaldırıldı → env köprüsünde de yazılmamalı.
+    assert "GUNLUK_MAKS" not in " ".join(satirlar)
+    assert "GUNLUK_HEDEF=" in " ".join(satirlar)
     assert "KOTA_DOLU_DAVRANIS=sessiz_dur" in satirlar
     assert "MOD=isindirma_saatlik" in satirlar
 
@@ -342,7 +348,9 @@ def test_env_satirlari_state_degerini_tasir(tmp_path: Path) -> None:
     satirlar = ad.env_satirlari(degerler=ad.yukle(yol)[0])
     assert "GUNLUK_HEDEF=4" in satirlar
     assert "KOTA_DOLU_DAVRANIS=hata" in satirlar
-    assert "GUNLUK_MAKS=6" in satirlar, "state'te olmayan ayar varsayılanla geçer"
+    # Kota ayarı kaldırıldı → env köprüsünde de yazılmamalı.
+    assert "GUNLUK_MAKS" not in " ".join(satirlar)
+    assert "GUNLUK_HEDEF=" in " ".join(satirlar), "state'te olmayan ayar varsayılanla geçer"
 
 
 def test_env_satirlari_temizlik_ayarlarini_gecirir() -> None:
@@ -377,5 +385,5 @@ def test_ayarlar_json_baslangic_dosyasi_gecerli() -> None:
     assert veri["sur"] == 1
     assert isinstance(veri["ayarlar"], dict)
     degerler, uyarilar = ad.yukle(yol)
-    assert degerler["GUNLUK_MAKS"] == "6"
+    assert "GUNLUK_MAKS" not in degerler
     assert uyarilar == []

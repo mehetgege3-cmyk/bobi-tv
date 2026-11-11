@@ -51,7 +51,7 @@ jobs:
           ARENA_COOKIES_JSON: ${{ secrets.ARENA_COOKIES_JSON }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           GUNLUK_HEDEF: ${{ github.event.inputs.hedef || '2' }}
-          GUNLUK_MAKS: '20'
+          # GUNLUK_MAKS kaldırıldı — günlük yükleme tavanı YOK.
           MOD: 'manuel'
         run: |
           python main_pipeline.py

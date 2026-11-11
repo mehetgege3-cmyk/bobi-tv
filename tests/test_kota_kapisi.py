@@ -233,15 +233,16 @@ def _piline_bagla(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> _Any:
     return mp
 
 
-def test_pipeline_gunluk_maks_24_verilse_bile_etkin_6(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
+def test_pipeline_gunluk_maks_kirpilmaz(monkeypatch: pytest.MonkeyPatch) -> None:
+    """KULLANICI KARARI (2026-11-11): "Kota 6 istemiyorum, kotayı kaldır."
+
+    Eski spec: env 24 olsa bile etkin değer 6'ya kırpılır + uyarı loglanır.
+    Yeni spec: kırpma YOK — 6'ya sabitleme tam olarak kaldırılan davranıştı.
+    """
     monkeypatch.setenv("GUNLUK_MAKS", "24")
     mp: _Any = importlib.import_module("main_pipeline")
     importlib.reload(mp)
-    assert mp.GUNLUK_MAKS == 6, "env 24 bile derse etkin değer 6 olmalı"
-    cikti = capsys.readouterr().out
-    assert "kota tavanını aşıyor" in cikti, "kırpma sessiz olmamalı"
+    assert mp.GUNLUK_MAKS == 24, "kota tavanı kaldırıldı; değer kırpılmamalı"
 
 
 def test_pipeline_kota_dolu_sessiz_dur_exit0(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -289,15 +290,19 @@ def test_yukleme_atla_1_iken_yukleme_cagirilmaz(monkeypatch: pytest.MonkeyPatch,
 # ---------- workflow yüzü (TODO 10/11/12) ----------
 
 
-def test_workflow_kota_adimi_kapiyi_kullanir() -> None:
-    yazi = HOURLY.read_text(encoding="utf-8")
-    assert "kota_dolu_cikis_kodu" in yazi, "kota adımı davranış kapısını kullanmalı"
-    assert "kota_kontrol_yap" in yazi, "kota hesabı modülden gelmeli"
-    assert "KOTA_DOLU_DAVRANIS" in yazi
-    assert "sys.exit(1)" not in yazi.split("Kota durumunu kontrol et")[1].split("- name:")[0], (
-        "sabit exit(1) kaldırılmalı — davranış ayarından gelmeli"
-    )
+def test_workflow_kota_adimi_yok() -> None:
+    """KULLANICI KARARI (2026-11-11): "kotayı kaldır" → workflow'da kota kapısı YOK.
 
+    Eski spec: kota adımı modules/kota_kapisi'ni çağırmalıydı.
+    Yeni spec: adımın kendisi kaldırıldı. kota_kapisi modülü yalnız YARDIMCI
+    fonksiyonlar (gerçek API hatası sınıflandırma) için duruyor.
+    """
+    import yaml
+
+    kok = Path(__file__).resolve().parents[1]
+    veri = yaml.safe_load((kok / ".github/workflows/hourly_production.yml").read_text(encoding="utf-8"))
+    adimlar = list(veri["jobs"].values())[0]["steps"]
+    assert not any("Kota" in str(a.get("name", "")) for a in adimlar)
 
 def test_workflow_force_tuketimi_adimi_var() -> None:
     yazi = HOURLY.read_text(encoding="utf-8")

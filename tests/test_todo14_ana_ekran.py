@@ -25,7 +25,9 @@ def _ortam(monkeypatch, tmp_path):
 
 def test_ana_ekran_canli_ozet_icerir():
     metin, butonlar = tb.ekran_ana()
-    for parca in ("Bugün:", "Kota", "Stok", "Son koşu", "gecikme"):
+    # SPEC DEĞİŞTİ (2026-11-11, "kotayı kaldır"): "Kota" satırı yerine
+    # "Bugün yüklenen … (tavan YOK)" satırı var.
+    for parca in ("Bugün:", "Bugün yüklenen", "Stok", "Son koşu", "gecikme"):
         assert parca in metin, f"ana ekranda '{parca}' satırı yok"
     # 4 buton (2x2) korunur
     assert sum(len(s) for s in butonlar) == 4
@@ -44,17 +46,21 @@ def test_veri_yoksa_bilinmiyor_der_ve_ufak_sayi_uydurmaz(monkeypatch):
     assert tb.BILINMIYOR in metin
 
 
-def test_kota_doluysa_birincil_buton_durust(monkeypatch):
-    """Kota dolu → '🎬 Üret' yerine '⏳ Kota dolu' (yanıltıcı vaat yok)."""
-    monkeypatch.setattr(tb, "ekran_ana", tb.ekran_ana)  # dokunma
+def test_kota_dolu_diye_bir_durum_yok(monkeypatch):
+    """SPEC DEĞİŞTİ (2026-11-11, kullanıcı: "kotayı kaldır").
+
+    Eski spec: kota doluysa birincil buton "⏳ Kota dolu" olurdu.
+    Yeni spec: kota kavramı yok → kota_dolu_mu True dönse bile buton her zaman
+    "🎬 Üret"tir ve metinde "Kota DOLU" geçmez.
+    """
     import modules.kota_state as ks
 
     monkeypatch.setattr(ks, "kota_dolu_mu", lambda: True)
     metin, butonlar = tb.ekran_ana()
     etiketler = [b["text"] for satir in butonlar for b in satir]
-    assert "⏳ Kota dolu" in etiketler
-    assert "🎬 Üret" not in etiketler
-    assert "Kota DOLU" in metin
+    assert "🎬 Üret" in etiketler
+    assert "⏳ Kota dolu" not in etiketler
+    assert "Kota DOLU" not in metin
 
 
 def test_goreli_ilerleme_cubugu():

@@ -42,12 +42,16 @@ RISKLER: tuple[str, ...] = ("dusuk", "orta", "yuksek")
 # P4 — kota matematiği: YouTube 10.000 birim/gün, videos.insert ≈ 1.600 birim.
 from modules.kadans import (  # noqa: E402  (tek doğruluk kaynağı — modules/kadans.py)
     GUNLUK_YUKLEME_TAVANI,
-    VIDEO_INSERT_MALIYETI,
-    YOUTUBE_GUNLUK_KOTA_BIRIM,
+    # Re-export: eski kod/testler bu adları ayar_katalogu'ndan import ediyor.
+    VIDEO_INSERT_MALIYETI,  # noqa: F401
+    YOUTUBE_GUNLUK_KOTA_BIRIM,  # noqa: F401
 )
 
-#: Kota tavanı artık kadans modülünden gelir; burada KOPYALANMAZ.
-KOTA_TAVANI: int = GUNLUK_YUKLEME_TAVANI  # 6
+#: KULLANICI KARARI (2026-11-11): "Kota 6 istemiyorum, kotayı kaldır."
+#: Günlük yükleme tavanı ARTIK YOK — hiçbir kapı yüklemeyi sayıyla kesmez.
+#: KOTA_TAVANI yalnızca ESKİ kodun import kırılmaması için durur; hiçbir
+#: yerde sınır olarak kullanılmaz (aşağıdaki yorumlara bakın).
+KOTA_TAVANI: int = GUNLUK_YUKLEME_TAVANI  # SADECE bilgi — SINIR DEĞİL
 
 #: Temizlik grubunun ZORUNLU dürüstlük metni (panel bu metni aynen gösterir).
 #: 2026-11-11 düzeltmesi: eski metin "ETKİLEMEZ" diyordu — YANLIŞTI. Bu ayarlar
@@ -99,7 +103,7 @@ KATALOG: list[dict[str, Any]] = [
     },
     {
         "anahtar": "force",
-        "etiket": "Kota kapısını atla",
+        "etiket": "Zorla üretim",
         "grup": "tetikleme",
         "tip": "anahtar",
         "secenekler": None,
@@ -111,7 +115,8 @@ KATALOG: list[dict[str, Any]] = [
         "kalici": False,
         "etkili": True,
         "secret": False,
-        "aciklama": "1 iken kota kapısı bu koşuda devre dışı kalır. Tek kullanımlıktır: "
+        "aciklama": "1 iken render testi/atlanabilir ön kontroller yok sayılır ve üretim "
+        "zorlanır. Günlük yükleme tavanı yoktur (kota kaldırıldı). Tek kullanımlıktır: "
         "üretim workflow'u tükettikten sonra otomatik 0'a çeker.",
     },
     # ---------- Grup 2 — uretim_kota ----------
@@ -130,11 +135,10 @@ KATALOG: list[dict[str, Any]] = [
         "etkili": True,
         "secret": False,
         "aciklama": (
-            "Üretimin KAÇ DAKİKADA BİR DENENECEĞİ (zamanlama). Yükleme SAYISINI "
-            "belirlemez: YouTube kotası günde en fazla 6 yükleme yapar "
-            f"({YOUTUBE_GUNLUK_KOTA_BIRIM}/{VIDEO_INSERT_MALIYETI}). 15 dk → günde "
-            "96 fırsat; kota dolunca kalan fırsatlar no-op döner. Değiştirmek için "
-            "workflow cron'u da (docs/KADANS_15DK.md) güncellenmelidir."
+            "Üretimin KAÇ DAKİKADA BİR DENENECEĞİ (zamanlama). Günlük yükleme "
+            "tavanı YOK: 15 dk → günde 96 fırsat ve üretilen her video yüklenir. "
+            "Değiştirmek için workflow cron'u da (docs/KADANS_15DK.md) "
+            "güncellenmelidir."
         ),
     },
     {
@@ -152,27 +156,6 @@ KATALOG: list[dict[str, Any]] = [
         "etkili": True,
         "secret": False,
         "aciklama": "Her koşuda hedeflenen yükleme sayısı. Kota tavanını (6) aşamaz.",
-    },
-    {
-        "anahtar": "GUNLUK_MAKS",
-        "etiket": "Günlük üst sınır",
-        "grup": "uretim_kota",
-        "tip": "sayi",
-        "secenekler": ["2", "5", "6"],
-        "varsayilan": "6",
-        "min": 1,
-        "max": 6,
-        "env_adi": "GUNLUK_MAKS",
-        "risk": "orta",
-        "kalici": True,
-        "etkili": True,
-        "secret": False,
-        "aciklama": (
-            "Günlük yükleme tavanı (1-6). Serbest giriş — istediğin değeri yaz. "
-            "ÜST SINIR 6'dır çünkü YouTube kotası 10.000 birim, videos.insert 1.600 "
-            "birim: 6'dan fazlası her koşuda reddedilir. Kadans 15 dk olsa bile "
-            "günlük YÜKLEME sayısını bu ayar belirler."
-        ),
     },
     {
         "anahtar": "KOTA_DOLU_DAVRANIS",
@@ -447,20 +430,13 @@ def degistirilebilir_mi(ayar: dict[str, Any]) -> bool:
 
 
 def etkin_gunluk_maks(ham_deger: int | str | None) -> int:
-    """GUNLUK_MAKS tavan savunması (TODO 10): değer ne olursa olsun ≤ KOTA_TAVANI.
+    """Geriye dönük uyumluluk sarmalayıcı — ARTIK KIRPMA YAPMAZ.
 
-    Kota matematiği: 10000 birim / 1600 birim = 6 yükleme/gün. Tavanı aşan
-    değer sessizce değil, LOG uyarısıyla kırpılır. Bozuk/negatif değer → tavan.
+    KULLANICI KARARI (2026-11-11): "Kota 6 istemiyorum, kotayı kaldır."
+    Eski davranış değeri 6'ya kırpıyordu; bu bir YÜKLEME SINIRI yaratıyordu.
+    Artık değer ne verilirse o kullanılır (yalnız negatif değer 0'a çekilir).
     """
     try:
-        ham = int(str(ham_deger).strip())
+        return max(0, int(str(ham_deger).strip()))
     except (TypeError, ValueError):
-        print(f"::warning::GUNLUK_MAKS bozuk ({ham_deger!r}) — tavan {KOTA_TAVANI} kullanılıyor")
-        return KOTA_TAVANI
-    etkin = max(0, min(ham, KOTA_TAVANI))
-    if ham > KOTA_TAVANI:
-        print(
-            f"::warning::GUNLUK_MAKS={ham} kota tavanını aşıyor — "
-            f"etkin değer {etkin} yapıldı (10000/1600 = {KOTA_TAVANI})"
-        )
-    return etkin
+        return 0

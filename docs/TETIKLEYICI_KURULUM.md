@@ -74,7 +74,8 @@ o zaman dağıtıcı bozuk demektir.
 
 ## Kota kapısı notu
 
-Dış tetikleyici sıklığı artsa da üretim `GUNLUK_MAKS` ve kota state dosyası
-(`bobi_tv/state/youtube_quota.json`) ile sınırlandırılır; dağıtıcı çok sık çağırsa
-bile günlük tavan aşılmaz. `force: true` payload'ı bu kapıyı atlar — yalnızca
-elle, bilinçli kullanım içindir.
+Günlük yükleme tavanı **yoktur** (2026-11-11'de kaldırıldı): dağıtıcı ne kadar
+sık çağırırsa çağırsın üretimi kesen bir kota kapısı yoktur. Tek engel
+YouTube'un kendi 403 quotaExceeded hatasıdır; o an video stoğa alınır ve kota
+açılınca (UTC 00:00) yüklenir. `force: true` payload'ı yalnızca ön kontrolleri
+(render testi) atlar — yalnızca elle, bilinçli kullanım içindir.

@@ -19,7 +19,6 @@ GitHub Actions secrets:
 
 Workflow env vars:
 - `GUNLUK_HEDEF=1`
-- `GUNLUK_MAKS=96`
 - `MOD=isindirma_15dk`
 - `OTOMATIK_SIL_AKTIF=1`
 - `MIN_IZLENME_ESIGI=100`
@@ -47,4 +46,4 @@ Frame 0 testi: `ffprobe -select_streams v:0 -show_entries frame=pict_type,pts_ti
 - `siradaki_kategori()` arşivin son altı videosundaki kategorileri geriye atıp yeni bir kategori seçer. Kategori `videos.json` içine yazılır; geçmiş dosya adlarından eski kategori kayıtları da çıkarılır. Arena prompt'u seçilen kategoriye göre özel ortam/karakter ve yeni olay örgüsü ister.
 - Irk/ten rengi/etnik kökeni hedef alan aşağılayıcı içerik ve stereotipler üretilmez. Kültürler arası mizah, kimliği değil nazik gündelik yanlış anlaşılmaları konu alır.
 - Arena senaryosu tahmini 19 saniyenin altında kalırsa doğal ek replik çiftleri ters köşe öncesine yerleştirilir. `video_kalite_kontrol()` 15.0 saniyenin altındaki veya 59.5 saniyeyi aşan MP4'ü reddeder; reddedilen video yükleme aşamasına ulaşmaz.
-- `hourly_production.yml` hâlâ `*/15 * * * *`, `GUNLUK_HEDEF=1`, `GUNLUK_MAKS=96` ile çalışır. Gerçek yayın zamanlaması GitHub runner'ına ve YouTube yükleme kotasına bağlıdır.
+- `hourly_production.yml` hâlâ `*/15 * * * *` ve `GUNLUK_HEDEF=1` ile çalışır; `GUNLUK_MAKS` kaldırıldı (günlük yükleme tavanı yok). Gerçek yayın zamanlaması GitHub runner'ına ve YouTube yükleme kotasına bağlıdır.

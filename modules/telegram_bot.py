@@ -27,7 +27,6 @@ import requests
 import modules.ayar_deposu as ayar_deposu
 from modules.ayar_katalogu import (
     GRUPLAR,
-    KOTA_TAVANI,
     TEMIZLIK_UYARI,
     ayar_getir,
     degistirilebilir_mi,
@@ -592,21 +591,14 @@ def ekran_ana() -> tuple[str, list[list[dict[str, Any]]]]:
     'bilinmiyor' der — sayı UYDURULMAZ (mevcut felsefe korunur).
     """
     uretilen, yayinda = _bugun_arsiv_ozeti()
-    kota_dolu = False
-    try:
-        from modules.kota_state import kota_dolu_mu
-
-        kota_dolu = kota_dolu_mu()
-    except Exception:
-        kota_dolu = False
+    # KOTA KALDIRILDI (2026-11-11): kota_state okuması da kaldırıldı — ana
+    # ekranda "kota dolu" diye bir durum yok, gereksiz import da yok.
     kuyruk = Path("bobi_tv/queue")
     kuyruk_sayisi = len(list(kuyruk.glob("*.json"))) if kuyruk.exists() else 0
 
-    kota_satiri = (
-        f"⛔ Kota DOLU — video stoğa gidiyor ({kuyruk_sayisi} stokta)"
-        if kota_dolu
-        else f"✅ Kota açık — {_ilerleme_cubugu(yayinda / max(1, KOTA_TAVANI))} {yayinda}/{KOTA_TAVANI}"
-    )
+    # KULLANICI KARARI (2026-11-11): "Kota 6 istemiyorum, kotayı kaldır."
+    # Kota satırı ve ilerleme çubuğu KALDIRILDI — yükleme tavanı yok.
+    kota_satiri = f"🚀 Bugün yüklenen: {yayinda} (tavan YOK)"
     metin = (
         "🎬 <b>BOBİ TV</b>\n"
         f"🎥 Bugün: {uretilen} üretildi · {yayinda} yayında\n"
@@ -631,17 +623,9 @@ def ekran_ana() -> tuple[str, list[list[dict[str, Any]]]]:
 
 def get_main_menu_buttons() -> list[list[dict[str, Any]]]:
     """Ana menü: 6 düğmeden 4'e iner (TODO 3).
-    İstatistik + Kalite + Kota 'Rapor' altına girer."""
-    # AKILLI BİRİNCİL BUTON (TODO 14): kota doluysa "Üret" yanıltıcıdır —
-    # video yayına girmez, stoğa gider. Buton bunu dürüstçe söyler.
+    İstatistik + Kalite + Yükleme 'Rapor' altına girer."""
+    # KOTA KALDIRILDI: buton her zaman "🎬 Üret" — "kota dolu" durumu yok.
     uret_etiketi = "🎬 Üret"
-    try:
-        from modules.kota_state import kota_dolu_mu
-
-        if kota_dolu_mu():
-            uret_etiketi = "⏳ Kota dolu"
-    except Exception:
-        pass
     return [
         [
             {"text": "📊 Durum", "callback_data": "status_now"},
@@ -676,8 +660,6 @@ def _kota_birim_ozeti() -> str:
 
 
 def get_status_text() -> str:
-    from modules.kota_state import kota_dolu_mu
-
     arsiv = Path("bobi_tv/archive/videos.json")
     bugun = datetime.now(UTC).strftime("%Y-%m-%d")
     bugunki = 0
@@ -687,7 +669,6 @@ def get_status_text() -> str:
             bugunki = sum(1 for k in kayitlar if str(k.get("tarih", ""))[:10] == bugun)
         except Exception:
             pass
-    kota_durum = "🚫 DOLU" if kota_dolu_mu() else "✅ BOŞ"
     kuyruk = Path("bobi_tv/queue")
     kuyruk_sayisi = len(list(kuyruk.glob("*.json"))) if kuyruk.exists() else 0
     log_dosya = Path(f"bobi_tv/logs/{bugun}.log")
@@ -705,10 +686,8 @@ def get_status_text() -> str:
         f"📊 <b>BOBİ TV Sistem Durumu</b>\n\n"
         f"📅 Tarih: {bugun}\n"
         f"🎬 Bugün üretilen: {bugunki}\n"
-        f"🚧 Günlük tavan: {KOTA_TAVANI} yükleme (10000/1600 birim)\n"
+        f"🚀 Günlük yükleme tavanı: YOK (kota kaldırıldı)\n"
         f"📦 Kuyrukta: {kuyruk_sayisi} video\n"
-        f"🚫 YouTube kota: {kota_durum}\n"
-        f"{_kota_birim_ozeti()}\n"
         f"⏰ Son çalışma: {son_calisma}\n\n"
         f"⚙️ Pipeline: {PIPELINE_SURUM}"
     )
@@ -748,19 +727,19 @@ def get_quality_text() -> str:
 
 
 def get_quota_text() -> str:
-    from modules.kota_state import kota_dolu_mu, kota_state_oku
+    from modules.kota_state import kota_state_oku
 
     state = kota_state_oku()
-    kota_durum = "🚫 DOLU" if kota_dolu_mu() else "✅ BOŞ"
     guncelleme = state.get("guncelleme", "Bilinmiyor")
-    kalan_saat = state.get("kalan_saat", 0)
     video_sayisi = state.get("video_sayisi", 0)
+    # KULLANICI KARARI (2026-11-11): "kotayı kaldır" → kota durumu ekranı YOK.
+    # Ekran bilgi amaçlı kalır: yüklenen video sayısı + "tavan yok".
     return (
-        f"🚫 <b>YouTube Kota Durumu</b>\n\nDurum: {kota_durum}\n"
-        f"📅 Son Güncelleme: {guncelleme[:16] if guncelleme else 'Bilinmiyor'}\n"
-        f"🎬 Bugün Yüklenen: {video_sayisi}\n⏰ Kalan Süre: ~{kalan_saat} saat\n\n"
-        f"{_kota_birim_ozeti()}\n\n"
-        f"💡 Kota her gün UTC 00:00'da sıfırlanır."
+        "<b>Yükleme Durumu</b>\n\n"
+        "✅ Günlük yükleme tavanı: YOK\n"
+        f"🎬 Bugün yüklenen: {video_sayisi}\n"
+        f"📅 Son güncelleme: {guncelleme[:16] if guncelleme else 'Bilinmiyor'}\n\n"
+        "Üretilen her video yüklenir. Sınır yok."
     )
 
 
@@ -768,9 +747,9 @@ def get_help_text() -> str:
     return (
         "❓ <b>BOBİ TV Kontrol Paneli</b>\n\n<b>Düğmeler:</b>\n"
         "📊 <b>Durum</b> - Sistem durumu\n🎬 <b>Üret</b> - Manuel üretim + render testi\n"
-        "📈 <b>Rapor</b> - İstatistik + Kalite + Kota\n⚙️ <b>Ayarlar</b> - Hiyerarşik ayar menüsü\n\n"
+        "📈 <b>Rapor</b> - İstatistik + Kalite + Yükleme\n⚙️ <b>Ayarlar</b> - Hiyerarşik ayar menüsü\n\n"
         "<b>Üretim:</b>\n"
-        f"• Günlük yükleme tavanı: {KOTA_TAVANI} (YouTube kota matematiği)\n"
+        "• Günlük yükleme tavanı: YOK (kota kaldırıldı — üretilen her video yüklenir)\n"
         "• Günlük hedef / mod: Ayarlar → Üretim ve Kota\n"
         "• Kalite eşiği: 70/100\n\n"
         "<b>Not:</b> Kota doluyken ÜRETİM SÜRER; video STOĞA alınır ve kota açılınca yüklenir.\n"
@@ -818,7 +797,7 @@ def ekran_7gun() -> tuple[str, list[list[dict[str, Any]]]]:
     gecen_saat = simdi.hour + simdi.minute / 60
     if yayinda and gecen_saat > 0.5:
         tahmin = round(yayinda / gecen_saat * 24, 1)
-        satirlar.append(f"💰 Tahmin: bu hızla gün sonu ≈ {tahmin} yükleme (tavan {KOTA_TAVANI})")
+        satirlar.append(f"💰 Tahmin: bu hızla gün sonu ≈ {tahmin} yükleme (tavan yok)")
         satirlar.append("   <i>tahmin</i> — geçmiş hıza dayanır, garanti değil")
     else:
         satirlar.append(f"💰 Kota tahmini: {BILINMIYOR} (yeterli veri yok)")
@@ -1553,8 +1532,8 @@ def etki_onizlemesi(anahtar: str, deger: Any) -> str:
         except (TypeError, ValueError):
             hedef = 1
         return (
-            "'Kota kapısını atla' günlük yükleme sınırını aşar.\n"
-            f"Bu ayar bugünkü ~{hedef} yüklemeyi zorlar (tavan {KOTA_TAVANI}).\n"
+            "Zorla üretim, ön kontrolleri atlayıp hemen üretim+yükleme başlatır.\n"
+            f"Günlük yükleme tavanı yok; normal hedef ~{hedef} yükleme.\n"
             f"{_kota_birim_ozeti()}"
         )
     if anahtar == "KOTA_DOLU_DAVRANIS":
@@ -1828,7 +1807,7 @@ def ekran_sistem() -> tuple[str, list[list[dict[str, Any]]]]:
         f"📡 Bot poller: {_poller_ozeti()}",
         f"🧭 Tetikleyici: {_tetikleyici_sagligi()}",
         f"🚫 {_kota_birim_ozeti()}",
-        f"📐 Günlük yükleme tavanı: {KOTA_TAVANI} (10000/1600 birim)",
+        "📐 Günlük yükleme tavanı: YOK (kota kaldırıldı)",
     ]
     butonlar = [
         [{"text": "🔄 Yenile", "callback_data": "sistem_goster"}],
@@ -1845,7 +1824,7 @@ def ekran_sistem() -> tuple[str, list[list[dict[str, Any]]]]:
 
 
 def ekran_rapor() -> tuple[str, list[list[dict[str, Any]]]]:
-    """İstatistik + Kalite + Kota tek ekranda (ana menü sadeleşmesi)."""
+    """İstatistik + Kalite + Yükleme tek ekranda (ana menü sadeleşmesi)."""
     metin = f"📈 <b>BOBİ TV Rapor</b>\n\n{get_stats_text()}\n\n{get_quality_text()}\n\n{get_quota_text()}"
     butonlar = [
         [
@@ -1867,7 +1846,7 @@ def ekran_uret() -> tuple[str, list[list[dict[str, Any]]]]:
         f"🧪 Render testi: YouTube'a YÜKLEME YAPMADAN üretim zincirini test eder "
         f"(kotasız, kanala çıkışsız).\n\n"
         f"{_kota_birim_ozeti()}\n"
-        f"📐 Günlük tavan: {KOTA_TAVANI} yükleme"
+        "📐 Günlük tavan: YOK — üretilen her video yüklenir"
     )
     butonlar = [
         [{"text": "▶️ Üretimi başlat", "callback_data": "uret_baslat"}],

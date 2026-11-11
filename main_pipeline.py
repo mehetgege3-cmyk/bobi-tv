@@ -35,17 +35,22 @@ from modules.kota_kapisi import kota_dolu_cikis_kodu
 from modules.ayar_katalogu import etkin_gunluk_maks
 
 GUNLUK_HEDEF = int(os.environ.get("GUNLUK_HEDEF", "1"))
-# TODO 10: GUNLUK_MAKS tavan savunması — env/state ne derse desin etkin değer ≤ 6
-# (10000 birim / 1600 birim = 6 yükleme). Katalog varsayılanı 6'dır; 96 gibi eski
-# sabitler artık köprüden gelmez, yine de gelen aşırı değer UYARIYLA kırpılır.
-GUNLUK_MAKS = etkin_gunluk_maks(os.environ.get("GUNLUK_MAKS", "6"))
+# ---------------------------------------------------------------------------
+# KULLANICI KARARI (2026-11-11): "Kota 6 istemiyorum, kotayı kaldır."
+#
+# GÜNLÜK YÜKLEME TAVANI ARTIK YOK. Eskiden GUNLUK_MAKS=6 yüklemeyi kesiyor,
+# fazlası stoğa gidiyordu. Bu bir tavan/kota davranışıydı ve kaldırıldı:
+# üretilen her video YÜKLENİR. Sadece YouTube'un kendi API hatası (gerçek
+# 403 quotaExceeded) yüklemeyi durdurabilir — o zaman video stoğa yazılır.
+# GUNLUK_MAKS env'i yalnız eski uyumluluk için okunur, SINIR OLARAK KULLANILMAZ.
+# ---------------------------------------------------------------------------
+GUNLUK_MAKS = etkin_gunluk_maks(os.environ.get("GUNLUK_MAKS", "0"))  # 0 = tavan yok
 #: ÜRETİM tavanı — yüklemeyi değil stok büyüklüğünü sınırlar (kota engeli DEĞİL).
 #: 15 dk kadans + hedef 6 ile günde 6 üretim yapılır; kota doluysa hepsi stoğa gider.
 #: Ayarlanabilir: URETIM_TAVANI env (1-1440).
 URETIM_TAVANI = max(1, int(os.environ.get("URETIM_TAVANI", "288") or "288"))
 #: KOŞU BAŞINA üretim — 15 dakikalık kadans = her koşuda 1 video.
-#: (Günde 96 koşu × 1 = 96 video üretilir; yükleme kotası GUNLUK_MAKS ile sınırlı,
-#:  fazlası STOĞA yazılır ve kota açılınca yeniden render ALINMADAN yüklenir.)
+#: Günde 96 koşu × 1 = 96 video üretilir ve hepsi YÜKLENİR (tavan yok).
 TUR_BASINA_URETIM = max(1, int(os.environ.get("TUR_BASINA_URETIM", "1") or "1"))
 MOD = os.environ.get("MOD", "isindirma_saatlik")
 YUKLEME_ATLA = os.environ.get("YUKLEME_ATLA", "0") == "1"
@@ -241,20 +246,17 @@ def pipeline_calistir():
     # TAMAMEN duruyordu → hiç video üretilmiyordu. Üretim ile yükleme ayrı
     # şeylerdir: kota yüklemeyi sınırlar, üretimi DEĞİL.
     #
-    # YENİ: üretim GUNLUK_URETIM_TAVANI'na kadar devam eder; yükleme kotası
-    # ayrı bir kapıdır (GUNLUK_MAKS). Kota doluysa video üretilir ve STOĞA
-    # yazılır; kota açıldığında stoktan yüklenir (yeniden render YOK).
+    # SON DURUM (2026-11-11, kullanıcı): "kotayı kaldır" → GÜNLÜK YÜKLEME
+    # TAVANI YOK. Üretilen her video yüklenir. Stok yalnızca YouTube'un
+    # GERÇEK API hatasında (403 quotaExceeded gibi) oluşur; tavan yüzünden
+    # hiçbir video bekletilmez.
     # =====================================================================
     uretim_tavani = URETIM_TAVANI
     if bugunki >= uretim_tavani:
         log_yaz(f"Üretim tavanına ulaşıldı ({bugunki}/{uretim_tavani}). Atlanıyor.")
         sys.exit(0)
-    # Kotanın YÜKLENEN videolarla ölçüldüğünü logla; üretim yine sürer.
-    if bugun_yuklenen >= GUNLUK_MAKS:
-        log_yaz(
-            f"⏳ Yükleme kotası dolu ({bugun_yuklenen}/{GUNLUK_MAKS}) — ÜRETİM SÜRÜYOR, "
-            f"videolar stoğa alınacak (üretim tavanı {uretim_tavani})."
-        )
+    # KOTA YOK: günlük yükleme tavanı kaldırıldı, "kota dolu" durumu üretilmez.
+    log_yaz(f"📤 Günlük yükleme tavanı YOK — bugün {bugun_yuklenen} video yüklendi, sınır yok.")
 
     # ---------------------------------------------------------------------
     # 15 DAKİKA KADANSI + GÜNLÜK HEDEF DÜZELTMESİ (2026-11-11)
@@ -277,17 +279,16 @@ def pipeline_calistir():
     #
     # YENİ SÖZLEŞME:
     #   • ÜRETİM her koşuda devam eder (tavan URETIM_TAVANI = stok büyüklüğü).
-    #   • YÜKLEME kotası GUNLUK_MAKS, yalnız YAYINA alınanları sayar.
-    #   • Kota doluysa video üretilir ve STOĞA (kuyruk) yazılır; kota açılınca
-    #     yeniden render ALINMADAN yüklenir.
-    #   • GUNLUK_HEDEF hedefi aşılınca üretim sürer, yalnız fazlası stok olur.
+    #   • YÜKLEME TAVANI YOK (kullanıcı 2026-11-11: "kotayı kaldır").
+    #     Üretilen her video yüklenir; stok yalnız GERÇEK YouTube hatasında oluşur.
+    #   • GUNLUK_HEDEF hedefi aşılınca üretim sürer.
     # ---------------------------------------------------------------------
     kalan_hedef = max(0, GUNLUK_HEDEF - bugun_yuklenen)
     bu_tur = bu_tur_hesapla(bugunki, bugun_yuklenen)
 
     log_yaz(
         f"Bugün üretilen: {bugunki} (tavan {URETIM_TAVANI}) | "
-        f"Yayına alınan: {bugun_yuklenen}/{GUNLUK_MAKS} | "
+        f"Yayına alınan: {bugun_yuklenen} (tavan YOK) | "
         f"Günlük hedef: {GUNLUK_HEDEF} (kalan {kalan_hedef}) | "
         f"Bu turda üretilecek: {bu_tur}"
     )

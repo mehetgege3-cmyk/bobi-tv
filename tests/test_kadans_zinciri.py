@@ -81,16 +81,25 @@ def test_pipeline_adimi_kota_yuzunden_atlanmaz():
     assert "devam" not in kosul
 
 
-def test_kota_adimi_devam_ciktisini_her_durumda_yazar():
-    adim = _adim("Kota durumunu kontrol et")
-    kod = adim["run"]
-    # devam=true yazımı, kota_doldu kontrolünden ÖNCE ve koşulsuz olmalı
-    yazim = kod.index('f.write("devam=true')
-    kosul = kod.index('if sonuc["kota_doldu"] == "true"')
-    assert yazim < kosul, "devam=true yalnız kota doluyken yazılıyor — pipeline atlanır"
+def test_kota_adimi_workflowdan_kaldirildi():
+    """KULLANICI KARARI (2026-11-11): "kotayı kaldır" → kota adımı YOK.
+
+    Eski spec: "devam=true her durumda yazılmalı" idi (pipeline atlanmasın).
+    Yeni spec daha güçlü: kota kapısının KENDİSİ kaldırıldı, dolayısıyla
+    atlanacak bir kapı da yok.
+    """
+    isimler = [str(a.get("name", "")) for a in _adimlar()]
+    assert not any("Kota" in i for i in isimler), f"kota adımı hâlâ var: {isimler}"
+    metin = WORKFLOW.read_text(encoding="utf-8")
+    # Yalnız yorumda geçebilir; gerçek referans (steps.kota.outputs) olmamalı
+    assert "steps.kota.outputs" not in metin, "workflow hâlâ kota çıktısına bağlı"
 
 
-def test_kota_adimi_kosuyu_sonlandirmaz():
-    """Kota kapısı sys.exit() ile koşuyu bitirmemeli (eski sabotaj)."""
-    adim = _adim("Kota durumunu kontrol et")
-    assert "sys.exit(" not in adim["run"]
+def test_kota_kapisi_kosuyu_sonlandirmaz():
+    """Kota kapısı artık yok; olsaydı bile koşuyu bitirmemeliydi (eski sabotaj).
+
+    Regresyon: workflow'a kota adımı geri eklenirse bu test onu yakalar.
+    """
+    adimlar = [a for a in _adimlar() if "Kota" in str(a.get("name", ""))]
+    for a in adimlar:
+        assert "sys.exit(" not in a["run"], "kota kapısı koşuyu sonlandırıyor"

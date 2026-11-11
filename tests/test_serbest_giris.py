@@ -30,7 +30,8 @@ from modules.youtube_upload import (  # noqa: E402
 
 def test_sayi_ayarinda_deger_gir_dugmesi_var() -> None:
     """Sayı ayarlarında '✏️ Değer gir' düğmesi olmalı (hazır seçenek dayatması yok)."""
-    for anahtar in ("MIN_IZLENME_ESIGI", "IZLENME_KONTROL_DK", "GUNLUK_MAKS"):
+    # GUNLUK_MAKS kaldırıldı (kota yok) → yerine kalan sayı ayarları test edilir.
+    for anahtar in ("MIN_IZLENME_ESIGI", "IZLENME_KONTROL_DK", "GUNLUK_HEDEF"):
         _metin, butonlar = tb.ekran_ayar_detay(anahtar)
         cbs = [d["callback_data"] for satir in butonlar for d in satir]
         assert f"ay:gir:{anahtar}" in cbs, f"{anahtar}: serbest giriş düğmesi yok"

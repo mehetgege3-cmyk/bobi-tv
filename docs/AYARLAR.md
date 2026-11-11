@@ -22,7 +22,7 @@ Panel, her değerin hangi katmandan geldiğini etiketle gösterir: `6 (state)` /
 |---|---|---|---|---|---|---|
 | Render testi | `YUKLEME_ATLA` | anahtar | — | `0` | düşük | `1` iken videolar yalnız yerelde üretilir, YouTube'a yükleme **yapılmaz**. 🧪 Render testi düğmesi bunu koşul bazlı zorlar. |
 | Üretim modu | `MOD` | seçim | `isindirma_saatlik`, `normal` | `isindirma_saatlik` | düşük | Dönen konu havuzu + 15 sn alt sınır / sıradan üretim. |
-| Kota kapısını atla | `force` | anahtar | — | `0` | **yüksek** | Kota kapısını bu koşuda devre dışı bırakır. **Tek kullanımlık:** üretim workflow'u tükettikten sonra state'i otomatik 0'a çeker ("Tek kullanımlık force bayrağını tüket" adımı). |
+| Zorla üretim | `force` | anahtar | — | `0` | **yüksek** | Ön kontrolleri bu koşuda atlayıp üretimi zorlar (günlük yükleme tavanı yok). **Tek kullanımlık:** üretim workflow'u tükettikten sonra state'i otomatik 0'a çeker ("Tek kullanımlık force bayrağını tüket" adımı). |
 
 ## 🎯 Üretim & Kota (değiştirilebilir)
 
@@ -103,12 +103,12 @@ Not: repoda `PEXELS_API_KEY` secret'ı şu an tanımlı DEĞİL → panelde ⛔ 
 `bobi_tv/state/ayar_gecmisi.jsonl` — append-only, son **200 satır** (taşma `ayar_gecmisi.1.jsonl`'e döner).
 Satır şeması: `{"zaman","kullanici_id","anahtar","eski","yeni","kaynak"}`. `sadece_goruntule` ayarlar geçmişe yazılmaz.
 
-## Kota kapısı (workflow + pipeline)
+## Kota kapısı — KALDIRILDI (2026-11-11)
 
-- `hourly_production.yml` → "Kota durumunu kontrol et": `modules/kota_kapisi.kota_kontrol_yap`
-  hesabı + `kota_dolu_cikis_kodu(KOTA_DOLU_DAVRANIS)` çıkışı.
-- `main_pipeline.py`: `GUNLUK_MAKS = etkin_gunluk_maks(env)` (tavan 6) + kota dolunca
-  `sys.exit(kota_dolu_cikis_kodu(...))`.
+- `hourly_production.yml`'de "Kota durumunu kontrol et" adımı **yok**; günlük
+  yükleme tavanı yok, üretimi durduran kota kapısı yok.
+- `main_pipeline.py`: `GUNLUK_MAKS` sınır olarak kullanılmaz (uyumluluk için
+  okunur, `0` = tavan yok) — koşu kota yüzünden atlanmaz.
 - Panel kota satırı: `bobi_tv/state/youtube_quota.json`'dan birim bilgisi VARSA
   `Kota: 4800/10000 birim · ~3 yükleme kaldı`; YOKSA **`bilinmiyor`** — sayı uydurulmaz.
 

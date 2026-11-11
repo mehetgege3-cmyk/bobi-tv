@@ -25,7 +25,7 @@ from typing import Any
 import requests
 
 import modules.ayar_deposu as ayar_deposu
-from modules import rehber, render_karti
+from modules import rehber, render_karti, tekillestirme
 from modules.ayar_katalogu import (
     GRUPLAR,
     TEMIZLIK_UYARI,
@@ -167,6 +167,15 @@ def process_update(update: dict[str, Any]) -> bool:
     if not update_authorized(update):
         print(f"⚠️ Yetkisiz update reddedildi: update_id={update.get('update_id')}")
         return False
+    # TODO 29 — TEKİLLEŞTİRME: aynı update kısa süre içinde tekrar geldiyse
+    # İKİNCİ kez işlenmez (ikinci üretim/yükleme tetiklenmesin). Sessiz yutma
+    # yok: her tekrar loga yazılır.
+    if tekillestirme.tekrar_mi(update):
+        print(
+            f"♻️ Tekrar eden update yutuldu: update_id={update.get('update_id')} "
+            f"({tekillestirme.gorulme_sayisi(update)}. geliş)"
+        )
+        return True
     if "callback_query" in update:
         cq = update["callback_query"]
         callback_id = cq["id"]

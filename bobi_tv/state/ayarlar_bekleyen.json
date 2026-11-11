@@ -2,7 +2,7 @@
   "degisiklikler": {
     "GUNLUK_HEDEF": "3"
   },
-  "sebep": "git add başarısız: fatal: /tmp/pytest-of-user/pytest-99/test_stepper_tek_dokunusta_bir1/a.json: '/tmp/pytest-of-user/pytest-99/test_stepper_tek_dokunusta_bir1/a.json' is outside r",
+  "sebep": "git add başarısız: fatal: /tmp/pytest-of-user/pytest-104/test_stepper_tek_dokunusta_bir1/a.json: '/tmp/pytest-of-user/pytest-104/test_stepper_tek_dokunusta_bir1/a.json' is outside",
   "kullanici_id": null,
-  "zaman": "2026-11-11T04:29:17.661160+00:00"
+  "zaman": "2026-11-11T04:30:11.276092+00:00"
 }

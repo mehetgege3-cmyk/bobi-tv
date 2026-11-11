@@ -1354,14 +1354,14 @@ def _hizli_uygula(anahtar: str, yeni: str, callback_id: str) -> None:
     if a is not None and a["risk"] == "yuksek":
         _bekleyen_giris_yaz(f"{anahtar}#{yeni}")
         answer_callback(callback_id, "Onay gerekiyor")
-        _ekran_goster(*ekran_onay_deger(anahtar, int(yeni) if yeni.isdigit() else yeni))
+        _ekran_goster(ekran_onay_deger(anahtar, int(yeni) if yeni.isdigit() else yeni))
         return
     ok, durum = ayar_uygula(anahtar, yeni, None)
     answer_callback(callback_id, "Kaydedildi" if ok else "Uygulanamadı")
     metin, butonlar = ekran_hizli_ayarlar()
     if not ok and durum:
         metin += f"\n\n❌ <b>Uygulanamadı:</b> {durum}"
-    _ekran_goster(metin, butonlar)
+    _ekran_goster((metin, butonlar))
 
 
 def ekran_hizli_ayarlar() -> tuple[str, list[list[dict[str, Any]]]]:

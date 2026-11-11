@@ -83,3 +83,35 @@ def test_toggle_anahtar_ayari_tersine_cevirir(monkeypatch):
     monkeypatch.setattr(tb, "_ekran_goster", lambda *a, **k: True)
     tb._hizli_toggle("YUKLEME_ATLA", "cb")
     assert kaydedilen.get("YUKLEME_ATLA") == "1"
+
+
+def test_stepper_tek_dokunusta_bir_adim_ilerler(monkeypatch, tmp_path):
+    """CANLI BUG: hızlı ekranda ➕ basınca değer 4'ten 6'ya atladı.
+
+    Sebep: `_hizli_stepper` mevcut değeri state'ten okuyordu; araya giren
+    panel meta yazımı / katalog varsayılanı yüzünden iki adım attı.
+    Kural: ➕ TEK dokunuşta TEK adım (GUNLUK_HEDEF için 1).
+    """
+    monkeypatch.setattr(tb, "MENU_STATE_YOLU", tmp_path / "m.json")
+    monkeypatch.setattr(tb, "AYARLAR_STATE_YOLU", tmp_path / "a.json")
+    monkeypatch.setattr(tb, "GECMIS_YOLU", tmp_path / "g.json")
+    monkeypatch.setattr(tb, "answer_callback", lambda *a, **k: True)
+    monkeypatch.setattr(tb, "panel_goster", lambda *a, **k: True)
+    import modules.ayar_deposu as ad
+
+    ad.kaydet({"GUNLUK_HEDEF": "4"}, tb.AYARLAR_STATE_YOLU)
+    tb._hizli_stepper("GUNLUK_HEDEF", +1, "cb")
+    assert ad.state_ham_ayarlari(tb.AYARLAR_STATE_YOLU).get("GUNLUK_HEDEF") == "5"
+
+
+def test_stepper_tek_dokunusta_bir_adim_geri(monkeypatch, tmp_path):
+    monkeypatch.setattr(tb, "MENU_STATE_YOLU", tmp_path / "m.json")
+    monkeypatch.setattr(tb, "AYARLAR_STATE_YOLU", tmp_path / "a.json")
+    monkeypatch.setattr(tb, "GECMIS_YOLU", tmp_path / "g.json")
+    monkeypatch.setattr(tb, "answer_callback", lambda *a, **k: True)
+    monkeypatch.setattr(tb, "panel_goster", lambda *a, **k: True)
+    import modules.ayar_deposu as ad
+
+    ad.kaydet({"GUNLUK_HEDEF": "4"}, tb.AYARLAR_STATE_YOLU)
+    tb._hizli_stepper("GUNLUK_HEDEF", -1, "cb")
+    assert ad.state_ham_ayarlari(tb.AYARLAR_STATE_YOLU).get("GUNLUK_HEDEF") == "3"

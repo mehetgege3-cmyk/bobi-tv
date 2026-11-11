@@ -1,0 +1,8 @@
+{
+  "degisiklikler": {
+    "GUNLUK_HEDEF": "3"
+  },
+  "sebep": "git add başarısız: fatal: /tmp/pytest-of-user/pytest-55/test_stepper_tek_dokunusta_bir1/a.json: '/tmp/pytest-of-user/pytest-55/test_stepper_tek_dokunusta_bir1/a.json' is outside r",
+  "kullanici_id": null,
+  "zaman": "2026-11-11T04:11:05.715474+00:00"
+}

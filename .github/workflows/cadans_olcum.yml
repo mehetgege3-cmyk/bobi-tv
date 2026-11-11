@@ -51,4 +51,20 @@ jobs:
           git add bobi_tv/state/cadans_olcumu.json
           git diff --cached --quiet && echo "Değişiklik yok" && exit 0
           git commit -m "chore(cadans): günlük cron ölçümü [skip ci]"
-          git push
+          # Pipeline aynı anda push'layabilir → "fetch first" reddi. 3 deneme:
+          # her denemede rebase + push. Çakışma çözülemezse iş BAŞARISIZ olur
+          # (sessizce yutulmaz) ve değişiklik bir sonraki koşuda yeniden üretilir.
+          for deneme in 1 2 3; do
+            if git pull --rebase --autostash -q origin main; then
+              if git push; then
+                echo "push tamam (deneme $deneme)"
+                exit 0
+              fi
+            else
+              git rebase --abort 2>/dev/null || true
+            fi
+            echo "push denemesi $deneme başarısız — 10 sn sonra tekrar"
+            sleep 10
+          done
+          echo "::error::3 denemede push edilemedi (uzak sürekli değişiyor)"
+          exit 1

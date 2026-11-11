@@ -1,0 +1,29 @@
+{
+  "zaman": "2026-11-11T06:27:22.546065+00:00",
+  "olcumler": {
+    "hourly_production.yml": {
+      "workflow": "hourly_production.yml",
+      "durum": "olculdu",
+      "beklenen_dk": 10,
+      "son_24saat_kosu": 43,
+      "toplam_kosu": 61,
+      "medyan_aralik_dk": 15.0,
+      "en_uzun_aralik_dk": 1122.1,
+      "beklenen_24saat_kosu": 144.0,
+      "oran": 0.3,
+      "son_kosu_yas_dk": 3.9
+    },
+    "telegram_bot.yml": {
+      "workflow": "telegram_bot.yml",
+      "durum": "olculdu",
+      "beklenen_dk": 5,
+      "son_24saat_kosu": 7,
+      "toplam_kosu": 7,
+      "medyan_aralik_dk": 148.4,
+      "en_uzun_aralik_dk": 226.7,
+      "beklenen_24saat_kosu": 288.0,
+      "oran": 0.02,
+      "son_kosu_yas_dk": 144.5
+    }
+  }
+}

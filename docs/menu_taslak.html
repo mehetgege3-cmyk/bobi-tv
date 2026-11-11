@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BOBİ TV — Yeni menü taslağı</title>
+<style>
+  :root { --bg:#0e1116; --kart:#171c24; --cizgi:#262e3a; --yazi:#e8edf4; --soluk:#9aa7b8; --yesil:#3ddc97; --mavi:#4aa8ff; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--yazi);
+         font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; padding:22px 16px 40px; }
+  h1 { font-size:19px; margin:0 0 4px; }
+  .alt { color:var(--soluk); font-size:13px; margin:0 0 20px; }
+  .sar { display:flex; gap:16px; flex-wrap:wrap; }
+  .telefon { width:300px; background:#1b2b26; border:1px solid var(--cizgi); border-radius:26px; padding:10px; }
+  .etiket { font-size:12px; color:var(--soluk); text-align:center; padding:4px 0 8px; letter-spacing:.4px; text-transform:uppercase; }
+  .balon { background:var(--kart); border-radius:14px; padding:12px; font-size:13.5px; line-height:1.55; white-space:pre-wrap; }
+  .ayir { color:#3b4553; }
+  .b { font-weight:700; }
+  .i { color:var(--soluk); font-style:italic; }
+  .dug { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:10px; }
+  .dug div { background:#22303c; border:1px solid #2f4050; border-radius:9px; padding:9px 6px; text-align:center; font-size:12.5px; }
+  .dug .tek { grid-column:1 / -1; }
+  .klavye { margin-top:10px; display:grid; grid-template-columns:1fr 1fr; gap:5px; }
+  .klavye div { background:#25333f; border-radius:8px; padding:9px 4px; text-align:center; font-size:12px; }
+  .klavye .sat { grid-column:1 / -1; }
+  .kutu { background:#152230; border:1px solid #24445e; border-radius:10px; padding:9px 11px; margin-top:10px; font-size:12.5px; color:#bcd4ea; }
+  code { background:#0f1620; padding:1px 4px; border-radius:4px; font-size:12px; }
+</style>
+</head>
+<body>
+<h1>BOBİ TV — panel + kalıcı alt klavye (yeni taslak)</h1>
+<p class="alt">Ekran görüntüsündeki eski “Hoş geldiniz! Bir işlem seçin:” paneli gitti. Aşağısı yeni sürümün ekranları: her kutu tek panel, altta kalıcı klavye.</p>
+
+<div class="sar">
+
+  <div class="telefon">
+    <div class="etiket">/start → ana kart</div>
+    <div class="balon">🎬 <span class="b">BOBİ TV</span>  ·  <span class="i">kontrol paneli</span>
+<span class="ayir">─────────────</span>
+📊 <span class="b">Bugün</span>
+│ 🎥 Üretilen: <span class="b">20</span>   ✅ Geçen: <span class="b">14</span>
+│ 🚀 Yayında: <span class="b">8</span>   📦 Stok: <span class="b">0</span>
+│ 🎯 Kalite: <span class="b">86/100</span>   📈 Tavan: <span class="b">YOK</span>
+<span class="ayir">─────────────</span>
+🛠 <span class="b">Sistem</span>
+│ 🕐 Son koşu: ✅ başarılı · 5 sa önce
+│ 📡 Bot: 🔄 çalışıyor · az önce
+📈 7 gün: <code>▁▁▁▁▂▅█</code> (35 video)</div>
+    <div class="dug">
+      <div>📊 Durum</div><div>🎬 Üret</div>
+      <div>📈 Rapor</div><div>⚙️ Ayarlar</div>
+    </div>
+    <div class="klavye">
+      <div>📊 Durum</div><div>🎬 Üret</div>
+      <div>📈 Rapor</div><div>⚙️ Ayarlar</div>
+      <div>📦 Stok</div><div>❓ Yardım</div>
+    </div>
+  </div>
+
+  <div class="telefon">
+    <div class="etiket">📈 Rapor</div>
+    <div class="balon">📈 <span class="b">Rapor</span>  ·  <span class="i">2026-11-11</span>
+<span class="ayir">─────────────</span>
+🎬 <span class="b">Üretim</span>
+│ 🎥 Üretilen: <span class="b">20</span>   🚀 Yayında: <span class="b">8</span>   📦 Stok: <span class="b">0</span>
+<span class="ayir">─────────────</span>
+🎯 <span class="b">Kalite</span>
+│ 🎯 Ortalama: <span class="b">86/100</span>   ✅ Geçen: <span class="b">14</span>   ❌ Kalan: <span class="b">6</span>
+│ 📉 Min: 62   📈 Max: 97   📊 Geçme: %70
+<span class="ayir">─────────────</span>
+📊 <span class="b">Trend</span>
+│ 📈 7 gün: <code>▁▁▁▁▂▅█</code> (35 video)
+<span class="ayir">─────────────</span>
+<span class="i">Yükleme tavanı: YOK — üretilen her video yüklenir.</span></div>
+    <div class="dug">
+      <div>🗓 7 gün</div><div>🏆 Performans</div>
+      <div>📦 Stok</div><div>🛠 Sistem</div>
+      <div>🖥 Render</div><div>📋 Denetim</div>
+      <div class="tek">🔄 Yenile</div>
+      <div>← Geri</div><div>🏠 Menü</div>
+    </div>
+    <div class="kutu">Önceden bu 6 ekranın <b>hiçbirine</b> düğme yoktu. Artık hepsi raporun altında. “← Geri” gerçekten bir üst ekrana döner.</div>
+  </div>
+
+  <div class="telefon">
+    <div class="etiket">🎬 Üretim</div>
+    <div class="balon">🎬 <span class="b">Üretim</span>
+<span class="ayir">─────────────</span>
+│ 🎥 Bugün üretilen: <span class="b">20</span>   🚀 Yayında: <span class="b">8</span>
+│ 📦 Stok (sırada bekleyen): <span class="b">0</span>
+│ 📐 Günlük tavan: <span class="b">YOK</span> — üretilen her video yüklenir
+<span class="ayir">─────────────</span>
+▶️ <span class="b">Üretimi başlat</span> — pipeline'ı workflow ile koşturur.
+🧪 <span class="b">Render testi</span> — YouTube'a YÜKLEME YAPMADAN zinciri dener.</div>
+    <div class="dug">
+      <div class="tek">▶️ Üretimi başlat</div>
+      <div>🧪 Render testi</div><div>📈 Test kartı</div>
+      <div>📦 Stok</div><div>🛠 Sistem</div>
+      <div>← Geri</div><div>🏠 Menü</div>
+    </div>
+    <div class="kutu">Üretimle ilgili stok, test kartı, render — hepsi tek ekranda.</div>
+  </div>
+
+  <div class="telefon">
+    <div class="etiket">🛠 Sistem</div>
+    <div class="balon">🛠 <span class="b">Sistem</span>
+<span class="ayir">─────────────</span>
+│ 🕐 Son koşu: ✅ başarılı · 5 sa önce
+│ 📡 Bot: 🔄 çalışıyor · az önce
+<span class="ayir">─────────────</span>
+<span class="i">Hepsi tek panelde: aşağıdan seç.</span></div>
+    <div class="dug">
+      <div>🖥 Durum</div><div>⚙️ Ayarlar</div>
+      <div>🔔 Bildirim</div><div>📋 Denetim</div>
+      <div>📱 Mini App</div><div>❓ Yardım</div>
+      <div>← Geri</div><div>🏠 Menü</div>
+    </div>
+    <div class="kutu">Yeni şemsiye ekran: bildirim / denetim / mini app daha önce yalnız gizli komutla açılıyordu.</div>
+  </div>
+
+  <div class="telefon">
+    <div class="etiket">⚙️ Ayarlar</div>
+    <div class="balon">⚙️ <span class="b">Ayarlar</span>
+<span class="ayir">─────────────</span>
+│ 🚀 Tetikleme: 3 ayar
+│ 🎯 Üretim &amp; Kota: 4 ayar
+│ 🧹 Temizlik: görüntü amaçlı
+│ 🔔 Bildirim: 2 ayar
+│ 🔑 Sistem: secret var/yok
+<span class="ayir">─────────────</span></div>
+    <div class="dug">
+      <div class="tek">⭐ Hızlı ayarlar</div>
+      <div>🚀 Tetikleme</div><div>🎯 Üretim &amp; Kota</div>
+      <div>🧹 Temizlik</div><div>🔔 Bildirim</div>
+      <div>🔑 Sistem</div><div>🕘 Son değişiklik</div>
+      <div>← Geri</div><div>🏠 Menü</div>
+    </div>
+    <div class="kutu">Önceden “Bildirim” düğmesi başka ekrana gidiyordu; o grubun ayarlarına panelden <b>ulaşılamıyordu</b>. Artık her grup kendi ayarlarını açıyor.</div>
+  </div>
+
+</div>
+</body>
+</html>

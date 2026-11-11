@@ -1,0 +1,54 @@
+name: "Cron Cadans Ölçümü (günlük)"
+
+# TODO dosyası madde 4. Cron ifadesi "10 dakikada bir" dese de GitHub scheduler
+# fiilen seyrek çalışıyor. Bu iş ÖLÇÜLEN sayıları state'e yazar; panel
+# (🛠 Sistem → 📉 Cadans) ve günlük rapor bunları okur. Sayı uydurulmaz:
+# koşu geçmişi okunamazsa rapor "bilinmiyor" der.
+
+on:
+  schedule:
+    - cron: "43 6 * * *"   # her gün 06:43 UTC (TR 09:43)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cadans-olcum
+  cancel-in-progress: false
+
+jobs:
+  olc:
+    name: Cadans ölç
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT || github.token }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Bağımlılıkları kur
+        run: python -m pip install -q requests
+
+      - name: Ölç
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: python3 -m modules.cadans_olcum | tee /tmp/cadans.log
+
+      - name: Job özetine yaz
+        if: always()
+        run: |
+          { echo "## Cron cadans ölçümü"; echo '```'; cat /tmp/cadans.log 2>/dev/null || echo "log yok"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: State'i commit'le
+        run: |
+          git config user.name "bobi-cadans"
+          git config user.email "cadans@bobi.local"
+          git add bobi_tv/state/cadans_olcumu.json
+          git diff --cached --quiet && echo "Değişiklik yok" && exit 0
+          git commit -m "chore(cadans): günlük cron ölçümü [skip ci]"
+          git push

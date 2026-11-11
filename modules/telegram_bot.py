@@ -723,6 +723,15 @@ def _yas_turkce(dakika: int) -> str:
     return f"{dakika // (60 * 24)} gün önce"
 
 
+def _cadans_satiri() -> str:
+    """Son ÖLÇÜLMÜŞ cron cadansı (cron ifadesine değil, gerçek koşulara bakar)."""
+    with suppress(Exception):
+        from modules.cadans_olcum import panel_satiri
+
+        return panel_satiri()
+    return "📉 Cadans: bilinmiyor (ölçüm yok)"
+
+
 def _durum_turkce(ham: object) -> str:
     """GitHub koşu sonucunu Türkçeleştirir (panelde 'in_progress'/'timed_out' kalmasın)."""
     return {
@@ -780,23 +789,18 @@ def _bugun_arsiv_ozeti() -> tuple[int, int]:
         veri = json.loads(arsiv.read_text(encoding="utf-8"))
         kayitlar = list(veri.values()) if isinstance(veri, dict) else list(veri)
         bugunkuler = [k for k in kayitlar if str(k.get("tarih", ""))[:10] == bugun]
-        return len(bugunkuler), sum(1 for k in bugunkuler if k.get("durum") == "yayinda")
+        # "Yayında" = kanalda DURAN geçerli kayıt. 2026-11-11 düzeltmesi:
+        # kaldırılan (kaldirildi / silindi_dusuk_izlenme) videolar sayıya
+        # girmiyordu ama `durum` alanı hiç yazılmamış eski kayıtlar da
+        # sayılmıyordu → panel 8 "yayında" gösterirken kanalda 0 video vardı.
+        # Artık: durum alanı yoksa video geçerli sayılır (esitleme bunu
+        # kanaldan doğrular).
+        gecersiz = {"kaldirildi", "silindi_dusuk_izlenme"}
+        return len(bugunkuler), sum(
+            1 for k in bugunkuler if str(k.get("durum", "yayinda")) not in gecersiz
+        )
     except Exception:
         return 0, 0
-
-
-def _son_kosu_ozeti() -> str:
-    """Son üretim koşusunun sonucu + yaşı. Okunamazsa 'bilinmiyor'."""
-    veri = _github_get_onbellekli("actions/workflows/hourly_production.yml/runs?per_page=1")
-    kosular = (veri or {}).get("workflow_runs") or []
-    if not kosular:
-        return BILINMIYOR
-    k = kosular[0]
-    durum = k.get("conclusion") or k.get("status") or BILINMIYOR
-    ikon = {"success": "✅", "failure": "❌", "cancelled": "⛔"}.get(str(durum), "⏳")
-    dk = _gecen_dakika(str(k.get("created_at", "")))
-    yas = f"{dk} dk önce" if isinstance(dk, int) and dk >= 0 else BILINMIYOR
-    return f"{ikon} {durum} ({yas})"
 
 
 def ekran_ana() -> tuple[str, list[list[dict[str, Any]]]]:
@@ -831,7 +835,8 @@ def ekran_ana() -> tuple[str, list[list[dict[str, Any]]]]:
         f"{ayirici}\n"
         "🛠 <b>Sistem</b>\n"
         f"│ 🕐 Son koşu: {_son_kosu_ozeti()}\n"
-        f"│ 📡 Bot: {_poller_ozeti()}"
+        f"│ 📡 Bot: {_poller_ozeti()}\n"
+        f"│ {_cadans_satiri()}"
     )
     try:
         from modules.bildirim import susturulmus_mu

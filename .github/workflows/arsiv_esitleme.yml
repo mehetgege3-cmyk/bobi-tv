@@ -1,0 +1,74 @@
+name: "Arşiv ↔ Kanal Eşitleme (haftalık)"
+
+# TODO dosyası madde 5. Arşivdeki kayıtları YouTube kanalıyla karşılaştırır:
+# kanaldan düşen video SİLİNMEZ, `durum: kaldirildi` olarak işaretlenir.
+# Kararsız sonuçlar (ağ hatası / gizli video) kaydı DEĞİŞTİRMEZ.
+# Kanal geneli kayıp şüphesinde (tüm kayıtlar yok) eşitleme DURUR ve arşivi
+# olduğu gibi bırakır — yanlış toplu işaretleme veri kaybıdır.
+
+on:
+  schedule:
+    # Haftada bir: pazar 04:17 UTC (TR 07:17) — üretim saatlerinden uzak.
+    - cron: "17 4 * * 0"
+  workflow_dispatch:
+    inputs:
+      kuru:
+        description: "Kuru çalışma (arşivi değiştirmeden ölç)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: arsiv-esitleme
+  cancel-in-progress: false
+
+jobs:
+  esitle:
+    name: Arşiv eşitleme
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Repo'yu çek
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT || github.token }}
+
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Bağımlılıkları kur
+        run: python -m pip install -q requests
+
+      - name: Eşitlemeyi çalıştır
+        id: esitle
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          set -o pipefail
+          if [ "${{ inputs.kuru }}" = "true" ]; then
+            python3 -m modules.arsiv_esitleme --kuru | tee /tmp/esitle.log
+          else
+            python3 -m modules.arsiv_esitleme | tee /tmp/esitle.log
+          fi
+
+      - name: Job özetine yaz
+        if: always()
+        run: |
+          { echo "## Arşiv ↔ kanal eşitleme"; echo '```'; cat /tmp/esitle.log 2>/dev/null || echo "log yok"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Değişiklikleri commit'le ve push'la
+        if: inputs.kuru != true
+        run: |
+          git config user.name "bobi-esitleme"
+          git config user.email "esitleme@bobi.local"
+          git add bobi_tv/archive/videos.json bobi_tv/state/arsiv_esitleme.json
+          if git diff --cached --quiet; then
+            echo "Değişiklik yok — commit atlandı"
+            exit 0
+          fi
+          git commit -m "chore(arsiv): kanaldan düşen videolar 'kaldirildi' olarak işaretlendi [skip ci]"
+          git push

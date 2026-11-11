@@ -62,6 +62,19 @@ jobs:
         run: |
           node skills/arena-playwright-agent/scripts/arena-selftest.mjs
           echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          # TODO dosyası madde 3 (Seçenek C): verdict'i uyarı adımına taşı.
+          python3 - <<'PYV' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+          p = Path("arena-diagnostics/report.json")
+          verdict = ""
+          if p.exists():
+              try:
+                  verdict = json.loads(p.read_text(encoding="utf-8")).get("verdict") or ""
+              except Exception:
+                  verdict = ""
+          print(f"verdict={verdict}")
+          PYV
 
       - name: Verdict'i job özetine yaz
         if: always()
@@ -88,6 +101,19 @@ jobs:
             echo "::error::Arena smoke tanılama başarısız (exit ${{ steps.diag.outputs.exit_code }}). Detay: arena-diagnostics artifact'ı."
             exit 1
           fi
+
+      - name: Çerez düştüyse Telegram'dan uyar (Seçenek C)
+        # Yalnız oturum-gecersiz / cookie-yapilandirma-hatasi durumunda çalışır.
+        # Otomatik secret yazma YOK: çerezi kullanıcı elle yeniler.
+        if: always() && (steps.diag.outputs.verdict == 'oturum-gecersiz' || steps.diag.outputs.verdict == 'cookie-yapilandirma-hatasi')
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          VERDICT: ${{ steps.diag.outputs.verdict }}
+        run: |
+          python3 -m pip install -q requests
+          python3 -m modules.arena_cerez_uyari "$VERDICT"
 
       - name: Tanılama artifact'ını yükle
         if: always()

@@ -16,6 +16,8 @@ on:
       - "Arena Smoke Test — Tanılama (manuel tetik)"
       - "Mini App verisi (salt okunur özet)"
       - "Mini App yayını (GitHub Pages)"
+      - "Arşiv ↔ Kanal Eşitleme (haftalık)"
+      - "Cron Cadans Ölçümü (günlük)"
     types: [completed]
 
 concurrency:

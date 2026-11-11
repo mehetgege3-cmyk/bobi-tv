@@ -357,6 +357,125 @@ def _merkez_vs_simsek_rozeti() -> Image.Image:
     return img
 
 
+def _bilgi_arkaplan(senaryo: dict) -> Image.Image:
+    """Kategoriye göre dikey gradyan + yumuşak ışık huzmeleri (VS çizgileri yok).
+
+    Neden: kullanıcı "her video farklı görünsün" diyor; kategori renk paleti
+    (`ilginc_bilgi/kategoriler.py`) sekiz farklı görünümün temelini verir.
+    """
+    from modules.ilginc_bilgi.kategoriler import kategori_al
+
+    ana_hex, orta_hex, acik_hex = kategori_al(str(senaryo.get("kategori") or ""))["renk"]
+    ana = acik_rgb(ana_hex)
+    orta = acik_rgb(orta_hex)
+    koyu = _karart(ana, 0.35)
+
+    tuval = Image.new("RGBA", (GENISLIK, YUKSEKLIK), (*koyu, 255))
+    gradyan = Image.new("RGBA", (1, YUKSEKLIK))
+    g_ciz = ImageDraw.Draw(gradyan)
+    for y in range(YUKSEKLIK):
+        t = y / max(1, YUKSEKLIK - 1)
+        # üstte koyu → ortada kategori rengi → altta koyu
+        if t < 0.55:
+            k = t / 0.55
+            renk = tuple(int(koyu[i] + (orta[i] - koyu[i]) * k * 0.75) for i in range(3))
+        else:
+            k = (t - 0.55) / 0.45
+            renk = tuple(int(orta[i] * 0.75 + (koyu[i] - orta[i] * 0.75) * k) for i in range(3))
+        g_ciz.point((0, y), fill=(*renk, 255))
+    tuval = gradyan.resize((GENISLIK, YUKSEKLIK), Image.BILINEAR).convert("RGBA")
+
+    # Yumuşak ışık huzmeleri (diyagonal, düşük alfa)
+    huzme = Image.new("RGBA", (GENISLIK, YUKSEKLIK), (0, 0, 0, 0))
+    h_ciz = ImageDraw.Draw(huzme, "RGBA")
+    for i in range(-2, 8):
+        x = i * 190
+        h_ciz.polygon(
+            [(x, 0), (x + 120, 0), (x + 420, YUKSEKLIK), (x + 300, YUKSEKLIK)],
+            fill=(255, 255, 255, 8),
+        )
+    tuval.alpha_composite(huzme)
+
+    # Hafif vinyet (kenarları karart)
+    vinyet = Image.new("L", (GENISLIK, YUKSEKLIK), 0)
+    v_ciz = ImageDraw.Draw(vinyet)
+    for r in range(1200, 300, -40):
+        v_ciz.ellipse(
+            [GENISLIK // 2 - r, YUKSEKLIK // 2 - int(r * 1.5),
+             GENISLIK // 2 + r, YUKSEKLIK // 2 + int(r * 1.5)],
+            fill=min(255, 60 + (1200 - r) // 6),
+        )
+    karartma = Image.new("RGBA", (GENISLIK, YUKSEKLIK), (*_karart(ana, 0.2), 120))
+    tuval = Image.composite(tuval, Image.alpha_composite(tuval, karartma), vinyet)
+    return tuval
+
+
+def _bilgi_rozeti_ekle(tuval, cizim, senaryo: dict) -> None:
+    """İlginç bilgi kapağı: dev kategori emojisi + merkez 'BİLİYOR MUYDUN?' rozeti.
+
+    Neden: VS düellosu kaldırıldı (kullanıcı talimatı); tek anlatıcılı bilgi
+    formatında kapağın işi merak uyandırmak, karakter çatışması değil.
+    """
+    try:
+        from modules.ilginc_bilgi.kategoriler import kategori_al
+
+        kat = kategori_al(str(senaryo.get("kategori") or ""))
+        ana, orta, acik = kat["renk"]
+        ana_rgb = tuple(int(ana.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4))
+        orta_rgb = tuple(int(orta.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4))
+
+        # Yumuşak radyal hale (kategori rengine göre)
+        hale = Image.new("RGBA", (GENISLIK, 620), (0, 0, 0, 0))
+        h_ciz = ImageDraw.Draw(hale, "RGBA")
+        for r in range(300, 40, -12):
+            alfa = int(6 + (300 - r) * 0.30)
+            h_ciz.ellipse(
+                [GENISLIK // 2 - r, 310 - r, GENISLIK // 2 + r, 310 + r],
+                fill=(*orta_rgb, min(alfa, 90)),
+            )
+        tuval.alpha_composite(hale, (0, 500))
+
+        # Merkez görsel: renkli emoji fontu sunucuda yok (tofu kutusu çıkıyor),
+        # bu yüzden vektörel "bilgi halkası" + kategori adı çizilir.
+        merkez_y = 790
+        for k in range(3):
+            r = 200 - k * 46
+            cizim.ellipse(
+                [GENISLIK // 2 - r, merkez_y - r, GENISLIK // 2 + r, merkez_y + r],
+                outline=(*acik_rgb(acik), 90 - k * 25), width=10 - k * 2,
+            )
+        f_soru = _font_getir(96, kalin=True)
+        cizim.text((GENISLIK // 2, merkez_y), "?", font=f_soru,
+                   fill=(255, 255, 255, 250), anchor="mm",
+                   stroke_width=7, stroke_fill=(0, 0, 0, 255))
+        # Kategori adı üstteki rozette zaten var (BOBİ TV • HAYVANLAR);
+        # burada tekrar yazmak kalabalık yapıyordu — kaldırıldı.
+
+        # Merkez rozet: "BİLİYOR MUYDUN?"
+        f_rozet = _font_getir(46, kalin=True)
+        yazi = "BİLİYOR MUYDUN?"
+        kutu = cizim.textbbox((0, 0), yazi, font=f_rozet)
+        g = (kutu[2] - kutu[0]) + 96
+        x1 = (GENISLIK - g) // 2
+        cizim.rounded_rectangle(
+            [x1, 960, x1 + g, 1060], radius=50,
+            fill=(*_karart(ana_rgb, 0.55), 245), outline=(*acik_rgb(acik), 255), width=6,
+        )
+        cizim.text((GENISLIK // 2, 1010), yazi, font=f_rozet,
+                   fill=(255, 255, 255, 255), anchor="mm")
+    except Exception as e:
+        print(f"[Kapak] Bilgi rozeti eklenemedi: {str(e)[:100]}")
+
+
+def _karart(rgb: tuple[int, int, int], oran: float) -> tuple[int, int, int]:
+    return tuple(max(0, min(255, int(c * oran))) for c in rgb)
+
+
+def acik_rgb(hex_renk: str) -> tuple[int, int, int]:
+    h = hex_renk.lstrip("#")
+    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+
+
 def kapak_resmi_olustur(senaryo_paketi: dict, cikis_jpg: str) -> str:
     """
     Viral tıklanma oranı (CTR) odaklı 1080x1920 profesyonel kapak üretir:
@@ -371,12 +490,25 @@ def kapak_resmi_olustur(senaryo_paketi: dict, cikis_jpg: str) -> str:
 
     # Kanca başlığı seç (kapak_metni -> hook_cümlesi -> baslik)
     ham_kanca = (
-        senaryo.get("kapak_metni")
+        senaryo.get("kapak_baslik")
+        or senaryo.get("kapak_metni")
+        or senaryo.get("soru")
         or senaryo.get("hook_cumlesi")
         or senaryo.get("baslik", "").replace("#shorts", "")
         or "BU OLAYIN SONU ŞOK ETTİ!"
     )
     kanca_ust = tr_upper(emoji_temizle(ham_kanca))
+    # Başlık 40 karakteri aşarsa TAM KELİME sınırında kırp (kelime ortasından
+    # kesmek amatör görünüyor: "... BİRİ Y!" gibi).
+    if len(kanca_ust) > 40:
+        parcalar = kanca_ust.split()
+        kisa = ""
+        for parca in parcalar:
+            aday = (kisa + " " + parca).strip()
+            if len(aday) > 38:
+                break
+            kisa = aday
+        kanca_ust = (kisa or parcalar[0]) + "…"
     if not kanca_ust.endswith(("!", "?")):
         kanca_ust += "!"
 
@@ -391,9 +523,13 @@ def kapak_resmi_olustur(senaryo_paketi: dict, cikis_jpg: str) -> str:
 
     # Merak uyandıran alıntı (Twist öncesi veya 2. replik)
     alinti_ham = ""
-    if len(diyaloglar) >= 2:
+    if str(senaryo.get("semaversiyonu", "")).startswith("8.0"):
+        # Bilgi formatında balonda SORU görünür (merak boşluğu); cevabı
+        # kapağa yazmak tıklama vaadini öldürüyordu.
+        alinti_ham = emoji_temizle(str(senaryo.get("soru") or senaryo.get("hook_metni") or ""))
+    if not alinti_ham and len(diyaloglar) >= 2:
         alinti_ham = emoji_temizle(diyaloglar[1].get("metin", ""))
-    elif diyaloglar:
+    elif not alinti_ham and diyaloglar:
         alinti_ham = emoji_temizle(diyaloglar[0].get("metin", ""))
     alinti_kelimeler = alinti_ham.split()
     if len(alinti_kelimeler) > 8:
@@ -401,8 +537,12 @@ def kapak_resmi_olustur(senaryo_paketi: dict, cikis_jpg: str) -> str:
     else:
         alinti_metin = alinti_ham or "Bunu kimse beklemiyordu..."
 
-    # 1. Sinematik VS Arka Plan
-    tuval = _sinematik_vs_arkaplan(GENISLIK, YUKSEKLIK)
+    # 1. Arka plan: bilgi formatında sakin kategori gradyanı, eski formatta VS
+    bilgi_formati_bg = str(senaryo.get("semaversiyonu", "")).startswith("8.0")
+    if bilgi_formati_bg:
+        tuval = _bilgi_arkaplan(senaryo)
+    else:
+        tuval = _sinematik_vs_arkaplan(GENISLIK, YUKSEKLIK)
     cizim = ImageDraw.Draw(tuval, "RGBA")
 
     # 2. Üst Kanal & Kategori Rozeti (y=58..130)
@@ -446,7 +586,11 @@ def kapak_resmi_olustur(senaryo_paketi: dict, cikis_jpg: str) -> str:
         width=5,
     )
     f_sok = _font_getir(29, kalin=True)
-    b_ciz.text((banner_g // 2, 28), "YOK ARTIK DEDİRTEN OLAY!", font=f_sok, fill=(255, 255, 255, 255), stroke_width=3, stroke_fill=(0, 0, 0, 255), anchor="mm")
+    if str(senaryo.get("semaversiyonu", "")).startswith("8.0"):
+        serit = "BUNU DUYUNCA ŞAŞIRACAKSIN!"
+    else:
+        serit = "YOK ARTIK DEDİRTEN OLAY!"
+    b_ciz.text((banner_g // 2, 28), serit, font=f_sok, fill=(255, 255, 255, 255), stroke_width=3, stroke_fill=(0, 0, 0, 255), anchor="mm")
 
     # Başlık metnini otomatik boyutlandır (2 veya 3 satır)
     font_boyut = 78 if len(kanca_ust) <= 28 else (68 if len(kanca_ust) <= 40 else 58)
@@ -479,15 +623,20 @@ def kapak_resmi_olustur(senaryo_paketi: dict, cikis_jpg: str) -> str:
     banner_donuk = banner_img.rotate(1.4, resample=Image.BICUBIC, expand=True)
     tuval.alpha_composite(banner_donuk, ((GENISLIK - banner_donuk.width) // 2, 148))
 
-    # 4. Çift Karakter Portre Sahnesi (y=585..1125)
-    sol_portre = _detayli_karakter_portresi_ciz(sol_rol, taraf="sol")
-    sag_portre = _detayli_karakter_portresi_ciz(sag_rol, taraf="sag")
-    tuval.alpha_composite(sol_portre, (42, 585))
-    tuval.alpha_composite(sag_portre, (GENISLIK - sag_portre.width - 42, 585))
-
-    # Merkez VS Rozeti
-    vs_rozet = _merkez_vs_simsek_rozeti()
-    tuval.alpha_composite(vs_rozet, ((GENISLIK - vs_rozet.width) // 2, 765))
+    # 4. Karakter sahnesi — FORMAT DEVRİMİ (2026-11-11)
+    # Yeni içerik hattı tek anlatıcılı bilgi formatı; "VS / çift karakter
+    # düellosu" kullanıcı talimatıyla kaldırıldı. Bilgi formatında bunun
+    # yerine dev kategori emojisi + merkez "BİLİYOR MUYDUN?" rozeti gelir.
+    bilgi_formati = str(senaryo.get("semaversiyonu", "")).startswith("8.0")
+    if bilgi_formati:
+        _bilgi_rozeti_ekle(tuval, cizim, senaryo)
+    else:
+        sol_portre = _detayli_karakter_portresi_ciz(sol_rol, taraf="sol")
+        sag_portre = _detayli_karakter_portresi_ciz(sag_rol, taraf="sag")
+        tuval.alpha_composite(sol_portre, (42, 585))
+        tuval.alpha_composite(sag_portre, (GENISLIK - sag_portre.width - 42, 585))
+        vs_rozet = _merkez_vs_simsek_rozeti()
+        tuval.alpha_composite(vs_rozet, ((GENISLIK - vs_rozet.width) // 2, 765))
 
     # 5. Merak Uyandıran Konuşma Balonu + "SONUNU İZLE!" Damgası (y=1145..1435)
     balon_x1, balon_y1 = 56, 1155
@@ -529,9 +678,10 @@ def kapak_resmi_olustur(senaryo_paketi: dict, cikis_jpg: str) -> str:
         width=5,
     )
     f_damga = _font_getir(33, kalin=True)
+    _bilgi = str(senaryo.get("semaversiyonu", "")).startswith("8.0")
     cizim.text(
         ((damga_x1 + damga_x2) // 2, (damga_y1 + damga_y2) // 2),
-        "SONUNU BEKLE!",
+        "CEVAP SONDA!" if _bilgi else "SONUNU BEKLE!",
         font=f_damga,
         fill=(255, 255, 255, 255),
         stroke_width=4,
@@ -550,9 +700,14 @@ def kapak_resmi_olustur(senaryo_paketi: dict, cikis_jpg: str) -> str:
         width=6,
     )
     f_cta = _font_getir(34, kalin=True)
+    _cta_metni = (
+        "▶  SEN DE ŞAŞIRACAKSIN!"
+        if str(senaryo.get("semaversiyonu", "")).startswith("8.0")
+        else "▶  FİNALDEKİ CEVAP EFSANE!"
+    )
     cizim.text(
         (GENISLIK // 2, (cta_y1 + cta_y2) // 2),
-        "▶  FİNALDEKİ CEVAP EFSANE!",
+        _cta_metni,
         font=f_cta,
         fill=(10, 14, 24, 255),
         anchor="mm",

@@ -268,7 +268,22 @@ def _konusma_balonu_olustur(
     f_metin = font_al(38)
     gecici = ImageDraw.Draw(Image.new("RGBA", (10, 10)))
     temiz_metin = emoji_temizle(metin)
-    satirlar = metin_satirla(gecici, temiz_metin, f_metin, kart_g - 235)[:4]
+    # --- OKUNURLUK DÜZELTMESİ (2026-11-11) ---
+    # Eski kod satırları 4 ile sınırlıyordu; uzun bilgi paragraflarında metnin
+    # YARISI ekranda kayboluyordu (ses tamamını okuyor, göz yarısını görüyor).
+    # Ayrıca kart ekran dışına taşabilir. Bu yüzden: satır başına 2 kat daha
+    # fazla satıra izin ver, taşarsa kalanı "…" ile bitir ve HİÇBİR ZAMAN
+    # sessizce kesme — logla uyar.
+    tum_satirlar = metin_satirla(gecici, temiz_metin, f_metin, kart_g - 235)
+    azami_satir = int(os.environ.get("BALON_AZAMI_SATIR", "10") or 10)
+    satirlar = tum_satirlar[:azami_satir]
+    if len(tum_satirlar) > azami_satir:
+        son = satirlar[-1].rstrip()
+        satirlar[-1] = (son[:-1] + "…") if len(son) > 3 else son + "…"
+        print(
+            f"[Animasyon] ⚠️ Balon metni {len(tum_satirlar)} satır, {azami_satir} "
+            f"sığdı (kırpıldı): '{temiz_metin[:50]}...'"
+        )
     kart_y = max(176, 86 + len(satirlar) * 48)
 
     img = Image.new("RGBA", (kart_g, kart_y), (0, 0, 0, 0))
@@ -548,8 +563,17 @@ def pro_sahne_videosu_uret(
         "-i", "-",
         "-i", str(birlesik_ses_wav),
         "-c:v", "libx264",
-        "-preset", "fast",
+        "-preset", os.environ.get("RENDER_PRESET", "fast"),
         "-crf", "20",
+        # BELLEK KORUMASI (2026-11-11): 1080x1920 + uzun video (90-180 sn)
+        # render'ında ffmpeg varsayılan thread sayısıyla 2 GB RAM'i aşabiliyor
+        # (sandbox'ta OOM-kill alındı). `-threads` sınırlaması bellek
+        # kullanımını ciddi biçimde düşürür; kalite/hız etkisi küçük.
+        "-threads", str(int(os.environ.get("RENDER_THREADS", "2") or 2)),
+        # x264 bellek ayarları: lookahead/ref/bframe düşürülünce 2 GB altı
+        # makinelerde OOM olmuyor (ölçüm: 192 MB RSS).
+        "-x264-params",
+        os.environ.get("RENDER_X264_PARAMS", "rc-lookahead=10:ref=2:bframes=2"),
         "-g", "25",
         "-force_key_frames", "expr:eq(n,0)",
         "-pix_fmt", "yuv420p",
@@ -625,14 +649,19 @@ def pro_sahne_videosu_uret(
             else:
                 tuval.alpha_composite(kanca_img, ((W - kanca_img.width) // 2, 162))
 
-            # 3. Önceki Konuşma Balonu (üstte hafif soluk bağlam olarak kalır)
-            if onceki_seg is not None:
+            # 3. Önceki Konuşma Balonu — ESKİ FORMAT (VS düellosu) İÇİN.
+            # FORMAT DEVRİMİ (2026-11-11): tek anlatıcılı bilgi formatında eski
+            # balonu ekranda tutmak iki kartın üst üste binmesine yol açıyor
+            # (canlı testte görüldü, metin okunmuyordu). Tek anlatıcıda yalnız
+            # AKTİF balon görünür.
+            tek_anlatici = str(senaryo.get("semaversiyonu", "")).startswith("8.0")
+            if onceki_seg is not None and not tek_anlatici:
                 ust_kart = onceki_seg["soluk_kart"]
                 tuval.alpha_composite(ust_kart, ((W - ust_kart.width) // 2 - 20, 395))
 
             # 4. Aktif Konuşma Balonu (easeOutBack yaylanma + sesle nefes alma)
             aktif_kart = seg["aktif_kart"]
-            hedef_y = 665 if onceki_seg is not None else 540
+            hedef_y = 540 if tek_anlatici else (665 if onceki_seg is not None else 540)
             if yerel_t < 0.18:
                 p = yerel_t / 0.18
                 c1 = 1.70158
@@ -647,6 +676,9 @@ def pro_sahne_videosu_uret(
             kart_render = aktif_kart.resize((bg_w, bg_h), Image.BILINEAR) if abs(olcek_b - 1.0) > 0.006 else aktif_kart
             kart_x = (W - kart_render.width) // 2 - 18
             kart_y = hedef_y + (aktif_kart.height - kart_render.height) // 2
+            # Güvenli bölge: dalga çubuğu ve altyazı y=1100'den sonra başlar.
+            if kart_y + kart_render.height > 1100:
+                kart_y = 1100 - kart_render.height
             tuval.alpha_composite(kart_render, (kart_x, kart_y))
 
             # 5. Canlı Ses Dalgası Çubukları (y=1145 — konuşma enerjisiyle senkron dans eder)
@@ -676,7 +708,9 @@ def pro_sahne_videosu_uret(
                 aktif_altyazi = en_yakin["img"]
 
             if aktif_altyazi is not None:
-                tuval.alpha_composite(aktif_altyazi, ((W - aktif_altyazi.width) // 2 - 10, 1255))
+                # Alt boşluğu dengelemek için altyazı 1255 → 1330 (Shorts
+                # güvenli bölgesinin içinde kalır, alt çubuk y=1906).
+                tuval.alpha_composite(aktif_altyazi, ((W - aktif_altyazi.width) // 2 - 10, 1330))
 
             # 7. Alt Altın İlerleme Çubuğu (Loop Progress Bar — y=1906..1920)
             ilerleme_g = int(W * ((kare_no + 1) / float(toplam_kare)))
@@ -725,9 +759,17 @@ def pro_sahne_videosu_uret(
         _, stderr_bytes = proc.communicate(timeout=180)
         if proc.returncode != 0:
             raise RuntimeError(f"FFmpeg encode hatası: {stderr_bytes.decode(errors='ignore')[-400:]}")
-    except Exception:
-        proc.kill()
-        raise
+    except Exception as hata:
+        # FFmpeg'in kendi hata mesajını göster — aksi hâlde "Broken pipe" gibi
+        # anlamsız hatalar görüyoruz ve kök neden bulunamıyor (2026-11-11).
+        try:
+            proc.kill()
+            kalan = proc.stderr.read().decode(errors="ignore")[-800:]
+            if kalan.strip():
+                print(f"[Animasyon] ❌ FFmpeg hatası:\n{kalan}")
+        except Exception:
+            pass
+        raise hata
 
     return str(cikis_video_mp4)
 

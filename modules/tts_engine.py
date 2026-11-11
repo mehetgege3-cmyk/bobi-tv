@@ -449,6 +449,33 @@ def senaryo_seslendir(senaryo_paketi: dict) -> dict:
             sesid=str(diyalog.get("sesid") or (KADIN_SES if cinsiyet == "kadin" else ERKEK_SES)),
             hiz=float(diyalog.get("hiz", 1.0)),
         )
+        # --- KORUMA: sessiz/bozuk ses tespiti (2026-11-11 canlı test hatası) ---
+        # 97 kelimelik bir replik 0.37 sn olarak üretildi (edge-tts boş dosya
+        # döndürdü). Bu, sessiz video yayınlanmasına yol açar. Beklenen süreye
+        # göre alt sınır koyup 2 kez yeniden denenir; olmazsa net hata verilir.
+        beklenen = max(0.6, len(str(diyalog.get("metin", "")).split()) / 3.2)
+        deneme = 0
+        while float(sonuc.get("sure", 0.0)) < beklenen * 0.45 and deneme < 2:
+            deneme += 1
+            print(
+                f"[TTS] ⚠️ Şüpheli kısa ses ({sonuc.get('sure', 0):.2f}sn < "
+                f"beklenen ~{beklenen:.1f}sn) — yeniden deneniyor ({deneme}/2)"
+            )
+            sonuc = metin_sese_cevir(
+                metin,
+                dosya_adi,
+                ses_tipi=ses_tipi,
+                cinsiyet=cinsiyet,
+                sesid=str(diyalog.get("sesid") or (KADIN_SES if cinsiyet == "kadin" else ERKEK_SES)),
+                hiz=float(diyalog.get("hiz", 1.0)),
+            )
+        if float(sonuc.get("sure", 0.0)) < beklenen * 0.45:
+            raise RuntimeError(
+                f"TTS başarısız: '{metin[:50]}...' için {sonuc.get('sure', 0):.2f}sn ses "
+                f"üretildi (beklenen ~{beklenen:.1f}sn). Sessiz video yayınlanmasın diye "
+                "render durduruldu."
+            )
+
         sonuc["karakter"] = karakter
         sonuc["sira"] = sira
         sonuc["taraf"] = "sol" if list(cinsiyet_haritasi.keys()).index(karakter.upper()) % 2 == 0 else "sag"

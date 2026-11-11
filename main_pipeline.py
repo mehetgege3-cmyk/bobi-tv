@@ -1,5 +1,5 @@
 """
-BOBİ TV — Otonom Üretim, Dönen Konular, En Az 15sn ve 15 Dakika Pipeline v6.4 PRO
+BOBİ TV — Otonom İlginç Bilgi Üretimi (🧠/🔍/💡 formatı, 8 kategori) v8.0
 Mimari:
 1. Otomatik Performans Temizliği: Kanalda yayınlanalı >= 60 dk (1 saat) olmuş ve < 100 görüntüleme
    almış videoları YouTube Data API v3 ile otomatik siler (kanal algoritmasını yüksek izlenmeli tutar).
@@ -219,7 +219,7 @@ def pipeline_calistir():
     baslangic = datetime.now(timezone.utc)
     saat = baslangic.strftime("%H:%M")
 
-    log_yaz(f"=== BOBİ TV v6.3 PRO ({saat} UTC) Başladı ===")
+    log_yaz(f"=== BOBİ TV v8.0 İlginç Bilgi ({saat} UTC) Başladı ===")
 
     # 1. ADIM: 6 saatte 100 görüntüleme almayan videoları otomatik temizle
     # CANLI TEST: silme kontrolü ATLANIR — tek seferlik test kanalda video
@@ -338,7 +338,7 @@ def pipeline_calistir():
                 kuyruk_kaynak_dosyalari[kuyruk_paketi["dosya_adi"]] = kuyruk_dosya
             continue
 
-        log_yaz(f"🎬 Video #{video_no} v6.3 Pro konu rotasyonu + 15sn alt sınır kontrolüyle başlıyor...")
+        log_yaz(f"🎬 Video #{video_no} ilginç bilgi hattı (8 kategori + etkileşim taktiği) başlıyor...")
         paket = arena_tam_uretim(video_no)
         if paket and paket.get("final_video") and Path(paket["final_video"]).exists():
             sure_bilgi = paket.get("video_suresi", 0)
@@ -383,9 +383,9 @@ def pipeline_calistir():
                     f"{next((p.get('kapak_ilk_kare', '') for p in hazir_paketler if p.get('dosya_adi') == d_adi), '') and 'EVET' or 'HAYIR'}"
                 )
                 send_message(
-                    f"🎬 <b>BOBİ TV v6.3 PRO (Dönen Konu + 15dk)</b>\n"
+                    f"🎬 <b>BOBİ TV İLGİNÇ BİLGİ</b>\n"
                     f"🎥 {sonuc['baslik'][:70]}\n"
-                    f"🖼️ 1. Kare VS Kapak + Otomatik Yorum Aktif\n"
+                    f"🖼️ 1. Kare Kapak + Otomatik Yorum Aktif\n"
                     f"🔗 {sonuc['url']}"
                 )
 

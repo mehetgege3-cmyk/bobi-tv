@@ -30,13 +30,31 @@ def ffmpeg_kurulu_mu() -> bool:
 
 
 def _ses_suresi(ses_dosyasi: str) -> float:
+    """Ses dosyası süresi — önce `wave` (WAV'lar için kesin), sonra ffprobe.
+
+    NEDEN DÜZELTİLDİ (2026-11-11): eskiden yalnız ffprobe kullanılıyordu ve
+    `ffprobe` yoksa/başarısızsa sessizce 2.0 dönüyordu. Bu yüzden 96 saniyelik
+    gerçek ses "2.00 sn" sayıldı ve render "minimum 15 sn" kapısına takıldı.
+    WAV zaten elimizde; `wave` ile okumak hem hızlı hem kesin.
+    """
+    try:
+        import wave
+
+        with wave.open(str(ses_dosyasi), "rb") as wf:
+            kare = wf.getnframes()
+            oran = float(wf.getframerate() or 0)
+            if kare > 0 and oran > 0:
+                return round(kare / oran, 3)
+    except Exception:
+        pass
     try:
         result = subprocess.run(
             ["ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", str(ses_dosyasi)],
-            capture_output=True, text=True, timeout=15,
+            capture_output=True, text=True,
         )
         return float(json.loads(result.stdout)["format"]["duration"])
     except Exception:
+        print(f"[Render] ⚠️ Ses süresi okunamadı: {ses_dosyasi} — 2.0 sn varsayıldı")
         return 2.0
 
 

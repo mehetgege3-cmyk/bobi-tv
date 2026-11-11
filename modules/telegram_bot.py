@@ -883,6 +883,118 @@ def _cooldown_dosyasi() -> Path:
     return Path(os.environ.get("BOBI_COOLDOWN_YOLU", "bobi_tv/state/uretim_cooldown.json"))
 
 
+# ---------------------------------------------------------------------------
+# TODO 25 — İMZALI + SÜRELİ CALLBACK (Emre / güvenlik)
+#
+# SORUN: Eski bir panel mesajındaki buton haftalar sonra basılırsa hâlâ
+# çalışıyordu (bayat aksiyon). Riskli aksiyonlarda (üret, onayla, sil)
+# butonun tazeliği kanıtlanmalı.
+#
+# ÇÖZÜM: callback_data içine kısa HMAC etiketi + bitiş zamanı gömülür.
+# Anahtar bot token'ından TÜRETİLİR (ayrı secret yok) ve chat_id'ye bağlanır
+# (başka sohbetten kopyalanan buton çalışmaz).
+#
+# SINIR: Telegram callback_data en fazla 64 BAYT. Bu yüzden etiket kısa
+# tutulur: "<aksiyon>:<son_kullanma>:<imza>" → ör. uret_onay:1a2b3c:9f8e7d
+# ---------------------------------------------------------------------------
+
+#: İmza gerektiren riskli aksiyonlar (diğerleri imzasız kalır — 64 bayt sınırı).
+IMZALI_AKSIYONLAR: tuple[str, ...] = ("uret_onay", "uret_baslat", "ay:onay", "ay:onayd")
+
+#: İmza geçerlilik süresi (saniye). 30 dk: kullanıcı paneli açık bırakabilir.
+IMZA_GECERLILIK_SN = 30 * 60
+
+
+def _imza_anahtari() -> bytes:
+    """HMAC anahtarı: bot token'ından türetilir (ayrı secret saklanmaz)."""
+    import hashlib
+
+    tohum = f"{BOT_TOKEN}|{CHAT_ID}|bobi-imza-v1".encode()
+    return hashlib.sha256(tohum).digest()
+
+
+def imzali_callback(aksiyon: str, simdi: float | None = None) -> str:
+    """Riskli aksiyon için imzalı + süreli callback_data üretir (≤64 bayt)."""
+    import hashlib
+    import hmac
+    import time as _time
+
+    son = int((simdi if simdi is not None else _time.time()) + IMZA_GECERLILIK_SN)
+    son_kisa = format(son, "x")  # hex → kısa
+    imza = hmac.new(
+        _imza_anahtari(), f"{aksiyon}:{son_kisa}".encode(), hashlib.sha256
+    ).hexdigest()[:10]
+    return f"{aksiyon}:{son_kisa}:{imza}"
+
+
+def imza_dogrula(callback_data: str) -> tuple[bool, str]:
+    """İmzalı callback'i doğrular. Döner: (geçerli_mi, aksiyon|sebep).
+
+    İmzasız aksiyonlar buraya gelmez (çağıran `imza_gerekli` ile ayırır).
+    """
+    import hashlib
+    import hmac
+    import time as _time
+
+    parcalar = callback_data.split(":")
+    # "ay:onay:<son>:<imza>" gibi iki noktalı aksiyonlar da desteklenir.
+    if len(parcalar) < 3:
+        return False, "biçim"
+    imza, son_hex = parcalar[-1], parcalar[-2]
+    aksiyon = ":".join(parcalar[:-2])
+    try:
+        son = int(son_hex, 16)
+    except ValueError:
+        return False, "biçim"
+    beklenen = hmac.new(
+        _imza_anahtari(), f"{aksiyon}:{son_hex}".encode(), hashlib.sha256
+    ).hexdigest()[:10]
+    if not hmac.compare_digest(imza, beklenen):
+        return False, "imza uyuşmuyor"
+    if son < _time.time():
+        return False, "süresi geçti"
+    return True, aksiyon
+
+
+def imzali_ay_callback(aksiyon: str, *parcalar: Any, simdi: float | None = None) -> str:
+    """`ay:onay:<anahtar>:<indeks>` gibi payload'lı imzalı callback üretir.
+
+    ÖNEMLİ: payload (anahtar/indeks) İMZAYA DAHİL edilir; aksi halde
+    imza payload'ı korumaz ve doğrulama sonrası aksiyon bozulur.
+    Biçim: <aksiyon>:<payload...>:<son_hex>:<imza>
+    """
+    import hashlib
+    import hmac
+    import time as _time
+
+    govde = ":".join([aksiyon, *[str(p) for p in parcalar]])
+    son = int((simdi if simdi is not None else _time.time()) + IMZA_GECERLILIK_SN)
+    son_kisa = format(son, "x")
+    imza = hmac.new(
+        _imza_anahtari(), f"{govde}:{son_kisa}".encode(), hashlib.sha256
+    ).hexdigest()[:10]
+    return f"{govde}:{son_kisa}:{imza}"
+
+
+def imza_gerekli(callback_data: str) -> bool:
+    """Bu callback imza taşımalı mı? (riskli aksiyonlar)
+
+    İMZALI veri de tanınır: "uret_onay:<son>:<imza>" → aksiyon "uret_onay".
+    Sondaki iki parça (son kullanma + imza) atılır, kalanı aksiyondur.
+    """
+    parcalar = callback_data.split(":")
+    if callback_data in IMZALI_AKSIYONLAR:
+        return True
+    # İki noktalı aksiyonlar (ay:onay) imzasız hâlde de tanınmalı.
+    if len(parcalar) >= 2 and f"{parcalar[0]}:{parcalar[1]}" in IMZALI_AKSIYONLAR:
+        return True
+    # İmzalı biçim: son iki parça (hex zaman + hex imza) atılır.
+    if len(parcalar) >= 3:
+        aday = ":".join(parcalar[:-2])
+        return aday in IMZALI_AKSIYONLAR
+    return False
+
+
 def uretim_cooldown_kalan() -> int:
     """Kalan cooldown süresi (sn). 0 → tetikleme serbest."""
     try:
@@ -945,7 +1057,7 @@ def ekran_uret_onay() -> tuple[str, list[list[dict[str, Any]]]]:
         f"{_kota_birim_ozeti()}"
     )
     butonlar = [
-        [renkli_buton("✅ Evet, başlat", "uret_onay", "onay")],
+        [renkli_buton("✅ Evet, başlat", imzali_callback("uret_onay"), "onay")],
         [
             {"text": "← Vazgeç", "callback_data": "uret_menu"},
             {"text": "🏠 Menü", "callback_data": "menu_main"},
@@ -1555,7 +1667,8 @@ def ekran_onay_deger(anahtar: str, deger: str) -> tuple[str, list[list[dict[str,
         "Değişiklik yalnızca onayınızdan sonra uygulanır. Geri alınamaz.",
     ]
     butonlar = [
-        [{"text": "✅ Onayla", "callback_data": f"ay:onayd:{anahtar}"}],
+        # TODO 25: onay riskli aksiyondur → İMZALI + süreli callback.
+        [{"text": "✅ Onayla", "callback_data": imzali_ay_callback("ay:onayd", anahtar)}],
         [{"text": "← Vazgeç", "callback_data": f"ay:s:{anahtar}"}],
         [
             {"text": "← Geri", "callback_data": f"ay:g:{a['grup']}"},
@@ -1583,7 +1696,8 @@ def ekran_onay(anahtar: str, indeks: int) -> tuple[str, list[list[dict[str, Any]
         "Değişiklik yalnızca onayınızdan sonra uygulanır.",
     ]
     butonlar = [
-        [{"text": "✅ Onayla", "callback_data": f"ay:onay:{anahtar}:{indeks}"}],
+        # TODO 25: onay riskli aksiyondur → İMZALI + süreli callback.
+        [{"text": "✅ Onayla", "callback_data": imzali_ay_callback("ay:onay", anahtar, indeks)}],
         [{"text": "← Vazgeç", "callback_data": f"ay:iptal:{anahtar}"}],
         [
             {"text": "← Geri", "callback_data": f"ay:s:{anahtar}"},
@@ -1835,6 +1949,24 @@ def handle_callback(callback_data: str, callback_id: str, kullanici_id: int | No
 
 
 def _handle_callback_icerde(callback_data: str, callback_id: str, kullanici_id: int | None) -> None:
+    # TODO 25 — İMZALI CALLBACK KAPISI: riskli aksiyonlar imza + süre ister.
+    # Bayat (eski panelden kalmış) veya taklit edilmiş buton ÇALIŞMAZ.
+    if imza_gerekli(callback_data):
+        gecerli, sonuc = imza_dogrula(callback_data)
+        if not gecerli:
+            mesaj = (
+                "Bu düğme eskidi, menüyü yenile"
+                if sonuc == "süresi geçti"
+                else f"⛔ Düğme doğrulanamadı ({sonuc})"
+            )
+            answer_callback(callback_id, mesaj, show_alert=True)
+            _ekran_goster(ekran_ana())
+            return
+        # Doğrulandı: imzayı ayır, PAYLOAD'u koru (ay:onay:<anahtar>:<indeks>)
+        parcalar_imzali = callback_data.split(":")
+        payload = ":".join(parcalar_imzali[:-2])
+        callback_data = payload if payload.startswith("ay:onay") else sonuc
+
     if callback_data == "menu_main":
         answer_callback(callback_id)
         _ekran_goster(ekran_ana())

@@ -106,6 +106,8 @@ def _tum_ekranlari_topla() -> list[tuple[str, tuple[str, list[list[dict[str, Any
         anahtar = str(a["anahtar"])
         ekranlar.append((f"ay:s:{anahtar}", tb.ekran_ayar_detay(anahtar)))
         ekranlar.append((f"ay:test:{anahtar}", tb.ekran_ayar_test(anahtar)))
+    # TODO 25: onay callback'i imzalıdır; ekran karşılaştırması aksiyon
+    # adı üzerinden yapılır (imza/zaman değişkendir).
     ekranlar.append(("ay:onay:force:1", tb.ekran_onay("force", 1)))
     ekranlar.append(("ay:onay:KOTA_DOLU_DAVRANIS:1", tb.ekran_onay("KOTA_DOLU_DAVRANIS", 1)))
     return ekranlar
@@ -310,7 +312,10 @@ def test_riskli_ayar_onaysiz_uygulanmaz(monkeypatch: pytest.MonkeyPatch) -> None
     flat = [d for satir in dugmeler for d in satir]
     onayla = [d["callback_data"] for d in flat if "Onayla" in str(d["text"])]
     vazgec = [d["callback_data"] for d in flat if "Vazgeç" in str(d["text"])]
-    assert onayla == ["ay:onay:KOTA_DOLU_DAVRANIS:1"]
+    # TODO 25: onay butonu artık İMZALI + süreli (payload imzaya dahil).
+    assert len(onayla) == 1
+    assert onayla[0].startswith("ay:onay:KOTA_DOLU_DAVRANIS:1:")
+    assert tb.imza_dogrula(onayla[0])[0] is True, "onay imzası geçersiz"
     assert vazgec == ["ay:iptal:KOTA_DOLU_DAVRANIS"]
 
 
@@ -327,7 +332,8 @@ def test_force_onay_ekrani_gercek_etkiyi_hesaplar(monkeypatch: pytest.MonkeyPatc
 
 def test_onay_sonrasi_uygulanir_ve_gecmise_yazar(monkeypatch: pytest.MonkeyPatch) -> None:
     cagrilar = _takip_et(monkeypatch)
-    tb.handle_callback("ay:onay:KOTA_DOLU_DAVRANIS:1", "cb1")
+    # TODO 25: imzalı onay callback'i (elle yazılan imzasız veri reddedilir).
+    tb.handle_callback(tb.imzali_ay_callback("ay:onay", "KOTA_DOLU_DAVRANIS", 1), "cb1")
     ham = ad.state_ham_ayarlari(tb.AYARLAR_STATE_YOLU)
     assert ham.get("KOTA_DOLU_DAVRANIS") == "hata"
     kayitlar = ad.gecmisi_oku(10, tb.GECMIS_YOLU)
@@ -403,7 +409,7 @@ def test_temizlik_uyari_metni_panelde_gosterilir(monkeypatch: pytest.MonkeyPatch
 
 def test_temizlik_yazmaya_calisirsa_reddedilir(monkeypatch: pytest.MonkeyPatch) -> None:
     cagrilar = _takip_et(monkeypatch)
-    tb.handle_callback("ay:onay:MIN_IZLENME_ESIGI:0", "cb1")
+    tb.handle_callback(tb.imzali_ay_callback("ay:onay", "MIN_IZLENME_ESIGI", 0), "cb1")
     assert not tb.AYARLAR_STATE_YOLU.exists()
     assert "BOBİ TV" in _son_panel_metni(cagrilar)
 

@@ -123,7 +123,8 @@ def test_youtube_token_yoksa_hata_doner(arsiv, monkeypatch):
 
 
 def test_saat_analizi_yeterli_ornek_yoksa_uyarir(arsiv):
-    arsiv.write_text(json.dumps([_kayit("a", saat_once=2, izlenme={"+1h": {"izlenme": 5}})]), encoding="utf-8")
+    veri = [_kayit("a", saat_once=2, izlenme={"+1h": {"izlenme": 5}})]
+    arsiv.write_text(json.dumps(veri), encoding="utf-8")
     sonuc = pf.saat_analizi()
     assert sonuc["yeterli"] is False
     assert "yetersiz" in sonuc["sebep"]
@@ -131,7 +132,10 @@ def test_saat_analizi_yeterli_ornek_yoksa_uyarir(arsiv):
 
 def test_saat_analizi_yeterli_veride_gruplar(arsiv):
     kayitlar = [
-        _kayit(f"v{i}", saat_once=i + 1, izlenme={"+1h": {"izlenme": 100 + i}}, saat=9 + (i % 2) * 6)
+        _kayit(
+            f"v{i}", saat_once=i + 1,
+            izlenme={"+1h": {"izlenme": 100 + i}}, saat=9 + (i % 2) * 6,
+        )
         for i in range(6)
     ]
     arsiv.write_text(json.dumps(kayitlar), encoding="utf-8")

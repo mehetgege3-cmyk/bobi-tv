@@ -109,7 +109,9 @@ def _saat_farki(simdi: datetime, damga: str) -> float | None:
         return None
 
 
-def snapshot_gerekenler(kayitlar: list[dict[str, Any]], simdi: datetime | None = None) -> list[dict[str, Any]]:
+def snapshot_gerekenler(
+    kayitlar: list[dict[str, Any]], simdi: datetime | None = None
+) -> list[dict[str, Any]]:
     """Hangi kayıt için hangi snapshot zamanı GELMİŞ ve HENÜZ alınmamış."""
     simdi = simdi or datetime.now(UTC)
     gereken: list[dict[str, Any]] = []

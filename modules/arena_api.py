@@ -13,7 +13,7 @@ import json
 import base64
 import asyncio
 from pathlib import Path
-from datetime import datetime
+from datetime import UTC, datetime
 
 from modules.scenario import (
     SENARYO_SABLONLARI,
@@ -261,7 +261,7 @@ async def arena_canli_senaryo_iste(video_no: int) -> dict | None:
         page = await context.new_page()
 
         print(f"[Arena] Video #{video_no} ({kategori}) için Master Loop senaryosu isteniyor...")
-        cevap = await _arena_sorgusu_yap(page, prompt, min_cevap_uzunlugu=120, timeout=130)
+        cevap = await _arena_sorgusu_yap(page, prompt, min_cevap_uzunlugu=120)
         await browser.close()
 
     if not cevap:
@@ -354,7 +354,7 @@ async def arena_kapak_onerisi_al_async(paket: dict) -> dict | None:
             ])
             page = await context.new_page()
             print(f"[Arena Kapak] '{baslik[:40]}' için kapak önerisi isteniyor...")
-            cevap = await _arena_sorgusu_yap(page, prompt, min_cevap_uzunlugu=40, timeout=120)
+            cevap = await _arena_sorgusu_yap(page, prompt, min_cevap_uzunlugu=40)
             await browser.close()
     except Exception as e:
         print(f"[Arena Kapak] Tarayıcı hatası: {str(e)[:120]}")
@@ -488,21 +488,96 @@ async def arena_video_uret(video_no: int, output_dir: str = "bobi_tv/output") ->
 
 
 
-async def _arena_sorgusu_yap(page, prompt: str, min_cevap_uzunlugu: int = 100, timeout: int = 130) -> str | None:
+#: Arena yanıt sürelerinin kalıcı kaydı (panel + rapor bunu okur).
+ARENA_SURE_YOLU = Path("bobi_tv/state/arena_sure.json")
+
+
+def _arena_sure_kaydet(saniye: float, karakter: int, dusunme: str = "") -> None:
+    """Arena'nın GERÇEK yanıt süresini state'e yazar (varsayım değil, ölçüm).
+
+    Kullanıcı isteği (2026-11-11): süreç "anlık gösterilsin". Log tek başına
+    kaybolur; panelin ve raporun okuyabilmesi için son 20 ölçüm saklanır.
+    """
     try:
-        await page.goto("https://arena.ai/agent/", wait_until="domcontentloaded", timeout=30000)
+        try:
+            veri = json.loads(ARENA_SURE_YOLU.read_text(encoding="utf-8"))
+        except Exception:
+            veri = {}
+        olcumler = list(veri.get("olcumler") or [])
+        olcumler.append({
+            "zaman": datetime.now(UTC).isoformat(),
+            "saniye": round(float(saniye), 1),
+            "karakter": int(karakter),
+            "arena_dusunme": dusunme,
+        })
+        olcumler = olcumler[-20:]
+        sureler = [o["saniye"] for o in olcumler]
+        ARENA_SURE_YOLU.parent.mkdir(parents=True, exist_ok=True)
+        ARENA_SURE_YOLU.write_text(
+            json.dumps({
+                "son": olcumler[-1],
+                "ortalama": round(sum(sureler) / len(sureler), 1),
+                "en_uzun": max(sureler),
+                "ornek": len(olcumler),
+                "olcumler": olcumler,
+            }, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+    except Exception as e:
+        print(f"[Arena] süre kaydı yazılamadı: {str(e)[:80]}", flush=True)
+
+
+async def _arena_sorgusu_yap(
+    page,
+    prompt: str,
+    min_cevap_uzunlugu: int = 100,
+    idle_timeout: int | None = None,
+    max_timeout: int | None = None,
+) -> str | None:
+    """Arena'ya sorar ve cevabı döndürür — SABİT TIMEOUT YOK, CANLI İLERLEME VAR.
+
+    KULLANICI İSTEĞİ (2026-11-11): "Timeout kullanma; Arena bazen uzun düşünüyor.
+    Yanıtın oluşturma sürecini anlık olarak pipeline içinde gösterirsek, süreyi
+    varsayımsal değil GERÇEK olarak göstermiş oluruz."
+
+    Eski davranış: `while süre < 130 sn` → Arena 3 dakika düşünürse cevap
+    ÇÖPE gidiyordu (üretim yerel şablona düşüyordu) ve kullanıcı neden
+    düştüğünü göremiyordu.
+
+    Yeni davranış:
+      • Mutlak süre sınırı YOK. Yalnız iki GÜVENLİK freni var (ikisi de env ile
+        ayarlanır, varsayılanı çok geniş):
+          ARENA_IDLE_DK  (varsayılan 15) — bu kadar süre HİÇ değişiklik olmazsa
+                                          "takıldı" sayılır (donmuş sayfa).
+          ARENA_MAKS_DK  (varsayılan 45) — mutlak güvenlik tavanı (Actions job
+                                          süresini korumak için, pratikte nadir).
+      • Her ~10 saniyede TEK SATIR canlı ilerleme basılır (flush=True):
+          ⏳ Arena 00:42 · düşünüyor · 213 karakter · son değişim 6 sn önce
+      • Arena'nın kendi süre etiketi ("Thought for 12 seconds") görülürse
+        ayrıca yazılır → GERÇEK düşünme süresi logda.
+      • Bitiş: "Was this task successful?" işareti + yeterli metin, ya da
+        20 sn boyunca metin değişmezse (cevap oturdu).
+    """
+    import os
+    from datetime import datetime
+
+    idle_dk = float(os.environ.get("ARENA_IDLE_DK", "15") or 15)
+    maks_dk = float(os.environ.get("ARENA_MAKS_DK", "45") or 45)
+
+    try:
+        await page.goto("https://arena.ai/agent/", wait_until="domcontentloaded", timeout=45000)
         await page.wait_for_timeout(3000)
 
         ilk_body = await page.locator("body").inner_text()
         if "MIDDLEWARE_INVOCATION_FAILED" in ilk_body:
-            print("[Arena] HATA: 500 Middleware hatası.")
+            print("[Arena] HATA: 500 Middleware hatası.", flush=True)
             return None
 
         editor = page.locator('div.tiptap[contenteditable="true"]')
         try:
-            await editor.wait_for(state="visible", timeout=15000)
+            await editor.wait_for(state="visible", timeout=30000)
         except Exception:
-            print("[Arena] Tiptap editörü görünmedi.")
+            print("[Arena] Tiptap editörü görünmedi.", flush=True)
             return None
 
         await editor.click()
@@ -512,6 +587,8 @@ async def _arena_sorgusu_yap(page, prompt: str, min_cevap_uzunlugu: int = 100, t
 
         send_btn = page.locator('button[aria-label="Send message"]')
         await send_btn.click(force=True)
+        gonderim = datetime.now()
+        print("[Arena] 📤 Prompt gönderildi — cevap bekleniyor (süre sınırı yok)", flush=True)
 
         for _ in range(15):
             await page.wait_for_timeout(1000)
@@ -520,35 +597,86 @@ async def _arena_sorgusu_yap(page, prompt: str, min_cevap_uzunlugu: int = 100, t
 
         prompt_ilk_satir = prompt.splitlines()[0][:55]
         son_uzunluk = 0
+        son_degisim = datetime.now()
         stable_ticks = 0
-        baslangic = datetime.now()
+        son_kalp = -99
+        dusunme_suresi = ""
 
-        while (datetime.now() - baslangic).total_seconds() < timeout:
+        while True:
             await page.wait_for_timeout(2000)
+            gecen = (datetime.now() - gonderim).total_seconds()
             body = await page.locator("body").inner_text()
 
             if "Sign in to continue" in body or "Continue with Google" in body:
-                print("[Arena] Oturum süresi dolmuş (Login modalı açıldı).")
+                print("[Arena] ⛔ Oturum süresi dolmuş (Login modalı açıldı).", flush=True)
                 return None
 
             cevap = _cevabi_ayikla(body, prompt, prompt_ilk_satir)
             dusunuyor = "orchestrating" in body.lower() or "thinking" in body.lower()
             bitti_isareti = "Was this task successful?" in body
 
-            if bitti_isareti and len(cevap) >= min_cevap_uzunlugu:
-                return cevap
+            # Arena'nın KENDİ süre etiketi: "Thought for 12 seconds"
+            if not dusunme_suresi:
+                m = re.search(r"Thought for ([\w\s]+?)(?:\n|$)", body)
+                if m:
+                    dusunme_suresi = m.group(1).strip()
 
             if len(body) != son_uzunluk or dusunuyor:
                 son_uzunluk = len(body)
+                son_degisim = datetime.now()
                 stable_ticks = 0
             else:
                 stable_ticks += 1
-                if stable_ticks >= 5 and len(cevap) >= min_cevap_uzunlugu:
-                    return cevap
 
-        return None
+            # CANLI İLERLEME (her ~10 sn) — varsayım değil, gerçek durum
+            if gecen - son_kalp >= 10 or gecen < 3:
+                son_kalp = gecen
+                durum = "düşünüyor" if dusunuyor else ("cevap yazıyor" if cevap else "bekliyor")
+                sessiz = (datetime.now() - son_degisim).total_seconds()
+                print(
+                    f"[Arena] ⏳ {int(gecen) // 60:02d}:{int(gecen) % 60:02d} · {durum} · "
+                    f"{len(cevap)} karakter · son değişim {int(sessiz)} sn önce"
+                    + (f" · Arena: {dusunme_suresi}" if dusunme_suresi else ""),
+                    flush=True,
+                )
+
+            if bitti_isareti and len(cevap) >= min_cevap_uzunlugu:
+                print(
+                    f"[Arena] ✅ Cevap alındı: {gecen:.0f} sn · {len(cevap)} karakter"
+                    + (f" · Arena'nın kendi süresi: {dusunme_suresi}" if dusunme_suresi else ""),
+                    flush=True,
+                )
+                _arena_sure_kaydet(gecen, len(cevap), dusunme_suresi)
+                return cevap
+
+            if stable_ticks >= 10 and len(cevap) >= min_cevap_uzunlugu:
+                print(
+                    f"[Arena] ✅ Cevap oturdu (20 sn değişmedi): {gecen:.0f} sn · "
+                    f"{len(cevap)} karakter",
+                    flush=True,
+                )
+                _arena_sure_kaydet(gecen, len(cevap), dusunme_suresi)
+                return cevap
+
+            # GÜVENLİK FRENLERİ (sabit timeout değil — donmuş sayfa koruması)
+            sessiz_dk = (datetime.now() - son_degisim).total_seconds() / 60
+            if sessiz_dk > idle_dk:
+                print(
+                    f"[Arena] ⚠️ {sessiz_dk:.0f} dk boyunca hiç değişiklik yok "
+                    f"(ARENA_IDLE_DK={idle_dk}) — takıldı sayılıyor.",
+                    flush=True,
+                )
+                return cevap if len(cevap) >= min_cevap_uzunlugu else None
+            if gecen / 60 > maks_dk:
+                print(
+                    f"[Arena] ⚠️ ARENA_MAKS_DK={maks_dk} aşıldı ({gecen:.0f} sn) — "
+                    "güvenlik freni.",
+                    flush=True,
+                )
+                return cevap if len(cevap) >= min_cevap_uzunlugu else None
+
     except Exception as e:
-        print(f"[Arena] Sorgu hatası: {e}")
+        print(f"[Arena] Sorgu hatası: {e}", flush=True)
         return None
 
 

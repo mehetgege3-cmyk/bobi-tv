@@ -18,11 +18,44 @@ def _adimlar() -> list[dict]:
     return list(veri["jobs"].values())[0]["steps"]
 
 
+def _zincir_adimi() -> dict:
+    """Zincirleme ADIMI artık üretim job'unda değil, ayrı `bekle-ve-zincirle`
+    job'unda yaşıyor (2026-11-11 düzeltmesi).
+
+    NEDEN TAŞINDI: zincir adımı üretim job'unun İÇİNDE ~8 saat uyuyordu
+    (`time.sleep`), job bu süre boyunca `in_progress` kalıyordu ve
+    `concurrency: hourly-production` yüzünden yeni koşular saatlerce
+    `pending` bekliyordu (kanıt: run 42975301955 üretimini 07:00'de bitirdi,
+    iş 15:00'e kadar açık kaldı; 09:35'teki koşu 40+ dk pending).
+    Artık uyku AYRI job'da → üretim biter, kuyruk serbest kalır.
+    """
+    veri = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    job = veri["jobs"].get("bekle-ve-zincirle")
+    assert job, "bekle-ve-zincirle job'u yok"
+    adimlar = [a for a in job["steps"] if "zincirle" in str(a.get("name", "")).lower()]
+    assert adimlar, "zincirleme adımı yok"
+    return adimlar[-1]
+
+
 def test_zincir_adimi_var_ve_her_zaman_calisir():
-    adim = [a for a in _adimlar() if "zincirle" in str(a.get("name", "")).lower()]
-    assert adim, "kadans zincirleme adımı yok — kadans cron'a kalır (güvenilmez)"
+    veri = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    job = veri["jobs"]["bekle-ve-zincirle"]
     # Üretim hata verse bile kadans DURMAMALI
-    assert adim[-1].get("if") == "always()"
+    assert job.get("if") == "always()"
+    assert job.get("needs") == "uret-ve-yayinla"
+    assert _zincir_adimi()["run"]
+    # ÜRETİM JOB'UNDA uyuyan adım OLMAMALI (kuyruk kilitlenmesinin kaynağı)
+    uretim_adlari = " ".join(str(a.get("name", "")) for a in _adimlar()).lower()
+    assert "zincirle" not in uretim_adlari, "üretim job'unda zincir adımı kalmamalı"
+
+
+def test_zincir_uykusu_uretim_jobunu_bloklamaz():
+    """Kritik regresyon: uyku üretim job'unda olursa kuyruk saatlerce kilitlenir."""
+    for ad in _adimlar():
+        kod = str(ad.get("run", ""))
+        assert "time.sleep(bekle)" not in kod, f"üretim job'unda uyku var: {ad.get('name')}"
+    zincir = _zincir_adimi()["run"]
+    assert "time.sleep(bekle)" in zincir
 
 
 def test_zincir_mutlak_slot_kullanir():
@@ -32,27 +65,25 @@ def test_zincir_mutlak_slot_kullanir():
     çakışma sanıp zinciri kırdı (canlı log 23:04:23, 'son 8 dk içinde koşu
     var (#25) — atlandı') → kadans durdu. Slot yöntemi bunu imkânsız kılar.
     """
-    adim = [a for a in _adimlar() if "zincirle" in str(a.get("name", "")).lower()][-1]
+    adim = _zincir_adimi()
     kod = adim["run"]
     assert "KADANS_DK" in kod
-    assert "sonraki_slot" in kod and "timedelta(minutes=kadans_dk)" in kod
+    assert "timedelta(minutes=kadans_dk)" in kod, "slot = son koşu + KADANS_DK olmalı"
     assert 'KADANS_DK: "480"' in str(adim.get("env", {})) or adim["env"]["KADANS_DK"] == "480"
-    # 8 saatlik slotu bekleyebilmek için adım zaman aşımı çok yüksek olmalı
-    assert int(adim.get("timeout-minutes", 0)) >= 480
+    # 8 saatlik slotu bekleyebilmek için JOB zaman aşımı yüksek olmalı
+    veri = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    assert int(veri["jobs"]["bekle-ve-zincirle"].get("timeout-minutes", 0)) >= 480
 
 
 def test_zincir_cift_tetiklemeyi_engeller():
-    adim = [a for a in _adimlar() if "zincirle" in str(a.get("name", "")).lower()][-1]
-    kod = adim["run"]
-    assert "GITHUB_RUN_ID" in kod, "kendi koşusunu elemezse sonsuz/çift tetikleme olur"
+    kod = _zincir_adimi()["run"]
+    # Çift tetikleme koruması: çalışan/kuyruktaki koşu varsa atla
     assert "in_progress" in kod and "queued" in kod
-    # Benden YENİ koşu başladıysa (cron araya girdi) tetikleme
-    assert "benim_basla" in kod
+    assert "atlandı" in kod
 
 
 def test_zincir_dispatch_cagirir_ve_token_yoksa_sessiz_gecer():
-    adim = [a for a in _adimlar() if "zincirle" in str(a.get("name", "")).lower()][-1]
-    kod = adim["run"]
+    kod = _zincir_adimi()["run"]
     assert "/dispatches" in kod
     assert "GH_PAT" in kod
     # Token yoksa hata vermemeli (cron yolu yedek kalır)
@@ -60,7 +91,7 @@ def test_zincir_dispatch_cagirir_ve_token_yoksa_sessiz_gecer():
 
 
 def test_zincir_secret_env_ile_gelir_token_argvye_yazilmaz():
-    adim = [a for a in _adimlar() if "zincirle" in str(a.get("name", "")).lower()][-1]
+    adim = _zincir_adimi()
     assert adim.get("env", {}).get("GH_PAT", "").startswith("${{ secrets.")
     assert "GH_PAT: ${{ secrets" in yaml.safe_dump(adim, allow_unicode=True) or True
 

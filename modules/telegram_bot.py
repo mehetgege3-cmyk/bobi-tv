@@ -2553,6 +2553,7 @@ def ekran_kanal_sagligi() -> tuple[str, list[list[dict[str, Any]]]]:
         f"│ ⭐ Kalite ortalaması: {_sayi(ozet.get('kalite_ortalama'))} "
         f"({ozet.get('kalite_ornek') or 0} senaryo)",
         f"│ 🪝 Kanca: {_kanca_ozeti(ozet)}",
+        *(["│ " + _arena_sure_ozeti()] if _arena_sure_ozeti() else []),
         ayirici,
         f"📐 Kadans: <b>{_kadans_etiketi()}</b> · 🗑 Silme eşiği: "
         f"<b>{_izlenme_kurali_ozeti()}</b>",
@@ -2573,6 +2574,26 @@ def ekran_kanal_sagligi() -> tuple[str, list[list[dict[str, Any]]]]:
         ],
         list(GERI_MENUSU),
     ]
+
+
+def _arena_sure_ozeti() -> str:
+    """Arena'nın GERÇEK yanıt süresi — ölçülmüş, uydurulmuş değil.
+
+    Kullanıcı isteği (2026-11-11): "Arena bazen uzun düşünüyor; süreci anlık
+    gösterelim, süreyi varsayımsal değil gerçek gösterelim."
+    Kaynak: `bobi_tv/state/arena_sure.json` (arena_api her yanıtta yazar).
+    """
+    with suppress(Exception):
+        from modules.arena_api import ARENA_SURE_YOLU
+
+        veri = json.loads(ARENA_SURE_YOLU.read_text(encoding="utf-8"))
+        son = veri.get("son") or {}
+        if not son:
+            return ""
+        sn = float(son.get("saniye") or 0)
+        ek = f" · Arena: {son['arena_dusunme']}" if son.get("arena_dusunme") else ""
+        return f"🌐 Arena: son yanıt <b>{sn:.0f} sn</b> · ort. <b>{veri.get('ortalama')} sn</b>{ek}"
+    return ""
 
 
 def _kanca_ozeti(ozet: dict[str, Any]) -> str:

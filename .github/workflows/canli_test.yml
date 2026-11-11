@@ -1,0 +1,190 @@
+name: "Canlı Test — 1 video üret + yükle (tek seferlik)"
+
+# KULLANICI İSTEĞİ (2026-11-11):
+#   "Bir video üretip kapak ekleyip kanala yükleyecek TAM testi çalıştır...
+#    tek seferlik canlı deneme GitHub'da çalıştır. Timeout kullanma."
+#
+# Bu workflow ÜRETİM HATTININ AYNISINI çalıştırır (kanca motoru + ses + render +
+# Arena kapak + ilk kareye gömme + YouTube yükleme). Tek fark: YALNIZ 1 VİDEO
+# üretir ve TUR_BASINA_URETIM=1'e sabitler.
+#
+# ÖNEMLİ: `concurrency` YOK — 8 saatlik üretim job'u hâlâ açıkken bile bu test
+# HEMEN başlar (kuyrukta beklemez). Kanal sağlığı/silme mantığı DEĞİŞMEZ:
+# yüklenen video da 6 saatte 100 izlenme kuralına tabidir.
+#
+# Zaman aşımı politikası: Arena yanıtı için SABİT SÜRE SINIRI YOK
+# (ARENA_IDLE_DK=15 dk donmuş-sayfa freni, ARENA_MAKS_DK=45 dk güvenlik freni).
+# Job timeout'u yalnız altyapı korumasıdır (90 dk).
+
+on:
+  workflow_dispatch:
+    inputs:
+      yukle:
+        description: "YouTube'a yükle (0 = yalnız üret, artifact'a koy)"
+        required: false
+        default: "1"
+      konu_no:
+        description: "Konu numarası (boş = otomatik sıradaki)"
+        required: false
+        default: ""
+      force:
+        description: "Zorla üret (tek kullanımlık force bayrağı; kota kontrolü zaten yok)"
+        required: false
+        default: "true"
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  canli-test:
+    name: Canlı test — 1 video (üret + kapak + yükle)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Repo'yu çek
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT || github.token }}
+
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Sistem bağımlılıkları (FFmpeg + fontlar)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg fonts-dejavu fonts-noto-color-emoji
+          ffmpeg -version | head -1
+
+      - name: Python bağımlılıkları
+        run: |
+          python -m pip install -q --upgrade pip
+          if [ -f requirements.txt ]; then pip install -q -r requirements.txt; fi
+          pip install -q playwright requests pillow
+          python -m playwright install --with-deps chromium
+
+      - name: Klasör yapısını hazırla
+        run: mkdir -p bobi_tv/output bobi_tv/render bobi_tv/logs/quality bobi_tv/state
+
+      # Arena'nın GERÇEK yanıt süresini görebilmek için satır satır log.
+      # SABİT TIMEOUT YOK: arena_api ARENA_IDLE_DK / ARENA_MAKS_DK frenlerini
+      # kullanır; her 10 sn'de "⏳ Arena 01:20 · düşünüyor · 340 karakter" basar.
+      - name: Pipeline'ı çalıştır (1 video, canlı test)
+        env:
+          YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ARENA_COOKIES_JSON: ${{ secrets.ARENA_COOKIES_JSON }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          GH_PAT: ${{ secrets.GH_PAT }}
+          # --- canlı test ayarları ---
+          CANLI_TEST: "1"
+          TUR_BASINA_URETIM: "1"
+          URETIM_TAVANI: "1"
+          # Not: YUKLEME_ATLA / force değerleri state'ten (ayarlar.json) gelir;
+          # aşağıdaki iki satır onları YALNIZ bu koşu için geçersiz kılar.
+          YUKLEME_ATLA: ${{ inputs.yukle == '1' && '0' || '1' }}
+          TETIK_FORCE: ${{ inputs.force }}
+          VIDEO_NO: ${{ inputs.konu_no }}
+          # Arena frenleri (sabit timeout DEĞİL)
+          ARENA_IDLE_DK: "15"
+          ARENA_MAKS_DK: "45"
+          PYTHONUNBUFFERED: "1"
+        run: |
+          set -o pipefail
+          python main_pipeline.py 2>&1 | tee /tmp/canli_test.log
+
+      - name: Job özeti — ne üretildi, süreler ne
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          ozet = Path(os.environ["GITHUB_STEP_SUMMARY"])
+          satir = ["## Canlı Test Sonucu\n"]
+          log = Path("/tmp/canli_test.log")
+          if log.exists():
+              metin = log.read_text(encoding="utf-8", errors="replace")
+              arena = [s for s in metin.splitlines() if "[Arena]" in s][-6:]
+              kapak = [s for s in metin.splitlines() if "Kapak" in s][-6:]
+              kanca = [s for s in metin.splitlines() if "Kanca" in s][-3:]
+              yukleme = [s for s in metin.splitlines()
+                         if "yayın" in s.lower() or "YouTube" in s or "yüklendi" in s.lower()][-6:]
+              satir.append("### 🌐 Arena (gerçek süre)\n")
+              satir.append("```\n" + "\n".join(arena or ["(Arena logu yok)"]) + "\n```\n")
+              satir.append("### 🪝 Kanca\n")
+              satir.append("```\n" + "\n".join(kanca or ["(kanca logu yok)"]) + "\n```\n")
+              satir.append("### 🖼 Kapak\n")
+              satir.append("```\n" + "\n".join(kapak or ["(kapak logu yok)"]) + "\n```\n")
+              satir.append("### 📤 Yükleme\n")
+              satir.append("```\n" + "\n".join(yukleme or ["(yükleme logu yok)"]) + "\n```\n")
+          sure = Path("bobi_tv/state/arena_sure.json")
+          if sure.exists():
+              d = json.loads(sure.read_text(encoding="utf-8"))
+              satir.append(
+                  f"\n**Arena yanıt süresi:** son {d.get('son', {}).get('saniye')} sn · "
+                  f"ortalama {d.get('ortalama')} sn · en uzun {d.get('en_uzun')} sn "
+                  f"({d.get('ornek')} ölçüm)\n"
+              )
+          ozet.write_text("".join(satir), encoding="utf-8")
+          PY
+
+      - name: Üretilen video + kapak + log (artifact)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: canli-test-cikti
+          path: |
+            bobi_tv/output/*.mp4
+            bobi_tv/output/*.jpg
+            /tmp/canli_test.log
+            bobi_tv/state/arena_sure.json
+            bobi_tv/logs/quality/
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Arşiv/state değişikliklerini commit et
+        if: always()
+        run: |
+          git config user.name "bobi-agent"
+          git config user.email "agent@bobi.tv"
+          git add -A bobi_tv/archive bobi_tv/state bobi_tv/logs 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "commit edilecek değişiklik yok"
+            exit 0
+          fi
+          git commit -m "canlı test: arşiv/state güncellemesi ($(date -u +%H:%M) UTC)"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push && break || sleep 5
+          done
+
+      - name: Hata bildirimi
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import urllib.parse
+          import urllib.request
+          tok = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+          chat = os.environ.get("TELEGRAM_CHAT_ID", "")
+          if not tok or not chat:
+              raise SystemExit(0)
+          run = os.environ.get("GITHUB_RUN_ID", "")
+          repo = os.environ.get("GITHUB_REPOSITORY", "")
+          metin = f"❌ Canlı test başarısız\nhttps://github.com/{repo}/actions/runs/{run}"
+          veri = urllib.parse.urlencode({"chat_id": chat, "text": metin}).encode()
+          urllib.request.urlopen(
+              f"https://api.telegram.org/bot{tok}/sendMessage", data=veri, timeout=20
+          )
+          PY

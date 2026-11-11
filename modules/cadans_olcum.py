@@ -137,11 +137,18 @@ def cadans_olc(
 
 
 def tumunu_olc(simdi: datetime | None = None) -> dict[str, Any]:
-    """Bilinen tüm workflow'lar için ölçüm + state'e yaz."""
+    """Bilinen tüm workflow'lar için ölçüm + state'e yaz.
+
+    Üretim workflow'unun BEKLENEN aralığı `modules/kadans.KADANS_DK`'dan
+    okunur (tek kaynak) — sabit 10 dk yazmak, kadans değişince panelde
+    yanıltıcı "%30" gibi bir oran üretiyordu.
+    """
     simdi = simdi or datetime.now(UTC)
+    izlenecek = dict(IZLENEN)
+    izlenecek["hourly_production.yml"] = _beklenen_dk()
     rapor = {
         "zaman": simdi.isoformat(),
-        "olcumler": {w: cadans_olc(w, d, simdi) for w, d in IZLENEN.items()},
+        "olcumler": {w: cadans_olc(w, d, simdi) for w, d in izlenecek.items()},
     }
     try:
         RAPOR_YOLU.parent.mkdir(parents=True, exist_ok=True)
@@ -151,8 +158,23 @@ def tumunu_olc(simdi: datetime | None = None) -> dict[str, Any]:
     return rapor
 
 
+def _beklenen_dk() -> int:
+    """İzlenecek kadans (tek kaynak: modules/kadans.py; okunamazsa 10 dk)."""
+    try:
+        from modules.kadans import KADANS_DK
+
+        return int(KADANS_DK)
+    except Exception:
+        return IZLENEN["hourly_production.yml"]
+
+
 def panel_satiri() -> str:
-    """Panelde gösterilecek TEK satırlık dürüst özet."""
+    """Panelde gösterilecek TEK satırlık dürüst özet.
+
+    Ölçüm ESKİ ise (kadans değiştiği için beklenen aralık farklıysa) bunu
+    açıkça söyler: "⚠️ %30 medyan 15 dk" satırı 8 saat kadansa geçtikten
+    sonra YANILTICI olurdu.
+    """
     try:
         rapor = json.loads(RAPOR_YOLU.read_text(encoding="utf-8"))
     except Exception:
@@ -160,6 +182,9 @@ def panel_satiri() -> str:
     uretim = (rapor.get("olcumler") or {}).get("hourly_production.yml") or {}
     if uretim.get("durum") != "olculdu":
         return f"📉 Cadans: {BILINMIYOR}"
+    beklenen = _beklenen_dk()
+    if int(uretim.get("beklenen_dk") or 0) != beklenen:
+        return f"📉 Cadans: ölçüm eski ({uretim.get('beklenen_dk')} dk için) — günlük iş yeniler"
     oran = uretim.get("oran")
     if oran is None:
         return f"📉 Cadans: {uretim.get('son_24saat_kosu', '?')} koşu/24sa"

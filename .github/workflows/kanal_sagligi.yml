@@ -1,0 +1,59 @@
+name: "Kanal Sağlığı Ölçümü (günlük)"
+
+# Kanal istatistikleri düştü ("algoritma bizi biçti") → kadans 8 saate, silme
+# eşiği 6 saate çekildi. Bu iş ÖLÇÜM üretir: yükleme başına izlenme, 6 saatte
+# 100'ü geçen video oranı (akışa giriş), senaryo kalite ortalaması.
+# Panel (🩺 Kanal sağlığı) ve günlük rapor bu dosyadan okur. Uydurma yok:
+# veri azsa "veri yetersiz" der.
+
+on:
+  schedule:
+    - cron: "23 7 * * *"   # her gün 07:23 UTC (TR 10:23)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kanal-sagligi
+  cancel-in-progress: false
+
+jobs:
+  olc:
+    name: Kanal sağlığı
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT || github.token }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Ölç
+        run: python3 -m modules.kanal_sagligi | tee /tmp/saglik.log
+
+      - name: Job özetine yaz
+        if: always()
+        run: |
+          { echo "## Kanal sağlığı"; echo '```'; cat /tmp/saglik.log 2>/dev/null || echo "log yok"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: State'i commit'le
+        run: |
+          git config user.name "bobi-saglik"
+          git config user.email "saglik@bobi.local"
+          git add bobi_tv/state/kanal_sagligi.json
+          git diff --cached --quiet && echo "Değişiklik yok" && exit 0
+          git commit -m "chore(saglik): günlük kanal sağlığı ölçümü [skip ci]"
+          for deneme in 1 2 3; do
+            if git pull --rebase --autostash -q origin main && git push; then
+              echo "push tamam (deneme $deneme)"
+              exit 0
+            fi
+            git rebase --abort 2>/dev/null || true
+            sleep 10
+          done
+          echo "::error::3 denemede push edilemedi"
+          exit 1

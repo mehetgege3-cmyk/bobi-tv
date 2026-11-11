@@ -334,7 +334,10 @@ jobs:
           git status --short || true
 
           # Arşiv ve state dosyalarını ekle
-          git add -f bobi_tv/archive/ bobi_tv/state/ bobi_tv/production/scripts/arena/ 2>/dev/null || true
+          # 2026-11-11: KALİTE GÜNLÜĞÜ de commit edilir. Önceden yalnız artifact'a
+          # gidiyordu → panel/rapor "kalite: veri yok" diyordu (kullanıcının
+          # gördüğü boş kalite bloğu). Artık repo'da: panel gerçek puanı okur.
+          git add -f bobi_tv/archive/ bobi_tv/state/ bobi_tv/logs/quality/ bobi_tv/production/scripts/arena/ 2>/dev/null || true
 
           # TODO 4a: kuyruğu DİZİN pathspec'i ile ekle — kabuk glob'u yalnızca VAR
           # OLAN dosyaları genişletir; kuyrukta başka dosya dururken tüketilen

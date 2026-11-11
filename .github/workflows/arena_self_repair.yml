@@ -18,6 +18,7 @@ on:
       - "Mini App yayını (GitHub Pages)"
       - "Arşiv ↔ Kanal Eşitleme (haftalık)"
       - "Cron Cadans Ölçümü (günlük)"
+      - "Kanal Sağlığı Ölçümü (günlük)"
     types: [completed]
 
 concurrency:

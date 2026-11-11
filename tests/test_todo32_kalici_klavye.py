@@ -166,7 +166,7 @@ def test_ana_kart_modern_blok_yapisi() -> None:
     metin, butonlar = tb.ekran_ana()
     assert "BOBİ TV" in metin
     assert "─" in metin, "blok ayırıcı çizgi olmalı"
-    for parca in ("Bugün", "Üretilen", "Yayında", "Stok", "Sistem", "Son koşu", "Bot"):
+    for parca in ("Bugün", "üretim", "yayında", "Stok", "Kanal", "Sistem", "Son koşu", "Bot"):
         assert parca in metin, f"ana kartta '{parca}' eksik"
     # Veri kaybı yok: 7 günlük trend satırı hâlâ var.
     assert "7 gün" in metin

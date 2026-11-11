@@ -58,15 +58,47 @@ def test_bos_gecmis_bilinmiyor_der() -> None:
     assert r["durum"] == co.BILINMIYOR
 
 
+def test_beklenen_aralik_kadanstan_gelir() -> None:
+    """Beklenen aralık SABİT 10 dk değil, modules/kadans.py'den okunur."""
+    from modules.kadans import KADANS_DK
+
+    assert co._beklenen_dk() == KADANS_DK
+
+
+def test_eski_olcum_yaniltici_oran_gostermez(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Kadans değiştiyse panel eski oranı değil 'ölçüm eski' der."""
+    (tmp_path / "cadans.json").write_text(
+        json.dumps(
+            {
+                "olcumler": {
+                    "hourly_production.yml": {
+                        "durum": "olculdu",
+                        "beklenen_dk": 10,  # eski kadans
+                        "oran": 0.3,
+                        "son_24saat_kosu": 43,
+                        "medyan_aralik_dk": 15,
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    satir = co.panel_satiri()
+    assert "ölçüm eski" in satir
+    assert "%30" not in satir, "eski kadansın oranı gösterilmemeli"
+
+
 def test_tumunu_olc_state_yazar(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setattr(
         co,
         "cadans_olc",
-        lambda w, d, s: {"workflow": w, "durum": "olculdu", "oran": 0.8,
-                         "son_24saat_kosu": 115, "medyan_aralik_dk": 12.5},
+        lambda w, d, s: {"workflow": w, "durum": "olculdu", "beklenen_dk": d,
+                         "oran": 0.8, "son_24saat_kosu": 115, "medyan_aralik_dk": 12.5},
     )
     rapor = co.tumunu_olc(SIMDI)
+    # İzlenen küme: sabitler + kadans kaynağından gelen üretim workflow'u.
     assert set(rapor["olcumler"]) == set(co.IZLENEN)
+    assert rapor["olcumler"]["hourly_production.yml"]["beklenen_dk"] == co._beklenen_dk()
     veri = json.loads((tmp_path / "cadans.json").read_text(encoding="utf-8"))
     assert veri["zaman"] == SIMDI.isoformat()
     satir = co.panel_satiri()
@@ -81,6 +113,7 @@ def test_panel_satiri_esikleri(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) 
                     "olcumler": {
                         "hourly_production.yml": {
                             "durum": "olculdu",
+                            "beklenen_dk": co._beklenen_dk(),  # güncel kadans
                             "oran": oran,
                             "son_24saat_kosu": 5,
                             "medyan_aralik_dk": 100,

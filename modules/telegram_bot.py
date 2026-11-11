@@ -108,6 +108,7 @@ REPLY_ESLEME: dict[str, str] = {
 EKRAN_UST: dict[str, str | None] = {
     "menu_main": None,
     "rapor_goster": "menu_main",
+    "kanal_sagligi": "rapor_goster",
     "uret_menu": "menu_main",
     "status_now": "rapor_goster",
     "sistem_kok": "menu_main",
@@ -176,6 +177,7 @@ CALLBACK_DERINLIK: dict[str, int] = {
     "denetim_goster": 1,
     "mini_app_goster": 1,
     "rapor_goster": 1,
+    "kanal_sagligi": 2,
     "uret_menu": 1,
     "status_now": 1,
     "trigger_now": 1,
@@ -723,6 +725,26 @@ def _yas_turkce(dakika: int) -> str:
     return f"{dakika // (60 * 24)} gün önce"
 
 
+def _kadans_etiketi() -> str:
+    """Panelde kadans ifadesi (tek kaynak: modules/kadans.py)."""
+    with suppress(Exception):
+        from modules.kadans import KADANS_DK
+
+        if KADANS_DK % 60 == 0:
+            return f"{KADANS_DK // 60} sa"
+        return f"{KADANS_DK} dk"
+    return "bilinmiyor"
+
+
+def _saglik_satiri() -> str:
+    """Kanal sağlığı: ölçülmüş izlenme + akışa giriş oranı (yoksa dürüst boş)."""
+    with suppress(Exception):
+        from modules.kanal_sagligi import panel_satiri
+
+        return panel_satiri()
+    return "🩺 Kanal: ölçüm yok"
+
+
 def _cadans_satiri() -> str:
     """Son ÖLÇÜLMÜŞ cron cadansı (cron ifadesine değil, gerçek koşulara bakar)."""
     with suppress(Exception):
@@ -730,6 +752,11 @@ def _cadans_satiri() -> str:
 
         return panel_satiri()
     return "📉 Cadans: bilinmiyor (ölçüm yok)"
+
+
+def _cadans_ozeti() -> str:
+    """`_cadans_satiri()`nin öneksiz hâli (kartta '📉' iki kez yazılmasın)."""
+    return _cadans_satiri().removeprefix("📉 Cadans: ")
 
 
 def _durum_turkce(ham: object) -> str:
@@ -825,18 +852,22 @@ def ekran_ana() -> tuple[str, list[list[dict[str, Any]]]]:
     # ana kartta yoktu → kullanıcı "her şey elimin altında" istedi).
     gecen, kalite = _bugun_kalite_ozeti()
     ayirici = "─────────────"
+    # TASARIM (2026-11-11, 2. tur): "Bugün" iki kez yazılıyordu (başlık +
+    # hem Üretilen hem Yayında satırı). Tek blok + kanal sağlığı satırı:
+    # kullanıcının asıl sorduğu "kanal ne durumda" sorusu kartın içinde.
     metin = (
         "🎬 <b>BOBİ TV</b>  ·  <i>kontrol paneli</i>\n"
         f"{ayirici}\n"
-        "📊 <b>Bugün</b>\n"
-        f"│ 🎥 Üretilen: <b>{uretilen}</b>   ✅ Geçen: <b>{gecen}</b>\n"
-        f"│ 🚀 Yayında: <b>{yayinda}</b>   📦 Stok: <b>{kuyruk_sayisi}</b>\n"
-        f"│ 🎯 Kalite: <b>{kalite}</b>   📈 Tavan: <b>YOK</b>\n"
+        f"🎥 Bugün <b>{uretilen}</b> üretim · 🚀 <b>{yayinda}</b> yayında · "
+        f"📦 Stok <b>{kuyruk_sayisi}</b>\n"
+        f"✅ Geçen <b>{gecen}</b> · 🎯 Kalite <b>{kalite}</b> · "
+        f"📐 Tavan <b>YOK</b>\n"
+        f"{_saglik_satiri()}\n"
         f"{ayirici}\n"
         "🛠 <b>Sistem</b>\n"
         f"│ 🕐 Son koşu: {_son_kosu_ozeti()}\n"
         f"│ 📡 Bot: {_poller_ozeti()}\n"
-        f"│ {_cadans_satiri()}"
+        f"│ 📉 Kadans: {_kadans_etiketi()} hedef · {_cadans_ozeti()}"
     )
     try:
         from modules.bildirim import susturulmus_mu
@@ -1504,7 +1535,7 @@ def trigger_production() -> str:
             url,
             headers={
                 "Accept": "application/vnd.github+json",
-                "Authorization": f"Bearer {tok}",
+                **( {"Authorization": f"Bearer {tok}"} if tok else {} ),
                 "X-GitHub-Api-Version": "2022-11-28",
             },
             json={"ref": "main", "inputs": {"force": "true"}},
@@ -1534,7 +1565,7 @@ def render_testi_tetikle() -> str:
             url,
             headers={
                 "Accept": "application/vnd.github+json",
-                "Authorization": f"Bearer {tok}",
+                **( {"Authorization": f"Bearer {tok}"} if tok else {} ),
                 "X-GitHub-Api-Version": "2022-11-28",
             },
             json={
@@ -1574,16 +1605,20 @@ def _github_get_onbellekli(yol: str) -> dict[str, Any] | None:
 
 
 def _github_get(yol: str) -> dict[str, Any] | None:
-    """GitHub API GET yardımcısı; hata/eksik token → None (panel bilinmiyor der)."""
+    """GitHub API GET yardımcısı; hata → None (panel bilinmiyor der).
+
+    TOKEN YOKSA ANONİM DENER (2026-11-11 düzeltmesi): repo public olduğu için
+    anonim çağrı çalışır. Önceki hâlde token yoksa hemen None dönüyordu ve
+    yerelde/ellerinde GH_TOKEN olmayan her ortamda panel "son koşu: bilinmiyor"
+    diyordu — kullanıcının gördüğü boş panelin bir nedeni buydu.
+    """
     tok = os.environ.get("GH_TOKEN", "")
-    if not tok:
-        return None
     try:
         resp = requests.get(
             f"https://api.github.com/repos/{GITHUB_REPO}/{yol}",
             headers={
                 "Accept": "application/vnd.github+json",
-                "Authorization": f"Bearer {tok}",
+                **( {"Authorization": f"Bearer {tok}"} if tok else {} ),
                 "X-GitHub-Api-Version": "2022-11-28",
             },
             timeout=15,
@@ -2488,6 +2523,69 @@ def ekran_durum() -> tuple[str, list[list[dict[str, Any]]]]:
     ]
 
 
+def ekran_kanal_sagligi() -> tuple[str, list[list[dict[str, Any]]]]:
+    """🩺 Kanal sağlığı — kadans/silme değişikliğinin işe yarayıp yaramadığını ölçer.
+
+    Kullanıcının sorusu: "kanal istatistikleri düştü, algoritma bizi biçti".
+    Bu ekran DUYGU değil ÖLÇÜM gösterir; veri yoksa "veri yetersiz" der.
+    """
+    from modules.kanal_sagligi import ASGARI_ORNEK, saglik_ozeti
+
+    ozet = saglik_ozeti(7)
+    ayirici = "─────────────"
+    ornek = ozet.get("izlenme_ornek") or 0
+
+    def _sayi(deger: Any, birim: str = "") -> str:
+        return f"<b>{deger}{birim}</b>" if deger is not None else "<b>—</b>"
+
+    satirlar = [
+        "🩺 <b>Kanal Sağlığı</b>  ·  <i>son 7 gün</i>",
+        ayirici,
+        "📊 <b>Dağıtım</b>",
+        f"│ 🎥 Üretilen: {_sayi(ozet.get('uretilen'))}   "
+        f"🗑 Silinen: {_sayi(ozet.get('silinen'))}",
+        f"│ 👁 Ortalama izlenme: {_sayi(ozet.get('ortalama_izlenme'))}   "
+        f"📈 En yüksek: {_sayi(ozet.get('en_yuksek_izlenme'))}",
+        f"│ 🚀 Akışa giren (100+): {_sayi(ozet.get('akisa_giren'))} "
+        f"({_sayi(ozet.get('akisa_girme_orani'), '%')})",
+        ayirici,
+        "🎯 <b>İçerik</b>",
+        f"│ ⭐ Kalite ortalaması: {_sayi(ozet.get('kalite_ortalama'))} "
+        f"({ozet.get('kalite_ornek') or 0} senaryo)",
+        ayirici,
+        f"📐 Kadans: <b>{_kadans_etiketi()}</b> · 🗑 Silme eşiği: "
+        f"<b>{_izlenme_kurali_ozeti()}</b>",
+    ]
+    if ornek < ASGARI_ORNEK:
+        satirlar.append(
+            f"<i>Yorum için en az {ASGARI_ORNEK} video gerekiyor ({ornek} var) — "
+            "sayı uydurulmaz.</i>"
+        )
+    else:
+        satirlar.append(f"<i>{ozet.get('yorum')}</i>")
+
+    return "\n".join(satirlar), [
+        [{"text": "🔄 Yenile", "callback_data": "kanal_sagligi"}],
+        [
+            {"text": "📈 Rapor", "callback_data": "rapor_goster"},
+            {"text": "🏆 Performans", "callback_data": "performans"},
+        ],
+        list(GERI_MENUSU),
+    ]
+
+
+def _izlenme_kurali_ozeti() -> str:
+    """Silme kuralını TEK kaynaktan okur (katalog/main_pipeline ile aynı)."""
+    with suppress(Exception):
+        from modules.ayar_katalogu import ayar_getir
+
+        a = ayar_getir("IZLENME_KONTROL_DK") or {}
+        sure = int(a.get("varsayilan") or 360)
+        esik = int((ayar_getir("MIN_IZLENME_ESIGI") or {}).get("varsayilan") or 100)
+        return f"{sure // 60} saatte {esik} izlenme"
+    return "bilinmiyor"
+
+
 def ekran_rapor() -> tuple[str, list[list[dict[str, Any]]]]:
     """📈 Rapor = SAYISAL ÖZET + site haritası.
 
@@ -2547,7 +2645,10 @@ def ekran_rapor() -> tuple[str, list[list[dict[str, Any]]]]:
     )
     butonlar = [
         [
+            {"text": "🩺 Kanal sağlığı", "callback_data": "kanal_sagligi"},
             {"text": "🗓 7 gün", "callback_data": "rapor_7gun"},
+        ],
+        [
             {"text": "🏆 Performans", "callback_data": "performans"},
         ],
         [
@@ -2773,6 +2874,10 @@ def _handle_callback_icerde(callback_data: str, callback_id: str, kullanici_id: 
         _SON_CALLBACK = "menu_main"
         answer_callback(callback_id)
         _ekran_goster(ekran_ana())
+        return
+    if callback_data == "kanal_sagligi":
+        answer_callback(callback_id, "Kanal sağlığı ölçülüyor...")
+        _ekran_goster(ekran_kanal_sagligi())
         return
     if callback_data == "sistem_kok":
         answer_callback(callback_id)
@@ -3163,6 +3268,7 @@ def handle_message(text: str) -> str:
 _EKRAN_URETICILER: dict[str, Any] = {
     "menu_main": ekran_ana,
     "rapor_goster": ekran_rapor,
+    "kanal_sagligi": ekran_kanal_sagligi,
     "uret_menu": ekran_uret,
     "status_now": ekran_durum,
     "sistem_kok": ekran_sistem_kok,

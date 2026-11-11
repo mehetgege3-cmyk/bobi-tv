@@ -48,6 +48,7 @@ def _ekranlar() -> dict[str, Any]:
     return {
         "menu_main": tb.ekran_ana,
         "rapor_goster": tb.ekran_rapor,
+        "kanal_sagligi": tb.ekran_kanal_sagligi,
         "uret_menu": tb.ekran_uret,
         "status_now": tb.ekran_durum,
         "sistem_kok": tb.ekran_sistem_kok,

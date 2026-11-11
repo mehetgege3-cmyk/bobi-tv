@@ -27,9 +27,9 @@ def test_ana_ekran_canli_ozet_icerir():
     metin, butonlar = tb.ekran_ana()
     # SPEC DEĞİŞTİ (2026-11-11, "kotayı kaldır"): "Kota" satırı yerine
     # "Bugün yüklenen … (tavan YOK)" satırı var.
-    # SPEC DEĞİŞTİ (2026-11-11, kullanıcı: "modern, kullanıcı dostu tasarım"):
-    # düz satır listesi yerine bloklu kart (📊 Bugün / 🛠 Sistem) kullanılıyor.
-    for parca in ("Bugün", "Üretilen", "Yayında", "Stok", "Son koşu", "Bot"):
+    # SPEC DEĞİŞTİ (2026-11-11, 2. tur): "Bugün" iki kez yazılıyordu; kart tek
+    # satırda toplandı ve kanal sağlığı satırı eklendi.
+    for parca in ("Bugün", "üretim", "yayında", "Stok", "Kanal", "Son koşu", "Bot"):
         assert parca in metin, f"ana ekranda '{parca}' satırı yok"
     # 4 buton (2x2) korunur
     assert sum(len(s) for s in butonlar) == 4

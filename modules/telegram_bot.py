@@ -2044,11 +2044,21 @@ def ekran_mini_app() -> tuple[str, list[list[dict[str, Any]]]]:
         satirlar.append(f"🕐 Veri: {BILINMIYOR} (özet dosyası okunamadı)")
     satirlar += [
         "",
-        "🔒 <b>Salt okunur:</b> Mini App'ten üretim başlatılmaz, video silinmez.",
-        "Yazma işlemleri bu panelde; her biri onay + denetim kaydından geçer.",
+        "🔐 <b>Onaylı yazma:</b> Mini App yalnız istek gönderir; üretim/boşaltma",
+        "bu panelin onay ekranından geçer ve denetim kaydına yazılır.",
+    ]
+    satirlar += [
+        "",
+        "<i>Yazma düğmeleri yalnız Telegram içinde çalışır (BotFather → Menu "
+        "Button'a bu adres girilmeli). Çalışmazsa aynı işlemleri bu panelden yap.</i>",
     ]
     butonlar = [
-        [{"text": "🔄 Yenile", "callback_data": "mini_app_goster"}],
+        # Telegram'ın izin verdiği en güvenli açılış: web_app düğmesi.
+        [{"text": "📱 Mini App'i aç", "web_app": {"url": MINI_APP_URL}}],
+        [
+            {"text": "🔄 Yenile", "callback_data": "mini_app_goster"},
+            {"text": "🎬 Üret", "callback_data": "uret_baslat"},
+        ],
         list(GERI_MENUSU),
     ]
     return "\n".join(satirlar), butonlar

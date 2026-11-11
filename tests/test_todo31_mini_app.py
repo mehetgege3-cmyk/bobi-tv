@@ -222,14 +222,20 @@ def test_ekran_kurallari():
     metin, butonlar = tb.ekran_mini_app()
     assert "Mini App" in metin
     assert tb.MINI_APP_URL in metin
-    assert "Salt okunur" in metin or "salt okunur" in metin
+    # SPEC DEĞİŞTİ (2026-11-11): Mini App artık ONAYLI YAZMA modunda.
+    assert "Onaylı yazma" in metin or "onaylı yazma" in metin
     for satir in butonlar:
         assert len(satir) <= 3
         for b in satir:
             assert len(b["text"]) <= 20
-            assert len(b["callback_data"].encode()) <= 64
-    duz = [b["callback_data"] for satir in butonlar for b in satir]
+            # web_app düğmesinde callback_data YOK (Telegram kuralı).
+            if "callback_data" in b:
+                assert len(b["callback_data"].encode()) <= 64
+    duz = [b["callback_data"] for satir in butonlar for b in satir if "callback_data" in b]
     assert "menu_main" in duz and "mini_app_goster" in duz
+    # Mini App'i açan düğme Telegram'ın web_app alanını kullanmalı.
+    web_appler = [b for satir in butonlar for b in satir if "web_app" in b]
+    assert web_appler and web_appler[0]["web_app"]["url"].startswith("https://")
     assert len([s for s in metin.split("\n") if s.strip()]) <= 15
 
 

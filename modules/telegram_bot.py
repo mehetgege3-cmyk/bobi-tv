@@ -102,8 +102,57 @@ REPLY_ESLEME: dict[str, str] = {
     "yardim": "yardim_goster",
 }
 
+#: Ekran hiyerarşisi (2026-11-11): callback → BİR ÜST ekranın callback'i.
+#: "← Geri" düğmesi bu haritayla GERÇEK üst ekrana döner; her ekranda aynı
+#: yere (ana kart) dönmek kullanıcıyı kaybettiriyordu.
+EKRAN_UST: dict[str, str | None] = {
+    "menu_main": None,
+    "rapor_goster": "menu_main",
+    "uret_menu": "menu_main",
+    "status_now": "rapor_goster",
+    "sistem_kok": "menu_main",
+    "rapor_7gun": "rapor_goster",
+    "performans": "rapor_goster",
+    "kuyruk_liste": "rapor_goster",
+    "render_kart": "uret_menu",
+    "denetim_goster": "sistem_kok",
+    "bildirim_goster": "sistem_kok",
+    "mini_app_goster": "sistem_kok",
+    "sistem_goster": "sistem_kok",
+    "ay:kok": "menu_main",
+    "ay:hizli": "ay:kok",
+    "ay:gecmis": "ay:kok",
+    "yardim_goster": "menu_main",
+}
+
+#: Şu an gösterilen ekranın callback'i (Geri hedefini hesaplamak için).
+_SON_CALLBACK: str | None = None
+
+
+def ekran_ust(cb: str | None) -> str:
+    """Verilen callback'in BİR ÜST ekranının callback'ini döndürür.
+
+    Bilinmiyorsa güvenli varsayılan: ana kart (`menu_main`). Dinamik ayar
+    callback'leri (`ay:s:<anahtar>`) ayarın grubuna, grup da köke döner.
+    """
+    if not cb:
+        return "menu_main"
+    if cb in EKRAN_UST:
+        return EKRAN_UST[cb] or "menu_main"
+    p = cb.split(":")
+    if len(p) >= 3 and p[0] == "ay":
+        if p[1] in {"s", "nedir", "onay", "onayd"}:
+            a = ayar_getir(p[2])
+            if a is not None:
+                return f"ay:g:{a['grup']}"
+        return "ay:kok" if p[1] != "g" else "ay:kok"
+    return "menu_main"
+
+
 GERI_MENUSU: list[dict[str, str]] = [
-    {"text": "← Geri", "callback_data": "menu_main"},
+    # 2026-11-11: "← Geri" MENÜ'ye dönüyordu (ikisi de aynı işi yapıyordu).
+    # Artık Geri = bir üst ekran (ayarlarda grup, grupta kök, kökte ana kart).
+    {"text": "← Geri", "callback_data": "geri"},
     {"text": "🏠 Menü", "callback_data": "menu_main"},
 ]
 
@@ -122,6 +171,10 @@ MINI_APP_URL = os.environ.get(
 
 CALLBACK_DERINLIK: dict[str, int] = {
     "menu_main": 0,
+    "geri": 1,
+    "sistem_kok": 1,
+    "denetim_goster": 1,
+    "mini_app_goster": 1,
     "rapor_goster": 1,
     "uret_menu": 1,
     "status_now": 1,
@@ -659,6 +712,47 @@ def _sparkline(degerler: list[float]) -> str:
     )
 
 
+def _yas_turkce(dakika: int) -> str:
+    """Dakika → insan dilinde yaş ('az önce', '12 dk önce', '3 sa önce', '2 gün önce')."""
+    if dakika < 2:
+        return "az önce"
+    if dakika < 90:
+        return f"{dakika} dk önce"
+    if dakika < 60 * 48:
+        return f"{dakika // 60} sa önce"
+    return f"{dakika // (60 * 24)} gün önce"
+
+
+def _durum_turkce(ham: object) -> str:
+    """GitHub koşu sonucunu Türkçeleştirir (panelde 'in_progress'/'timed_out' kalmasın)."""
+    return {
+        "success": "✅ başarılı",
+        "failure": "❌ başarısız",
+        "cancelled": "⛔ iptal",
+        "skipped": "⏭ atlandı",
+        "timed_out": "⌛ zaman aşımı",
+        "in_progress": "🔄 çalışıyor",
+        "queued": "⏳ sırada",
+        "waiting": "⏳ sırada",
+        "requested": "⏳ sırada",
+    }.get(str(ham), f"❔ {ham}")
+
+
+def _bugun_kalite_ozeti() -> tuple[str, str]:
+    """Bugünün geçen video sayısı + ortalama kalite puanı (veri yoksa '—').
+
+    Ana kartta görünür: kullanıcı "her şey elimin altında olsun" dedi; geçen
+    sayısı ve kalite ortalaması daha önce yalnız Rapor ekranındaydı.
+    """
+    with suppress(Exception):
+        from modules.kalite_log import kalite_istatistik
+
+        ist = kalite_istatistik(datetime.now(UTC).strftime("%Y-%m-%d"))
+        if ist.get("toplam"):
+            return str(ist.get("gecen", 0)), f"{ist.get('ortalama_puan', 0)}/100"
+    return "—", "—"
+
+
 def _son_7gun_seri() -> list[float]:
     """Son 7 günün günlük yayın sayısı (eski → yeni). Veri yoksa boş liste."""
     arsiv = Path("bobi_tv/archive/videos.json")
@@ -723,13 +817,17 @@ def ekran_ana() -> tuple[str, list[list[dict[str, Any]]]]:
     # TASARIM (2026-11-11, kullanıcı: "modern, kullanıcı dostu, her şey elim
     # altında"): düz satır listesi yerine 3 blok — DURUM / BUGÜN / SİSTEM.
     # Bloklar ince ayırıcıyla ayrılır (Telegram'da kutu yok, '─' evrensel).
+    # KALİTE ORTALAMASI + geçen video sayısı da kartta (rapor ekranında vardı,
+    # ana kartta yoktu → kullanıcı "her şey elimin altında" istedi).
+    gecen, kalite = _bugun_kalite_ozeti()
     ayirici = "─────────────"
     metin = (
         "🎬 <b>BOBİ TV</b>  ·  <i>kontrol paneli</i>\n"
         f"{ayirici}\n"
         "📊 <b>Bugün</b>\n"
-        f"│ 🎥 Üretilen: <b>{uretilen}</b>   🚀 Yayında: <b>{yayinda}</b>\n"
-        f"│ 📦 Stok: <b>{kuyruk_sayisi}</b>   ✅ Tavan: <b>YOK</b>\n"
+        f"│ 🎥 Üretilen: <b>{uretilen}</b>   ✅ Geçen: <b>{gecen}</b>\n"
+        f"│ 🚀 Yayında: <b>{yayinda}</b>   📦 Stok: <b>{kuyruk_sayisi}</b>\n"
+        f"│ 🎯 Kalite: <b>{kalite}</b>   📈 Tavan: <b>YOK</b>\n"
         f"{ayirici}\n"
         "🛠 <b>Sistem</b>\n"
         f"│ 🕐 Son koşu: {_son_kosu_ozeti()}\n"
@@ -748,6 +846,8 @@ def ekran_ana() -> tuple[str, list[list[dict[str, Any]]]]:
         metin += f"\n📈 7 gün: <code>{_sparkline(seri)}</code> ({int(sum(seri))} video)"
     return metin, get_main_menu_buttons()
 
+
+#: "← Geri" için callback → ekran üreticisi (geri hedefi yeniden çizilir).
 
 def get_main_menu_buttons() -> list[list[dict[str, Any]]]:
     """Ana menü: 6 düğmeden 4'e iner (TODO 3).
@@ -885,14 +985,17 @@ def get_status_text() -> str:
                         break
         except Exception:
             pass
+    ayirici = "─────────────"
     return (
-        f"📊 <b>BOBİ TV Sistem Durumu</b>\n\n"
-        f"📅 Tarih: {bugun}\n"
-        f"🎬 Bugün üretilen: {bugunki}\n"
-        f"🚀 Günlük yükleme tavanı: YOK (kota kaldırıldı)\n"
-        f"📦 Kuyrukta: {kuyruk_sayisi} video\n"
-        f"⏰ Son çalışma: {son_calisma}\n\n"
-        f"⚙️ Pipeline: {PIPELINE_SURUM}"
+        f"🖥 <b>Sistem Durumu</b>  ·  <i>{bugun}</i>\n"
+        f"{ayirici}\n"
+        "📊 <b>Bugün</b>\n"
+        f"│ 🎬 Üretilen: <b>{bugunki}</b>   📦 Stokta: <b>{kuyruk_sayisi}</b>\n"
+        f"│ 📈 Yükleme tavanı: <b>YOK</b>\n"
+        f"{ayirici}\n"
+        "⚙️ <b>Sistem</b>\n"
+        f"│ 🕐 Son çalışma: {son_calisma}\n"
+        f"│ 🤖 Pipeline: {PIPELINE_SURUM}"
     )
 
 
@@ -1495,9 +1598,11 @@ def _son_kosu_ozeti() -> str:
     if not kosular:
         return f"{BILINMIYOR} (koşu kaydı okunamadı)"
     k = kosular[0]
-    olusturma = str(k.get("created_at", ""))[:16]
-    sonuc = k.get("conclusion") or k.get("status") or BILINMIYOR
-    return f"{olusturma} UTC · {sonuc}"
+    sonuc = _durum_turkce(k.get("conclusion") or k.get("status") or BILINMIYOR)
+    dk = _gecen_dakika(str(k.get("created_at", "")))
+    if dk is None:
+        return sonuc
+    return f"{sonuc} · {_yas_turkce(dk)}"
 
 
 def _poller_ozeti() -> str:
@@ -1512,12 +1617,11 @@ def _poller_ozeti() -> str:
     if not kosular:
         return f"{BILINMIYOR} (koşu kaydı okunamadı)"
     k = kosular[0]
-    damga = str(k.get("created_at", ""))
-    sonuc = k.get("conclusion") or k.get("status") or BILINMIYOR
-    gecikme = _gecen_dakika(damga)
+    sonuc = _durum_turkce(k.get("conclusion") or k.get("status") or BILINMIYOR)
+    gecikme = _gecen_dakika(str(k.get("created_at", "")))
     if gecikme is None:
-        return f"{damga[:16]} UTC · {sonuc}"
-    return f"{damga[:16]} UTC · {sonuc} · {gecikme} dk önce"
+        return sonuc
+    return f"{sonuc} · {_yas_turkce(gecikme)}"
 
 
 def _gecen_dakika(iso_damga: str) -> int | None:
@@ -1668,8 +1772,13 @@ def ekran_hizli_ayarlar() -> tuple[str, list[list[dict[str, Any]]]]:
 
 
 def ekran_ayar_kok() -> tuple[str, list[list[dict[str, Any]]]]:
-    satirlar = ["⚙️ <b>AYARLAR</b>", ""]
-    # TODO 15: en sık değişen ayarlar KÖKTEN erişilir (derinlik 3 → 2).
+    """⚙️ Ayarlar = grupların site haritası (her grup TEK düğme + kaç ayar).
+
+    DÜZELTME (2026-11-11): "Bildirim" ve "Sistem" gruplarının düğmesi başka
+    ekranlara gidiyordu; `bildirim` grubunun ayarlarına panelden ULAŞILAMIYORDU.
+    Artık her grubun kendi girişi var; ekstra ekranlar grubun İÇİNDE duruyor.
+    """
+    satirlar = ["⚙️ <b>Ayarlar</b>", "─────────────"]
     butonlar: list[list[dict[str, Any]]] = [
         [{"text": "⭐ Hızlı ayarlar", "callback_data": "ay:hizli"}]
     ]
@@ -1677,21 +1786,13 @@ def ekran_ayar_kok() -> tuple[str, list[list[dict[str, Any]]]]:
         ayarlar = grup_ayarlari(grup)
         etiket = _grup_etiketleri()[grup]
         if grup == "temizlik":
-            satirlar.append(f"{etiket} (görüntü)")
-            butonlar.append([{"text": "🧹 Temizlik (görüntü)", "callback_data": f"ay:g:{grup}"}])
-        elif grup == "bildirim":
-            satirlar.append(f"{etiket} ({len(ayarlar)} ayar)")
-            butonlar.append(
-                [{"text": "🔔 Bildirim", "callback_data": "bildirim_goster"}]
-            )
+            satirlar.append(f"│ {etiket}: görüntü amaçlı")
         elif grup == "sistem":
-            satirlar.append(f"{etiket} (secret var/yok)")
-            butonlar.append([{"text": "🔑 Sistem durumu", "callback_data": "sistem_goster"}])
+            satirlar.append(f"│ {etiket}: secret var/yok")
         else:
-            satirlar.append(f"{etiket} ({len(ayarlar)} ayar)")
-            kisa = "🚀 Tetikleme" if grup == "tetikleme" else "🎯 Üretim & Kota"
-            butonlar.append([{"text": kisa, "callback_data": f"ay:g:{grup}"}])
-    satirlar.append("")
+            satirlar.append(f"│ {etiket}: {len(ayarlar)} ayar")
+        butonlar.append([{"text": etiket, "callback_data": f"ay:g:{grup}"}])
+    satirlar.append("─────────────")
     butonlar.append([{"text": "🕘 Son değişiklikler", "callback_data": "ay:gecmis"}])
     butonlar.append(list(GERI_MENUSU))
     return "\n".join(satirlar), butonlar
@@ -1714,6 +1815,12 @@ def ekran_ayar_grup(grup: str) -> tuple[str, list[list[dict[str, Any]]]]:
         butonlar.append([{"text": str(a["etiket"])[:20], "callback_data": f"ay:s:{a['anahtar']}"}])
     if grup == "temizlik":
         satirlar += ["", TEMIZLIK_UYARI]
+    # Gruba bağlı ekranlar: bunlar artık grup İÇİNDEN erişilir (kökten değil),
+    # böylece her grubun düğmesi kendi ayarlarını açar.
+    if grup == "bildirim":
+        butonlar.insert(0, [{"text": "🔔 Bildirim ekranı", "callback_data": "bildirim_goster"}])
+    elif grup == "sistem":
+        butonlar.insert(0, [{"text": "🖥 Sistem durumu", "callback_data": "sistem_goster"}])
     satirlar.append("")
     satirlar.append("Değiştirmek için ayar adına dokun:")
     butonlar.append(
@@ -2136,6 +2243,38 @@ def ekran_ayar_nedir(anahtar: str) -> tuple[str, list[list[dict[str, Any]]]]:
     return metin, butonlar
 
 
+def ekran_sistem_kok() -> tuple[str, list[list[dict[str, Any]]]]:
+    """🛠 Sistem = sistemle ilgili TÜM alt ekranların tek kapısı.
+
+    2026-11-11: bu ekranlar (sistem durumu / bildirim / denetim / mini app)
+    yalnız gizli metin komutlarından erişilebiliyordu; panelde kapı yoktu.
+    """
+    ayirici = "─────────────"
+    metin = (
+        "🛠 <b>Sistem</b>\n"
+        f"{ayirici}\n"
+        f"│ 🕐 Son koşu: {_son_kosu_ozeti()}\n"
+        f"│ 📡 Bot: {_poller_ozeti()}\n"
+        f"{ayirici}\n"
+        "<i>Hepsi tek panelde: aşağıdan seç.</i>"
+    )
+    return metin, [
+        [
+            {"text": "🖥 Durum", "callback_data": "status_now"},
+            {"text": "⚙️ Ayarlar", "callback_data": "ay:kok"},
+        ],
+        [
+            {"text": "🔔 Bildirim", "callback_data": "bildirim_goster"},
+            {"text": "📋 Denetim", "callback_data": "denetim_goster"},
+        ],
+        [
+            {"text": "📱 Mini App", "callback_data": "mini_app_goster"},
+            {"text": "❓ Yardım", "callback_data": "yardim_goster"},
+        ],
+        list(GERI_MENUSU),
+    ]
+
+
 def ekran_mini_app() -> tuple[str, list[list[dict[str, Any]]]]:
     """📱 Mini App ekranı (TODO 31) — adres + veri tazeliği + salt okunur notu.
 
@@ -2332,34 +2471,109 @@ def ekran_kuyruk_geri_al() -> tuple[str, list[list[dict[str, Any]]]]:
     return metin, butonlar
 
 
+def ekran_durum() -> tuple[str, list[list[dict[str, Any]]]]:
+    """🖥 Canlı sistem durumu (durum düğmesi / alt klavye "Durum")."""
+    return get_status_text(), [
+        [{"text": "🔄 Yenile", "callback_data": "status_now"}],
+        [
+            {"text": "📈 Rapor", "callback_data": "rapor_goster"},
+            {"text": "🛠 Sistem", "callback_data": "sistem_kok"},
+        ],
+        list(GERI_MENUSU),
+    ]
+
+
 def ekran_rapor() -> tuple[str, list[list[dict[str, Any]]]]:
-    """İstatistik + Kalite + Yükleme tek ekranda (ana menü sadeleşmesi)."""
-    metin = f"📈 <b>BOBİ TV Rapor</b>\n\n{get_stats_text()}\n\n{get_quality_text()}\n\n{get_quota_text()}"
+    """📈 Rapor = SAYISAL ÖZET + site haritası.
+
+    2026-11-11 tasarım düzeltmesi (kullanıcı: "her şey elimin altında"):
+    - 3 ayrı metin bloğu üst üste yığılmıştı (İstatistik + Kalite + Yükleme),
+      ekranı kaydırmadan hiçbir şey görünmüyordu → artık TEK özet kart.
+    - Rapor altındaki hiçbir ekrana (7 gün / performans / kuyruk / sistem)
+      gezinme yolu YOKTU; metinlerden "başka ekran" diye bahsetmek
+      düğmesiz ölü yönergedir → hepsi düğme oldu.
+    """
+    from modules.kalite_log import kalite_istatistik
+
+    bugun = datetime.now(UTC).strftime("%Y-%m-%d")
+    ist = kalite_istatistik(bugun)
+    uretilen, yayinda = _bugun_arsiv_ozeti()
+    kuyruk = Path("bobi_tv/queue")
+    kuyruk_sayisi = len(list(kuyruk.glob("*.json"))) if kuyruk.exists() else 0
+    ayirici = "─────────────"
+
+    if ist.get("toplam"):
+        gecen = int(ist.get("gecen", 0))
+        kalan = int(ist.get("kalan", 0))
+        oran = round(gecen / ist["toplam"] * 100)
+        kalite_satiri = (
+            f"│ 🎯 Ortalama: <b>{ist.get('ortalama_puan', 0)}/100</b>   "
+            f"✅ Geçen: <b>{gecen}</b>   ❌ Kalan: <b>{kalan}</b>"
+        )
+        kalite_alt = (
+            f"│ 📉 Min: {ist.get('min_puan', '—')}   "
+            f"📈 Max: {ist.get('max_puan', '—')}   📊 Geçme: %{oran}"
+        )
+    else:
+        kalite_satiri = "│ 🎯 Kalite: <b>bugün için veri yok</b> (üretim henüz koşmadı)"
+        kalite_alt = "│ 📉 Min: —   📈 Max: —   📊 Geçme: —"
+
+    seri = _son_7gun_seri()
+    trend = (
+        f"│ 📈 7 gün: <code>{_sparkline(seri)}</code> ({int(sum(seri))} video)"
+        if seri
+        else "│ 📈 7 gün: <b>veri yok</b>"
+    )
+
+    metin = (
+        f"📈 <b>Rapor</b>  ·  <i>{bugun}</i>\n"
+        f"{ayirici}\n"
+        "🎬 <b>Üretim</b>\n"
+        f"│ 🎥 Üretilen: <b>{uretilen}</b>   🚀 Yayında: <b>{yayinda}</b>   📦 Stok: <b>{kuyruk_sayisi}</b>\n"
+        f"{ayirici}\n"
+        "🎯 <b>Kalite</b>\n"
+        f"{kalite_satiri}\n"
+        f"{kalite_alt}\n"
+        f"{ayirici}\n"
+        "📊 <b>Trend</b>\n"
+        f"{trend}\n"
+        f"{ayirici}\n"
+        "<i>Yükleme tavanı: YOK — üretilen her video yüklenir.</i>"
+    )
     butonlar = [
         [
+            {"text": "🗓 7 gün", "callback_data": "rapor_7gun"},
             {"text": "🏆 Performans", "callback_data": "performans"},
-            {"text": "🔄 Yenile", "callback_data": "rapor_goster"},
         ],
         [
-            {"text": "📦 Kuyruk", "callback_data": "kuyruk_liste"},
-            {"text": "⚙️ Ayarlar", "callback_data": "ay:kok"},
+            {"text": "📦 Stok", "callback_data": "kuyruk_liste"},
+            {"text": "🛠 Sistem", "callback_data": "sistem_kok"},
         ],
         [
-            {"text": "← Geri", "callback_data": "menu_main"},
-            {"text": "🏠 Menü", "callback_data": "menu_main"},
+            {"text": "🖥 Render", "callback_data": "render_kart"},
+            {"text": "📋 Denetim", "callback_data": "denetim_goster"},
         ],
+        [{"text": "🔄 Yenile", "callback_data": "rapor_goster"}],
+        list(GERI_MENUSU),
     ]
     return metin, butonlar
 
 
 def ekran_uret() -> tuple[str, list[list[dict[str, Any]]]]:
+    """🎬 Üretim = tek ekranda üretimle ilgili HER ŞEY (başlat / test / stok)."""
+    kuyruk = Path("bobi_tv/queue")
+    stok = len(list(kuyruk.glob("*.json"))) if kuyruk.exists() else 0
+    uretilen, yayinda = _bugun_arsiv_ozeti()
+    ayirici = "─────────────"
     metin = (
-        "🎬 <b>Üretim</b>\n\n"
-        "▶️ Üretimi başlat: pipeline'ı workflow_dispatch ile koşturur.\n"
-        f"🧪 Render testi: YouTube'a YÜKLEME YAPMADAN üretim zincirini test eder "
-        f"(kotasız, kanala çıkışsız).\n\n"
-        f"{_kota_birim_ozeti()}\n"
-        "📐 Günlük tavan: YOK — üretilen her video yüklenir"
+        "🎬 <b>Üretim</b>\n"
+        f"{ayirici}\n"
+        f"│ 🎥 Bugün üretilen: <b>{uretilen}</b>   🚀 Yayında: <b>{yayinda}</b>\n"
+        f"│ 📦 Stok (sırada bekleyen): <b>{stok}</b>\n"
+        f"│ 📐 Günlük tavan: <b>YOK</b> — üretilen her video yüklenir\n"
+        f"{ayirici}\n"
+        "▶️ <b>Üretimi başlat</b> — pipeline'ı workflow ile koşturur.\n"
+        "🧪 <b>Render testi</b> — YouTube'a YÜKLEME YAPMADAN zinciri dener."
     )
     butonlar: list[list[dict[str, Any]]] = [
         [{"text": "▶️ Üretimi başlat", "callback_data": "uret_baslat"}],
@@ -2382,7 +2596,11 @@ def ekran_uret() -> tuple[str, list[list[dict[str, Any]]]]:
             {"text": "🧪 Render testi", "callback_data": "uret_render_test"},
             {"text": "📈 Test kartı", "callback_data": "render_kart"},
         ],
-        [{"text": "← Geri", "callback_data": "menu_main"}, {"text": "🏠 Menü", "callback_data": "menu_main"}],
+        [
+            {"text": "📦 Stok", "callback_data": "kuyruk_liste"},
+            {"text": "🛠 Sistem", "callback_data": "sistem_kok"},
+        ],
+        list(GERI_MENUSU),
     ]
     return metin, butonlar
 
@@ -2503,7 +2721,14 @@ def _bilinmeyen_komut(callback_id: str) -> str:
 
 
 def _ekran_goster(metin_dugmeler: tuple[str, list[list[dict[str, Any]]]]) -> None:
-    panel_goster(metin_dugmeler[0], metin_dugmeler[1])
+    """Ekranı panele basar; "← Geri" düğmesini BİR ÜST ekrana yönlendirir."""
+    metin, butonlar = metin_dugmeler
+    hedef = ekran_ust(_SON_CALLBACK)
+    for satir in butonlar:
+        for b in satir:
+            if b.get("callback_data") == "geri":
+                b["callback_data"] = hedef
+    panel_goster(metin, butonlar)
 
 
 def handle_callback(callback_data: str, callback_id: str, kullanici_id: int | None = None) -> str:
@@ -2537,9 +2762,22 @@ def _handle_callback_icerde(callback_data: str, callback_id: str, kullanici_id: 
         payload = ":".join(parcalar_imzali[:-2])
         callback_data = payload if payload.startswith("ay:onay") else sonuc
 
+    global _SON_CALLBACK
+    _SON_CALLBACK = callback_data
     if callback_data == "menu_main":
+        _SON_CALLBACK = "menu_main"
         answer_callback(callback_id)
         _ekran_goster(ekran_ana())
+        return
+    if callback_data == "sistem_kok":
+        answer_callback(callback_id)
+        _ekran_goster(ekran_sistem_kok())
+        return
+    if callback_data == "geri":
+        # Eski panellerden gelen "geri": bir üst ekranı yeniden çizer.
+        hedef = ekran_ust(_SON_CALLBACK)
+        answer_callback(callback_id)
+        _ekran_goster(_EKRAN_URETICILER.get(hedef, ekran_ana)())
         return
     if callback_data == "mini_app_goster":
         answer_callback(callback_id)
@@ -2915,3 +3153,24 @@ def handle_message(text: str) -> str:
 # NOT: run_bot() uzun polling döngüsü GÜVENLİK TUZAĞIYDIR (workflow poller ile çakışır).
 # Tek tüketim noktası: telegram_bot.yml workflow poller'ıdır. Yerelde çalıştırmak yerine
 # `python -c "from modules.telegram_bot import process_update; ..."` kullanın.
+
+
+_EKRAN_URETICILER: dict[str, Any] = {
+    "menu_main": ekran_ana,
+    "rapor_goster": ekran_rapor,
+    "uret_menu": ekran_uret,
+    "status_now": ekran_durum,
+    "sistem_kok": ekran_sistem_kok,
+    "rapor_7gun": ekran_7gun,
+    "performans": ekran_performans,
+    "kuyruk_liste": ekran_kuyruk,
+    "render_kart": ekran_render_kart,
+    "denetim_goster": ekran_denetim,
+    "bildirim_goster": ekran_bildirim,
+    "mini_app_goster": ekran_mini_app,
+    "sistem_goster": ekran_sistem,
+    "ay:kok": ekran_ayar_kok,
+    "ay:hizli": ekran_hizli_ayarlar,
+    "ay:gecmis": ekran_gecmis,
+    "yardim_goster": ekran_yardim,
+}

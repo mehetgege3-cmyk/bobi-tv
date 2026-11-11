@@ -649,6 +649,9 @@ def test_rapor_ekrani_uc_bolumu_birlestirir(monkeypatch: pytest.MonkeyPatch) -> 
     cagrilar = _takip_et(monkeypatch)
     tb.handle_callback("rapor_goster", "cb1")
     metin = _son_panel_metni(cagrilar)
-    # SPEC DEĞİŞTİ (2026-11-11): raporun 3. bölümü artık "Kota" değil
-    # "Yükleme" — tavan kaldırıldı, bölüm sayıyı korur ("tavan YOK" yazar).
-    assert "İstatistik" in metin and "Kalite Raporu" in metin and "Yükleme" in metin
+    # SPEC DEĞİŞTİ (2026-11-11, kullanıcı: "menüyü güzelleştir, her şey elimin
+    # altında"): üç ayrı metin bloğu üst üste yığılmıyor; TEK kart içinde üç
+    # bölüm (Üretim / Kalite / Trend) aynı verileri gösteriyor.
+    assert "Üretim" in metin and "Kalite" in metin and "Trend" in metin
+    # Kota kaldırıldı → "tavan YOK" bilgisi korunur (veri kaybı yok).
+    assert "YOK" in metin

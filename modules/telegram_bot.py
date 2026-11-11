@@ -25,6 +25,7 @@ from typing import Any
 import requests
 
 import modules.ayar_deposu as ayar_deposu
+from modules import render_karti
 from modules.ayar_katalogu import (
     GRUPLAR,
     TEMIZLIK_UYARI,
@@ -115,6 +116,7 @@ CALLBACK_DERINLIK: dict[str, int] = {
     "kuyruk_at_onay": 3,
     "kuyruk_at_uygula": 3,
     "kuyruk_geri_al": 2,
+    "render_kart": 2,
     "ay:gecmis": 2,
     "sistem_goster": 2,
     "ay:g": 2,
@@ -1157,8 +1159,11 @@ def render_testi_tetikle() -> str:
     except Exception as e:
         return f"❌ İstisna: {str(e)[:100]}"
     if resp.status_code == 204:
+        # TODO 21: tetikleme kaydı — canlı kart bu zaman damgasıyla süre gösterir.
+        render_karti.tetikleme_kaydet()
         return (
             "🧪 Render testi başlatıldı — YouTube'a yükleme yapılmadı.\n"
+            "Canlı durum kartı: 🧪 Render testi → 🔄 Yenile\n"
             "Süre, çıktı boyutu ve QC sonucu koşu bitince ayrı mesajla gelir."
         )
     return f"❌ Hata {resp.status_code}: {resp.text[:120]}"
@@ -1826,6 +1831,48 @@ def ekran_sistem() -> tuple[str, list[list[dict[str, Any]]]]:
     return "\n".join(satirlar), butonlar
 
 
+def _son_render_kosusu() -> tuple[dict[str, Any] | None, str]:
+    """Render testi (yukleme_atla) koşusunu GitHub'dan okur — 60 sn önbellekli.
+
+    Döner: (koşu sözlüğü veya None, hata metni). Hata uydurulmaz, sebep yazılır.
+    """
+    veri = _github_get_onbellekli("actions/workflows/hourly_production.yml/runs?per_page=10")
+    if veri is None:
+        return None, "GitHub okunamadı (token yok veya API hatası)"
+    kosular = veri.get("workflow_runs") or []
+    if not kosular:
+        return None, "koşu kaydı yok"
+    # Önce yerel tetikleme kaydındaki koşuyu bul (varsa en doğrusu), yoksa en yeni.
+    yerel = render_karti.durum_oku()
+    istenen = yerel.get("kosu_id")
+    if istenen:
+        for k in kosular:
+            if str(k.get("id")) == str(istenen):
+                return k, ""
+    for k in kosular:
+        if "yukleme_atla" in json.dumps(k)[:2000] or "render" in str(k.get("display_title", "")).lower():
+            return k, ""
+    return kosular[0], ""
+
+
+def ekran_render_kart() -> tuple[str, list[list[dict[str, Any]]]]:
+    """🧪 Render testi CANLI kart (TODO 21) — durum/süre/adım, yükleme YOK.
+
+    Uydurma yüzde yok: adım bilgisi gelmezse "bilinmiyor" yazılır. Koşu
+    bitmişse yenile düğmesi kalır (kullanıcı sonucu tekrar görebilir).
+    """
+    kosu, hata = _son_render_kosusu()
+    metin = render_karti.kart_metni(kosu, hata=hata)
+    butonlar = [
+        [
+            {"text": "🔄 Yenile", "callback_data": "render_kart"},
+            {"text": "▶️ Testi başlat", "callback_data": "uret_render_test"},
+        ],
+        list(GERI_MENUSU),
+    ]
+    return metin, butonlar
+
+
 def ekran_kuyruk() -> tuple[str, list[list[dict[str, Any]]]]:
     """📦 Stok (kuyruk) ekranı (TODO 20) — sebep dağılımı, yaş, deneme sayısı.
 
@@ -1938,7 +1985,10 @@ def ekran_uret() -> tuple[str, list[list[dict[str, Any]]]]:
     )
     butonlar = [
         [{"text": "▶️ Üretimi başlat", "callback_data": "uret_baslat"}],
-        [{"text": "🧪 Render testi", "callback_data": "uret_render_test"}],
+        [
+            {"text": "🧪 Render testi", "callback_data": "uret_render_test"},
+            {"text": "📈 Test kartı", "callback_data": "render_kart"},
+        ],
         [{"text": "← Geri", "callback_data": "menu_main"}, {"text": "🏠 Menü", "callback_data": "menu_main"}],
     ]
     return metin, butonlar
@@ -2090,6 +2140,10 @@ def _handle_callback_icerde(callback_data: str, callback_id: str, kullanici_id: 
     if callback_data == "menu_main":
         answer_callback(callback_id)
         _ekran_goster(ekran_ana())
+        return
+    if callback_data == "render_kart":
+        answer_callback(callback_id)
+        _ekran_goster(ekran_render_kart())
         return
     if callback_data == "kuyruk_liste":
         answer_callback(callback_id)

@@ -116,7 +116,8 @@ def test_ana_menu_tam_dort_dugme() -> None:
     duz = [d["callback_data"] for satir in butonlar for d in satir]
     assert len(duz) == 4, f"ana menüde tam 4 düğme olmalı, gelen: {duz}"
     assert sorted(duz) == ["ay:kok", "rapor_goster", "status_now", "uret_menu"]
-    assert "BOBİ TV Kontrol Paneli" in metin
+    # TODO 14: ana ekran artık canlı durum kartı; başlık "🎬 BOBİ TV".
+    assert "BOBİ TV" in metin
 
 
 def test_buton_metinleri_20_karakter_siniri() -> None:
@@ -162,7 +163,7 @@ def test_bilinmeyen_callback_cokmeden_menuye_doner(monkeypatch: pytest.MonkeyPat
     assert any("Bilinmeyen komut" in str(p.get("text", "")) for p in cevaplar)
     son = cagrilar[-1]
     assert son[0] in ("sendMessage", "editMessageText"), "menüye dönülmeli (panel yeniden)"
-    assert "BOBİ TV Kontrol Paneli" in str(son[1].get("text", ""))
+    assert "BOBİ TV" in str(son[1].get("text", ""))
 
 
 def test_gecersiz_indeksli_uydurma_payload_uygulanmaz(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -170,7 +171,7 @@ def test_gecersiz_indeksli_uydurma_payload_uygulanmaz(monkeypatch: pytest.Monkey
     cagrilar = _takip_et(monkeypatch)
     tb.handle_callback("ay:v:GUNLUK_MAKS:99", "cbz")
     assert not tb.AYARLAR_STATE_YOLU.exists(), "uydurma indeks state'e yazılamaz"
-    assert "BOBİ TV Kontrol Paneli" in _son_panel_metni(cagrilar)
+    assert "BOBİ TV" in _son_panel_metni(cagrilar)
 
 
 def test_indeks_sunucuda_katalogdan_cozulur() -> None:
@@ -285,7 +286,7 @@ def test_panel_hatasinda_cokme_yok_menuye_donus(monkeypatch: pytest.MonkeyPatch)
     monkeypatch.setattr(tb, "ekran_ayar_grup", patlayan)
     sonuc = tb.handle_callback("ay:g:uretim_kota", "cberr")
     assert sonuc == "hata"
-    assert "BOBİ TV Kontrol Paneli" in _son_panel_metni(cagrilar)
+    assert "BOBİ TV" in _son_panel_metni(cagrilar)
 
 
 # ---------------------------------------------------------------------------
@@ -404,7 +405,7 @@ def test_temizlik_yazmaya_calisirsa_reddedilir(monkeypatch: pytest.MonkeyPatch) 
     cagrilar = _takip_et(monkeypatch)
     tb.handle_callback("ay:onay:MIN_IZLENME_ESIGI:0", "cb1")
     assert not tb.AYARLAR_STATE_YOLU.exists()
-    assert "BOBİ TV Kontrol Paneli" in _son_panel_metni(cagrilar)
+    assert "BOBİ TV" in _son_panel_metni(cagrilar)
 
 
 # ---------------------------------------------------------------------------

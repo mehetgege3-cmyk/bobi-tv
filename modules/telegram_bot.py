@@ -16,6 +16,7 @@ BOBİ TV — İnteraktif Telegram Kontrol Paneli (hiyerarşik ayarlar sürümü)
 import html
 import json
 import os
+import time
 from contextlib import suppress
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -55,6 +56,11 @@ GERI_MENUSU: list[dict[str, str]] = [
 
 # TODO 3 — menü derinliği: ana(0) → ayarlar(1) → grup(2) → ayar/onay(3).
 # Onay/dry-run ekranları derinlik 3'ün EŞİDİR (ay-detay ekranının yerine geçer).
+#: Tek doğruluk kaynağı: GitHub repo ve pipeline sürümü (TODO 13).
+#: Üç ayrı yerde sabit yazılıydı; repo adı değişince panel sessizce bozulurdu.
+GITHUB_REPO = os.environ.get("GITHUB_REPO", "mehetgege3-cmyk/bobi-tv")
+PIPELINE_SURUM = os.environ.get("PIPELINE_SURUM", "v6.4 PRO")
+
 CALLBACK_DERINLIK: dict[str, int] = {
     "menu_main": 0,
     "rapor_goster": 1,
@@ -66,6 +72,16 @@ CALLBACK_DERINLIK: dict[str, int] = {
     "quota_status": 1,
     "help_show": 1,
     "ay:kok": 1,
+    "ay:gir": 3,
+    "ay:hizli": 1,
+    "ay:tumu": 1,
+    "ay:t": 1,
+    "ay:d": 1,
+    "ay:onayd": 3,
+    "panelleri_temizle": 1,
+    "rapor_7gun": 2,
+    "kuyruk_liste": 2,
+    "performans": 2,
     "ay:gecmis": 2,
     "sistem_goster": 2,
     "ay:g": 2,
@@ -75,6 +91,7 @@ CALLBACK_DERINLIK: dict[str, int] = {
     "ay:iptal": 3,
     "ay:test": 3,
     "uret_baslat": 2,
+    "uret_onay": 2,
     "uret_render_test": 2,
 }
 
@@ -207,9 +224,23 @@ def api_call(method: str, data: dict[str, Any]) -> dict[str, Any] | None:
         return None
 
 
+#: Metin içinde kullanılabilen HTML etiketleri. Telegram `parse_mode=HTML`
+#: bunları destekler; geri kalan HER ŞEY kaçırılır (XSS/parse hatası olmaz).
+IZINLI_ETIKETLER = ("b", "i", "u", "s", "code", "pre", "blockquote")
+
+
 def _html_guvenli(text: str) -> str:
-    """TEK escape noktası: veri alanlarını (& < >) kaçır, <b></b> etiketlerini koru."""
-    return html.escape(text, quote=False).replace("&lt;b&gt;", "<b>").replace("&lt;/b&gt;", "</b>")
+    """TEK escape noktası: veri alanlarını (& < >) kaçır, İZİNLİ etiketleri koru.
+
+    TODO 13: eski sürüm yalnız `<b>` koruyordu → `ekran_giris` içindeki
+    `<code>60</code>` kaçırılıp ekranda düz metin olarak görünüyordu
+    ("&lt;code&gt;60&lt;/code&gt;"). Artık izinli etiket listesi geniştir.
+    """
+    kacirilmis = html.escape(text, quote=False)
+    for etiket in IZINLI_ETIKETLER:
+        kacirilmis = kacirilmis.replace(f"&lt;{etiket}&gt;", f"<{etiket}>")
+        kacirilmis = kacirilmis.replace(f"&lt;/{etiket}&gt;", f"</{etiket}>")
+    return kacirilmis
 
 
 def send_message_with_buttons(
@@ -228,7 +259,15 @@ def send_message_with_buttons(
 
 
 def send_message(text: str, parse_mode: str = "HTML") -> bool:
-    result = api_call("sendMessage", {"chat_id": CHAT_ID, "text": text, "parse_mode": parse_mode})
+    """Düz mesaj gönderir. Escape TEK noktadan (`_html_guvenli`) yapılır.
+
+    TODO 13: eskiden send_message escape YAPMIYORDU, panel_goster yapıyordu →
+    aynı metin iki yoldan iki farklı sonuç veriyordu (çift escape / ham HTML).
+    """
+    govde: dict[str, Any] = {"chat_id": CHAT_ID, "text": _html_guvenli(text)}
+    if parse_mode:
+        govde["parse_mode"] = parse_mode
+    result = api_call("sendMessage", govde)
     return result is not None and result.get("ok", False)
 
 
@@ -413,13 +452,92 @@ def panel_goster(metin: str, butonlar: list[list[dict[str, Any]]], yeni_mesaj: b
     return _panel_yeni_gonder(metin, butonlar)
 
 
+def _ilerleme_cubugu(oran: float, genislik: int = 6) -> str:
+    """Metin ilerleme çubuğu: ▰▰▰▱▱▱ 3/6 (TODO 16 görsel dil, TODO 14'te kullanılır)."""
+    oran = max(0.0, min(1.0, oran))
+    dolu = int(round(oran * genislik))
+    return "▰" * dolu + "▱" * (genislik - dolu)
+
+
+def _bugun_arsiv_ozeti() -> tuple[int, int]:
+    """(bugün üretilen, bugün yayına alınan) — uydurma yok: okunamazsa (0, 0)."""
+    arsiv = Path("bobi_tv/archive/videos.json")
+    bugun = datetime.now(UTC).strftime("%Y-%m-%d")
+    if not arsiv.exists():
+        return 0, 0
+    try:
+        veri = json.loads(arsiv.read_text(encoding="utf-8"))
+        kayitlar = list(veri.values()) if isinstance(veri, dict) else list(veri)
+        bugunkuler = [k for k in kayitlar if str(k.get("tarih", ""))[:10] == bugun]
+        return len(bugunkuler), sum(1 for k in bugunkuler if k.get("durum") == "yayinda")
+    except Exception:
+        return 0, 0
+
+
+def _son_kosu_ozeti() -> str:
+    """Son üretim koşusunun sonucu + yaşı. Okunamazsa 'bilinmiyor'."""
+    veri = _github_get_onbellekli("actions/workflows/hourly_production.yml/runs?per_page=1")
+    kosular = (veri or {}).get("workflow_runs") or []
+    if not kosular:
+        return BILINMIYOR
+    k = kosular[0]
+    durum = k.get("conclusion") or k.get("status") or BILINMIYOR
+    ikon = {"success": "✅", "failure": "❌", "cancelled": "⛔"}.get(str(durum), "⏳")
+    dk = _gecen_dakika(str(k.get("created_at", "")))
+    yas = f"{dk} dk önce" if isinstance(dk, int) and dk >= 0 else BILINMIYOR
+    return f"{ikon} {durum} ({yas})"
+
+
+def ekran_ana() -> tuple[str, list[list[dict[str, Any]]]]:
+    """ANA EKRAN = canlı durum kartı (TODO 14).
+
+    Statik karşılama yerine 4-5 satır canlı özet. Veri okunamazsa her satır
+    'bilinmiyor' der — sayı UYDURULMAZ (mevcut felsefe korunur).
+    """
+    uretilen, yayinda = _bugun_arsiv_ozeti()
+    kota_dolu = False
+    try:
+        from modules.kota_state import kota_dolu_mu
+
+        kota_dolu = kota_dolu_mu()
+    except Exception:
+        kota_dolu = False
+    kuyruk = Path("bobi_tv/queue")
+    kuyruk_sayisi = len(list(kuyruk.glob("*.json"))) if kuyruk.exists() else 0
+
+    kota_satiri = (
+        f"⛔ Kota DOLU — video stoğa gidiyor ({kuyruk_sayisi} stokta)"
+        if kota_dolu
+        else f"✅ Kota açık — {_ilerleme_cubugu(yayinda / max(1, KOTA_TAVANI))} {yayinda}/{KOTA_TAVANI}"
+    )
+    metin = (
+        "🎬 <b>BOBİ TV</b>\n"
+        f"🎥 Bugün: {uretilen} üretildi · {yayinda} yayında\n"
+        f"{kota_satiri}\n"
+        f"📦 Stok (kuyruk): {kuyruk_sayisi} video\n"
+        f"🕐 Son koşu: {_son_kosu_ozeti()}\n"
+        f"📡 Bot gecikmesi: {_poller_ozeti()}"
+    )
+    return metin, get_main_menu_buttons()
+
+
 def get_main_menu_buttons() -> list[list[dict[str, Any]]]:
     """Ana menü: 6 düğmeden 4'e iner (TODO 3).
     İstatistik + Kalite + Kota 'Rapor' altına girer."""
+    # AKILLI BİRİNCİL BUTON (TODO 14): kota doluysa "Üret" yanıltıcıdır —
+    # video yayına girmez, stoğa gider. Buton bunu dürüstçe söyler.
+    uret_etiketi = "🎬 Üret"
+    try:
+        from modules.kota_state import kota_dolu_mu
+
+        if kota_dolu_mu():
+            uret_etiketi = "⏳ Kota dolu"
+    except Exception:
+        pass
     return [
         [
             {"text": "📊 Durum", "callback_data": "status_now"},
-            {"text": "🎬 Üret", "callback_data": "uret_menu"},
+            {"text": uret_etiketi, "callback_data": "uret_menu"},
         ],
         [
             {"text": "📈 Rapor", "callback_data": "rapor_goster"},
@@ -484,7 +602,7 @@ def get_status_text() -> str:
         f"🚫 YouTube kota: {kota_durum}\n"
         f"{_kota_birim_ozeti()}\n"
         f"⏰ Son çalışma: {son_calisma}\n\n"
-        f"⚙️ Pipeline: v6.4 PRO"
+        f"⚙️ Pipeline: {PIPELINE_SURUM}"
     )
 
 
@@ -545,17 +663,108 @@ def get_help_text() -> str:
         "📈 <b>Rapor</b> - İstatistik + Kalite + Kota\n⚙️ <b>Ayarlar</b> - Hiyerarşik ayar menüsü\n\n"
         "<b>Üretim:</b>\n"
         f"• Günlük yükleme tavanı: {KOTA_TAVANI} (YouTube kota matematiği)\n"
-        "• Günlük hedef / mod: Ayarlar → Üretim &amp; Kota\n"
+        "• Günlük hedef / mod: Ayarlar → Üretim ve Kota\n"
         "• Kalite eşiği: 70/100\n\n"
-        "<b>Not:</b> Kota doluyken üretim duraklar (davranışı Ayarlar'dan seçilir).\n"
+        "<b>Not:</b> Kota doluyken ÜRETİM SÜRER; video STOĞA alınır ve kota açılınca yüklenir.\n"
         "⏰ <b>Not:</b> Komutlar GitHub cron zamanlamasıyla işlenir; GitHub gecikmesiyle "
         "cevap genellikle 15-60 dakika içinde gelir."
     )
 
 
+def ekran_yardim() -> tuple[str, list[list[dict[str, Any]]]]:
+    """Yardım ekranı — /help metin komutu da buraya yönlenir (tek panel)."""
+    return get_help_text(), [
+        [
+            {"text": "📊 Rapor", "callback_data": "rapor_goster"},
+            {"text": "⚙️ Ayarlar", "callback_data": "ay:kok"},
+        ],
+        [{"text": "← Geri", "callback_data": "menu_main"}, {"text": "🏠 Menü", "callback_data": "menu_main"}],
+    ]
+
+
 # ---------------------------------------------------------------------------
 # GitHub tetikleme (workflow_dispatch + repository_dispatch)
 # ---------------------------------------------------------------------------
+
+
+#: Üretim tetikleme cooldown'u (saniye). Çift dokunuş = iki workflow koşusu
+#: olmasın; ayrıca ücretli/kotalı bir işi yanlışlıkla iki kez başlatmayı keser.
+URETIM_COOLDOWN_SN = 120
+
+
+def _cooldown_dosyasi() -> Path:
+    return Path(os.environ.get("BOBI_COOLDOWN_YOLU", "bobi_tv/state/uretim_cooldown.json"))
+
+
+def uretim_cooldown_kalan() -> int:
+    """Kalan cooldown süresi (sn). 0 → tetikleme serbest."""
+    try:
+        veri = json.loads(_cooldown_dosyasi().read_text(encoding="utf-8"))
+        son = float(veri.get("son_tetik", 0))
+        return max(0, int(URETIM_COOLDOWN_SN - (time.time() - son)))
+    except Exception:
+        return 0
+
+
+def uretim_cooldown_baslat() -> None:
+    try:
+        yol = _cooldown_dosyasi()
+        yol.parent.mkdir(parents=True, exist_ok=True)
+        yol.write_text(json.dumps({"son_tetik": time.time()}), encoding="utf-8")
+    except Exception as e:
+        print(f"[Telegram Bot] cooldown yazılamadı: {str(e)[:80]}")
+
+
+def trigger_production_kontrollu() -> str:
+    """Onaylanmış tetikleme: cooldown kontrolü + kayıt. Çift koşu üretmez."""
+    kalan = uretim_cooldown_kalan()
+    if kalan > 0:
+        return (
+            f"⏳ Zaten tetiklendi — {kalan} sn sonra tekrar denenebilir. "
+            "İkinci workflow koşusu başlatılmadı."
+        )
+    sonuc = trigger_production()
+    # Yalnız BAŞARILI tetiklemede cooldown başlat (hata → tekrar denenebilsin).
+    if sonuc.startswith("✅") or "tetiklendi" in sonuc.lower():
+        uretim_cooldown_baslat()
+    return sonuc
+
+
+def ekran_uret_onay() -> tuple[str, list[list[dict[str, Any]]]]:
+    """Üretim tetikleme ONAY ekranı (TODO 13: onaysız tetikleme kapatıldı).
+
+    Riskli işlem tek dokunuşla olmaz kuralı: üretim GitHub Actions koşusu
+    başlatır, video yayınlar ve YouTube kotası harcar → onay gerekir.
+    """
+    kalan = uretim_cooldown_kalan()
+    if kalan > 0:
+        metin = (
+            "⏳ <b>Üretim zaten tetiklendi</b>\n\n"
+            f"Çift dokunuşu engellemek için {kalan} sn beklemelisin.\n"
+            "Koşu başladıysa sonuç birkaç dakika içinde Rapor ekranına düşer."
+        )
+        butonlar = [
+            [{"text": "📊 Rapora git", "callback_data": "rapor_goster"}],
+            [
+                {"text": "← Geri", "callback_data": "uret_menu"},
+                {"text": "🏠 Menü", "callback_data": "menu_main"},
+            ],
+        ]
+        return metin, butonlar
+    metin = (
+        "⚠️ <b>Üretimi başlatmak üzeresin</b>\n\n"
+        "Bu işlem GitHub Actions koşusu başlatır: video üretilir ve\n"
+        "kota varsa <b>YouTube'a yüklenir</b>.\n\n"
+        f"{_kota_birim_ozeti()}"
+    )
+    butonlar = [
+        [{"text": "✅ Evet, başlat", "callback_data": "uret_onay"}],
+        [
+            {"text": "← Vazgeç", "callback_data": "uret_menu"},
+            {"text": "🏠 Menü", "callback_data": "menu_main"},
+        ],
+    ]
+    return metin, butonlar
 
 
 def trigger_production() -> str:
@@ -564,7 +773,7 @@ def trigger_production() -> str:
     tok = os.environ.get("GH_TOKEN", "")
     if not tok:
         return "❌ Hata: GH_TOKEN tanımlı değil, tetiklenemedi."
-    repo = "mehetgege3-cmyk/bobi-tv"
+    repo = GITHUB_REPO
     workflow = "hourly_production.yml"
     url = f"https://api.github.com/repos/{repo}/actions/workflows/{workflow}/dispatches"
     try:
@@ -595,7 +804,7 @@ def render_testi_tetikle() -> str:
     tok = os.environ.get("GH_TOKEN", "")
     if not tok:
         return "❌ Hata: GH_TOKEN tanımlı değil, render testi tetiklenemedi."
-    repo = "mehetgege3-cmyk/bobi-tv"
+    repo = GITHUB_REPO
     url = f"https://api.github.com/repos/{repo}/dispatches"
     try:
         resp = requests.post(
@@ -621,6 +830,23 @@ def render_testi_tetikle() -> str:
     return f"❌ Hata {resp.status_code}: {resp.text[:120]}"
 
 
+#: GitHub GET önbelleği (TODO 30): sistem ekranı 3 ardışık çağrı yapıyordu.
+#: 60 sn TTL, süreç içi sözlük (state dosyası YOK → ek commit üretmez).
+_GITHUB_CACHE: dict[str, tuple[float, Any]] = {}
+GITHUB_CACHE_TTL_SN = 60
+
+
+def _github_get_onbellekli(yol: str) -> dict[str, Any] | None:
+    """60 sn önbellekli GitHub GET. Hata/eksik token → None (panel 'bilinmiyor')."""
+    simdi = time.time()
+    kayit = _GITHUB_CACHE.get(yol)
+    if kayit and (simdi - kayit[0]) < GITHUB_CACHE_TTL_SN:
+        return kayit[1]
+    veri = _github_get(yol)
+    _GITHUB_CACHE[yol] = (simdi, veri)
+    return veri
+
+
 def _github_get(yol: str) -> dict[str, Any] | None:
     """GitHub API GET yardımcısı; hata/eksik token → None (panel bilinmiyor der)."""
     tok = os.environ.get("GH_TOKEN", "")
@@ -628,7 +854,7 @@ def _github_get(yol: str) -> dict[str, Any] | None:
         return None
     try:
         resp = requests.get(
-            f"https://api.github.com/repos/mehetgege3-cmyk/bobi-tv/{yol}",
+            f"https://api.github.com/repos/{GITHUB_REPO}/{yol}",
             headers={
                 "Accept": "application/vnd.github+json",
                 "Authorization": f"Bearer {tok}",
@@ -646,7 +872,7 @@ def _github_get(yol: str) -> dict[str, Any] | None:
 
 def _son_kosu_ozeti() -> str:
     """Son üretim koşusu (dürüst: veri yoksa 'bilinmiyor')."""
-    veri = _github_get("actions/workflows/hourly_production.yml/runs?per_page=1")
+    veri = _github_get_onbellekli("actions/workflows/hourly_production.yml/runs?per_page=1")
     kosular = (veri or {}).get("workflow_runs") or []
     if not kosular:
         return f"{BILINMIYOR} (koşu kaydı okunamadı)"
@@ -663,7 +889,7 @@ def _poller_ozeti() -> str:
     susarsa kullanıcı 3 saat cevap alamaz ve sonra tüm mesajlar toplu işlenir.
     Bu satır durumu panelde görünür kılar (uydurma sayı yok).
     """
-    veri = _github_get("actions/workflows/telegram_bot.yml/runs?per_page=1")
+    veri = _github_get_onbellekli("actions/workflows/telegram_bot.yml/runs?per_page=1")
     kosular = (veri or {}).get("workflow_runs") or []
     if not kosular:
         return f"{BILINMIYOR} (koşu kaydı okunamadı)"
@@ -691,7 +917,7 @@ def _gecen_dakika(iso_damga: str) -> int | None:
 
 def _tetikleyici_sagligi() -> str:
     """repository_dispatch ile gelen koşu sayısı (dış tetikleyici kanıtı)."""
-    veri = _github_get("actions/runs?event=repository_dispatch&per_page=1")
+    veri = _github_get_onbellekli("actions/runs?event=repository_dispatch&per_page=1")
     toplam = (veri or {}).get("total_count")
     if toplam is None:
         return f"{BILINMIYOR} (API okunamadı)"
@@ -728,9 +954,106 @@ def _deger_ve_kaynak(anahtar: str) -> tuple[Any | None, str]:
     return a.get("varsayilan"), "varsayılan"
 
 
+#: En sık değişen ayarlar — kökte TEK dokunuşla erişilir (TODO 15).
+#: Derinlik 3 (kok → grup → ayar) bu ayarlar için 2'ye iner.
+HIZLI_AYARLAR: tuple[str, ...] = (
+    "GUNLUK_HEDEF",       # günlük üretim/yükleme hedefi
+    "KOTA_DOLU_DAVRANIS",  # kota dolunca ne olsun
+    "YUKLEME_ATLA",       # yüklemesiz test modu
+)
+
+
+def _hizli_toggle(anahtar: str, callback_id: str) -> None:
+    """Satır içi AÇ/KAPAT (TODO 15). Riskli ayar → ONAY ekranına düşer."""
+    a = ayar_getir(anahtar)
+    if a is None:
+        answer_callback(callback_id, "Ayar bulunamadı", show_alert=True)
+        return
+    deger, _ = _deger_ve_kaynak(anahtar)
+    yeni = "0" if str(deger).lower() in ("1", "true", "evet", "acik") else "1"
+    _hizli_uygula(anahtar, yeni, callback_id)
+
+
+def _hizli_stepper(anahtar: str, yon: int, callback_id: str) -> None:
+    """Satır içi ➖/➕ (TODO 15): değeri adım kadar değiştir, sınırda dur."""
+    a = ayar_getir(anahtar)
+    if a is None:
+        answer_callback(callback_id, "Ayar bulunamadı", show_alert=True)
+        return
+    deger, _ = _deger_ve_kaynak(anahtar)
+    try:
+        mevcut = int(str(deger))
+    except (TypeError, ValueError):
+        mevcut = int(a.get("min", 1) or 1)
+    adim = int(a.get("adim", 1) or 1)
+    yeni = mevcut + (adim * yon)
+    alt, ust = int(a.get("min", 1) or 1), int(a.get("max", 10**6) or 10**6)
+    yeni = max(alt, min(ust, yeni))
+    if yeni == mevcut:
+        answer_callback(callback_id, f"Sınır: {mevcut}")
+        return
+    _hizli_uygula(anahtar, str(yeni), callback_id)
+
+
+def _hizli_uygula(anahtar: str, yeni: str, callback_id: str) -> None:
+    """Hızlı ayar uygulaması — riskli ayarlarda onay ekranı ZORUNLU."""
+    a = ayar_getir(anahtar)
+    if a is not None and a["risk"] == "yuksek":
+        _bekleyen_giris_yaz(f"{anahtar}#{yeni}")
+        answer_callback(callback_id, "Onay gerekiyor")
+        _ekran_goster(*ekran_onay_deger(anahtar, int(yeni) if yeni.isdigit() else yeni))
+        return
+    ok, durum = ayar_uygula(anahtar, yeni, None)
+    answer_callback(callback_id, "Kaydedildi" if ok else "Uygulanamadı")
+    metin, butonlar = ekran_hizli_ayarlar()
+    if not ok and durum:
+        metin += f"\n\n❌ <b>Uygulanamadı:</b> {durum}"
+    _ekran_goster(metin, butonlar)
+
+
+def ekran_hizli_ayarlar() -> tuple[str, list[list[dict[str, Any]]]]:
+    """⭐ Hızlı ayarlar: kökten, detay ekranına girmeden değişir (TODO 15).
+
+    Satır içi toggle (anahtar) ve stepper (sayı) kullanılır. Riskli ayarlar
+    yine ONAY ekranından geçer (güvenlik kuralı korunur).
+    """
+    satirlar = ["⚙️ <b>Hızlı ayarlar</b>", ""]
+    butonlar: list[list[dict[str, Any]]] = []
+    for anahtar in HIZLI_AYARLAR:
+        a = ayar_getir(anahtar)
+        if a is None:
+            continue
+        deger, _ = _deger_ve_kaynak(anahtar)
+        if a["tip"] == "anahtar":
+            acik = str(deger).lower() in ("1", "true", "evet", "acik")
+            durum = "✅ Açık" if acik else "⛔ Kapalı"
+            satirlar.append(f"• {a['etiket']}: {durum}")
+            # Tek dokunuş: tersine çevir (riskli ayar → onaya gider)
+            butonlar.append(
+                [{"text": f"{a['etiket']} {'kapat' if acik else 'aç'}"[:20],
+                  "callback_data": f"ay:t:{anahtar}"}]
+            )
+        else:
+            satirlar.append(f"• {a['etiket']}: {deger}")
+            butonlar.append(
+                [
+                    {"text": "➖", "callback_data": f"ay:d:-1:{anahtar}"},
+                    {"text": f"{a['etiket']}"[:18], "callback_data": f"ay:s:{anahtar}"},
+                    {"text": "➕", "callback_data": f"ay:d:1:{anahtar}"},
+                ]
+            )
+    satirlar.append("")
+    butonlar.append([{"text": "⚙️ Tüm ayarlar", "callback_data": "ay:tumu"}])
+    butonlar.append(list(GERI_MENUSU))
+    return "\n".join(satirlar), butonlar
+
+
 def ekran_ayar_kok() -> tuple[str, list[list[dict[str, Any]]]]:
     satirlar = ["⚙️ <b>AYARLAR</b>", ""]
-    butonlar: list[list[dict[str, Any]]] = []
+    # TODO 15: en sık değişen ayarlar KÖKTEN erişilir (derinlik 3 → 2).
+    butonlar: list[list[dict[str, Any]]] = [
+        [{"text": "⭐ Hızlı ayarlar", "callback_data": "ay:hizli"}]
+    ]
     for grup in GRUPLAR:
         ayarlar = grup_ayarlari(grup)
         etiket = _grup_etiketleri()[grup]
@@ -1182,10 +1505,6 @@ def ekran_uret() -> tuple[str, list[list[dict[str, Any]]]]:
     return metin, butonlar
 
 
-def ekran_ana() -> tuple[str, list[list[dict[str, Any]]]]:
-    return MENU_BASLIGI, get_main_menu_buttons()
-
-
 def ekran_metin_dugme(metin: str) -> tuple[str, list[list[dict[str, Any]]]]:
     """Basit sonuç ekranları (tetikleme cevabı vb.)."""
     return metin, [
@@ -1324,8 +1643,13 @@ def _handle_callback_icerde(callback_data: str, callback_id: str, kullanici_id: 
         _ekran_goster(ekran_uret())
         return
     if callback_data == "uret_baslat":
+        # TODO 13: onaysız tetikleme YOK — önce onay ekranı.
+        answer_callback(callback_id)
+        _ekran_goster(ekran_uret_onay())
+        return
+    if callback_data == "uret_onay":
         answer_callback(callback_id, "Üretim tetikleniyor...")
-        _ekran_goster(ekran_metin_dugme(trigger_production()))
+        _ekran_goster(ekran_metin_dugme(trigger_production_kontrollu()))
         return
     if callback_data == "uret_render_test":
         answer_callback(callback_id, "Render testi başlatılıyor...")
@@ -1351,6 +1675,21 @@ def _handle_callback_icerde(callback_data: str, callback_id: str, kullanici_id: 
             f"{silinen} mesaj silindi" if silinen else "Silinecek eski panel bulunamadı",
         )
         _ekran_goster(ekran_sistem())
+        return
+    if callback_data == "ay:hizli":
+        answer_callback(callback_id)
+        _ekran_goster(ekran_hizli_ayarlar())
+        return
+    if callback_data == "ay:tumu":
+        answer_callback(callback_id)
+        _ekran_goster(ekran_ayar_kok())
+        return
+    _p = callback_data.split(":")
+    if len(_p) == 3 and _p[0] == "ay" and _p[1] == "t":
+        _hizli_toggle(_p[2], callback_id)
+        return
+    if len(_p) == 4 and _p[0] == "ay" and _p[1] == "d":
+        _hizli_stepper(_p[3], int(_p[2]), callback_id)
         return
     parcalar = callback_data.split(":")
     if len(parcalar) == 3 and parcalar[0] == "ay" and parcalar[1] == "g":
@@ -1532,17 +1871,22 @@ def handle_message(text: str) -> str:
     if text in MENU_KOMUTLARI:
         menyu_gonder()
         return ""
+    # TODO 13 — TEK PANEL KURALI: metin komutları YENİ MESAJ ATMAZ.
+    # Eskiden /status, /stats, /help, /trigger doğrudan send_message çağırıp
+    # panelin dışında paralel mesaj üretiyordu (ekranda iki panel birden).
+    # Artık hepsi AYNI paneli ilgili ekrana yönlendirir.
     if text in ["/status", "durum", "status"]:
-        send_message(get_status_text())
+        panel_goster(*ekran_rapor())
         return ""
     if text in ["/trigger", "üret", "uret", "produce"]:
-        send_message(trigger_production())
+        # Onaysız tetikleme YOK: onay ekranı açılır (cooldown dahil).
+        panel_goster(*ekran_uret_onay())
         return ""
     if text in ["/stats", "istatistik", "stats"]:
-        send_message(get_stats_text())
+        panel_goster(*ekran_rapor())
         return ""
     if text in ["/help", "yardım", "yardim", "help"]:
-        send_message(get_help_text())
+        panel_goster(*ekran_yardim())
         return ""
     print(f"[Telegram Bot] Tanınmayan metin yok sayıldı (cevap verilmedi): {text[:40]!r}")
     return ""

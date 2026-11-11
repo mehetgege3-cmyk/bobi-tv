@@ -245,14 +245,31 @@ def test_bayat_menu_silinmisse_yeni_menyu_acilir(monkeypatch: pytest.MonkeyPatch
     assert json.loads(menu_yolu.read_text(encoding="utf-8"))["message_id"] == 888
 
 
-def test_komut_cevabi_duz_mesajdir_butonsuz(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Menü dışı komut cevapları reply_markup İÇERMEZ (butonlar sadece ana menüde)."""
+def test_komut_cevabi_duz_mesajdir_butonsuz(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Menü dışı komut cevapları reply_markup İÇERMEZ.
+
+    GÜNCELLEME (TODO 13, gerekçe yorumu): `/status` artık YENİ MESAJ ATMAZ,
+    mevcut paneli Rapor ekranına çevirir (tek panel kuralı). Testin ÖZÜ
+    korunuyor: komut cevabı butonsuz/panel dışı mesaj spam'i üretmemeli.
+    Panel kaydı izole edilmezse diskteki gerçek kayıt yüzünden çağrı
+    sendMessage değil editMessageText olur — bu yüzden MENU_STATE_YOLU
+    tmp_path'e taşınır ki test deterministik olsun.
+    """
+    monkeypatch.setattr(tb, "MENU_STATE_YOLU", tmp_path / "menu.json")
     cagrilar, sahte_post = _telegram_yakalayici()
     monkeypatch.setattr("modules.telegram_bot.requests.post", sahte_post)
     tb.handle_message("/status")
-    cevaplar = [payload for yontem, payload in cagrilar if yontem == "sendMessage"]
-    assert len(cevaplar) == 1
-    assert "reply_markup" not in cevaplar[0]
+    # YENİ SÖZLEŞME (TODO 13 — gerekçe yorumu): komut cevabı PANEL olmalı.
+    # Eski spec "düz mesaj, butonsuz" idi; o davranış /status'un panelin
+    # DIŞINDA ikinci bir mesaj açmasına yol açıyordu (tek panel kuralı ihlali).
+    # Doğru spec: TAM 1 panel mesajı + butonlu (panele dönüş yolu şart).
+    panel_mesajlari = [p for y, p in cagrilar if y in ("sendMessage", "editMessageText")]
+    assert len(panel_mesajlari) == 1, "komut tek panel mesajı üretmeli"
+    assert "reply_markup" in panel_mesajlari[0], "panelde geri dönüş butonları olmalı"
+    # Panel dışı ek mesaj (sendMessage spam'i) olmamalı
+    assert sum(1 for y, _ in cagrilar if y == "sendMessage") <= 1
 
 
 def test_menu_main_callback_yeni_menyu_spamlamaz(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

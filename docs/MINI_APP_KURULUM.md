@@ -1,7 +1,18 @@
 # Mini App'i Telegram'a bağlama (5 dakika, tek sefer)
 
-Bu adımlar **bir kez** yapılır. Sonrasında Mini App hem bot menüsünden hem
-`/mini` ekranındaki **📱 Mini App'i aç** düğmesinden açılır.
+## ⚠️ Önce en önemli kural
+
+Mini App **sohbete atılan düz linkle AÇILMAZ**. Telegram sohbetinde bir
+`https://…` linkine dokununca **kendi tarayıcısını** açar; orada Mini App
+API'si (`sendData`, `initData`) **hiç yoktur**. Bu yüzden "Bu ekrandan işlem
+gönderilemez — sayfa Telegram dışında açıldı" mesajını görürsün.
+
+Doğru kapı **iki tanedir** ve ikisi de sohbetin İÇİNDE açılır:
+
+| Kapı | Nasıl | Not |
+|---|---|---|
+| **Menü düğmesi** (asıl) | BotFather → Bot Settings → **Menu Button** → URL | Sohbetin sol altında mavi düğme |
+| **Panel düğmesi** | Botta `/help` → **📱 Mini App** | `web_app` düğmesi; tek dokunuş |
 
 ## 1. Doğru URL (kopyala)
 
@@ -9,59 +20,58 @@ Bu adımlar **bir kez** yapılır. Sonrasında Mini App hem bot menüsünden hem
 https://mehetgege3-cmyk.github.io/bobi-tv/
 ```
 
-> Sondaki `/` önemli değil ama **https** olmak zorunda. Bu adres GitHub Pages'te
-> canlı ve yalnız `webapp/` klasörünü yayınlıyor.
+> **https** olmak zorunda; GitHub Pages'te canlı ve yalnız `webapp/` klasörünü
+> yayınlıyor.
 
 ## 2. BotFather'da nereye girilecek
 
-Ekran görüntüsündeki sayfa: **Bot Settings → Mini Apps**.
-Sırayla:
+Sayfa: **Bot Settings → Mini Apps** → **☰ Menu Button**
 
 1. **☰ Menu Button** → dokun
-2. Açılan alanda **URL** satırına yukarıdaki adresi yaz
-3. **Button text** (düğme yazısı) → `BOBİ TV` veya `Mini App`
+2. **URL**: yukarıdaki adres
+3. **Button text**: `BOBİ TV`
 4. Kaydet
 
-Bundan sonra botun sohbetinde **sol altta mavi "BOBİ TV" düğmesi** görünür ve
-Mini App'i açar.
+Sonra bot sohbetinin **sol altında mavi "BOBİ TV" düğmesi** görünür.
 
-### "Main App" ne zaman gerekli?
+### Main App / Direct Link gerekli mi?
+**Hayır.**
+- `Main App`: yalnız `t.me/<bot>/<app_adı>` kısa linki içindir.
+- `Create Direct Link`: sohbete atılabilen `?startapp=` linki içindir; düz link
+  gibi tarayıcıya düşmez ama **v1 için gereksiz**.
 
-`Main App` **zorunlu değil**. Yalnız `t.me/<bot>/<app_kisa_ad>` biçiminde özel
-kısa link üretmek için kullanılır (`/newapp` komutuyla uygulama tanımlanır).
-v1 için gerekmiyor — Menu Button yeterli. İstersen sonra `Main App` →
-`<adres>` ile aynı URL verilebilir.
+### Same-Origin Restriction
+Ekranda **açık** ve "25 Temmuz 2026'da otomatik açılacak" diyor. Bu bir
+güvenlik **artısıdır** (yalnız senin origin'in WebApp SDK'sını çağırabilir).
+**Açık bırak** — sayfamız kendi origin'inden yükleniyor, etkilenmez.
 
-### "Create Direct Link" (Direct Links)
+## 3. Doğru test (30 saniye)
 
-Sohbete atılabilen `t.me/<bot>/<app>?startapp=...` linki üretir.
-**v1 için gerekmiyor**; Mini App'i paylaşmak istersen kullan.
+1. Telegram'da **botu** aç (kanal değil)
+2. **Sol alt mavi MENÜ düğmesi** → Mini App açılır
+3. Bir işlem düğmesine bas → **botta onay ekranı** çıkmalı
+4. Onayla → işlem çalışır, `📋 Denetim` kaydına düşer
 
-## 3. Same-Origin Restriction
-
-Ekranda **açık** (mavi) duruyor ve "25 Temmuz 2026'da otomatik açılacak" diyor.
-Bu bir güvenlik **artısıdır**: yalnız senin origin'in (`github.io`) WebApp
-SDK'sını çağırabilir ve kullanıcı verisini okuyabilir.
-**Açık bırak** — bizim sayfamız kendi origin'inden yükleniyor, etkilenmez.
-
-## 4. Yazma düğmeleri çalışmıyorsa
+## 4. Sorun giderme
 
 | Belirti | Sebep | Çözüm |
 |---|---|---|
-| Düğmeler gri/soluk, "çalışmaz" yazısı | Sayfa düz tarayıcıda açıldı | Mini App'i **Telegram içinden** aç (Menu Button) |
-| "İstek gönderilemedi" | `sendData` yok (eski Telegram sürümü) | Telegram'ı güncelle **veya** panelden `🎬 Üret` kullan |
-| İstek gitti ama cevap yok | Poller yavaş (5.5 saatlik döngü) | Panelde `📡 Bot gecikmesi` satırına bak; 1-2 dk sonra tekrar dene |
-| Sayfa eski içerik gösteriyor | Pages gecikmesi | `🔄` / sayfayı yenile; veri 15 dk'da bir tazelenir |
+| "sayfa Telegram dışında açıldı" + `tg=yok` | Düz link tarayıcıda açıldı | Sayfayı Telegram **içinden** aç (Menü düğmesi / `/help` → 📱) |
+| `initData=boş` | Oturum tanınmadı (yan/menü düğmesi değil) | Menü düğmesinden gir; Telegram'ı güncelle |
+| `sendData=yok` | Eski Telegram sürümü | Güncelle **veya** panelden yap |
+| Düğmeler gri, üstte sarı bant | Tarayıcı tespiti (bilinçli) | Telegram içinden aç |
+| İstek gitti, cevap yok | Poller gecikmesi (5.5 saatlik döngü) | Panelde `📡 Bot gecikmesi` satırına bak, 1-2 dk sonra tekrar |
+| Sayfa eski içerik | Pages gecikmesi | Sayfayı yenile (veri 15 dk'da tazelenir) |
 
-> **Önemli:** Mini App yazmayı **kendisi yapmaz**. İstek bota gider, bot **onay
-> ekranı** açar; onaylamadan üretim başlamaz. Onaydan sonra işlem denetim
-> kaydına (`📋 Denetim`) yazılır.
+> **Güvenlik:** Mini App hiçbir şeyi doğrudan çalıştırmaz. İstek bota gider,
+> bot **onay ekranı** açar; onaylamadan üretim başlamaz. Token tarayıcıya
+> **hiç çıkmaz** (payload yalnız `{"e": <eylem>, "v": 1}`).
 
 ## 5. Kontrol listesi
 
-- [ ] Menu Button URL'si `https://mehetgege3-cmyk.github.io/bobi-tv/`
+- [ ] Menu Button URL: `https://mehetgege3-cmyk.github.io/bobi-tv/`
 - [ ] Button text: `BOBİ TV`
 - [ ] Same-Origin Restriction: açık (dokunma)
-- [ ] Telegram'da mavi düğme göründü, sayfa açılıyor
-- [ ] Panelde `/mini` → **📱 Mini App'i aç** da çalışıyor
-- [ ] Bir yazma düğmesine bas → botta **onay ekranı** çıkıyor
+- [ ] Sohbette mavi düğme göründü, sayfa **Telegram içinde** açılıyor
+- [ ] `/help` → **📱 Mini App** düğmesi de açıyor
+- [ ] Yazma düğmesi → botta **onay ekranı** → onay → `📋 Denetim`de kayıt

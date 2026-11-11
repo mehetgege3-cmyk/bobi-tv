@@ -180,12 +180,15 @@
     "dosya_adi": "20261110_0010_kurumsal_hayat_arena",
     "baslik": "Şirketin Ayın Çalışanı Hiç Beklemediğin Biri 😱 #shorts",
     "video_id": "8LFb5HrkXnM",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "kurumsal_hayat",
     "url": "https://www.youtube.com/shorts/8LFb5HrkXnM",
     "senaryo_ozeti": "Ayın Çalışanı ödülünü bizim klavye robotu aldı. Tolga, bu şaka mı, ödülü bir cihaza mı verdik?",
     "hash": "",
-    "tarih": "2026-11-10T23:54:21.629744+00:00"
+    "tarih": "2026-11-10T23:54:21.629744+00:00",
+    "silinme_izlenme": 0,
+    "silinme_yas_dk": 61.0,
+    "silinme_tarihi": "2026-11-11T00:55:36.974212+00:00"
   },
   {
     "dosya_adi": "20261110_0011_yapay_zeka_arena",
@@ -230,5 +233,16 @@
     "senaryo_ozeti": "Ve şu an kendi salonumda misafirden internet şifresi dileniyorum! Ama kapıdan girer girmez şifreyi sen söyledin!",
     "hash": "77a3153d0d2c2d8e087f209f891159f0",
     "tarih": "2026-11-11T00:43:21.196820+00:00"
+  },
+  {
+    "dosya_adi": "20261111_0004_ters_kose_fikralar",
+    "baslik": "Sihirbaz Şapkadan Tavşan Değil, Fatura Çıkardı! 🎩 #shorts",
+    "video_id": "7cTTL-VhItY",
+    "durum": "yayinda",
+    "kategori": "ters_kose_fikralar",
+    "url": "https://www.youtube.com/shorts/7cTTL-VhItY",
+    "senaryo_ozeti": "Sihirbaz şapkasından tavşan çıkaracağını söyledi, salon nefesini tuttu! Birazdan en büyük numaramla herkesi şaşırtacağım!",
+    "hash": "e61f161fe9b69e322e334559ade512db",
+    "tarih": "2026-11-11T00:59:25.384323+00:00"
   }
 ]

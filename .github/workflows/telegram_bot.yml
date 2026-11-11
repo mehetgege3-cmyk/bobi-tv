@@ -16,6 +16,9 @@ jobs:
     name: Telegram Bot Poll
     runs-on: ubuntu-latest
     timeout-minutes: 350
+    # İş düzeyinde tanımlı: zincirleme adımı da bu değeri okur (kaza koruması).
+    env:
+      TELEGRAM_DONGU_DK: '330'
 
     steps:
       - name: Repo'yu çek
@@ -171,6 +174,43 @@ jobs:
 
               time.sleep(1)
           PYEOF
+
+
+      # ---------------------------------------------------------------------
+      # ZİNCİR (2026-11-11): poller ÖLÇÜLEREK çalışmıyordu.
+      # Kanıt (state/cadans_olcumu.json): telegram_bot.yml medyan koşu aralığı
+      # 148.4 dk, son koşu 144 dk önce, 24 saatte 7 koşu (beklenen 288).
+      # Sebep: cron '*/5' GitHub'da fiilen çalışmıyor; koşu 5.5 saatte bitince
+      # bir sonraki koşuyu BAŞLATAN kimse yok → kullanıcı saatlerce cevap
+      # alamıyor. Çözüm: koşu TEMİZ bittiğinde (exit 0) kendi devamını
+      # dispatch et. Kaza koruması: 5.5 saati dolduramayan (erken biten) koşu
+      # kendini YENİDEN BAŞLATMAZ, yalnız uyarı verir — sonsuz döngü olmaz.
+      # ---------------------------------------------------------------------
+      - name: Sonraki poller koşusunu zincirle (kaza korumalı)
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          DONGU_DK: ${{ env.TELEGRAM_DONGU_DK }}
+        run: |
+          python3 - <<'PYZ'
+          import os, subprocess
+          # Koşu süresi cron aralığından (5 dk) kısaysa zincirleme YAPILMAZ.
+          try:
+              dongu = int(os.environ.get("DONGU_DK") or "0")
+          except ValueError:
+              dongu = 0
+          if dongu < 30:
+              print("::warning::poller erken bitti (döngü {} dk) — zincirleme yapılmadı".format(dongu))
+              raise SystemExit(0)
+          r = subprocess.run(
+              ["gh", "workflow", "run", "telegram_bot.yml", "--ref", "main"],
+              capture_output=True, text=True,
+          )
+          if r.returncode != 0:
+              print("::error::zincirleme dispatch başarısız: " + (r.stderr or "")[:200])
+              raise SystemExit(1)
+          print("🔗 sonraki poller koşusu dispatch edildi (kesintisiz devam)")
+          PYZ
 
       - name: State dosyasını commit et
         if: always()

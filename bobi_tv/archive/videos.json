@@ -348,12 +348,15 @@
     "dosya_adi": "20261111_0011_absurt_komedi",
     "baslik": "Yazıcı Baskı Yapmayı Reddedip İzin İstedi! 🖨️ #shorts",
     "video_id": "I6wFS07Fh-I",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "absurt_komedi",
     "url": "https://www.youtube.com/shorts/I6wFS07Fh-I",
     "senaryo_ozeti": "Yazıcı bugün çıktı vermedi, önce izin formumu istedi! Tonerim bitmiş olabilir, insan kaynaklarına sor!",
     "hash": "1265961a7c2578c4b6d05493b962853d",
-    "tarih": "2026-11-11T02:44:20.234257+00:00"
+    "tarih": "2026-11-11T02:44:20.234257+00:00",
+    "silinme_izlenme": 0,
+    "silinme_yas_dk": 70.9,
+    "silinme_tarihi": "2026-11-11T03:55:30.781939+00:00"
   },
   {
     "dosya_adi": "20261111_0012_kahve_hayati_arena",
@@ -398,5 +401,16 @@
     "senaryo_ozeti": "Ve sonunda kendi kedimin asistanı olarak işe başladım! Ama online mülakatta kameraya ilk o atlamıştı!",
     "hash": "8abee1f70e8e749c9dafb736359098fd",
     "tarih": "2026-11-11T03:43:23.486551+00:00"
+  },
+  {
+    "dosya_adi": "20261111_0016_absurt_sakalar_arena",
+    "baslik": "Kütüphanede Sessizlik İstifa Etti 😱 #shorts",
+    "video_id": "nAPqDQhQELc",
+    "durum": "yayinda",
+    "kategori": "absurt_sakalar",
+    "url": "https://www.youtube.com/shorts/nAPqDQhQELc",
+    "senaryo_ozeti": "Kütüphanedeki sessizlik az önce yüksek sesle istifa etti. Nereye gittiğini sordum, “Biraz susmaya,” diye cevap verdi.",
+    "hash": "",
+    "tarih": "2026-11-11T03:57:16.108639+00:00"
   }
 ]

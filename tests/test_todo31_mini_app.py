@@ -275,3 +275,15 @@ def test_pages_workflow_yalniz_webapp_yayinlar():
     assert "path: 'webapp'" in yazi
     assert "pages: write" in yazi
     assert "${{ secrets." not in yazi
+
+
+def test_pages_workflow_skip_ci_sorununu_cozer():
+    """SPEC/KURAL: commit'ler '[skip ci]' ile geliyor → push tetikleyicisi ATLANIR.
+
+    Bu yüzden Pages yayını veri workflow'u bittiğinde (workflow_run) da
+    çalışmalı; aksi hâlde Mini App eski sürümde donar (ölçüldü 2026-11-11).
+    """
+    metin = Path(".github/workflows/mini_app_pages.yml").read_text(encoding="utf-8")
+    assert "workflow_run:" in metin
+    assert "Mini App verisi (salt okunur özet)" in metin
+    assert "workflow_dispatch:" in metin, "elle tetikleme her zaman gerekli"

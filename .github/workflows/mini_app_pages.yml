@@ -5,11 +5,20 @@ name: Mini App yayını (GitHub Pages)
 # Yalnız webapp/ klasörü yayınlanır — repo kodu ve state DIŞARI ÇIKMAZ.
 
 on:
+  # ÖNEMLİ: bot commit'leri '[skip ci]' ile geliyor → push tetikleyicisi
+  # ATLANIR (GitHub kuralı). Bu yüzden yayın, veri workflow'u bittiğinde
+  # (workflow_run) ve elle tetiklemeyle de çalışır. 'push' yalnız insan
+  # commit'leri için yedek yoldur.
   push:
     branches: [main]
     paths:
       - 'webapp/**'
       - '.github/workflows/mini_app_pages.yml'
+  workflow_run:
+    workflows:
+      - "Mini App verisi (salt okunur özet)"
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
 
 permissions:

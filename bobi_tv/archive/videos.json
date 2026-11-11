@@ -208,12 +208,15 @@
     "dosya_adi": "20261111_0001_mesai_sonu_arena",
     "baslik": "Her Akşam Cenaze Çelengi Alan Adam 😱 #shorts",
     "video_id": "YsSXwiWkv4A",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "mesai_sonu",
     "url": "https://www.youtube.com/shorts/YsSXwiWkv4A",
     "senaryo_ozeti": "Hanımefendi, bugün de iki tane cenaze çelengi ver. Üç gündür aynı çelengi alıyorsunuz, cenaze kimin?",
     "hash": "",
-    "tarih": "2026-11-11T00:12:23.024501+00:00"
+    "tarih": "2026-11-11T00:12:23.024501+00:00",
+    "silinme_izlenme": 2,
+    "silinme_yas_dk": 72.6,
+    "silinme_tarihi": "2026-11-11T01:25:10.384504+00:00"
   },
   {
     "dosya_adi": "20261111_0002_absurt_komedi_arena",
@@ -258,5 +261,16 @@
     "senaryo_ozeti": "Kum saati az önce bana yarın geç kalacağımı söyledi! Belki de zamanı tersine akıtıyordur, biraz dikkat et.",
     "hash": "",
     "tarih": "2026-11-11T01:11:46.961921+00:00"
+  },
+  {
+    "dosya_adi": "20261111_0006_pazartesi_sendromu_arena",
+    "baslik": "Pazartesi Sabahı Salonda At Buldum 😱 #shorts",
+    "video_id": "XFrbpVlhBzs",
+    "durum": "yayinda",
+    "kategori": "pazartesi_sendromu",
+    "url": "https://www.youtube.com/shorts/XFrbpVlhBzs",
+    "senaryo_ozeti": "Kapıyı açtım, salonda kocaman bir at duruyordu. Gördün mü, o benim oğluma doğum günü sürprizim.",
+    "hash": "",
+    "tarih": "2026-11-11T01:27:40.093668+00:00"
   }
 ]

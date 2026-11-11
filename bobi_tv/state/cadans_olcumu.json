@@ -1,24 +1,31 @@
 {
-  "zaman": "2026-11-11T07:11:59.996566+00:00",
+  "zaman": "2026-11-11T14:43:15.120710+00:00",
   "olcumler": {
     "hourly_production.yml": {
       "workflow": "hourly_production.yml",
       "durum": "olculdu",
       "beklenen_dk": 480,
-      "son_24saat_kosu": 45,
-      "toplam_kosu": 63,
+      "son_24saat_kosu": 46,
+      "toplam_kosu": 64,
       "medyan_aralik_dk": 15.0,
-      "son5_medyan_dk": 12.6,
+      "son5_medyan_dk": 15.0,
       "en_uzun_aralik_dk": 1122.1,
       "beklenen_24saat_kosu": 3.0,
-      "oran": 15.0,
-      "son_kosu_yas_dk": 20.9
+      "oran": 15.33,
+      "son_kosu_yas_dk": 307.5
     },
     "telegram_bot.yml": {
       "workflow": "telegram_bot.yml",
-      "durum": "bilinmiyor",
-      "sebep": "koşu geçmişi okunamadı (ağ/izin)",
-      "beklenen_dk": 5
+      "durum": "olculdu",
+      "beklenen_dk": 5,
+      "son_24saat_kosu": 9,
+      "toplam_kosu": 10,
+      "medyan_aralik_dk": 128.7,
+      "son5_medyan_dk": 128.7,
+      "en_uzun_aralik_dk": 226.7,
+      "beklenen_24saat_kosu": 288.0,
+      "oran": 0.03,
+      "son_kosu_yas_dk": 360.9
     }
   }
 }

@@ -85,4 +85,8 @@ getiriyor (BotFather → Configure Mini App). Bu yüzden:
 - [x] `innerHTML` ile dış veri yazılmıyor
 - [x] Özet üreticisi mevcut modüllerden okuyor (tek kaynak)
 - [x] 15 dk'da bir tazelenen workflow + testler
-- [ ] BotFather'a domain kaydı (senin yapman gereken tek adım)
+- [x] GitHub Pages açıldı ve yayınlandı (2026-11-11, `mini_app_pages` ✓)
+- [x] Canlı doğrulama: `https://mehetgege3-cmyk.github.io/bobi-tv/` → HTTP 200,
+      `veri/mini_app_ozet.json` → gerçek sayılar (16 üretildi / 5 yayında)
+- [ ] BotFather → Configure Mini App → URL yaz (senin yapman gereken tek adım)
+- [ ] (Opsiyonel v2) yazma işlemleri: initData doğrulayan küçük sunucu

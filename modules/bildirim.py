@@ -192,7 +192,7 @@ def bildir(
 
     # Sustur: kullanıcı bilinçli kesti — KRİTİK dahil kuyruğa girer.
     if susturulmus_mu(simdi):
-        _kuyruga_ekle(baslik, govde, seviye)
+        _kuyruga_ekle(baslik, govde, seviye, simdi)
         return {"durum": "susturuldu"}
 
     # KRİTİK her zaman anında (sessiz saati deler).
@@ -202,12 +202,12 @@ def bildir(
 
     # Günlük özet olayları: hemen gönderilmez, özet saatini bekler.
     if seviye == OZET:
-        _kuyruga_ekle(baslik, govde, seviye)
+        _kuyruga_ekle(baslik, govde, seviye, simdi)
         return {"durum": "kuyruk"}
 
     # NORMAL: sessiz saatte bekler, dışında anında gider.
     if sessiz_saatte_mi(simdi):
-        _kuyruga_ekle(baslik, govde, seviye)
+        _kuyruga_ekle(baslik, govde, seviye, simdi)
         return {"durum": "kuyruk"}
 
     # Sessiz saatte birikmiş olanlar da bu bildirimle birlikte gitsin
@@ -220,19 +220,43 @@ def bildir(
     return {"durum": "gonderildi"}
 
 
-def _kuyruga_ekle(baslik: str, govde: str, seviye: str) -> None:
+#: Aynı olay TAZE penceresi (saniye): bu süre içinde birebir aynı başlık tekrar
+#: gelirse kuyruğa İKİNCİ kez yazılmaz (kota hatası fırtınasında 50 satır spam'i).
+TEKRAR_PENCERESI_SN = 30 * 60
+
+
+def _kuyruga_ekle(baslik: str, govde: str, seviye: str, simdi: datetime | None = None) -> int:
+    """Bekleyen kuyruğa olay ekler. Döner: 1 = eklendi, 0 = tekrar (yutuldu).
+
+    Aynı (başlık, seviye) TAZE penceresi içinde tekrar gelirse yutulur —
+    kullanıcı aynı hatayı 50 kez okumaz. Özet metni yine "bekleyen:" der.
+    """
+    simdi = simdi or datetime.now(UTC)
     veri = durum_oku()
-    veri.setdefault("bekleyen", []).append(
+    bekleyen = veri.setdefault("bekleyen", [])
+    for o in reversed(bekleyen):
+        if str(o.get("baslik", "")) != baslik or str(o.get("seviye", "")) != seviye:
+            continue
+        try:
+            once = datetime.fromisoformat(str(o.get("zaman", "")))
+        except (TypeError, ValueError):
+            continue
+        if once.tzinfo is None:
+            once = once.replace(tzinfo=UTC)
+        if (simdi - once).total_seconds() <= TEKRAR_PENCERESI_SN:
+            return 0
+    bekleyen.append(
         {
             "baslik": baslik,
             "govde": govde,
             "seviye": seviye,
-            "zaman": datetime.now(UTC).isoformat(),
+            "zaman": simdi.isoformat(),
         }
     )
     # Kuyruğu şişirmemek için en fazla 50 olay tutulur (eskiler düşer).
-    veri["bekleyen"] = veri["bekleyen"][-50:]
+    veri["bekleyen"] = bekleyen[-50:]
     durum_yaz(veri)
+    return 1
 
 
 def _kuyruktan_al(seviyeler: tuple[str, ...] | None = None) -> list[dict[str, Any]]:

@@ -1,5 +1,5 @@
 {
-  "guncelleme": "2026-11-11T04:52:34.202131+00:00",
+  "guncelleme": "2026-11-11T04:54:10.339648+00:00",
   "bugun": {
     "uretilen": 16,
     "yayinda": 5
@@ -19,58 +19,7 @@
     11,
     16
   ],
-  "denetim": [
-    {
-      "zaman": "2026-11-11T04:49",
-      "olay": "stok_at",
-      "sonuc": "ok"
-    },
-    {
-      "zaman": "2026-11-11T04:49",
-      "olay": "stok_at",
-      "sonuc": "bos"
-    },
-    {
-      "zaman": "2026-11-11T04:49",
-      "olay": "stok_at",
-      "sonuc": "ok"
-    },
-    {
-      "zaman": "2026-11-11T04:49",
-      "olay": "stok_at",
-      "sonuc": "bos"
-    },
-    {
-      "zaman": "2026-11-11T04:49",
-      "olay": "stok_at",
-      "sonuc": "ok"
-    },
-    {
-      "zaman": "2026-11-11T04:49",
-      "olay": "stok_at",
-      "sonuc": "bos"
-    },
-    {
-      "zaman": "2026-11-11T04:49",
-      "olay": "stok_at",
-      "sonuc": "bos"
-    },
-    {
-      "zaman": "2026-11-11T04:49",
-      "olay": "stok_at",
-      "sonuc": "bos"
-    },
-    {
-      "zaman": "2026-11-11T04:49",
-      "olay": "ayar_degistir",
-      "sonuc": "beklemede"
-    },
-    {
-      "zaman": "2026-11-11T04:49",
-      "olay": "ayar_degistir",
-      "sonuc": "beklemede"
-    }
-  ],
+  "denetim": [],
   "sinirlar": {
     "gunluk_yukleme_tavani": null,
     "not": "tavan YOK"

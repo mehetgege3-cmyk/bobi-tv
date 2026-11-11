@@ -70,6 +70,10 @@
       "+1h": {
         "izlenme": 378,
         "zaman": "2026-11-11T05:03:57.340022+00:00"
+      },
+      "+24h": {
+        "izlenme": 1144,
+        "zaman": "2026-11-11T23:42:09.243349+00:00"
       }
     }
   },
@@ -87,6 +91,10 @@
       "+1h": {
         "izlenme": 447,
         "zaman": "2026-11-11T05:03:57.340022+00:00"
+      },
+      "+24h": {
+        "izlenme": 1172,
+        "zaman": "2026-11-11T23:42:09.243349+00:00"
       }
     }
   },
@@ -608,7 +616,7 @@
     "dosya_adi": "20261111_0026_pazartesi_sendromu",
     "baslik": "Pazartesi Sabahı 14 Kere Erteleyince Alarm Çıldırdı! ⏰😱 #shorts",
     "video_id": "QeBzXEKfxTg",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "pazartesi_sendromu",
     "url": "https://www.youtube.com/shorts/QeBzXEKfxTg",
     "senaryo_ozeti": "Ve bu sabah işe pijama ve terlikle koşarak girdim! Kusura bakma ama saat yediden beri tam on dört kere erteledin!",
@@ -620,6 +628,9 @@
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
     "hook_ust_bant": "TELEFON ALARMIM BENİ ENGELLEDİ — ve bu gerçekten oldu",
-    "izlenme_snapshots": {}
+    "izlenme_snapshots": {},
+    "silinme_izlenme": 4,
+    "silinme_yas_dk": 361.2,
+    "silinme_tarihi": "2026-11-11T23:40:43.667166+00:00"
   }
 ]

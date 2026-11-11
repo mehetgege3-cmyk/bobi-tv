@@ -1,5 +1,12 @@
 {
-  "bekleyen": [],
+  "bekleyen": [
+    {
+      "baslik": "1 hata oluştu",
+      "govde": "Video #27 üretimi başarısız oldu.",
+      "seviye": "ozet",
+      "zaman": "2026-11-11T23:42:09.456086+00:00"
+    }
+  ],
   "sustur_until": null,
   "son_ozet": "2026-11-11T06:14:10.410413+00:00"
 }

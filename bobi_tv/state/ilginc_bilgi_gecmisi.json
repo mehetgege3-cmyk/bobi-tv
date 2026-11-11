@@ -1,0 +1,18 @@
+{
+  "sur": 1,
+  "videolar": [
+    {
+      "video_no": 27,
+      "kategori": "bilim_teknoloji",
+      "taktik": "T5",
+      "anahtar": "gps_izafiyet",
+      "konu": "GPS Uydularının Saati Her Gün Kayıyor — Düzeltmesek Yolu Şaşardık! 🛰️",
+      "cevap_ozeti": "Telefonundaki haritayı açıp 'buradan sağa dön' dediğinde, arkanda 20 bin kilometre yükseklikte dönen uydularla konuşuyorsun. Ama işin tuhaf yanı şu: o uyduların saatleri, senin saatinden farklı hızda işliyor.\n\nBunun nedeni Einstein'ın görelilik kuramı. Uydular çok hızlı hareket ettiği için saatleri biraz yavaşlıyor; ama yer çekimi daha zayıf olduğu için saatleri biraz da hızlanıyor. İki etki birle",
+      "skor": 100,
+      "tarih": "2026-11-11T23:42:08.868416+00:00"
+    }
+  ],
+  "kullanilan_yedekler": [
+    "gps_izafiyet"
+  ]
+}

@@ -49,6 +49,32 @@ MENU_BASLIGI = "🎬 <b>BOBİ TV Kontrol Paneli</b>\n\nHoş geldiniz! Bir işlem
 PANEL_48_SAAT = timedelta(hours=48)
 BILINMIYOR = "bilinmiyor"
 
+#: TEK EMOJİ SÖZLÜĞÜ (TODO 16). Ekranlar bu sabitleri kullanır; serbest
+#: emoji yazımı ekranlar arasında tutarsızlık üretiyordu.
+EMOJI = {
+    "tamam": "✅",       # başarılı
+    "dikkat": "⚠️",      # dikkat
+    "engel": "⛔",       # eksik / engel
+    "test": "🧪",        # test / render testi
+    "sil": "🗑️",        # silme
+    "yukle": "🚀",       # yükleme / yayın
+    "para": "💰",        # kota / birim
+}
+
+#: Buton arka plan renkleri (Bot API 9.4). API alanı reddederse düz butona
+#: düşülür — panel ASLA çökmez (TODO 16 fallback kuralı).
+BUTON_RENK = {"onay": "success", "vazgec": None, "riskli": "danger"}
+
+
+def renkli_buton(metin: str, callback_data: str, tur: str = "vazgec") -> dict[str, Any]:
+    """Renk destekli buton üretir. Renk alanı reddedilirse panel düz butona düşer
+    (`_renk_fallback` ile tekrar gönderilir) — kullanıcıya hata gösterilmez."""
+    b: dict[str, Any] = {"text": metin, "callback_data": callback_data}
+    renk = BUTON_RENK.get(tur)
+    if renk:
+        b["style"] = renk
+    return b
+
 GERI_MENUSU: list[dict[str, str]] = [
     {"text": "← Geri", "callback_data": "menu_main"},
     {"text": "🏠 Menü", "callback_data": "menu_main"},
@@ -222,6 +248,35 @@ def api_call(method: str, data: dict[str, Any]) -> dict[str, Any] | None:
     except Exception as e:
         print(f"[Telegram Bot] İstisna: {e}")
         return None
+
+
+def _renkleri_temizle(butonlar: Any) -> Any:
+    """Butonlardan `style` alanını atar (renk desteklenmeyen API için).
+
+    Tek buton dict'i, satır listesi veya 2B klavye — hepsi desteklenir.
+    """
+    if isinstance(butonlar, dict):
+        return {k: v for k, v in butonlar.items() if k != "style"}
+    if isinstance(butonlar, list):
+        return [_renkleri_temizle(x) for x in butonlar]
+    return butonlar
+
+
+def butonlari_renkle_gonder(
+    yontem: str, govde: dict[str, Any], butonlar: Any
+) -> dict[str, Any] | None:
+    """Butonları renkle gönderir; API `style` alanını reddederse DÜZ butonla
+    tekrar dener. Kural: renk yüzünden panel ASLA çökmez (TODO 16)."""
+    govde = dict(govde)
+    govde["reply_markup"] = {"inline_keyboard": butonlar}
+    yanit = api_call(yontem, govde)
+    if yanit is None or yanit.get("ok"):
+        return yanit
+    aciklama = str(yanit.get("description", "")).lower()
+    if any(k in aciklama for k in ("style", "unknown field", "button", "parse")):
+        govde["reply_markup"] = {"inline_keyboard": _renkleri_temizle(butonlar)}
+        yanit = api_call(yontem, govde)
+    return yanit
 
 
 #: Metin içinde kullanılabilen HTML etiketleri. Telegram `parse_mode=HTML`
@@ -459,6 +514,43 @@ def _ilerleme_cubugu(oran: float, genislik: int = 6) -> str:
     return "▰" * dolu + "▱" * (genislik - dolu)
 
 
+SPARKLINE_KARAKTER = "▁▂▃▄▅▆▇█"
+
+
+def _sparkline(degerler: list[float]) -> str:
+    """7 günlük metin grafiği (TODO 16) — Telegram'da grafik yerine geçer.
+
+    Tüm değerler eşitse orta seviye karakter döner (yanıltıcı zirve çizmez).
+    Boş liste → boş metin (ekran satırı düşer, uydurma yok).
+    """
+    if not degerler:
+        return ""
+    en_az, en_cok = min(degerler), max(degerler)
+    if en_cok == en_az:
+        return SPARKLINE_KARAKTER[3] * len(degerler)
+    adim = len(SPARKLINE_KARAKTER) - 1
+    return "".join(
+        SPARKLINE_KARAKTER[round((d - en_az) / (en_cok - en_az) * adim)] for d in degerler
+    )
+
+
+def _son_7gun_seri() -> list[float]:
+    """Son 7 günün günlük yayın sayısı (eski → yeni). Veri yoksa boş liste."""
+    arsiv = Path("bobi_tv/archive/videos.json")
+    if not arsiv.exists():
+        return []
+    try:
+        veri = json.loads(arsiv.read_text(encoding="utf-8"))
+        kayitlar = list(veri.values()) if isinstance(veri, dict) else list(veri)
+    except Exception:
+        return []
+    seri: list[float] = []
+    for geri in range(6, -1, -1):
+        gun = (datetime.now(UTC) - timedelta(days=geri)).strftime("%Y-%m-%d")
+        seri.append(float(sum(1 for k in kayitlar if str(k.get("tarih", ""))[:10] == gun)))
+    return seri
+
+
 def _bugun_arsiv_ozeti() -> tuple[int, int]:
     """(bugün üretilen, bugün yayına alınan) — uydurma yok: okunamazsa (0, 0)."""
     arsiv = Path("bobi_tv/archive/videos.json")
@@ -518,6 +610,10 @@ def ekran_ana() -> tuple[str, list[list[dict[str, Any]]]]:
         f"🕐 Son koşu: {_son_kosu_ozeti()}\n"
         f"📡 Bot gecikmesi: {_poller_ozeti()}"
     )
+    seri = _son_7gun_seri()
+    if seri:
+        # <code> içinde: sabit genişlikli görünüm. TODO 13 ile <code> korunuyor.
+        metin += f"\n📈 7 gün: <code>{_sparkline(seri)}</code> ({int(sum(seri))} video)"
     return metin, get_main_menu_buttons()
 
 
@@ -758,7 +854,7 @@ def ekran_uret_onay() -> tuple[str, list[list[dict[str, Any]]]]:
         f"{_kota_birim_ozeti()}"
     )
     butonlar = [
-        [{"text": "✅ Evet, başlat", "callback_data": "uret_onay"}],
+        [renkli_buton("✅ Evet, başlat", "uret_onay", "onay")],
         [
             {"text": "← Vazgeç", "callback_data": "uret_menu"},
             {"text": "🏠 Menü", "callback_data": "menu_main"},

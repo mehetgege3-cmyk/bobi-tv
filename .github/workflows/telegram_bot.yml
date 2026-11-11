@@ -88,6 +88,10 @@ jobs:
               except Exception:
                   pass
 
+          # Zincir koruması: gerçek çalışma süresi ölçülsün (409 ile hemen
+          # çıkan koşu kendini yeniden zincirlemesin — dispatch fırtınası yok).
+          Path("/tmp/poller_baslangic").write_text(str(time.time()))
+
           DONGU_DK = int(os.environ.get("TELEGRAM_DONGU_DK", "0"))
           YOKLAMA_SN = int(os.environ.get("TELEGRAM_YOKLAMA_SN", "20"))
           baslangic = time.monotonic()
@@ -205,14 +209,18 @@ jobs:
           DONGU_DK: ${{ env.TELEGRAM_DONGU_DK }}
         run: |
           python3 - <<'PYZ'
-          import os, subprocess
-          # Koşu süresi cron aralığından (5 dk) kısaysa zincirleme YAPILMAZ.
+          import os, subprocess, time
+          from pathlib import Path
+          # GERÇEK süre ölçülür (env değil): 409 nedeniyle hemen çıkan ya da
+          # hata ile kesilen koşu kendini zincirlemez → dispatch fırtınası yok.
           try:
-              dongu = int(os.environ.get("DONGU_DK") or "0")
-          except ValueError:
-              dongu = 0
-          if dongu < 30:
-              print("::warning::poller erken bitti (döngü {} dk) — zincirleme yapılmadı".format(dongu))
+              baslangic = float(Path("/tmp/poller_baslangic").read_text())
+          except Exception:
+              print("::warning::başlangıç damgası yok — zincirleme yapılmadı")
+              raise SystemExit(0)
+          gecen_dk = (time.time() - baslangic) / 60
+          if gecen_dk < 30:
+              print("::warning::poller erken bitti ({:.1f} dk) — zincirleme yapılmadı".format(gecen_dk))
               raise SystemExit(0)
           r = subprocess.run(
               ["gh", "workflow", "run", "telegram_bot.yml", "--ref", "main"],

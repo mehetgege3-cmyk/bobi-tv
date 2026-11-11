@@ -1,7 +1,7 @@
 {
-  "zaman": "2026-11-11T07:41:01.108607+00:00",
+  "zaman": "2026-11-11T15:26:14.854091+00:00",
   "gun": 7,
-  "uretilen": 41,
+  "uretilen": 42,
   "silinen": 22,
   "izlenme_ornek": 26,
   "ortalama_izlenme": 2.27,
@@ -9,8 +9,8 @@
   "en_yuksek_izlenme": 41,
   "akisa_giren": 0,
   "akisa_girme_orani": 0,
-  "kalite_ornek": 0,
-  "kalite_ortalama": null,
+  "kalite_ornek": 1,
+  "kalite_ortalama": 68.0,
   "kanca": {
     "form_verisi": {},
     "en_iyi_form": "",

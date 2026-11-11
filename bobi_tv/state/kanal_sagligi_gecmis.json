@@ -2,19 +2,19 @@
   "sur": 1,
   "gunler": [
     {
-      "zaman": "2026-11-11T12:00:00+00:00",
+      "zaman": "2026-11-11T15:26:14.854091+00:00",
       "gun": 7,
-      "uretilen": 1,
-      "silinen": 0,
-      "izlenme_ornek": 1,
-      "ortalama_izlenme": 200,
-      "medyan_izlenme": 200,
-      "en_yuksek_izlenme": 200,
-      "akisa_giren": 1,
-      "akisa_girme_orani": 100,
-      "kalite_ornek": 0,
-      "kalite_ortalama": null,
-      "yorum": "veri yetersiz (1/5 video) — yorum yok",
+      "uretilen": 42,
+      "silinen": 22,
+      "izlenme_ornek": 26,
+      "ortalama_izlenme": 2.27,
+      "medyan_izlenme": 0.0,
+      "en_yuksek_izlenme": 41,
+      "akisa_giren": 0,
+      "akisa_girme_orani": 0,
+      "kalite_ornek": 1,
+      "kalite_ortalama": 68.0,
+      "yorum": "🔴 akışa giriş yok — algoritma hâlâ dağıtmıyor; içerik/kanca gözden geçir",
       "kanca_en_iyi_form": ""
     }
   ]

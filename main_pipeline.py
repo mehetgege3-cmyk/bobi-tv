@@ -7,7 +7,8 @@ Mimari:
 3. Birleşik v6.3 Üretim: Dönen kategori havuzu -> gerçek TTS süresi <15sn ise uzat -> Ahmet+Emel Çift Ses TTS ->
    1. Kareye (Frame 0) Profesyonel VS/Clash Kapak Gömme + İlk Kareden Kapak Seçme ->
    Vektör Kartlı & Karaoke Altyazılı & SFX+BGM (-14 LUFS) Render -> ffprobe QC
-4. Kota Takibi: YouTube kotası dolduğunda state dosyasına yazar, workflow'u başarısız işaretler.
+4. Kota Takibi: Günlük yükleme tavanı YOK (2026-11-11'de kaldırıldı). Yalnızca YouTube'un
+   KENDİ 403 quotaExceeded hatası state dosyasına yazılır, video stoğa alınır (üretim durmaz).
 5. Her Saatte 1 Video Isındırma: YouTube + Otomatik İlk Yorum + 1. Kare Özel Kapak.
 """
 import os
@@ -95,12 +96,13 @@ def bugun_arsiv_kayitlari() -> list[dict]:
 
 
 def bugun_yuklenen_sayisi() -> int:
-    """Bugün YAYINA alınmış video sayısı = YÜKLEME kotası tüketimi.
+    """Bugün YAYINA alınmış video sayısı (bilgi/rapor amaçlı — TAVAN DEĞİL).
 
     Kullanıcı şikâyeti (2026-11-11): 'Üret'e basıyorum, video çıkmıyor.'
     Kök neden: sayaç üretilen her şeyi sayıyordu; stokta bekleyen (silinen/
     kuyruktaki) kayıtlar da sayıldığı için kota dolu görünüp ÜRETİM
-    durduruluyordu. Kota YALNIZ yayınlanan videoları sayar.
+    durduruluyordu. Bu sayaç artık yalnız RAPOR içindir: günlük yükleme
+    tavanı kaldırıldı (2026-11-11), sayı hiçbir yüklemeyi engellemez.
     """
     yuklenen_durumlar = {"yayinda"}
     return sum(1 for k in bugun_arsiv_kayitlari() if k.get("durum") in yuklenen_durumlar)

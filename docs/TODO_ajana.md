@@ -38,6 +38,15 @@ YAPILMAZ. Bu dosya yalnız gerçekten kalan işleri tutar.
   saatte bir koşuyor → kullanıcının "bot geç cevap veriyor" şikâyetinin
   kökü. Çözüm cron'a güvenmek değil, poller'ı sürekli ayakta tutmak
   (uzun ömürlü döngü zaten var; koşu süresi/kesinti oranı izlenmeli).
+- **Poller için düzeltme yapıldı (2026-11-11):**
+  1. `409 Conflict` kökü bulundu: 03:02 TR'de başlayan 5.5 saatlik koşu
+     ayaktayken yeni koşu aynı token'la `getUpdates` çağırıyordu → iş
+     düzeyi `concurrency: telegram-poller` kilidi + 409'da TEMİZ çıkış.
+  2. Koşu bitince bir sonrakini başlatan yoktu → `success()` olduğunda
+     `gh workflow run telegram_bot.yml` ile zincir; koruma: gerçek süre
+     ≥ 30 dk değilse zincir YOK (dispatch fırtınası olmaz).
+  3. Eski (kod öncesi) 03:02 koşusu iptal edildi; yeni poller `bcfc231`
+     üzerinde çalışıyor — yeni menü artık canlı koda bağlı.
 - Kalan insan kararı: günlük üretim hedefi bu gerçek cadansa göre
   DÜŞÜRÜLSÜN mü (artırılmasın) — hedef sayısı kullanıcı onayı ister.
 

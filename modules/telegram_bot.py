@@ -101,6 +101,7 @@ CALLBACK_DERINLIK: dict[str, int] = {
     "ay:gir": 3,
     "ay:hizli": 1,
     "bildirim_goster": 1,
+    "performans": 2,
     "bildirim_sustur1": 1,
     "bildirim_sustur24": 1,
     "bildirim_ac": 1,
@@ -777,6 +778,45 @@ def get_help_text() -> str:
         "⏰ <b>Not:</b> Komutlar GitHub cron zamanlamasıyla işlenir; GitHub gecikmesiyle "
         "cevap genellikle 15-60 dakika içinde gelir."
     )
+
+
+def ekran_performans() -> tuple[str, list[list[dict[str, Any]]]]:
+    """🏆 Performans ekranı (TODO 17): son 10 video, outlier skoru, en iyi/kötü 3.
+
+    Veri okunamazsa "bilinmiyor" yazar — sayı UYDURULMAZ.
+    """
+    from modules.performans import en_iyi_en_kotu, performans_ozeti
+
+    sonuc = performans_ozeti(azami=10)
+    satirlar = ["🏆 <b>Performans</b>", ""]
+    if sonuc["hata"]:
+        satirlar.append(f"⛔ Veri okunamadı: {sonuc['hata']}")
+        satirlar.append("Uydurma sayı yazmıyoruz.")
+        butonlar = [
+            [{"text": "🔄 Yenile", "callback_data": "performans"}],
+            list(GERI_MENUSU),
+        ]
+        return "\n".join(satirlar), butonlar
+
+    videolar = sonuc["videolar"]
+    medyan = sonuc["medyan"]
+    satirlar.append(f"📊 Kanal medyanı: {medyan if medyan is not None else BILINMIYOR} izlenme")
+    satirlar.append("")
+    en_iyi, en_kotu = en_iyi_en_kotu(videolar, 3)
+    satirlar.append("<b>En iyi 3:</b>")
+    for v in en_iyi:
+        skor = f"{v['skor']}x" if v["skor"] is not None else "—"
+        satirlar.append(f"• {v['baslik']} — {v['izlenme']} ({skor})")
+    satirlar.append("<b>En kötü 3:</b>")
+    for v in en_kotu:
+        skor = f"{v['skor']}x" if v["skor"] is not None else "—"
+        satirlar.append(f"• {v['baslik']} — {v['izlenme']} ({skor})")
+    butonlar = [
+        [{"text": "📅 7 günlük trend", "callback_data": "rapor_7gun"}],
+        [{"text": "🔄 Yenile", "callback_data": "performans"}],
+        list(GERI_MENUSU),
+    ]
+    return "\n".join(satirlar), butonlar
 
 
 def ekran_bildirim() -> tuple[str, list[list[dict[str, Any]]]]:
@@ -1641,8 +1681,14 @@ def ekran_rapor() -> tuple[str, list[list[dict[str, Any]]]]:
     """İstatistik + Kalite + Kota tek ekranda (ana menü sadeleşmesi)."""
     metin = f"📈 <b>BOBİ TV Rapor</b>\n\n{get_stats_text()}\n\n{get_quality_text()}\n\n{get_quota_text()}"
     butonlar = [
-        [{"text": "🔄 Yenile", "callback_data": "rapor_goster"}],
-        [{"text": "← Geri", "callback_data": "menu_main"}, {"text": "⚙️ Ayarlar", "callback_data": "ay:kok"}],
+        [
+            {"text": "🏆 Performans", "callback_data": "performans"},
+            {"text": "🔄 Yenile", "callback_data": "rapor_goster"},
+        ],
+        [
+            {"text": "← Geri", "callback_data": "menu_main"},
+            {"text": "⚙️ Ayarlar", "callback_data": "ay:kok"},
+        ],
     ]
     return metin, butonlar
 
@@ -1825,6 +1871,10 @@ def _handle_callback_icerde(callback_data: str, callback_id: str, kullanici_id: 
     if callback_data == "sistem_goster":
         answer_callback(callback_id, "Sistem durumu yükleniyor...")
         _ekran_goster(ekran_sistem())
+        return
+    if callback_data == "performans":
+        answer_callback(callback_id, "İzlenmeler okunuyor...")
+        _ekran_goster(ekran_performans())
         return
     if callback_data == "bildirim_goster":
         answer_callback(callback_id)

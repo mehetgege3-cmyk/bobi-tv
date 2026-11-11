@@ -377,6 +377,24 @@ def pipeline_calistir():
             hatalar.append(hata)
 
     # ---------------------------------------------------------------------
+    # İZLENME SNAPSHOT'LARI (TODO 18): +1h/+24h/+72h izlenme sayıları arşive.
+    # YouTube Analytics saatlik veri vermez; "hangi saat daha iyi" sorusunu
+    # ancak kendi snapshot'larımızla cevaplayabiliriz. Kota dostu: tüm
+    # gereken videolar TEK videos.list çağrısında okunur (~1 birim).
+    # Hata üretimi ETKİLEMEZ.
+    # ---------------------------------------------------------------------
+    try:
+        from modules.performans import snapshotlari_guncelle
+
+        snap = snapshotlari_guncelle()
+        if snap.get("yazilan"):
+            log_yaz(f"📈 İzlenme snapshot'ı yazıldı: {snap['yazilan']} kayıt")
+        elif snap.get("sebep"):
+            log_yaz(f"📈 Snapshot atlandı: {snap['sebep']}", "WARN")
+    except Exception as snap_hatasi:
+        log_yaz(f"⚠️ Snapshot hatası (üretim etkilenmedi): {snap_hatasi}", "WARN")
+
+    # ---------------------------------------------------------------------
     # AKILLI BİLDİRİM (TODO 23): seviyeye göre anında / kuyruk / özet.
     # Sessiz saat ve sustur kurallarını modules/bildirim yönetir.
     # ---------------------------------------------------------------------

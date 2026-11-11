@@ -138,3 +138,39 @@ Görselin kendisini üretmek için ayrı bir görsel modeli gerekir:
 tests/test_todo38_kanca_motoru.py      16 test  (form, yumuşatma, uygulama, rotasyon, arşiv, geçmiş)
 tests/test_todo38_kapak_ilk_kare.py     8 test  (ilk kareye gömme, vurgu rengi, AI zemin yokluğu)
 ```
+
+
+---
+
+## 6. CANLI TEST — 2026-11-11 10:01 UTC (run `42999272269`)
+
+Gerçek kanal üzerinde tek seferlik uçtan uca deneme. **Sonuç: başarılı.**
+
+| Adım | Sonuç |
+|---|---|
+| Konu/senaryo | "Buzdolabı Hırsızı Çıkan İsim Herkesi Şoke Etti" (makarna hırsızı) |
+| Kanca | **100/100** · TTS ilk replik kancayla başladı: "MAKARNAMI YİYEN BENMİŞİM" |
+| Döngü | **0/100 → 100/100** (bu turda `dongu_uygula()` eklendi) |
+| Kalite kapısı | 68/100 (döngü düzeltmesi sonrası yeni koşularda yükselecek) |
+| Render | 17.39 sn · 1080×1920 · H.264+AAC · 3470 KB |
+| Arena kapak | **17 sn** yanıt (Arena'nın kendi süresi 8 sn) · öneri: "MAKARNAMI YİYEN BEN" |
+| Kapak seçimi | A adayı (1. kare + Arena başlık), okunabilirlik 0.953 |
+| İlk kareye gömme | ✅ (`..._kapakli.mp4`) — kanıt: `docs/kanit/canli_test_video_ilk_kare.png` |
+| YouTube | ✅ https://www.youtube.com/shorts/XSoVlWV304s |
+| Toplam | 306 sn |
+
+### Canlı testin ortaya çıkardığı 3 hata (hepsi düzeltildi)
+
+1. **Test hiçbir şey yapmıyordu** (ilk deneme, run `42998937740`): `Üretim
+   tavanına ulaşıldı (24/1)` → 80 sn'de "success". `CANLI_TEST=1` modu eklendi
+   (tavan/sayım yok sayılır, silme kontrolü atlanır).
+2. **Döngü 0/100**: son cümle "..." ile bitmiyor, ilk cümle bağlaçla
+   başlamıyordu; öneri üretiliyor ama **uygulanmıyordu** → `dongu_uygula()`.
+3. **Kapak yükleme sessizdi**: `_kapak_yukle` başarısız olsa da log "kapak
+   yüklendi" diyordu → artık HTTP kodu + sebep yazılır, sonuç arşive işlenir.
+
+### Kuyruk kilidi (bonus düzeltme)
+Zincirleme adımı üretim job'unun içinde ~8 saat uyuyordu; `concurrency`
+yüzünden yeni koşular saatlerce `pending` kalıyordu (kanıt: run `42975301955`
+üretimini 07:00'de bitirdi, job 15:00'e kadar `in_progress`). Uyku ayrı
+`bekle-ve-zincirle` job'una taşındı.

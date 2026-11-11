@@ -35,7 +35,7 @@ from __future__ import annotations
 
 from typing import Any
 
-GRUPLAR: tuple[str, ...] = ("tetikleme", "uretim_kota", "temizlik", "sistem")
+GRUPLAR: tuple[str, ...] = ("tetikleme", "uretim_kota", "temizlik", "bildirim", "sistem")
 TIPLER: tuple[str, ...] = ("secim", "sayi", "anahtar", "sadece_goruntule")
 RISKLER: tuple[str, ...] = ("dusuk", "orta", "yuksek")
 
@@ -278,6 +278,54 @@ KATALOG: list[dict[str, Any]] = [
         ),
     },
     # ---------- Grup 4 — sistem (SADECE GÖRÜNTÜLE, değer asla yazdırılmaz) ----------
+    {
+        "anahtar": "SESSIZ_BASLANGIC",
+        "env_adi": "SESSIZ_BASLANGIC",
+        "etiket": "Sessiz saat başlangıcı",
+        "grup": "bildirim",
+        "tip": "secim",
+        "secenekler": ["21:00", "22:00", "23:00", "00:00"],
+        "varsayilan": "00:00",
+        "min": 21,
+        "max": 23,
+        "kalici": True,
+        "etkili": True,
+        "risk": "dusuk",
+        "degistirilebilir": True,
+        "aciklama": "Bu saatten sonra NORMAL bildirimler bekler (KRİTİK her zaman geçer).",
+    },
+    {
+        "anahtar": "SESSIZ_BITIS",
+        "env_adi": "SESSIZ_BITIS",
+        "etiket": "Sessiz saat bitişi",
+        "grup": "bildirim",
+        "tip": "secim",
+        "secenekler": ["06:00", "07:00", "08:00", "09:00"],
+        "varsayilan": "08:00",
+        "min": 6,
+        "max": 9,
+        "kalici": True,
+        "etkili": True,
+        "risk": "dusuk",
+        "degistirilebilir": True,
+        "aciklama": "Pencere bitince gece biriken bildirimler TEK mesajda gelir.",
+    },
+    {
+        "anahtar": "OZET_SAATI",
+        "env_adi": "OZET_SAATI",
+        "etiket": "Günlük özet saati",
+        "grup": "bildirim",
+        "tip": "secim",
+        "secenekler": ["08:00", "09:00", "10:00", "12:00"],
+        "varsayilan": "09:00",
+        "min": 8,
+        "max": 12,
+        "kalici": True,
+        "etkili": True,
+        "risk": "dusuk",
+        "degistirilebilir": True,
+        "aciklama": "Günlük özet bu saatte gönderilir (TR).",
+    },
     {
         "anahtar": "YOUTUBE_TOKEN",
         "etiket": "YouTube token",

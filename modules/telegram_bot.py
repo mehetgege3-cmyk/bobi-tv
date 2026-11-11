@@ -100,6 +100,11 @@ CALLBACK_DERINLIK: dict[str, int] = {
     "ay:kok": 1,
     "ay:gir": 3,
     "ay:hizli": 1,
+    "bildirim_goster": 1,
+    "bildirim_sustur1": 1,
+    "bildirim_sustur24": 1,
+    "bildirim_ac": 1,
+    "bildirim_ozet": 1,
     "ay:tumu": 1,
     "ay:t": 1,
     "ay:d": 1,
@@ -610,6 +615,13 @@ def ekran_ana() -> tuple[str, list[list[dict[str, Any]]]]:
         f"🕐 Son koşu: {_son_kosu_ozeti()}\n"
         f"📡 Bot gecikmesi: {_poller_ozeti()}"
     )
+    try:
+        from modules.bildirim import susturulmus_mu
+
+        if susturulmus_mu():
+            metin += "\n⏸ Bildirimler susturuldu (Ayarlar → Sistem'den aç)"
+    except Exception:
+        pass
     seri = _son_7gun_seri()
     if seri:
         # <code> içinde: sabit genişlikli görünüm. TODO 13 ile <code> korunuyor.
@@ -765,6 +777,45 @@ def get_help_text() -> str:
         "⏰ <b>Not:</b> Komutlar GitHub cron zamanlamasıyla işlenir; GitHub gecikmesiyle "
         "cevap genellikle 15-60 dakika içinde gelir."
     )
+
+
+def ekran_bildirim() -> tuple[str, list[list[dict[str, Any]]]]:
+    """Bildirim ayarları ekranı (TODO 24): sustur + özet + sessiz saat özeti."""
+    from modules.bildirim import OZET_SAATI, SESSIZ_BASLANGIC, SESSIZ_BITIS, _ayar, durum_oku
+
+    veri = durum_oku()
+    sustur_bitis = veri.get("sustur_until")
+    satirlar = [
+        "🔔 <b>Bildirimler</b>",
+        "",
+        f"🌙 Sessiz saat: {_ayar('SESSIZ_BASLANGIC', SESSIZ_BASLANGIC)}–"
+        f"{_ayar('SESSIZ_BITIS', SESSIZ_BITIS)} (TR)",
+        f"📋 Günlük özet: {_ayar('OZET_SAATI', OZET_SAATI)} (TR)",
+        "",
+    ]
+    if sustur_bitis:
+        satirlar.append(f"⏸ <b>Susturuldu</b> — {str(sustur_bitis)[:16]}'e kadar")
+        satirlar.append("Ayarlar silinmedi, yalnız ertelendi.")
+        butonlar = [
+            [{"text": "▶️ Bildirimleri aç", "callback_data": "bildirim_ac"}],
+            [{"text": "📋 Özeti şimdi gönder", "callback_data": "bildirim_ozet"}],
+            list(GERI_MENUSU),
+        ]
+    else:
+        satirlar.append("✅ Bildirimler açık")
+        satirlar.append(f"📥 Bekleyen: {len(veri.get('bekleyen') or [])} olay")
+        satirlar.append("")
+        satirlar.append("🔴 Kritik: sessiz saati deler")
+        satirlar.append("🔔 Normal: sessiz saatte bekler")
+        butonlar = [
+            [
+                {"text": "⏸ 1 saat sustur", "callback_data": "bildirim_sustur1"},
+                {"text": "⏸ 1 gün", "callback_data": "bildirim_sustur24"},
+            ],
+            [{"text": "📋 Özeti şimdi gönder", "callback_data": "bildirim_ozet"}],
+            list(GERI_MENUSU),
+        ]
+    return "\n".join(satirlar), butonlar
 
 
 def ekran_yardim() -> tuple[str, list[list[dict[str, Any]]]]:
@@ -1032,6 +1083,7 @@ def _grup_etiketleri() -> dict[str, str]:
         "tetikleme": "🚀 Tetikleme",
         "uretim_kota": "🎯 Üretim & Kota",
         "temizlik": "🧹 Temizlik",
+        "bildirim": "🔔 Bildirim",
         "sistem": "🔑 Sistem durumu",
     }
 
@@ -1156,6 +1208,11 @@ def ekran_ayar_kok() -> tuple[str, list[list[dict[str, Any]]]]:
         if grup == "temizlik":
             satirlar.append(f"{etiket} (görüntü)")
             butonlar.append([{"text": "🧹 Temizlik (görüntü)", "callback_data": f"ay:g:{grup}"}])
+        elif grup == "bildirim":
+            satirlar.append(f"{etiket} ({len(ayarlar)} ayar)")
+            butonlar.append(
+                [{"text": "🔔 Bildirim", "callback_data": "bildirim_goster"}]
+            )
         elif grup == "sistem":
             satirlar.append(f"{etiket} (secret var/yok)")
             butonlar.append([{"text": "🔑 Sistem durumu", "callback_data": "sistem_goster"}])
@@ -1568,8 +1625,14 @@ def ekran_sistem() -> tuple[str, list[list[dict[str, Any]]]]:
     ]
     butonlar = [
         [{"text": "🔄 Yenile", "callback_data": "sistem_goster"}],
-        [{"text": "🧹 Panelleri temizle", "callback_data": "panelleri_temizle"}],
-        [{"text": "← Geri", "callback_data": "ay:kok"}, {"text": "🏠 Menü", "callback_data": "menu_main"}],
+        [
+            {"text": "🔔 Bildirimler", "callback_data": "bildirim_goster"},
+            {"text": "🧹 Temizle", "callback_data": "panelleri_temizle"},
+        ],
+        [
+            {"text": "← Geri", "callback_data": "ay:kok"},
+            {"text": "🏠 Menü", "callback_data": "menu_main"},
+        ],
     ]
     return "\n".join(satirlar), butonlar
 
@@ -1762,6 +1825,38 @@ def _handle_callback_icerde(callback_data: str, callback_id: str, kullanici_id: 
     if callback_data == "sistem_goster":
         answer_callback(callback_id, "Sistem durumu yükleniyor...")
         _ekran_goster(ekran_sistem())
+        return
+    if callback_data == "bildirim_goster":
+        answer_callback(callback_id)
+        _ekran_goster(ekran_bildirim())
+        return
+    if callback_data == "bildirim_sustur1":
+        from modules.bildirim import sustur
+
+        bitis = sustur(1)
+        answer_callback(callback_id, f"1 saat susturuldu ({bitis}'e kadar)")
+        _ekran_goster(ekran_bildirim())
+        return
+    if callback_data == "bildirim_sustur24":
+        from modules.bildirim import sustur
+
+        bitis = sustur(24)
+        answer_callback(callback_id, f"1 gün susturuldu ({bitis}'e kadar)")
+        _ekran_goster(ekran_bildirim())
+        return
+    if callback_data == "bildirim_ac":
+        from modules.bildirim import susturu_kaldir
+
+        susturu_kaldir()
+        answer_callback(callback_id, "Bildirimler açıldı")
+        _ekran_goster(ekran_bildirim())
+        return
+    if callback_data == "bildirim_ozet":
+        from modules.bildirim import gunluk_ozet_gonder
+
+        sonuc = gunluk_ozet_gonder()
+        answer_callback(callback_id, "Özet gönderildi" if sonuc["gonderildi"] else "Gönderilemedi")
+        _ekran_goster(ekran_bildirim())
         return
     if callback_data == "panelleri_temizle":
         # Poller gecikince biriken panelleri ekrandan siler (geçmiş birikim temizliği).

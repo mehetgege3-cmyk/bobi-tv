@@ -376,6 +376,36 @@ def pipeline_calistir():
             notify_error("youtube_upload", hata, kritik=True)
             hatalar.append(hata)
 
+    # ---------------------------------------------------------------------
+    # AKILLI BİLDİRİM (TODO 23): seviyeye göre anında / kuyruk / özet.
+    # Sessiz saat ve sustur kurallarını modules/bildirim yönetir.
+    # ---------------------------------------------------------------------
+    try:
+        from modules.bildirim import KRITIK, NORMAL, OZET, bildir, tur_bildirimleri
+
+        if yayinlanan > 0:
+            bildir(
+                f"{yayinlanan} video yayına alındı",
+                f"Stokta bekleyen: {kuyruga_alinan}",
+                NORMAL,
+            )
+        if kuyruga_alinan > 0 and yayinlanan == 0:
+            bildir(
+                "Kota dolu — videolar stoğa alındı",
+                f"{kuyruga_alinan} video kuyrukta, kota açılınca yüklenecek.",
+                NORMAL,
+            )
+        if hatalar:
+            bildir(
+                f"{len(hatalar)} hata oluştu",
+                hatalar[0][:200],
+                KRITIK if len(hatalar) >= 2 else OZET,
+            )
+        # Birikmişleri boşalt + günlük özet saatini kontrol et (tek giriş noktası)
+        tur_bildirimleri()
+    except Exception as bildirim_hatasi:
+        log_yaz(f"⚠️ Bildirim hatası (üretim etkilenmedi): {bildirim_hatasi}", "WARN")
+
     gecen_sn = int((datetime.now(timezone.utc) - baslangic).total_seconds())
     log_yaz(
         f"=== Tamamlandı: {yayinlanan} yayınlandı, {kuyruga_alinan} kuyrukta ({gecen_sn}sn) ==="

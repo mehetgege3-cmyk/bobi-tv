@@ -525,3 +525,44 @@ def test_kapak_basligi_kelime_ortasinda_kesmez():
     # Son kelime yarım kalmamalı: kesilen kısımda 'Bir' gibi kırıntı olmasın
     kesilen = kisa[:-1].split()
     assert not kesilen or kesilen[-1] != "Bir"
+
+
+# ---------------------------------------------------------------------------
+# 8) Yedek banka 8 kategoriyi de kapsar (Arena çökse bile kanal durmaz)
+# ---------------------------------------------------------------------------
+
+
+def test_yedek_banka_sekiz_kategorinin_hepsini_kapsar():
+    banka_kategorileri = {b["kategori"] for b in yedek_bilgiler.YEDEK_BILGILER}
+    assert banka_kategorileri == set(kategoriler.ANAHTARLAR), (
+        f"eksik kategoriler: {set(kategoriler.ANAHTARLAR) - banka_kategorileri}"
+    )
+
+
+def test_yedek_banka_her_kategoride_secim_yapar():
+    for kategori in kategoriler.ANAHTARLAR:
+        bilgi = yedek_bilgiler.bilgi_sec(kategori, [])
+        assert bilgi is not None and bilgi["kategori"] == kategori
+
+
+def test_yedek_banka_kullanilanlari_tekrar_vermez():
+    ilk = yedek_bilgiler.bilgi_sec("hayvanlar", [])
+    ikinci = yedek_bilgiler.bilgi_sec("hayvanlar", [ilk["anahtar"]])
+    assert ikinci is not None and ikinci["anahtar"] != ilk["anahtar"]
+    hepsi = [b["anahtar"] for b in yedek_bilgiler.YEDEK_BILGILER]
+    assert yedek_bilgiler.bilgi_sec("hayvanlar", hepsi) is None
+
+
+def test_arena_coktugunde_sekiz_video_uretilir(tmp_path):
+    """Arena hiç yokken banka 8 ayrı kategoride video üretmeye yetmeli."""
+    yol = tmp_path / "s.json"
+    uretilen = []
+    for no in range(1, 9):
+        sonuc = uretici.uret(
+            no, arena_fn=lambda p: None, state_yolu=yol,
+            zorla_kategori=kategoriler.ANAHTARLAR[no - 1],
+        )
+        assert sonuc["rapor"].yayinlanabilir, sonuc["rapor"].ozet()
+        assert 200 <= sonuc["paket"]["senaryo"]["kelime_sayisi"] <= 300
+        uretilen.append(sonuc["kategori"])
+    assert sorted(uretilen) == sorted(kategoriler.ANAHTARLAR)

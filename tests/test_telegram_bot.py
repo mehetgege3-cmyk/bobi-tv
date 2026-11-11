@@ -182,6 +182,21 @@ def test_taninmayan_metin_cevap_vermez(monkeypatch: pytest.MonkeyPatch) -> None:
     assert cagrilar == [], "Tanınmayan metne mesaj gönderilmemeli"
 
 
+def _panel_gonderenler(cagrilar):
+    """Panel mesajları (inline_keyboard) — alt klavye taşıyıcısı HARİÇ.
+
+    SPEC DEĞİŞİKLİĞİ (2026-11-11, kullanıcı: "bot açılınca menüler açık
+    görünsün"): kalıcı alt klavye yalnız sendMessage ile kurulabildiği için
+    ilk /start'ta 1 taşıyıcı mesaj gönderilir. Panel sayısı kuralı değişmedi.
+    """
+    return [
+        y
+        for y, p in cagrilar
+        if y == "sendMessage"
+        and "inline_keyboard" in ((p or {}).get("reply_markup") or {})
+    ]
+
+
 def test_menu_komutu_tek_menyu_gonderir_ve_id_saklanir(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -190,7 +205,7 @@ def test_menu_komutu_tek_menyu_gonderir_ve_id_saklanir(
     cagrilar, sahte_post = _telegram_yakalayici()
     monkeypatch.setattr("modules.telegram_bot.requests.post", sahte_post)
     tb.handle_message("/menu")
-    assert sum(1 for yontem, _ in cagrilar if yontem == "sendMessage") == 1
+    assert len(_panel_gonderenler(cagrilar)) == 1
     saklanan = json.loads(menu_yolu.read_text(encoding="utf-8"))
     assert saklanan["message_id"] == 777
     assert saklanan["chat_id"] == "123456789"
@@ -209,7 +224,7 @@ def test_uc_ust_uste_menyu_toplam_bir_mesaj(monkeypatch: pytest.MonkeyPatch, tmp
     monkeypatch.setattr("modules.telegram_bot.requests.post", sahte_post)
     for _ in range(3):
         tb.handle_message("/start")
-    yeni_menuler = sum(1 for yontem, _ in cagrilar if yontem == "sendMessage")
+    yeni_menuler = len(_panel_gonderenler(cagrilar))
     guncellemeler = sum(1 for yontem, _ in cagrilar if yontem == "editMessageText")
     eski_yol = sum(1 for yontem, _ in cagrilar if yontem == "editMessageReplyMarkup")
     assert yeni_menuler == 1, f"3 /start tek panel olmalı, gelen: {yeni_menuler}"
@@ -241,7 +256,7 @@ def test_bayat_menu_silinmisse_yeni_menyu_acilir(monkeypatch: pytest.MonkeyPatch
     monkeypatch.setattr("modules.telegram_bot.requests.post", sahte_post)
     tb.handle_message("/menu")  # ilk menü → sendMessage
     tb.handle_message("/menu")  # bayat id → edit bulunamadı → yeni menü
-    assert cagrilar == ["sendMessage", "editMessageText", "sendMessage"]
+    assert cagrilar == ["sendMessage", "sendMessage", "editMessageText", "sendMessage"]
     assert json.loads(menu_yolu.read_text(encoding="utf-8"))["message_id"] == 888
 
 

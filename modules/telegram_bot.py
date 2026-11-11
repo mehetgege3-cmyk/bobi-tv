@@ -45,7 +45,9 @@ GECMIS_YOLU = ayar_deposu.GECMIS_YOLU
 BEKLEYEN_YOLU = ayar_deposu.BEKLEYEN_YOLU
 KOTA_YOLU = Path("bobi_tv/state/youtube_quota.json")
 
-MENU_BASLIGI = "🎬 <b>BOBİ TV Kontrol Paneli</b>\n\nHoş geldiniz! Bir işlem seçin:"
+#: Ana panel metni ARTIK canlı durum kartıdır (ekran_ana). Eski statik başlık
+#: yalnız geriye dönük uyumluluk için duruyor (çağıranlar ekran_ana kullanır).
+MENU_BASLIGI = "🎬 <b>BOBİ TV</b>"
 PANEL_48_SAAT = timedelta(hours=48)
 BILINMIYOR = "bilinmiyor"
 
@@ -74,6 +76,31 @@ def renkli_buton(metin: str, callback_data: str, tur: str = "vazgec") -> dict[st
     if renk:
         b["style"] = renk
     return b
+
+#: TODO 32 — KALICI ALT KLAVYE. Kullanıcı isteği (2026-11-11):
+#: "bot başlayınca menüler açık görünsün, her şey elimin altında olsun".
+#: Telegram'da KALICI MENÜ ancak ReplyKeyboard ile olur (inline butonlar mesaja
+#: bağlıdır, sohbet açılınca kendiliğinden görünmez). `is_persistent` + `resize`
+#: ile ekranın altında durur; klavyeyi kapatmaz, yazmayı engellemez.
+REPLY_KLAVYE: list[list[str]] = [
+    ["📊 Durum", "🎬 Üret"],
+    ["📈 Rapor", "⚙️ Ayarlar"],
+    ["📦 Stok", "❓ Yardım"],
+]
+
+#: Alt klavye metni → panel ekranı eşlemesi (emoji duyarsız arama için).
+REPLY_ESLEME: dict[str, str] = {
+    # "Durum" = canlı durum ekranı (system.status_now); "Rapor" = rapor ekranı.
+    # İkisi farklı ekran: durum düğmesi raporu açmamalı.
+    "durum": "status_now",
+    "üret": "uret_menu",
+    "uret": "uret_menu",
+    "rapor": "rapor_goster",
+    "ayarlar": "ay:kok",
+    "stok": "kuyruk_liste",
+    "yardım": "yardim_goster",
+    "yardim": "yardim_goster",
+}
 
 GERI_MENUSU: list[dict[str, str]] = [
     {"text": "← Geri", "callback_data": "menu_main"},
@@ -485,8 +512,15 @@ def _bekleyen_giris_oku() -> str | None:
 def _panel_yaz(message_id: int) -> None:
     try:
         MENU_STATE_YOLU.parent.mkdir(parents=True, exist_ok=True)
-        MENU_STATE_YOLU.write_text(
-            json.dumps(
+        # MEVCUT ALANLAR KORUNUR (2026-11-11 düzeltmesi): burada sözlüğü sıfırdan
+        # yazmak `klavye_kuruldu` bayrağını siliyordu → her /start'ta alt klavye
+        # yeniden gönderiliyordu (ekranda "Menü hazır" mesajı birikiyordu).
+        onceki: dict[str, Any] = {}
+        with suppress(Exception):
+            if MENU_STATE_YOLU.exists():
+                onceki = json.loads(MENU_STATE_YOLU.read_text(encoding="utf-8")) or {}
+        veri_panel = dict(onceki) if isinstance(onceki, dict) else {}
+        veri_panel.update(
                 {
                     "chat_id": CHAT_ID,
                     "message_id": message_id,
@@ -495,9 +529,8 @@ def _panel_yaz(message_id: int) -> None:
                     # girişi kaybolmasın.
                     **({"bekleyen_giris": g} if (g := _bekleyen_giris_oku()) else {}),
                 }
-            ),
-            encoding="utf-8",
         )
+        MENU_STATE_YOLU.write_text(json.dumps(veri_panel), encoding="utf-8")
     except Exception:
         pass
 
@@ -686,14 +719,21 @@ def ekran_ana() -> tuple[str, list[list[dict[str, Any]]]]:
 
     # KULLANICI KARARI (2026-11-11): "Kota 6 istemiyorum, kotayı kaldır."
     # Kota satırı ve ilerleme çubuğu KALDIRILDI — yükleme tavanı yok.
-    kota_satiri = f"🚀 Bugün yüklenen: {yayinda} (tavan YOK)"
+    #
+    # TASARIM (2026-11-11, kullanıcı: "modern, kullanıcı dostu, her şey elim
+    # altında"): düz satır listesi yerine 3 blok — DURUM / BUGÜN / SİSTEM.
+    # Bloklar ince ayırıcıyla ayrılır (Telegram'da kutu yok, '─' evrensel).
+    ayirici = "─────────────"
     metin = (
-        "🎬 <b>BOBİ TV</b>\n"
-        f"🎥 Bugün: {uretilen} üretildi · {yayinda} yayında\n"
-        f"{kota_satiri}\n"
-        f"📦 Stok (kuyruk): {kuyruk_sayisi} video\n"
-        f"🕐 Son koşu: {_son_kosu_ozeti()}\n"
-        f"📡 Bot gecikmesi: {_poller_ozeti()}"
+        "🎬 <b>BOBİ TV</b>  ·  <i>kontrol paneli</i>\n"
+        f"{ayirici}\n"
+        "📊 <b>Bugün</b>\n"
+        f"│ 🎥 Üretilen: <b>{uretilen}</b>   🚀 Yayında: <b>{yayinda}</b>\n"
+        f"│ 📦 Stok: <b>{kuyruk_sayisi}</b>   ✅ Tavan: <b>YOK</b>\n"
+        f"{ayirici}\n"
+        "🛠 <b>Sistem</b>\n"
+        f"│ 🕐 Son koşu: {_son_kosu_ozeti()}\n"
+        f"│ 📡 Bot: {_poller_ozeti()}"
     )
     try:
         from modules.bildirim import susturulmus_mu
@@ -726,6 +766,80 @@ def get_main_menu_buttons() -> list[list[dict[str, Any]]]:
     ]
 
 
+def _duz_metin(metin: str) -> str:
+    """Emoji/işaretleri atıp küçük harfe indirger (alt klavye eşlemesi için)."""
+    temiz = "".join(c for c in str(metin) if c.isalnum() or c.isspace() or c in "çğıöşüÇĞİÖŞÜ")
+    return " ".join(temiz.lower().split())
+
+
+def _klavye_kuruldu_mu() -> bool:
+    """Alt klavye daha önce kuruldu mu? (BİR KEZ kuralı — mesaj şişmesin.)"""
+    try:
+        if MENU_STATE_YOLU.exists():
+            veri = json.loads(MENU_STATE_YOLU.read_text(encoding="utf-8"))
+            return bool(veri.get("klavye_kuruldu"))
+    except Exception:
+        pass
+    return False
+
+
+def _klavye_kuruldu_isaretle() -> None:
+    try:
+        veri: dict[str, Any] = {}
+        if MENU_STATE_YOLU.exists():
+            with suppress(Exception):
+                veri = json.loads(MENU_STATE_YOLU.read_text(encoding="utf-8"))
+        veri["klavye_kuruldu"] = True
+        MENU_STATE_YOLU.parent.mkdir(parents=True, exist_ok=True)
+        MENU_STATE_YOLU.write_text(json.dumps(veri), encoding="utf-8")
+    except Exception:
+        pass
+
+
+def klavye_gonder(zorla: bool = False) -> bool:
+    """KALICI alt menüyü BİR KEZ gönderir (kısa taşıyıcı mesaj).
+
+    NEDEN AYRI MESAJ: Telegram'da kalıcı klavye yalnız `sendMessage` ile
+    kurulabilir (`editMessageText` klavye değiştiremez). Bu yüzden ilk
+    /start'ta tek satırlık bir taşıyıcı mesaj gönderilir; sonraki /start'larda
+    TEKRAR GÖNDERİLMEZ (mesaj şişmesi yok) — panel yine tek mesajda düzenlenir.
+    """
+    if not BOT_TOKEN or not CHAT_ID:
+        return False
+    if not zorla and _klavye_kuruldu_mu():
+        return False
+    govde = api_call(
+        "sendMessage",
+        {
+            "chat_id": CHAT_ID,
+            "text": "🎛 <b>Menü hazır</b> — aşağıdaki düğmeler her zaman elinin altında.",
+            "parse_mode": "HTML",
+            "reply_markup": {
+                "keyboard": [[{"text": m} for m in satir] for satir in REPLY_KLAVYE],
+                "resize_keyboard": True,
+                "is_persistent": True,
+                "input_field_placeholder": "Menüden seç veya yaz…",
+            },
+        },
+    )
+    if govde and govde.get("ok"):
+        _klavye_kuruldu_isaretle()
+        return True
+    return False
+
+
+def klavye_gizle() -> bool:
+    """Alt klavyeyi kaldırır (kullanıcı isterse)."""
+    if not BOT_TOKEN or not CHAT_ID:
+        return False
+    govde = api_call(
+        "sendMessage",
+        {"chat_id": CHAT_ID, "text": "Klavye kapatıldı. /start ile geri gelir.",
+         "reply_markup": {"remove_keyboard": True}},
+    )
+    return bool(govde and govde.get("ok"))
+
+
 def menyu_gonder(yeni_mesaj: bool = False) -> bool:
     """Ana menüyü göster — edit-in-place (tek panel felsefesi).
 
@@ -733,7 +847,8 @@ def menyu_gonder(yeni_mesaj: bool = False) -> bool:
     panel geçerliyse her zaman aynı mesaj düzenlenir. Yeni mesaj kararı yalnızca
     panel_goster'in kayıt/48 saat/edit-404 mantığıyla verilir.
     """
-    return panel_goster(MENU_BASLIGI, get_main_menu_buttons(), yeni_mesaj=yeni_mesaj)
+    metin, butonlar = ekran_ana()
+    return panel_goster(metin, butonlar, yeni_mesaj=yeni_mesaj)
 
 
 # ---------------------------------------------------------------------------
@@ -981,9 +1096,9 @@ def ekran_bildirim() -> tuple[str, list[list[dict[str, Any]]]]:
 def ekran_yardim() -> tuple[str, list[list[dict[str, Any]]]]:
     """Yardım ekranı — /help metin komutu da buraya yönlenir (tek panel)."""
     return get_help_text(), [
-        # Mini App YALNIZ web_app düğmesiyle doğru bağlamda açılır
-        # (sohbete atılan düz link tarayıcıda açılır → yazma çalışmaz).
-        [{"text": "📱 Mini App", "web_app": {"url": MINI_APP_URL}}],
+        # 2026-11-11: kullanıcı Mini App İSTEMİYOR → yardım ekranındaki açılış
+        # düğmesi kaldırıldı. Mini App kodu/sayfası duruyor ama erişim yolu
+        # yalnız /help menüsünden değil, paneldeki "📱 Mini App" ekranından.
         [
             {"text": "❓ Sistem ne yapar", "callback_data": "sistem_nedir"},
             {"text": "📊 Rapor", "callback_data": "rapor_goster"},
@@ -2748,7 +2863,29 @@ def handle_message(text: str) -> str:
             return ""
 
     if text in MENU_KOMUTLARI:
+        # Kullanıcı isteği (2026-11-11): bot açılınca menüler GÖRÜNÜR olsun.
+        klavye_gonder()
         menyu_gonder()
+        return ""
+    # ALT KLAVYE düğmeleri → aynı panelde ilgili ekran (yeni mesaj YOK).
+    _duz = _duz_metin(ham_metin)
+    if _duz in REPLY_ESLEME:
+        hedef = REPLY_ESLEME[_duz]
+        if hedef == "ay:kok":
+            panel_goster(*ekran_ayar_kok())
+        elif hedef == "kuyruk_liste":
+            panel_goster(*ekran_kuyruk())
+        elif hedef == "yardim_goster":
+            panel_goster(*ekran_yardim())
+        elif hedef == "uret_menu":
+            panel_goster(*ekran_uret())
+        elif hedef == "status_now":
+            panel_goster(
+                get_status_text(),
+                [[{"text": "🔄 Yenile", "callback_data": "status_now"}], list(GERI_MENUSU)],
+            )
+        else:
+            panel_goster(*ekran_rapor())
         return ""
     # TODO 13 — TEK PANEL KURALI: metin komutları YENİ MESAJ ATMAZ.
     # Eskiden /status, /stats, /help, /trigger doğrudan send_message çağırıp

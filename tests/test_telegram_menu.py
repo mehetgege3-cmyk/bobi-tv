@@ -218,7 +218,11 @@ def test_10_etkilesim_tek_mesaj_kurali(monkeypatch: pytest.MonkeyPatch) -> None:
     ]
     for i, cb in enumerate(tiklamalar):
         tb.handle_callback(cb, f"cb{i}")
-    sends = sum(1 for y, _ in cagrilar if y == "sendMessage")
+    # Alt klavye taşıyıcısı hariç (2026-11-11 spec değişikliği).
+    sends = sum(
+        1 for y, p in cagrilar
+        if y == "sendMessage" and "keyboard" not in (p.get("reply_markup") or {})
+    )
     edits = sum(1 for y, _ in cagrilar if y == "editMessageText")
     assert sends == 1, f"10 etkileşimde tam 1 sendMessage olmalı, gelen: {sends}"
     assert edits == 9, f"9 tıklama tam 9 editMessageText olmalı, gelen: {edits}"
@@ -234,10 +238,23 @@ def test_start_yeni_panel_mesaji_acar(monkeypatch: pytest.MonkeyPatch) -> None:
     cagrilar = _takip_et(monkeypatch)
     tb.handle_message("/start")
     tb.handle_message("/start")
-    sends = sum(1 for y, _ in cagrilar if y == "sendMessage")
+    # SPEC DEĞİŞTİ (2026-11-11, kullanıcı: "bot açılınca menüler açık görünsün"):
+    # ilk /start'ta KALICI ALT KLAVYE için 1 taşıyıcı sendMessage gönderilir
+    # (Telegram'da kalıcı klavye yalnız sendMessage ile kurulur). Panel sayısı
+    # kuralı korunur: panel 1 kez doğar, ikinci /start onu DÜZENLER.
+    panel_sends = [
+        y for y, p in cagrilar
+        if y == "sendMessage" and "reply_markup" in p and "inline_keyboard" in p["reply_markup"]
+    ]
     edits = sum(1 for y, _ in cagrilar if y == "editMessageText")
-    assert sends == 1, f"2 /start → tek panel olmalı, sendMessage: {sends}"
+    assert len(panel_sends) == 1, f"2 /start → tek panel olmalı, panel sendMessage: {len(panel_sends)}"
     assert edits == 1, f"ikinci /start paneli düzenlemeli, editMessageText: {edits}"
+    # Klavye taşıyıcısı BİR KEZ gönderilir (ikinci /start'ta tekrar etmez).
+    klavye = [
+        y for y, p in cagrilar
+        if y == "sendMessage" and "keyboard" in (p.get("reply_markup") or {})
+    ]
+    assert len(klavye) == 1, f"alt klavye yalnız bir kez kurulmalı, gelen: {len(klavye)}"
 
 
 def test_menu_metni_ayni_mesaji_duzenler(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -246,7 +263,12 @@ def test_menu_metni_ayni_mesaji_duzenler(monkeypatch: pytest.MonkeyPatch) -> Non
     tb.handle_message("/start")
     tb.handle_message("menu")
     tb.handle_message("menü")
-    sends = sum(1 for y, _ in cagrilar if y == "sendMessage")
+    # Alt klavye taşıyıcısı hariç: panel mesajları sayılır (spec değişikliği
+    # 2026-11-11 — kalıcı klavye ilk /start'ta bir kez gönderilir).
+    sends = sum(
+        1 for y, p in cagrilar
+        if y == "sendMessage" and "keyboard" not in (p.get("reply_markup") or {})
+    )
     edits = sum(1 for y, _ in cagrilar if y == "editMessageText")
     assert sends == 1
     assert edits == 2

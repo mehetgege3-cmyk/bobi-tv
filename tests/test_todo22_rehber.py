@@ -168,6 +168,7 @@ def test_yardim_ekraninda_sistem_nedir_dugmesi():
     # web_app düğmelerinde callback_data YOK (Telegram kuralı) — filtrele.
     duz = [b["callback_data"] for satir in butonlar for b in satir if "callback_data" in b]
     assert "sistem_nedir" in duz
-    # Mini App düğmesi web_app alanıyla açılmalı (tarayıcıya atmamalı).
+    # 2026-11-11: kullanıcı "Mini App istemiyorum" dedi → yardım ekranında
+    # Mini App açılış düğmesi YOK. (Mini App ekranı panelden hâlâ erişilebilir.)
     web = [b for satir in butonlar for b in satir if "web_app" in b]
-    assert web and web[0]["web_app"]["url"].startswith("https://")
+    assert web == [], "yardım ekranında Mini App düğmesi olmamalı"

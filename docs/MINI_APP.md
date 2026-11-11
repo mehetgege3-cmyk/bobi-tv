@@ -1,6 +1,6 @@
 # Mini App (TODO 31) — tasarım + güvenlik sözleşmesi
 
-Güncel: 2026-11-11 · Durum: **v1 hazır (statik kabuk + gerçek veri köprüsü)**
+Güncel: 2026-11-11 · Durum: **v2 — onaylı YAZMA modu açık (token tarayıcıya çıkmıyor)**
 
 ## 1. Neden Mini App?
 
@@ -24,10 +24,27 @@ uygun: statik, ücretsiz, HTTPS var. Sunucu tarafı (API) yok — bu yüzden:
 | Denetim kaydı (son 10) | aynı dosya (`denetim` alanı) | son koşu |
 | Canlı butonlar (Üret/Sil) | **YOK** — v1 salt okunur | — |
 
-**Neden salt okunur:** Mini App içinden üretim tetiklemek/ video silmek
-tarayıcıda yaşayan bir token gerektirir → token'ın ele geçmesi = kanalın ele
-geçmesi. v1'de yazma yok; yazma işlemleri bot panelinde (imzalı + süreli
-callback + onay ekranı + denetim kaydı) kalır.
+## 2.1 Yazma modu (v2, 2026-11-11 kullanıcı onayı)
+
+Yazma **var**, ama token tarayıcıya **hiç çıkmıyor**:
+
+```
+Mini App düğmesi → Telegram.WebApp.sendData({"e":"uret","v":1})
+                 → bot poller (web_app_data)
+                 → payload doğrulama (beyaz liste + sürüm + boyut)
+                 → ONAY EKRANI  ← buradan geçmeden hiçbir şey çalışmaz
+                 → imzalı/süreli callback + cool-off + İPTAL penceresi
+                 → DENETİM KAYDI
+```
+
+- Payload yalnız `{"e": <eylem>, "v": 1}` taşır: **token, chat_id, URL yok**.
+- Beyaz liste (`modules/mini_app_eylem.py`): `uret`, `render_test`,
+  `kuyruk_bosalt`, `durum`, `denetim`. Bilinmeyen eylem **reddedilir** ve
+  kullanıcıya "YAPILMADI" denir (sessiz yutma yok).
+- Yazma eylemleri `onay_gerekli=True`: Mini App **hiçbir şeyi doğrudan
+  çalıştırmaz**, yalnız niyet gönderir.
+- Tarayıcıda (Telegram dışı) açılırsa `sendData` yok → düğmeler çalışmaz,
+  sayfa bunu açıkça yazar.
 
 ## 3. initData doğrulaması (v2 için hazır sözleşme)
 

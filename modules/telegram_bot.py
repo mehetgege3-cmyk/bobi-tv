@@ -25,7 +25,7 @@ from typing import Any
 import requests
 
 import modules.ayar_deposu as ayar_deposu
-from modules import denetim, rehber, render_karti, tekillestirme
+from modules import denetim, mini_app_eylem, rehber, render_karti, tekillestirme
 from modules.ayar_katalogu import (
     GRUPLAR,
     TEMIZLIK_UYARI,
@@ -192,11 +192,63 @@ def process_update(update: dict[str, Any]) -> bool:
             print(f"✅ Callback işlendi: {callback_data}")
     elif "message" in update:
         msg = update["message"]
+        # TODO 31 v2 — Mini App YAZMA: butonlar sendData gönderir, bot onay açar.
+        # Öncelik: web_app_data varsa metin işlenmez (tek yol, karışıklık yok).
+        if msg.get("web_app_data") is not None:
+            handle_web_app_data(msg["web_app_data"])
+            print("✅ Mini App verisi işlendi (onay akışına yönlendirildi)")
+            return True
         text = msg.get("text", "")
         if text:
             handle_message(text)
             print(f"✅ Mesaj işlendi: {text[:30]}")
     return True
+
+
+def handle_web_app_data(veri: Any) -> str:
+    """Mini App'ten gelen yazma niyetini ONAY ekranına çevirir.
+
+    Mini App hiçbir şeyi doğrudan çalıştırmaz: payload doğrulanır, sonra var
+    olan panel akışı (onay ekranı → imzalı callback → denetim) tetiklenir.
+
+    Döner: "onay" | "goster" | "red"
+    """
+    ham = veri.get("data") if isinstance(veri, dict) else veri
+    kayit, sebep = mini_app_eylem.payload_coz(ham)
+    if kayit is None:
+        panel_goster(*ekran_metin_dugme(mini_app_eylem.red_metni(sebep)))
+        denetim.kaydet("mini_app_red", "basarisiz", ayrinti={"sebep": sebep})
+        return "red"
+
+    hedef = str(kayit["callback"])
+    # Onay gerektiren eylemler: panele "Mini App'ten geldi" notu + onay ekranı.
+    if mini_app_eylem.onay_gerekli(str(kayit["eylem"])) and hedef == "uret_baslat":
+        metin, dugmeler = ekran_uret_onay()
+        panel_goster(f"{mini_app_eylem.niyet_metni(kayit)}\n\n➖➖➖\n\n{metin}", dugmeler)
+        denetim.kaydet("mini_app_niyet", "onay_bekliyor", ayrinti={"eylem": kayit["eylem"]})
+        return "onay"
+
+    # Diğer eylemler var olan panel yönlendirmesine düşer (yeni yol açılmaz).
+    if hedef == "menu_main":
+        panel_goster(*ekran_ana())
+        return "goster"
+    if hedef == "denetim_goster":
+        panel_goster(*ekran_denetim())
+        return "goster"
+    if hedef == "uret_render_test":
+        metin, dugmeler = ekran_uret()
+        panel_goster(
+            f"{mini_app_eylem.niyet_metni(kayit)}\n\n➖➖➖\n\n{metin}", dugmeler
+        )
+        denetim.kaydet("mini_app_niyet", "onay_bekliyor", ayrinti={"eylem": kayit["eylem"]})
+        return "onay"
+    if hedef == "kuyruk_at_onay":
+        panel_goster(*ekran_kuyruk_at_onay())
+        denetim.kaydet("mini_app_niyet", "onay_bekliyor", ayrinti={"eylem": kayit["eylem"]})
+        return "onay"
+    # Bilinmeyen hedef: güvenli taraf → ana ekran.
+    panel_goster(*ekran_ana())
+    return "goster"
 
 
 #: Bir turda işlenecek AZAMİ update sayısı (TODO 28): poller uzun sustuğunda

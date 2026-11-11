@@ -86,13 +86,23 @@
     width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--cizgi);
     background: var(--kart2); color: var(--metin); font-size: 14px; font-weight: 600;
   }
+  button:active { transform: scale(.99); }
+  .eylemler { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .eylemler button { padding: 14px 10px; font-size: 13.5px; }
+  .eylemler button.riskli { border-color: rgba(255,69,58,.45); color: #ff8a80; }
+  .eylemler button.genis { grid-column: 1 / -1; }
+  button:disabled { opacity: .45; }
+  .onay-not {
+    font-size: 12px; color: var(--soluk); margin-top: 10px; line-height: 1.5;
+  }
+  .yetki { font-size: 12px; color: var(--uyari); margin-top: 8px; }
   .hata { color: var(--kotu); font-size: 13px; }
 </style>
 </head>
 <body>
 <header>
   <h1 id="baslik">🎬 BOBİ TV</h1>
-  <span class="rozet">salt okunur</span>
+  <span class="rozet">onaylı yazma</span>
 </header>
 <p class="altbilgi" id="guncelleme">Güncelleme: bilinmiyor</p>
 
@@ -133,12 +143,32 @@
 </section>
 
 <section>
+  <h2>İşlemler</h2>
+  <div class="kart">
+    <div class="eylemler" id="eylemler">
+      <button type="button" data-eylem="durum">📊 Durumu göster</button>
+      <button type="button" data-eylem="denetim">📋 Denetim kaydı</button>
+      <button type="button" class="riskli genis" data-eylem="uret">🎬 Üretimi başlat</button>
+      <button type="button" data-eylem="render_test">🧪 Render testi</button>
+      <button type="button" class="riskli" data-eylem="kuyruk_bosalt">🗑️ Stoğu boşalt</button>
+    </div>
+    <div class="onay-not">
+      Bu düğmeler <b>doğrudan hiçbir şey çalıştırmaz</b>: Telegram'a bir "istek"
+      gönderir. Bot isteği <b>onay ekranına</b> çevirir; sen onaylamadan üretim
+      başlamaz, stok boşaltılmaz. Onaydan sonra işlem denetim kaydına yazılır.
+    </div>
+    <div class="yetki" id="yetki"></div>
+  </div>
+</section>
+
+<section>
   <h2>Notlar</h2>
   <div class="kart">
     <div class="dipnot">
-      Bu ekran <b>salt okunur</b>: buradan üretim başlatılmaz, video silinmez.
-      Yazma işlemleri Telegram panelinde; her biri onay ekranından geçer ve
-      denetim kaydına yazılır.
+      Bu ekran <b>onaylı yazma</b> modunda: düğmeler yalnız "istek" gönderir,
+      hiçbir şey doğrudan çalışmaz. Her yazma işlemi Telegram panelindeki
+      <b>onay ekranından</b> geçer ve <b>denetim kaydına</b> yazılır. Tarayıcıda
+      (Telegram dışında) açılırsa düğmeler çalışmaz.
     </div>
     <span class="rozet-uyari">Üretilen her video yüklenir — tavan yok</span>
   </div>
@@ -290,6 +320,66 @@
     el.className = hata ? "dipnot hata" : "dipnot";
   }
 
+  // --- YAZMA MODU (onaylı): token YOK, yalnız "niyet" gönderilir ---------
+  var EYLEM_ETIKET = {
+    uret: "Üretimi başlat",
+    render_test: "Render testi",
+    kuyruk_bosalt: "Stoğu boşalt",
+    durum: "Durumu göster",
+    denetim: "Denetim kaydı"
+  };
+  var yazma_kapali = false;
+
+  function yazma_yetenegi() {
+    var tg = window.Telegram && window.Telegram.WebApp;
+    var el = document.getElementById("yetki");
+    if (!tg) {
+      yazma_kapali = true;
+      if (el) el.textContent = "ℹ️ Tarayıcıda açıldı: işlem düğmeleri yalnız Telegram içinde çalışır (onay akışı botta).";
+      return;
+    }
+    if (typeof tg.sendData !== "function") {
+      yazma_kapali = true;
+      if (el) el.textContent = "ℹ️ Bu Telegram sürümü veri göndermeyi desteklemiyor; paneli bottan kullan.";
+      return;
+    }
+    if (el) el.textContent = "🔐 Yazma yalnız ONAY ile: istek bota gider, bot onay ekranı açar.";
+  }
+
+  function istek_gonder(dugme) {
+    var eylem = dugme.getAttribute("data-eylem");
+    if (!eylem) return;
+    var tg = window.Telegram && window.Telegram.WebApp;
+    if (yazma_kapali || !tg || typeof tg.sendData !== "function") {
+      durum_yaz("Bu ekrandan işlem gönderilemez — paneli Telegram botundan kullan.", true);
+      return;
+    }
+    dugme.disabled = true;
+    try {
+      // Payload SADECE eylem adı + sürüm: token/URL/kullanıcı verisi YOK.
+      tg.sendData(JSON.stringify({ e: eylem, v: 1 }));
+      durum_yaz("📨 İstek gönderildi: " + (EYLEM_ETIKET[eylem] || eylem) +
+                ". Telegram'da bot ONAY ekranını açacak.", false);
+      if (typeof tg.close === "function") {
+        setTimeout(function () { try { tg.close(); } catch (e) {} }, 900);
+      }
+    } catch (err) {
+      durum_yaz("İstek gönderilemedi: " + err.message, true);
+    } finally {
+      setTimeout(function () { dugme.disabled = false; }, 1500);
+    }
+  }
+
+  function eylemleri_bagla() {
+    var kap = document.getElementById("eylemler");
+    if (!kap) return;
+    var dugmeler = kap.querySelectorAll("button[data-eylem]");
+    for (var i = 0; i < dugmeler.length; i++) {
+      dugmeler[i].addEventListener("click", function () { istek_gonder(this); });
+    }
+    yazma_yetenegi();
+  }
+
   function yukle() {
     durum_yaz("Yükleniyor…", false);
     fetch(VERI_YOLU + "?t=" + Date.now(), { cache: "no-store" })
@@ -316,11 +406,12 @@
       window.Telegram.WebApp.expand();
       var ad = window.Telegram.WebApp.initDataUnsafe;
       if (ad && ad.user && ad.user.first_name) {
-        durum_yaz("Merhaba " + ad.user.first_name + " · salt okunur görünüm", false);
+        durum_yaz("Merhaba " + ad.user.first_name + " · onaylı yazma modu", false);
       }
     } catch (e) { /* Mini App yoksa sessiz geç */ }
   }
 
+  eylemleri_bagla();
   yukle();
 })();
 </script>

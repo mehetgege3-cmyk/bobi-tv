@@ -158,12 +158,22 @@ def test_tavan_yok_ifadesi_sayfada():
     assert "tavan" in html.lower()
 
 
-def test_salt_okunur_uyarisi_var():
+def test_yazma_modu_onay_sozlesmesi():
+    """SPEC DEĞİŞTİ (2026-11-11, kullanıcı: "Mini App yazma modunu aç").
+
+    Eski spec: Mini App tamamen salt okunur (tek 'Yenile' düğmesi).
+    Yeni spec: yazma VAR ama ONYALI ve tokensız — düğmeler yalnız
+    `sendData` ile niyet gönderir; gerçek iş botun onay ekranından geçer.
+    Bu yüzden burada 'kaç buton' değil 'butonlar ne yapıyor' doğrulanır.
+    """
     html = _html()
-    assert "salt okunur" in html.lower()
-    # Hiçbir buton üretim/silme tetiklemez: yalnız 'Yenile' ve fetch var.
-    assert html.count("<button") == 1
-    assert "fetch(" in html
+    assert "onaylı yazma" in html.lower()
+    # Yazma düğmeleri yalnız sendData ile niyet gönderir (fetch ile tetiklemez).
+    assert "sendData" in html
+    assert 'data-eylem="uret"' in html
+    # Sayfa kendi başına üretim başlatamaz: dispatch/token yok.
+    assert "dispatches" not in html
+    assert "fetch(" in html, "veri okuma fetch ile kalmalı"
 
 
 def test_csp_meta_var():

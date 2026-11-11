@@ -264,12 +264,15 @@
     "dosya_adi": "20261111_0005_eglenceli_replikler_arena",
     "baslik": "Kum Saati Bize Ne Dedi? 😱 #shorts",
     "video_id": "TF2UJgzZVk4",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "eglenceli_replikler",
     "url": "https://www.youtube.com/shorts/TF2UJgzZVk4",
     "senaryo_ozeti": "Kum saati az önce bana yarın geç kalacağımı söyledi! Belki de zamanı tersine akıtıyordur, biraz dikkat et.",
     "hash": "",
-    "tarih": "2026-11-11T01:11:46.961921+00:00"
+    "tarih": "2026-11-11T01:11:46.961921+00:00",
+    "silinme_izlenme": 0,
+    "silinme_yas_dk": 73.3,
+    "silinme_tarihi": "2026-11-11T02:25:33.047686+00:00"
   },
   {
     "dosya_adi": "20261111_0006_pazartesi_sendromu_arena",
@@ -314,5 +317,16 @@
     "senaryo_ozeti": "Ve yıllık spor salonu üyeliğim tam onuncu dakikada iptal edildi! Çünkü koşu bandının üstüne bağdaş kurup poğaça açtın!",
     "hash": "867dcfdbd3b1d10ecfe8b7889b54ce46",
     "tarih": "2026-11-11T02:13:29.187573+00:00"
+  },
+  {
+    "dosya_adi": "20261111_0010_kulturlar_arasi_mizah_arena",
+    "baslik": "Misafir Çayı Neden Gelmedi? 😱 #shorts",
+    "video_id": "gJQDHWow-vE",
+    "durum": "yayinda",
+    "kategori": "kulturlar_arasi_mizah",
+    "url": "https://www.youtube.com/shorts/gJQDHWow-vE",
+    "senaryo_ozeti": "Dokuz saat boyunca çaysız oturdum, hâlâ şok içindeyim. Marco, çayı getirdim ama sen 'hayır teşekkürler' dedin.",
+    "hash": "",
+    "tarih": "2026-11-11T02:28:34.229345+00:00"
   }
 ]

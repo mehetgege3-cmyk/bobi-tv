@@ -482,7 +482,7 @@
     "dosya_adi": "20261111_0019_pazartesi_sendromu_arena",
     "baslik": "Pazartesiyi İptal Etti, Hafta Salıdan Başladı 😱 #shorts",
     "video_id": "hG8s1yolGog",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "pazartesi_sendromu",
     "url": "https://www.youtube.com/shorts/hG8s1yolGog",
     "senaryo_ozeti": "Pazartesiyi iptal ettim, bu hafta salıdan başlıyoruz! Takvim mi değişti, sen mi kafayı yedin?",
@@ -493,7 +493,10 @@
         "izlenme": 0,
         "zaman": "2026-11-11T06:41:29.324350+00:00"
       }
-    }
+    },
+    "silinme_izlenme": 0,
+    "silinme_yas_dk": 73.6,
+    "silinme_tarihi": "2026-11-11T06:54:24.804041+00:00"
   },
   {
     "dosya_adi": "20261111_0020_ters_kose_fikralar_arena",
@@ -542,5 +545,16 @@
     "hash": "",
     "tarih": "2026-11-11T06:41:28.993585+00:00",
     "izlenme_snapshots": {}
+  },
+  {
+    "dosya_adi": "20261111_0024_absurt_sakalar_arena",
+    "baslik": "Kayıp Eşyada Kendini Buldu 😱 #shorts",
+    "video_id": "jKEPXkzoyLs",
+    "durum": "yayinda",
+    "kategori": "absurt_sakalar",
+    "url": "https://www.youtube.com/shorts/jKEPXkzoyLs",
+    "senaryo_ozeti": "Dün kayıp eşyalar bürosunda kendimi buldum. Kimliğinizi gösterin, sizi sahibinize teslim edelim.",
+    "hash": "",
+    "tarih": "2026-11-11T06:56:36.513766+00:00"
   }
 ]

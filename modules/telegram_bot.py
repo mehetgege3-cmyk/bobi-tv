@@ -779,6 +779,58 @@ def get_help_text() -> str:
     )
 
 
+def ekran_7gun() -> tuple[str, list[list[dict[str, Any]]]]:
+    """📅 7 günlük trend (TODO 19, Kaan): sparkline + geçme oranı + kota tahmini.
+
+    TAHMİN açıkça "tahmin" olarak etiketlenir (uydurma kesinlik yok).
+    """
+    from modules.kalite_log import kalite_istatistik
+
+    seri = _son_7gun_seri()
+    satirlar = ["📅 <b>7 Günlük Trend</b>", ""]
+    if not seri or sum(seri) == 0:
+        satirlar.append(f"⛔ Veri yok: {BILINMIYOR}")
+        butonlar = [[{"text": "🔄 Yenile", "callback_data": "rapor_7gun"}], list(GERI_MENUSU)]
+        return "\n".join(satirlar), butonlar
+
+    satirlar.append(f"📈 Üretim: <code>{_sparkline(seri)}</code>")
+    satirlar.append(f"📊 Toplam: {int(sum(seri))} video · günlük ort. {sum(seri) / len(seri):.1f}")
+    satirlar.append("")
+
+    # Kalite: son 7 günün geçme oranı (veri yoksa bilinmiyor)
+    gecen, toplam = 0, 0
+    for geri in range(7):
+        gun = (datetime.now(UTC) - timedelta(days=geri)).strftime("%Y-%m-%d")
+        try:
+            ist = kalite_istatistik(gun)
+            toplam += int(ist.get("toplam", 0) or 0)
+            gecen += int(ist.get("gecti", 0) or 0)
+        except Exception:
+            continue
+    if toplam:
+        satirlar.append(f"✅ Kalite geçme: {gecen}/{toplam} (%{round(gecen / toplam * 100)})")
+    else:
+        satirlar.append(f"✅ Kalite geçme: {BILINMIYOR} (kayıt yok)")
+
+    # Kota harcama tahmini: bugünkü yayın hızından gün sonu
+    uretilen, yayinda = _bugun_arsiv_ozeti()
+    simdi = datetime.now(UTC)
+    gecen_saat = simdi.hour + simdi.minute / 60
+    if yayinda and gecen_saat > 0.5:
+        tahmin = round(yayinda / gecen_saat * 24, 1)
+        satirlar.append(f"💰 Tahmin: bu hızla gün sonu ≈ {tahmin} yükleme (tavan {KOTA_TAVANI})")
+        satirlar.append("   <i>tahmin</i> — geçmiş hıza dayanır, garanti değil")
+    else:
+        satirlar.append(f"💰 Kota tahmini: {BILINMIYOR} (yeterli veri yok)")
+
+    butonlar = [
+        [{"text": "🏆 Performans", "callback_data": "performans"}],
+        [{"text": "🔄 Yenile", "callback_data": "rapor_7gun"}],
+        list(GERI_MENUSU),
+    ]
+    return "\n".join(satirlar), butonlar
+
+
 def ekran_performans() -> tuple[str, list[list[dict[str, Any]]]]:
     """🏆 Performans ekranı (TODO 17): son 10 video, outlier skoru, en iyi/kötü 3.
 
@@ -792,6 +844,8 @@ def ekran_performans() -> tuple[str, list[list[dict[str, Any]]]]:
         satirlar.append(f"⛔ Veri okunamadı: {sonuc['hata']}")
         satirlar.append("Uydurma sayı yazmıyoruz.")
         butonlar = [
+            # Hata olsa bile trende erişim kalır (kullanıcı yolu tıkanmaz).
+            [{"text": "📅 7 günlük trend", "callback_data": "rapor_7gun"}],
             [{"text": "🔄 Yenile", "callback_data": "performans"}],
             list(GERI_MENUSU),
         ]
@@ -2002,6 +2056,10 @@ def _handle_callback_icerde(callback_data: str, callback_id: str, kullanici_id: 
     if callback_data == "sistem_goster":
         answer_callback(callback_id, "Sistem durumu yükleniyor...")
         _ekran_goster(ekran_sistem())
+        return
+    if callback_data == "rapor_7gun":
+        answer_callback(callback_id)
+        _ekran_goster(ekran_7gun())
         return
     if callback_data == "performans":
         answer_callback(callback_id, "İzlenmeler okunuyor...")

@@ -58,7 +58,21 @@ class Ayarlar:
         default=15.0, metadata={"description": "Yayımlanabilir videonun kesin minimum süresi."}
     )
     maksimum_yayin_suresi: float = field(
-        default=59.5, metadata={"description": "Bu üretim hattının Shorts render üst sınırı."}
+        default=180.0,
+        metadata={
+            "description": (
+                "Kesin üst sınır. YouTube Shorts 2024'ten beri 3 DAKİKAYA (180 sn) "
+                "kadar dikey videoyu Shorts sayar (9:16, ≤1080x1920). Eski 59.5 sn "
+                "tavanı YouTube kuralı DEĞİLDİ; içeriği bilgi anlatımı için "
+                "sıkıştıran bir sapantıydı (2026-11-11 kullanıcı talimatı)."
+            )
+        },
+    )
+    #: Türkçe TTS konuşma hızı (kelime/dakika). Ölçüm: mevcut üretim loglarında
+    #: 7 kelimelik replik ~2.3 sn → ~180 kelime/dk. Süre planlaması buradan
+    #: yapılır; böylece "kaç kelime yazayım" sorusu tahmin değil HESAP olur.
+    konusma_kelime_dk: int = field(
+        default=180, metadata={"description": "Türkçe TTS yaklaşık konuşma hızı (kelime/dk)."}
     )
     tts_guvenlik_payi: float = field(
         default=1.0, metadata={"description": "Gerçek TTS süresinde minimumun üzerine eklenecek pay."}
@@ -112,6 +126,7 @@ class Ayarlar:
             "hedef_tahmini_sure": "HEDEF_TAHMINI_SURE",
             "minimum_yayin_suresi": "MINIMUM_YAYIN_SURESI",
             "maksimum_yayin_suresi": "MAKSIMUM_YAYIN_SURESI",
+            "konusma_kelime_dk": "KONUSMA_KELIME_DK",
             "tts_guvenlik_payi": "TTS_GUVENLIK_PAYI",
         }
         changes: dict[str, object] = {}
@@ -142,6 +157,6 @@ class Ayarlar:
             )
         if settings.tahmini_saniye_kelime <= 0 or settings.minimum_replik_saniyesi < 0:
             raise SenaryoHatasi("Süre katsayıları pozitif/geçerli olmalıdır.")
-        if settings.minimum_yayin_suresi <= 0 or settings.hedef_tahmini_sure < settings.minimum_yayin_suresi:
+        if settings.minimum_yayin_suresi <= 0 or settings.hedef_tahmini_sure < settings.minimum_yayin_suresi:  # noqa: E501
             raise SenaryoHatasi("Hedef tahmini süre, minimum yayın süresinden kısa olamaz.")
         return settings

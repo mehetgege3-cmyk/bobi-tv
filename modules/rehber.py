@@ -216,7 +216,7 @@ def sistem_metni() -> str:
         "📌 Günlük yükleme tavanı <b>YOK</b> — üretilen her video yüklenir.",
         "📌 Tek gerçek engel YouTube'un kendi 403 kotasıdır: o an video stoğa "
         "alınır, kota açılınca (UTC 00:00) yüklenir.",
-        "📌 Kalite kapısını geçmeyen video <b>yayınlanmaz</b> (süre 15-59,5 sn).",
+        "📌 Kalite kapısını geçmeyen video <b>yayınlanmaz</b> (süre 15-180 sn).",
     ]
     return "\n".join(satirlar)
 

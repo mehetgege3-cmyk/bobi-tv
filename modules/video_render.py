@@ -185,7 +185,8 @@ def video_kalite_kontrol(video_yolu: str) -> dict:
     Üretilen MP4 dosyasını ffprobe ile denetler:
     - Çözünürlük 1080x1920 mi?
     - Hem video (h264) hem ses (aac) akışı var mı?
-    - Süre kullanıcı sınırına uygun mu (15sn - 59.5sn)? İnce/çok kısa videoları reddeder.
+    - Süre sınırına uygun mu (15 sn – 180 sn)? YouTube Shorts 3 dakikaya kadar
+      dikey videoyu Shorts sayar; bu yüzden üst sınır 180 sn'dir (2026-11-11).
     """
     ayarlar = Ayarlar.ortamdan()
     p = Path(video_yolu)

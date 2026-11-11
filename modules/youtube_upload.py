@@ -465,19 +465,30 @@ def video_yukle(senaryo_paketi: dict) -> str:
 
     etiketler = HASHTAG_HARITASI.get(
         kategori,
-        ["#shorts", "#komedi", "#absürt", "#türkçemizah", "#bobitv", "#mizah"],
+        ["#shorts", "#ilginçbilgi", "#biliyor muydunuz", "#bobitv", "#bilim"],
     )
 
-    aciklama = "\n".join([
-        sabit_yorum,
-        "",
+    # AÇIKLAMA = TAM METİN (2026-11-11 kullanıcı formatı).
+    # Kullanıcı içerik planı: 🧠 soru → 🔍 200-300 kelimelik açıklama →
+    # 💡 şaşırtıcı sonuç. Video 3 dakikaya kadar konuşur; metnin TAMAMI
+    # açıklamada da durur (arama + kaydetme + erişilebilirlik).
+    # Eski açıklama yalnız sabit yorum + etiketlerden ibaretti.
+    govde = str(senaryo.get("aciklama_metni") or "").strip()
+    kaynaklar = senaryo.get("kaynaklar") or []
+    parcalar = [sabit_yorum, ""]
+    if govde:
+        parcalar += [govde, ""]
+    if kaynaklar:
+        parcalar += ["📚 Kaynaklar:", *[f"• {k}" for k in kaynaklar[:6]], ""]
+    parcalar += [
         etkilesim,
         "",
-        "🎬 BOBİ TV — Türkçe absürt komedi Shorts (günde 3 video)",
-        "🔔 Abone olmayı ve videoyu sonuna kadar (hatta iki kere 😉) izlemeyi unutma!",
+        "🎬 BOBİ TV — ilginç bilgiler, şaşırtıcı gerçekler",
+        "🔔 Devamı için abone ol!",
         "",
         " ".join(etiketler),
-    ])[:4900]
+    ]
+    aciklama = "\n".join(parcalar)[:4900]
 
     ham_tagler = [e.lstrip("#") for e in etiketler] + [
         "shorts", "türkçe shorts", "komik videolar", "absürt komedi", "bobi tv", "diyalog", "skeç"

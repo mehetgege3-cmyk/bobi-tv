@@ -168,3 +168,32 @@ def test_canli_test_ozet_ve_artifact_uretir():
     adlar = [a.get("name", "") for a in veri["jobs"]["canli-test"]["steps"]]
     assert any("özet" in a.lower() for a in adlar)
     assert any("artifact" in a.lower() for a in adlar)
+
+
+# ---------------------------------------------------------------------------
+# 4) main_pipeline CANLI_TEST modu — canlı koşuda bulunan hata
+# ---------------------------------------------------------------------------
+
+
+def test_canli_test_sabiti_ve_tavan_atlama():
+    """CANLI HATA (2026-11-11, run 42998937740): test 'Üretim tavanına
+    ulaşıldı (24/1). Atlanıyor.' diyerek HİÇBİR ŞEY yapmadan bitti.
+
+    CANLI_TEST=1 iken üretim tavanı ve bugünkü sayım yok sayılmalı."""
+    kaynak = (KOK / "main_pipeline.py").read_text(encoding="utf-8")
+    assert 'CANLI_TEST = str(os.environ.get("CANLI_TEST", "0"))' in kaynak
+    assert "if CANLI_TEST:" in kaynak
+    assert "elif bugunki >= uretim_tavani:" in kaynak, "tavan kontrolü CANLI_TEST'ten SONRA gelmeli"
+    assert "bu_tur = 1 if CANLI_TEST else bu_tur_hesapla" in kaynak
+
+
+def test_canli_test_silme_kontrolunu_atlar():
+    """Tek seferlik test kanalda video SİLME kararı vermemeli."""
+    kaynak = (KOK / "main_pipeline.py").read_text(encoding="utf-8")
+    assert "otomatik silme kontrolü atlandı" in kaynak
+
+
+def test_canli_test_kapak_kaniti_loglar():
+    """Yükleme sonrası 'kapak yüklendi mi + ilk kareye gömüldü mü' loglanmalı."""
+    kaynak = (KOK / "main_pipeline.py").read_text(encoding="utf-8")
+    assert "ilk kareye gömüldü" in kaynak

@@ -50,6 +50,9 @@ GUNLUK_MAKS = etkin_gunluk_maks(os.environ.get("GUNLUK_MAKS", "0"))  # 0 = tavan
 #: 15 dk kadans + hedef 6 ile günde 6 üretim yapılır; kota doluysa hepsi stoğa gider.
 #: Ayarlanabilir: URETIM_TAVANI env (1-1440).
 URETIM_TAVANI = max(1, int(os.environ.get("URETIM_TAVANI", "288") or "288"))
+#: Tek seferlik canlı test modu (env CANLI_TEST=1). Üretim tavanını ve günlük
+#: sayımı yok sayar; tam olarak 1 video üretir ve (YUKLEME_ATLA=0 ise) yükler.
+CANLI_TEST = str(os.environ.get("CANLI_TEST", "0")).strip() in ("1", "true", "yes")
 #: KOŞU BAŞINA üretim — 15 dakikalık kadans = her koşuda 1 video.
 #: Günde 96 koşu × 1 = 96 video üretilir ve hepsi YÜKLENİR (tavan yok).
 TUR_BASINA_URETIM = max(1, int(os.environ.get("TUR_BASINA_URETIM", "1") or "1"))
@@ -218,8 +221,12 @@ def pipeline_calistir():
 
     log_yaz(f"=== BOBİ TV v6.3 PRO ({saat} UTC) Başladı ===")
 
-    # 1. ADIM: 1 saat (60 dk) içinde 100 görüntüleme almayan videoları otomatik temizle
-    if not YUKLEME_ATLA and OTOMATIK_SIL_AKTIF:
+    # 1. ADIM: 6 saatte 100 görüntüleme almayan videoları otomatik temizle
+    # CANLI TEST: silme kontrolü ATLANIR — tek seferlik test kanalda video
+    # silme kararı vermez (kullanıcı isteği: "tek seferlik canlı deneme").
+    if CANLI_TEST:
+        log_yaz("🧪 CANLI TEST: otomatik silme kontrolü atlandı (test kanalı temizlemez).")
+    elif not YUKLEME_ATLA and OTOMATIK_SIL_AKTIF:
         log_yaz(
             f"🔍 Performans kontrolü: {IZLENME_KONTROL_DK} dk sonunda "
             f"<{MIN_IZLENME_ESIGI} görüntüleme alan videolar denetleniyor..."
@@ -258,7 +265,17 @@ def pipeline_calistir():
     # hiçbir video bekletilmez.
     # =====================================================================
     uretim_tavani = URETIM_TAVANI
-    if bugunki >= uretim_tavani:
+    # CANLI TEST (2026-11-11 kullanıcı isteği: "tek seferlik canlı deneme"):
+    # CANLI_TEST=1 ise üretim tavanı ve mevcut sayım YOK SAYILIR — test HER
+    # ZAMAN 1 video üretip yükler. Aksi hâlde "bugün 24 video üretildi" diyerek
+    # test sessizce hiçbir şey yapmadan biter (canlı koşuda tam bu oldu:
+    # koşu 42998937740 → 'Üretim tavanına ulaşıldı (24/1). Atlanıyor.').
+    if CANLI_TEST:
+        log_yaz(
+            f"🧪 CANLI TEST modu — üretim tavanı yok sayılıyor "
+            f"(bugün {bugunki} üretim, tavan {uretim_tavani}). 1 video üretilecek."
+        )
+    elif bugunki >= uretim_tavani:
         log_yaz(f"Üretim tavanına ulaşıldı ({bugunki}/{uretim_tavani}). Atlanıyor.")
         sys.exit(0)
     # KOTA YOK: günlük yükleme tavanı kaldırıldı, "kota dolu" durumu üretilmez.
@@ -290,7 +307,7 @@ def pipeline_calistir():
     #   • GUNLUK_HEDEF hedefi aşılınca üretim sürer.
     # ---------------------------------------------------------------------
     kalan_hedef = max(0, GUNLUK_HEDEF - bugun_yuklenen)
-    bu_tur = bu_tur_hesapla(bugunki, bugun_yuklenen)
+    bu_tur = 1 if CANLI_TEST else bu_tur_hesapla(bugunki, bugun_yuklenen)
 
     log_yaz(
         f"Bugün üretilen: {bugunki} (tavan {URETIM_TAVANI}) | "
@@ -354,6 +371,17 @@ def pipeline_calistir():
                     kuyruk_kaynak_dosyalari[d_adi].unlink(missing_ok=True)
 
                 log_yaz(f"🚀 Yayınlandı: {sonuc['url']}")
+                # CANLI TEST kanıtı: kapak gerçekten yüklendi mi + hangi aday seçildi
+                kapak_yolu = str(
+                    (hazir_paketler and next(
+                        (p.get("kapak_dosyasi", "") for p in hazir_paketler
+                         if p.get("dosya_adi") == d_adi), "") or "")
+                )
+                log_yaz(
+                    f"🖼️ Kapak: {Path(kapak_yolu).name if kapak_yolu else 'YOK'} "
+                    f"| ilk kareye gömüldü: "
+                    f"{next((p.get('kapak_ilk_kare', '') for p in hazir_paketler if p.get('dosya_adi') == d_adi), '') and 'EVET' or 'HAYIR'}"
+                )
                 send_message(
                     f"🎬 <b>BOBİ TV v6.3 PRO (Dönen Konu + 15dk)</b>\n"
                     f"🎥 {sonuc['baslik'][:70]}\n"

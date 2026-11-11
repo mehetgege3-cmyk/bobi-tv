@@ -334,12 +334,15 @@
     "dosya_adi": "20261111_0010_kulturlar_arasi_mizah_arena",
     "baslik": "Misafir Çayı Neden Gelmedi? 😱 #shorts",
     "video_id": "gJQDHWow-vE",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "kulturlar_arasi_mizah",
     "url": "https://www.youtube.com/shorts/gJQDHWow-vE",
     "senaryo_ozeti": "Dokuz saat boyunca çaysız oturdum, hâlâ şok içindeyim. Marco, çayı getirdim ama sen 'hayır teşekkürler' dedin.",
     "hash": "",
-    "tarih": "2026-11-11T02:28:34.229345+00:00"
+    "tarih": "2026-11-11T02:28:34.229345+00:00",
+    "silinme_izlenme": 0,
+    "silinme_yas_dk": 71.3,
+    "silinme_tarihi": "2026-11-11T03:40:10.477197+00:00"
   },
   {
     "dosya_adi": "20261111_0011_absurt_komedi",
@@ -384,5 +387,16 @@
     "senaryo_ozeti": "İşte bu yüzden iki saattir aynı kavşağın etrafında dönüyorum! Çünkü sana üç yüz metre önce sağa dön dedim, düz gittin!",
     "hash": "9dc23e225e7ce22776edefc58970f6ae",
     "tarih": "2026-11-11T03:28:52.520819+00:00"
+  },
+  {
+    "dosya_adi": "20261111_0015_ik_toplantisi",
+    "baslik": "Mülakatta Kedim Benden Yüksek Maaş Aldı! 🐱💼 #shorts",
+    "video_id": "LqqqMFs3IK8",
+    "durum": "yayinda",
+    "kategori": "ik_toplantisi",
+    "url": "https://www.youtube.com/shorts/LqqqMFs3IK8",
+    "senaryo_ozeti": "Ve sonunda kendi kedimin asistanı olarak işe başladım! Ama online mülakatta kameraya ilk o atlamıştı!",
+    "hash": "8abee1f70e8e749c9dafb736359098fd",
+    "tarih": "2026-11-11T03:43:23.486551+00:00"
   }
 ]

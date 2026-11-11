@@ -320,12 +320,15 @@
     "dosya_adi": "20261111_0009_spor_hayati",
     "baslik": "Yıllık Spor Salonu Üyeliğimin 10. Dakikasında Yaşananlar! 🏋️‍♂️😂 #shorts",
     "video_id": "rsr6Y741hhA",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "spor_hayati",
     "url": "https://www.youtube.com/shorts/rsr6Y741hhA",
     "senaryo_ozeti": "Ve yıllık spor salonu üyeliğim tam onuncu dakikada iptal edildi! Çünkü koşu bandının üstüne bağdaş kurup poğaça açtın!",
     "hash": "867dcfdbd3b1d10ecfe8b7889b54ce46",
-    "tarih": "2026-11-11T02:13:29.187573+00:00"
+    "tarih": "2026-11-11T02:13:29.187573+00:00",
+    "silinme_izlenme": 0,
+    "silinme_yas_dk": 71.4,
+    "silinme_tarihi": "2026-11-11T03:25:14.931706+00:00"
   },
   {
     "dosya_adi": "20261111_0010_kulturlar_arasi_mizah_arena",
@@ -370,5 +373,16 @@
     "senaryo_ozeti": "Bara girdim, barmen hesabı yarına yazdığını söyledi! Yarın ödeyeceksin demek, bugün para mı unuttun?",
     "hash": "22fe48a90c36927c084bc28053a51020",
     "tarih": "2026-11-11T03:14:03.192129+00:00"
+  },
+  {
+    "dosya_adi": "20261111_0014_trafik_kavgasi",
+    "baslik": "Trafikte Yanlış Sapaktan Dönünce Navigasyon Küstü! 🚗🗺️ #shorts",
+    "video_id": "zs7SX6K431w",
+    "durum": "yayinda",
+    "kategori": "trafik_kavgasi",
+    "url": "https://www.youtube.com/shorts/zs7SX6K431w",
+    "senaryo_ozeti": "İşte bu yüzden iki saattir aynı kavşağın etrafında dönüyorum! Çünkü sana üç yüz metre önce sağa dön dedim, düz gittin!",
+    "hash": "9dc23e225e7ce22776edefc58970f6ae",
+    "tarih": "2026-11-11T03:28:52.520819+00:00"
   }
 ]

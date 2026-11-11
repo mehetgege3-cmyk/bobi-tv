@@ -194,12 +194,15 @@
     "dosya_adi": "20261110_0011_yapay_zeka_arena",
     "baslik": "Akıllı Asistan 500 Kilo Fıstık Siparişi Verdi 😱 #shorts",
     "video_id": "-awXr0Embik",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "yapay_zeka",
     "url": "https://www.youtube.com/shorts/-awXr0Embik",
     "senaryo_ozeti": "Evimize beş yüz kilo fıstık geldi! Akıllı ev asistanına 'fırtına' komutu verdik.",
     "hash": "",
-    "tarih": "2026-11-10T23:57:13.496690+00:00"
+    "tarih": "2026-11-10T23:57:13.496690+00:00",
+    "silinme_izlenme": 0,
+    "silinme_yas_dk": 72.7,
+    "silinme_tarihi": "2026-11-11T01:10:08.377076+00:00"
   },
   {
     "dosya_adi": "20261111_0001_mesai_sonu_arena",
@@ -244,5 +247,16 @@
     "senaryo_ozeti": "Sihirbaz şapkasından tavşan çıkaracağını söyledi, salon nefesini tuttu! Birazdan en büyük numaramla herkesi şaşırtacağım!",
     "hash": "e61f161fe9b69e322e334559ade512db",
     "tarih": "2026-11-11T00:59:25.384323+00:00"
+  },
+  {
+    "dosya_adi": "20261111_0005_eglenceli_replikler_arena",
+    "baslik": "Kum Saati Bize Ne Dedi? 😱 #shorts",
+    "video_id": "TF2UJgzZVk4",
+    "durum": "yayinda",
+    "kategori": "eglenceli_replikler",
+    "url": "https://www.youtube.com/shorts/TF2UJgzZVk4",
+    "senaryo_ozeti": "Kum saati az önce bana yarın geç kalacağımı söyledi! Belki de zamanı tersine akıtıyordur, biraz dikkat et.",
+    "hash": "",
+    "tarih": "2026-11-11T01:11:46.961921+00:00"
   }
 ]

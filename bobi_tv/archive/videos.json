@@ -456,12 +456,15 @@
     "dosya_adi": "20261111_0018_kulturlar_arasi_mizah_arena",
     "baslik": "Kırk Simitlik Kültür Şoku 😱 #shorts",
     "video_id": "ygxYT6m8UnY",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "kulturlar_arasi_mizah",
     "url": "https://www.youtube.com/shorts/ygxYT6m8UnY",
     "senaryo_ozeti": "Şu an bir simitçi teyzenin torununa İtalyanca öğretiyorum. Nasıl oldu Marco, sen iki simit alacaktın?",
     "hash": "",
-    "tarih": "2026-11-11T05:23:42.121027+00:00"
+    "tarih": "2026-11-11T05:23:42.121027+00:00",
+    "silinme_izlenme": 0,
+    "silinme_yas_dk": 60.5,
+    "silinme_tarihi": "2026-11-11T06:24:26.096515+00:00"
   },
   {
     "dosya_adi": "20261111_0019_pazartesi_sendromu_arena",
@@ -495,5 +498,16 @@
     "senaryo_ozeti": "Bu espresso değil, çaydan bile yumuşak çıktı! Espresso istemiştiniz, gelen başka bir şey.",
     "hash": "",
     "tarih": "2026-11-11T06:14:09.269143+00:00"
+  },
+  {
+    "dosya_adi": "20261111_0022_yapay_zeka_arena",
+    "baslik": "Yapay Zekâ Aramızdan Ayrıldı 😱 #shorts",
+    "video_id": "EwwPcPuKQ3M",
+    "durum": "yayinda",
+    "kategori": "yapay_zeka",
+    "url": "https://www.youtube.com/shorts/EwwPcPuKQ3M",
+    "senaryo_ozeti": "Yapay zekâ ev arkadaşlığından resmen istifa etti bugün. Ne yaptık yine, kahve makinesine mi bağırdın?",
+    "hash": "",
+    "tarih": "2026-11-11T06:26:04.973268+00:00"
   }
 ]

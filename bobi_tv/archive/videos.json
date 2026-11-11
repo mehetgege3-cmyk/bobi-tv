@@ -292,12 +292,15 @@
     "dosya_adi": "20261111_0007_ik_toplantisi_arena",
     "baslik": "Öğle Arasını Tost Makinesi Yönetti 😱 #shorts",
     "video_id": "8mECCf8X0ms",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "ik_toplantisi",
     "url": "https://www.youtube.com/shorts/8mECCf8X0ms",
     "senaryo_ozeti": "İK toplantısında bugün herkesin öğle arasını kaybettik. Nasıl yani, takvimden mi sildin, yoksa?",
     "hash": "",
-    "tarih": "2026-11-11T01:42:13.971968+00:00"
+    "tarih": "2026-11-11T01:42:13.971968+00:00",
+    "silinme_izlenme": 0,
+    "silinme_yas_dk": 72.6,
+    "silinme_tarihi": "2026-11-11T02:55:06.517704+00:00"
   },
   {
     "dosya_adi": "20261111_0008_kurumsal_hayat_arena",
@@ -342,5 +345,16 @@
     "senaryo_ozeti": "Yazıcı bugün çıktı vermedi, önce izin formumu istedi! Tonerim bitmiş olabilir, insan kaynaklarına sor!",
     "hash": "1265961a7c2578c4b6d05493b962853d",
     "tarih": "2026-11-11T02:44:20.234257+00:00"
+  },
+  {
+    "dosya_adi": "20261111_0012_kahve_hayati_arena",
+    "baslik": "Kahvemiz Hesabı Nasıl Ödedi? 😱 #shorts",
+    "video_id": "RWqfE70gXg4",
+    "durum": "yayinda",
+    "kategori": "kahve_hayati",
+    "url": "https://www.youtube.com/shorts/RWqfE70gXg4",
+    "senaryo_ozeti": "Kahvemiz masaya gelmeden önce hesabı ödedi. Ben sade istemiştim; fincan kendi seçimini yapmış.",
+    "hash": "",
+    "tarih": "2026-11-11T02:56:25.567985+00:00"
   }
 ]

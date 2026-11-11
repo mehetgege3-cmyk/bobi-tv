@@ -981,6 +981,9 @@ def ekran_bildirim() -> tuple[str, list[list[dict[str, Any]]]]:
 def ekran_yardim() -> tuple[str, list[list[dict[str, Any]]]]:
     """Yardım ekranı — /help metin komutu da buraya yönlenir (tek panel)."""
     return get_help_text(), [
+        # Mini App YALNIZ web_app düğmesiyle doğru bağlamda açılır
+        # (sohbete atılan düz link tarayıcıda açılır → yazma çalışmaz).
+        [{"text": "📱 Mini App", "web_app": {"url": MINI_APP_URL}}],
         [
             {"text": "❓ Sistem ne yapar", "callback_data": "sistem_nedir"},
             {"text": "📊 Rapor", "callback_data": "rapor_goster"},

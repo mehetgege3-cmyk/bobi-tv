@@ -183,7 +183,7 @@ def test_bozuk_iptal_dosyasi_cokmez(tmp_path, monkeypatch):
 def test_uretim_ekraninda_iptal_dugmesi_pencere_acikken():
     tb._iptal_penceresi_baslat()
     _, butonlar = tb.ekran_uret()
-    duz = [b["callback_data"] for satir in butonlar for b in satir]
+    duz = [b["callback_data"] for satir in butonlar for b in satir if "callback_data" in b]
     assert "uret_iptal" in duz
     for satir in butonlar:
         assert len(satir) <= 3
@@ -193,7 +193,7 @@ def test_uretim_ekraninda_iptal_dugmesi_pencere_acikken():
 
 def test_uretim_ekraninda_iptal_dugmesi_pencere_kapaliyken_yok():
     _, butonlar = tb.ekran_uret()
-    duz = [b["callback_data"] for satir in butonlar for b in satir]
+    duz = [b["callback_data"] for satir in butonlar for b in satir if "callback_data" in b]
     assert "uret_iptal" not in duz
 
 
@@ -217,7 +217,7 @@ def test_denetim_ekrani_ve_kurallari():
         assert len(satir) <= 3
         for b in satir:
             assert len(b["text"]) <= 20
-    duz = [b["callback_data"] for satir in butonlar for b in satir]
+    duz = [b["callback_data"] for satir in butonlar for b in satir if "callback_data" in b]
     assert {"menu_main", "denetim_goster"} <= set(duz)
 
 

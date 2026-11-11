@@ -58,5 +58,5 @@ def test_ekran_15_satiri_gecmez(monkeypatch):
 
 def test_rapor_ekranindan_trend_erisimi():
     _, butonlar = tb.ekran_performans()
-    duz = [b["callback_data"] for satir in butonlar for b in satir]
+    duz = [b["callback_data"] for satir in butonlar for b in satir if "callback_data" in b]
     assert "rapor_7gun" in duz

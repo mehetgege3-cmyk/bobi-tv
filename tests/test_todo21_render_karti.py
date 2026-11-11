@@ -156,7 +156,7 @@ def test_ekran_kurallari():
         for b in satir:
             assert len(b["text"]) <= 20
             assert len(b["callback_data"].encode()) <= 64
-    duz = [b["callback_data"] for satir in butonlar for b in satir]
+    duz = [b["callback_data"] for satir in butonlar for b in satir if "callback_data" in b]
     assert "menu_main" in duz
     assert "render_kart" in duz, "yenile düğmesi yok"
 
@@ -197,7 +197,7 @@ def test_callback_cevap_verir_ve_panel_gonderir(monkeypatch):
 
 def test_uret_ekraninda_test_karti_dugmesi_var():
     _, butonlar = tb.ekran_uret()
-    duz = [b["callback_data"] for satir in butonlar for b in satir]
+    duz = [b["callback_data"] for satir in butonlar for b in satir if "callback_data" in b]
     assert "render_kart" in duz
 
 

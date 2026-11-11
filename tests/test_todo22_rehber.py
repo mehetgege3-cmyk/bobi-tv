@@ -115,7 +115,7 @@ def test_detay_metni_uc_soruyu_yanitlar():
 
 def test_ayar_detayinda_nedir_dugmesi_var():
     metin, butonlar = tb.ekran_ayar_detay("KADANS_DK")
-    duz = [b["callback_data"] for satir in butonlar for b in satir]
+    duz = [b["callback_data"] for satir in butonlar for b in satir if "callback_data" in b]
     assert "ay:nedir:KADANS_DK" in duz
 
 
@@ -128,7 +128,7 @@ def test_nedir_ekrani_kurallari():
         for b in satir:
             assert len(b["text"]) <= 20
             assert len(b["callback_data"].encode()) <= 64
-    duz = [b["callback_data"] for satir in butonlar for b in satir]
+    duz = [b["callback_data"] for satir in butonlar for b in satir if "callback_data" in b]
     assert "menu_main" in duz
     assert len([s for s in metin.split("\n") if s.strip()]) <= 15
 
@@ -141,7 +141,7 @@ def test_nedir_bilinmeyen_ayarda_ana_ekrana_doner():
 def test_sistem_nedir_ekrani():
     metin, butonlar = tb.ekran_sistem_nedir()
     assert "Bu sistem ne işe yarıyor" in metin
-    duz = [b["callback_data"] for satir in butonlar for b in satir]
+    duz = [b["callback_data"] for satir in butonlar for b in satir if "callback_data" in b]
     assert {"menu_main", "kuyruk_liste"} <= set(duz)
 
 
@@ -165,5 +165,9 @@ def test_callback_bilinmeyen_ayarda_sessiz_kalmaz(monkeypatch):
 
 def test_yardim_ekraninda_sistem_nedir_dugmesi():
     _, butonlar = tb.ekran_yardim()
-    duz = [b["callback_data"] for satir in butonlar for b in satir]
+    # web_app düğmelerinde callback_data YOK (Telegram kuralı) — filtrele.
+    duz = [b["callback_data"] for satir in butonlar for b in satir if "callback_data" in b]
     assert "sistem_nedir" in duz
+    # Mini App düğmesi web_app alanıyla açılmalı (tarayıcıya atmamalı).
+    web = [b for satir in butonlar for b in satir if "web_app" in b]
+    assert web and web[0]["web_app"]["url"].startswith("https://")

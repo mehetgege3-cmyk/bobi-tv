@@ -92,6 +92,13 @@
   .eylemler button.riskli { border-color: rgba(255,69,58,.45); color: #ff8a80; }
   .eylemler button.genis { grid-column: 1 / -1; }
   button:disabled { opacity: .45; }
+  .bant {
+    display: none; gap: 8px; align-items: flex-start;
+    background: rgba(255,176,32,.12); border: 1px solid rgba(255,176,32,.4);
+    color: var(--metin); border-radius: 10px; padding: 10px 12px;
+    font-size: 12.5px; margin-bottom: 10px; line-height: 1.45;
+  }
+  .bant.acik { display: flex; }
   .onay-not {
     font-size: 12px; color: var(--soluk); margin-top: 10px; line-height: 1.5;
   }
@@ -145,6 +152,11 @@
 <section>
   <h2>İşlemler</h2>
   <div class="kart">
+    <div class="bant" id="bant">
+      ⚠️ <span><b>Yazma yalnız Telegram içinde çalışır.</b> Bu sayfa düz tarayıcıda
+      açıldı. Botu Telegram'da aç, sohbetin <b>sol altındaki MENÜ düğmesinden</b>
+      gir — ya da işlemi bottaki onay ekranından yap.</span>
+    </div>
     <div class="eylemler" id="eylemler">
       <button type="button" data-eylem="durum">📊 Durumu göster</button>
       <button type="button" data-eylem="denetim">📋 Denetim kaydı</button>
@@ -351,6 +363,16 @@
     if (!tg || !icinde) {
       // Düz tarayıcı: yazma yok, ama kullanıcı ÇIKIŞ YOLSUZ kalmaz.
       yazma_kapali = true;
+      var bant = document.getElementById("bant");
+      if (bant) bant.className = "bant acik";
+      var kap = document.getElementById("eylemler");
+      if (kap) {
+        var ds = kap.querySelectorAll("button[data-eylem]");
+        for (var q = 0; q < ds.length; q++) {
+          ds[q].disabled = true;
+          ds[q].title = "Yalnız Telegram içinde çalışır";
+        }
+      }
       if (el) {
         el.textContent = BOT_KULLANICI_ADI
           ? "ℹ️ Bu sayfa Telegram dışında açıldı: yazma düğmeleri çalışmaz. İşlemler için botu aç: t.me/" + BOT_KULLANICI_ADI

@@ -121,7 +121,7 @@ def test_trigger_onay_ekrani_ve_evet_butonu_var(monkeypatch, tmp_path):
     monkeypatch.setattr(tb, "_cooldown_dosyasi", lambda: tmp_path / "cd.json")
     metin, butonlar = tb.ekran_uret_onay()
     assert "başlatmak üzeresin" in metin.lower() or "risk" in metin.lower()
-    duz = [b["callback_data"] for satir in butonlar for b in satir]
+    duz = [b["callback_data"] for satir in butonlar for b in satir if "callback_data" in b]
     # TODO 25 sonrası onay butonu imzalıdır: "uret_onay:<son>:<imza>"
     assert any(c.startswith("uret_onay") for c in duz), "onay butonu yok"
     assert "uret_menu" in duz

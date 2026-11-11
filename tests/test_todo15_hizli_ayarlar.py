@@ -25,7 +25,7 @@ def _ortam(monkeypatch, tmp_path):
 
 def test_ayarlar_kokunde_hizli_ayarlar_butonu_var():
     metin, butonlar = tb.ekran_ayar_kok()
-    duz = [b["callback_data"] for satir in butonlar for b in satir]
+    duz = [b["callback_data"] for satir in butonlar for b in satir if "callback_data" in b]
     assert "ay:hizli" in duz, "kökten hızlı ayarlara giriş yok (derinlik 2'ye inmez)"
     assert butonlar[0][0]["callback_data"] == "ay:hizli", "hızlı ayarlar ilk buton olmalı"
 

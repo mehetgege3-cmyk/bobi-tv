@@ -94,7 +94,7 @@ def test_gecerli_buton_aksiyonu_calistirir(monkeypatch):
 def test_onay_ekrani_imzali_buton_uretir(monkeypatch, tmp_path):
     monkeypatch.setattr(tb, "_cooldown_dosyasi", lambda: tmp_path / "cd.json")
     _, butonlar = tb.ekran_uret_onay()
-    cd = [b["callback_data"] for satir in butonlar for b in satir]
+    cd = [b["callback_data"] for satir in butonlar for b in satir if "callback_data" in b]
     onay = next(c for c in cd if c.startswith("uret_onay"))
     assert onay.count(":") == 2, "onay butonu imza taşımıyor"
     assert tb.imza_dogrula(onay)[0] is True

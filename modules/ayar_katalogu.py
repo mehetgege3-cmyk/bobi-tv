@@ -125,9 +125,9 @@ KATALOG: list[dict[str, Any]] = [
         "etiket": "Üretim kadansı (dk)",
         "grup": "uretim_kota",
         "tip": "sayi",
-        "secenekler": ["15", "30", "60"],
-        "varsayilan": "15",
-        "min": 5,
+        "secenekler": ["480", "240", "65"],
+        "varsayilan": "480",
+        "min": 65,
         "max": 1440,
         "env_adi": "KADANS_DK",
         "risk": "orta",
@@ -135,9 +135,10 @@ KATALOG: list[dict[str, Any]] = [
         "etkili": True,
         "secret": False,
         "aciklama": (
-            "Üretimin KAÇ DAKİKADA BİR DENENECEĞİ (zamanlama). Günlük yükleme "
-            "tavanı YOK: 15 dk → günde 96 fırsat ve üretilen her video yüklenir. "
-            "Değiştirmek için workflow cron'u da (docs/KADANS_15DK.md) "
+            "Üretimin KAÇ DAKİKADA BİR DENENECEĞİ (zamanlama). 480 dk = 8 saatte "
+            "bir, günde 3 video (2026-11-11: 15 dk kanalı yaktı — algoritma "
+            "yükle-sil spam'i cezalandırdı). Günlük yükleme tavanı YOK. "
+            "Değiştirmek için workflow cron'u da (docs/KADANS.md) "
             "güncellenmelidir."
         ),
     },
@@ -232,7 +233,7 @@ KATALOG: list[dict[str, Any]] = [
         "max": 100000,
     
         "aciklama": (
-            "GERÇEK VİDEO SİLER. 1 saatte 100 izlenme almayan video kalıcı silinir "
+            "GERÇEK VİDEO SİLER. 6 saatte 100 izlenme almayan video kalıcı silinir "
             "(main_pipeline.py → dusuk_izlenmeli_videolari_temizle, videos.delete). "
             "Değer düşükse çok video gider, yüksekse az. Değişiklik çift onay ister "
             "ve onay ekranı SİLİNECEK video sayısını önizler. Geri alınamaz."
@@ -244,20 +245,19 @@ KATALOG: list[dict[str, Any]] = [
         "grup": "temizlik",
         "tip": "sayi",
         "secenekler": None,
-        "varsayilan": "60",
+        "varsayilan": "360",
         "env_adi": "IZLENME_KONTROL_DK",
         "risk": "orta",
         "kalici": True,
         "etkili": True,
         "secret": False,
-        "mevcut": "60",
+        "mevcut": "360",
         "min": 15,
         "max": 10080,
         "aciklama": (
-            "GERÇEK VİDEO SİLER. 1 saatte 100 izlenme almayan video kalıcı silinir "
-            "(main_pipeline.py → dusuk_izlenmeli_videolari_temizle, videos.delete). "
-            "Değer düşükse çok video gider, yüksekse az. Değişiklik çift onay ister "
-            "ve onay ekranı SİLİNECEK video sayısını önizler. Geri alınamaz."
+            "GERÇEK VİDEO SİLER. Bu süre (dk) dolunca izlenme kontrol edilir; "
+            "6 saat = 360 dk (2026-11-11 kararı: 60 dk çok erkendi, videolar "
+            "akışa girmeden siliniyordu). Geri alınamaz."
         ),
     },
     # ---------- Grup 4 — sistem (SADECE GÖRÜNTÜLE, değer asla yazdırılmaz) ----------

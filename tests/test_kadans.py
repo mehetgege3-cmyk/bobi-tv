@@ -1,4 +1,4 @@
-"""Üretim kadansı: her 15 dakikada bir — tek doğruluk kaynağı sözleşmesi.
+"""Üretim kadansı: 8 saatte bir (günde 3) — tek doğruluk kaynağı sözleşmesi.
 
 Karar 2026-11-11. Kural: docs/BOBI_TV_V6_PRO_MIMARI_VE_KURALLAR.md Bölüm 5.
 Bu testler üç yerdeki değerin AYNI kalmasını zorlar (kadans, cron, katalog).
@@ -31,20 +31,24 @@ def _cronlar() -> list[str]:
     return [str(k["cron"]) for k in d["on"]["schedule"]]
 
 
-def test_kadans_15_dakika() -> None:
-    """KADANS_DK = 15 — kullanıcı kararı."""
-    assert KADANS_DK == 15
+def test_kadans_8_saat() -> None:
+    """KADANS_DK = 480 — kullanıcı kararı 2026-11-11 (15 dk kanalı yaktı).
+
+    Ölçüm: 1 saatte silinen 21 videonun ortalama izlenmesi 0.8'di; videolar
+    Shorts akışına hiç girmiyordu. 8 saat = günde 3 video.
+    """
+    assert KADANS_DK == 480
 
 
 def test_workflow_cron_kadansla_ayni() -> None:
     """Workflow cron'u KADANS_CRON ile BİREBİR aynı olmalı (tek kaynak)."""
     assert _cronlar() == [KADANS_CRON], f"cron uyuşmuyor: {_cronlar()}"
-    assert KADANS_CRON == "*/15 * * * *"
+    assert KADANS_CRON == "0 */8 * * *"
 
 
 def test_gunluk_kadans_sayisi() -> None:
-    """15 dk → günde 96 fırsat (zamanlama; yükleme sayısı DEĞİL)."""
-    assert GUNLUK_KADANS_SAYISI == 96
+    """8 saat → günde 3 fırsat (zamanlama; yükleme sayısı DEĞİL)."""
+    assert GUNLUK_KADANS_SAYISI == 3
 
 
 def test_kota_tavani_google_sabiti() -> None:
@@ -64,12 +68,12 @@ def test_gercek_aralik_dakika() -> None:
 
 def test_kota_uyarisi_durust() -> None:
     """Panel/log cümlesi hem kadansı hem kota gerçeğini söyler."""
-    metin = kota_uyarisi(6)
-    assert "15 dk" in metin
-    assert "96 fırsat" in metin
-    assert "240 dakikada 1" in metin
-    # "her 15 dakikada bir video YAYINLANIR" iddiası ASLA kurulmamalı
-    assert "15 dakikada 1 video" not in metin
+    metin = kota_uyarisi(3)
+    assert "480 dk" in metin
+    assert "3 fırsat" in metin
+    assert "480 dakikada 1" in metin
+    # "her 8 saatte bir video YAYINLANIR" iddiası kurulmamalı (kota engeli var)
+    assert "8 saatte 1 video" not in metin
 
 
 def test_katalogda_kadans_ayari_var() -> None:
@@ -79,8 +83,8 @@ def test_katalogda_kadans_ayari_var() -> None:
     kayit = [a for a in KATALOG if a["anahtar"] == "KADANS_DK"]
     assert len(kayit) == 1
     a = kayit[0]
-    assert a["secenekler"] == ["15", "30", "60"]
-    assert a["varsayilan"] == "15"
+    assert a["secenekler"] == ["480", "240", "65"]
+    assert a["varsayilan"] == "480"
     assert a["etkili"] is True
     # Cron'un workflow'da yaşadığını gizleme
     assert "cron" in a["aciklama"].lower()
@@ -89,15 +93,15 @@ def test_katalogda_kadans_ayari_var() -> None:
 def test_skill_ve_kural_dosyasi_kadansi_yazar() -> None:
     """SKILL.md ve bağlayıcı kural dosyası 15 dakikayı belgelemeli."""
     skill = Path("SKILL.md").read_text(encoding="utf-8")
-    assert "15 DAKİKADA BİR" in skill or "her 15 dakikada" in skill.lower()
+    assert "8 SAATTE BİR" in skill or "8 saatte bir" in skill.lower()
     assert "modules/kadans.py" in skill
 
     kural = Path("docs/BOBI_TV_V6_PRO_MIMARI_VE_KURALLAR.md").read_text(encoding="utf-8")
     assert "Bölüm 5" in kural
-    assert "*/15 * * * *" in kural
+    assert "0 */8 * * *" in kural
     assert "KADANS_DK" in kural
 
-    kadans_doc = Path("docs/KADANS_15DK.md")
+    kadans_doc = Path("docs/KADANS.md")
     assert kadans_doc.exists()
     icerik = kadans_doc.read_text(encoding="utf-8")
-    assert "240 dk" in icerik and "6" in icerik
+    assert "480" in icerik and "360" in icerik and "6 saat" in icerik

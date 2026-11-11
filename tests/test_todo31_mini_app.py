@@ -210,7 +210,8 @@ def test_commit_edilmis_ozet_semaya_uygun():
 def test_workflow_ozeti_tazeler_ve_push_eder():
     d = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
     yazi = WORKFLOW.read_text(encoding="utf-8")
-    assert "*/15 * * * *" in yazi
+    # Kadans 2026-11-11'de 8 saate çekildi (günde 3 video) → özet de aynı ritimde.
+    assert "0 */8 * * *" in yazi
     assert "mini_app_ozet.json" in yazi
     assert "git push origin main" in yazi
     assert "::error::" in yazi, "push kaybı sessiz olmamalı"

@@ -1,6 +1,12 @@
 """Üretim kadansı — tek doğruluk kaynağı.
 
-KADANS_DK = 15 → "her 15 dakikada bir video üretilip kanala yüklensin".
+KADANS_DK = 480 → "8 saatte bir video üretilip kanala yüklensin" (günde 3).
+
+KARAR (2026-11-11, kullanıcı): 15 dk kadans kanalı yaktı. Ölçüm: 1 saatte
+silinen 21 videonun aldığı izlenme 0-4 aralığında (ortalama 0.8) — yani
+Shorts akışına hiç girmiyorlardı. 15 dk'da bir yükleme + 1 saatte silme
+YouTube'a "yükle-sil" spam sinyali veriyordu. Yeni rejim: günde 3 video,
+sabit saatler (00:00 / 08:00 / 16:00 UTC).
 
 Bu modül üç şeyi tutar ve hiçbir yerde kopyalanmaz:
   1. Hedef kadans (dakika) ve günlük koşu sayısı
@@ -12,7 +18,7 @@ Bu modül üç şeyi tutar ve hiçbir yerde kopyalanmaz:
   - GÜNLÜK YÜKLEME TAVANI YOK → her üretilen video yüklenir.
 
 Günlük yükleme tavanı (eski GUNLUK_MAKS = 6) KALDIRILDI: katalogdan, state'ten,
-pipeline'dan ve panelden silindi. 15 dakikalık kadans günde 96 fırsat yaratır
+pipeline'dan ve panelden silindi. 8 saatlik kadans günde 3 fırsat yaratır
 ve bu fırsatların tamamı yükleme yapabilir. Tek gerçek engel YouTube'un KENDİ
 API hatasıdır (403 quotaExceeded): o an video stoğa yazılır, kota açılınca
 (UTC 00:00) yüklenir — üretim durmaz.
@@ -22,8 +28,8 @@ Kod bu farkı gizlemez: log, panel ve doküman aynı cümleyi söyler.
 
 from __future__ import annotations
 
-#: İstenen kadans (dakika). Kullanıcı isteği: her 15 dakikada bir.
-KADANS_DK: int = 15
+#: İstenen kadans (dakika). Kullanıcı kararı (2026-11-11): 8 saatte bir (480 dk).
+KADANS_DK: int = 480
 
 #: YouTube Data API günlük kota (birim). Google'ın sabiti — DEĞİŞTİRİLEMEZ.
 YOUTUBE_GUNLUK_KOTA_BIRIM: int = 10_000
@@ -41,10 +47,12 @@ KOTA_MATEMATIGI_SINIRI: int = YOUTUBE_GUNLUK_KOTA_BIRIM // VIDEO_INSERT_MALIYETI
 GUNLUK_YUKLEME_TAVANI: int = KOTA_MATEMATIGI_SINIRI
 
 #: Bir günde kaç kadans fırsatı var (sadece zamanlama, yükleme sayısı DEĞİL).
-GUNLUK_KADANS_SAYISI: int = (24 * 60) // KADANS_DK  # 96
+GUNLUK_KADANS_SAYISI: int = (24 * 60) // KADANS_DK  # 3
 
 #: Cron ifadesi — KADANS_DK ile tutarlı olmak ZORUNDA (test bunu doğrular).
-KADANS_CRON: str = "*/15 * * * *"
+#: Sabit saatler: günde 3 koşu (00:00, 08:00, 16:00 UTC). Algoritma için
+#: "tahmin edilebilir yayın saati" düzensiz aralıktan iyidir.
+KADANS_CRON: str = "0 */8 * * *"
 
 
 def gercek_aralik_dk(gunluk_yukleme: int) -> int:
@@ -65,8 +73,8 @@ def gercek_aralik_dk(gunluk_yukleme: int) -> int:
 def kota_uyarisi(gunluk_yukleme: int) -> str:
     """Panel/log için tek cümlelik dürüst özet (tavan yok).
 
-    Örn: "Kadans 15 dk (günde 96 fırsat) · günlük yükleme tavanı YOK ·
-          hedef 96/gün → gerçekte 15 dakikada 1 video"
+    Örn: "Kadans 480 dk (günde 3 fırsat) · günlük yükleme tavanı YOK ·
+          hedef 3/gün → gerçekte 480 dakikada 1 video"
     """
     efective = gercek_aralik_dk(gunluk_yukleme)
     if efective == 0:

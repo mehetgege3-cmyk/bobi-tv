@@ -25,8 +25,8 @@ REHBER: dict[str, dict[str, str]] = {
     "KADANS_DK": {
         "ne": "Üretimin kaç dakikada bir DENENECEĞİ.",
         "zaman": "Bir sonraki koşudan itibaren.",
-        "degil": "Yükleme sayısını sınırlamaz — günlük tavan yok. Cron YAML'da yaşar: "
-        "tam etki için workflow cron'u da değişmeli.",
+        "degil": "Yükleme sayısını sınırlamaz — günlük tavan yok. 480 dk = günde 3. "
+        "Cron YAML'da yaşar: tam etki için workflow cron'u da değişmeli.",
     },
     "GUNLUK_HEDEF": {
         "ne": "Günde en az kaç yayın hedeflendiği (rapor/özet bunu kullanır).",
@@ -69,7 +69,7 @@ REHBER: dict[str, dict[str, str]] = {
         "degil": "Yükleme sayısını etkilemez.",
     },
     "IZLENME_KONTROL_DK": {
-        "ne": "Yayından kaç dakika sonra izlenme kontrol edileceği.",
+        "ne": "Yayından kaç dakika sonra izlenme kontrol edileceği (360 = 6 saat).",
         "zaman": "Sonraki kontrolden itibaren.",
         "degil": "Silme kuralını değiştirmez, yalnız zamanlamasını.",
     },

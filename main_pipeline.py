@@ -64,8 +64,12 @@ OTOMATIK_SIL_AKTIF = os.environ.get("OTOMATIK_SIL_AKTIF", "1") == "1"
 # etmez; env var isteğe bağlı geçersiz kılma için kullanılabilir.
 # Yaş eşiği 24 saat (1440 dk); izlenme eşiği 100 korunur.
 MIN_IZLENME_ESIGI = int(os.environ.get("MIN_IZLENME_ESIGI", "100"))
-# 2026-11-11 kullanıcı kuralı: 1 saatte 100 izlenme almayan video silinir.
-IZLENME_KONTROL_DK = int(os.environ.get("IZLENME_KONTROL_DK", "60"))
+# 2026-11-11 kullanıcı kuralı (GÜNCELLENDİ): 6 saatte 100 izlenme almayan
+# video silinir. Önceki 60 dk eşiği videoları Shorts akışına girmeden
+# siliyordu (ölçüm: silinen 21 videonun izlenmesi 0-4, ortalama 0.8) — bu
+# YouTube'a "yükle-sil" spam sinyali verir. 6 saat akış testi için gereken
+# asgari süre.
+IZLENME_KONTROL_DK = int(os.environ.get("IZLENME_KONTROL_DK", "360"))
 
 LOG_YOLU = Path("bobi_tv/logs")
 ARSIV = Path("bobi_tv/archive/videos.json")

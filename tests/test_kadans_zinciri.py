@@ -1,4 +1,4 @@
-"""15 dakika kadans zinciri testleri (kullanıcı kararı 2026-11-11).
+"""8 saat kadans zinciri testleri (kullanıcı kararı 2026-11-11).
 
 GitHub cron'u güvenilmez (ölçüm: '*/15' yazılıyken günde 2-3 koşu). Bu yüzden
 her koşu bir SONRAKİNİ tetikler. Bu testler zincirin workflow'da durduğunu ve
@@ -20,7 +20,7 @@ def _adimlar() -> list[dict]:
 
 def test_zincir_adimi_var_ve_her_zaman_calisir():
     adim = [a for a in _adimlar() if "zincirle" in str(a.get("name", "")).lower()]
-    assert adim, "kadans zincirleme adımı yok — 15 dk kadans cron'a kalır (güvenilmez)"
+    assert adim, "kadans zincirleme adımı yok — kadans cron'a kalır (güvenilmez)"
     # Üretim hata verse bile kadans DURMAMALI
     assert adim[-1].get("if") == "always()"
 
@@ -36,9 +36,9 @@ def test_zincir_mutlak_slot_kullanir():
     kod = adim["run"]
     assert "KADANS_DK" in kod
     assert "sonraki_slot" in kod and "timedelta(minutes=kadans_dk)" in kod
-    assert 'KADANS_DK: "15"' in str(adim.get("env", {})) or adim["env"]["KADANS_DK"] == "15"
-    # 15 dk bekleyebilmek için adım zaman aşımı yeterli olmalı
-    assert int(adim.get("timeout-minutes", 0)) >= 16
+    assert 'KADANS_DK: "480"' in str(adim.get("env", {})) or adim["env"]["KADANS_DK"] == "480"
+    # 8 saatlik slotu bekleyebilmek için adım zaman aşımı çok yüksek olmalı
+    assert int(adim.get("timeout-minutes", 0)) >= 480
 
 
 def test_zincir_cift_tetiklemeyi_engeller():

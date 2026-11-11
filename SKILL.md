@@ -20,7 +20,7 @@ geçirmesini, YouTube Shorts için hazırlamasını ve kullanıcı tarafından
 yetkilendirilmiş koşullarda yayımlamasını tanımlar.
 
 BOBİ'nin ana hedefi YouTube kanalının abone sayısını büyütmektir. Günlük
-üretim hedefi GUNLUK_HEDEF'tir ve GÜNLÜK YÜKLEME TAVANI YOKTUR (kota kaldırıldı, 2026-11-11); 'günde 5 video' veya 'her 15 dakika' GARANTİ DEĞİLDİR. GitHub Actions cron'u ('*/10 * * * *') güvenilir DEĞİLDİR — eldeki kanıta göre '*/15' fiilen günde yalnızca 1-2 kez çalıştırıldı. Üretim GitHub runner kapasitesi ve kalite kontrolüyle sınırlıdır; günlük yükleme tavanı YOK, koşu kota yüzünden atlanmaz (yalnızca YouTube'un kendi 403 quotaExceeded hatasında video stoğa alınır). Teknik olarak mümkün olmayan üretim veya yayın başarıyla tamamlanmış gibi gösterilemez. Yayın performansına dayalı otomatik video silme etkinleştirilmişse bu geri alınamaz bir işlemdir; yalnızca yapılandırılmış eşik ve OAuth yetkisi doğrulandığında uygulanır.
+üretim hedefi GUNLUK_HEDEF'tir ve GÜNLÜK YÜKLEME TAVANI YOKTUR (kota kaldırıldı, 2026-11-11); 'günde 3 video' veya 'her 8 saatte bir' GARANTİ DEĞİLDİR. GitHub Actions cron'u ('0 */8 * * *') güvenilir DEĞİLDİR — eldeki kanıta göre '*/15' fiilen günde yalnızca 1-2 kez çalıştırıldı; birincil tetikleyici zincirleme adımıdır. Üretim GitHub runner kapasitesi ve kalite kontrolüyle sınırlıdır; günlük yükleme tavanı YOK, koşu kota yüzünden atlanmaz (yalnızca YouTube'un kendi 403 quotaExceeded hatasında video stoğa alınır). Teknik olarak mümkün olmayan üretim veya yayın başarıyla tamamlanmış gibi gösterilemez. Yayın performansına dayalı otomatik video silme etkinleştirilmişse bu geri alınamaz bir işlemdir; yalnızca yapılandırılmış eşik ve OAuth yetkisi doğrulandığında uygulanır.
 
 Bu belge bir **ajan davranış ve iş akışı tanımıdır**. Tek başına çalışan
 bir yazılım, YouTube hesabı, API bağlantısı, bulut sunucusu veya yayın
@@ -217,9 +217,12 @@ tercih, tek başına YouTube hesabına erişim veya yayın yetkisi vermez.
 Video hazır olunca direkt yayına girer. Saat optimizasyonu Analytics
 verisi biriktikçe devreye alınacak.
 
-### 7.5 Üretim kadansı — HER 15 DAKİKADA BİR (2026-11-11 kararı)
+### 7.5 Üretim kadansı — 8 SAATTE BİR (2026-11-11 kararı, aynı gün GÜNCELLENDİ)
 
-**Karar:** Video üretimi ve yükleme **her 15 dakikada bir** denenir.
+**Karar:** Video üretimi ve yükleme **8 saatte bir** denenir (günde 3 video,
+sabit saatler 00/08/16 UTC). Önceki "her 15 dakikada bir" kuralı kanalı yaktı:
+1 saatte silinen 21 videonun ortalama izlenmesi 0.8'di, hiçbiri Shorts akışına
+girmedi. Ayrıntı: `docs/KADANS.md`, Bölüm 5.
 Tek doğruluk kaynağı: `modules/kadans.py` → `KADANS_DK = 15`, `KADANS_CRON = "*/15 * * * *"`.
 Workflow cron'u (`hourly_production.yml`) bu sabitle **aynı olmak zorundadır** (test doğrular).
 
@@ -227,7 +230,7 @@ Workflow cron'u (`hourly_production.yml`) bu sabitle **aynı olmak zorundadır**
 
 | Kavram | Ne belirler | Değer | Sınır |
 |---|---|---|---|
-| **KADANS_DK** | Ne sıklıkta *deneneceği* (zamanlama, ücretsiz) | **15 dk** | — |
+| **KADANS_DK** | Ne sıklıkta *deneneceği* (zamanlama, ücretsiz) | **480 dk (8 sa)** | — |
 | **GUNLUK_HEDEF** | Günde *en az* kaç yayın hedeflendiği | varsayılan **2** | — |
 | **GUNLUK_MAKS** | **YOK** — kaldırıldı (2026-11-11) | — | **Tavan yok** |
 
@@ -265,7 +268,7 @@ tik ve 96 otonom self-repair denemesi olurdu.
   Kurulum: `docs/TETIKLEYICI_KURULUM.md`.
 - **Yedek:** GitHub cron `*/15`.
 - **Gerçek sıklık denetimi:** workflow'un "son koşudan bu yana" adımı logda
-  geçen dakikayı yazar. 15 dk ayarında ~15–20 görmelisin; 60+ görüyorsan
+  geçen dakikayı yazar. 480 dk ayarında ~480 görmelisin (panel: 🛠 Sistem → 📉 Cadans); 60+ fark varsa
   dış dağıtıcı ölmüş, cron yedeğe düşmüşsündür.
 
 #### 7.5.4 Kalite kapısı kadansın önünde

@@ -105,13 +105,18 @@ def test_gecersiz_deger_kaydedilmez(monkeypatch: pytest.MonkeyPatch, tmp_path: P
 # ---------- 2) 1 saatte 100 izlenme kuralı ----------
 
 
-def test_izlenme_kurali_1_saat() -> None:
-    """Kullanıcı kuralı: 60 dk / 100 izlenme — hem katalog hem kod varsayılanı."""
-    assert ayar_getir("IZLENME_KONTROL_DK")["varsayilan"] == "60"
+def test_izlenme_kurali_6_saat() -> None:
+    """Kullanıcı kuralı (2026-11-11): 360 dk (6 saat) / 100 izlenme.
+
+    Katalog, kod varsayılanı ve pipeline env varsayılanı AYNI olmalı.
+    """
+    assert ayar_getir("IZLENME_KONTROL_DK")["varsayilan"] == "360"
     assert ayar_getir("MIN_IZLENME_ESIGI")["varsayilan"] == "100"
     kaynak = (KOK / "modules/youtube_upload.py").read_text(encoding="utf-8")
-    assert "kontrol_suresi_dk: int = 60" in kaynak
-    assert "kontrol_suresi_dk: int = 1440" not in kaynak
+    assert "kontrol_suresi_dk: int = 360" in kaynak
+    assert "kontrol_suresi_dk: int = 60)" not in kaynak
+    ana = (KOK / "main_pipeline.py").read_text(encoding="utf-8")
+    assert 'os.environ.get("IZLENME_KONTROL_DK", "360")' in ana
 
 
 def test_etki_onizlemesi_uydurmuyor() -> None:

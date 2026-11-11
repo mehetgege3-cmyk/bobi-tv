@@ -87,10 +87,14 @@ def test_temizlik_grubu_etkili_ve_degistirilebilir() -> None:
         assert "SİLER" in a["aciklama"], f"{a['anahtar']}: açıklama silme uyarısı içermeli"
 
 
-def test_izlenme_kontrol_1_saat() -> None:
-    """Kullanıcı kararı: 1 saatte 100 izlenme almayan video silinir (1440 değil 60)."""
+def test_izlenme_kontrol_6_saat() -> None:
+    """Kullanıcı kararı (2026-11-11, GÜNCELLENDİ): 6 saatte 100 izlenme.
+
+    Neden 60 değil: 1 saat çok erkendi — videolar Shorts akışına girmeden
+    siliniyordu (ölçüm: silinen 21 videonun ortalama izlenmesi 0.8).
+    """
     a = ayar_getir("IZLENME_KONTROL_DK")
-    assert a["varsayilan"] == "60"
+    assert a["varsayilan"] == "360"
     assert a["min"] == 15 and a["max"] == 10080
     esik = ayar_getir("MIN_IZLENME_ESIGI")
     assert esik["varsayilan"] == "100"

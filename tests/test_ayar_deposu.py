@@ -120,10 +120,11 @@ def test_state_env_varsayilan_onceligi(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     # GUNLUK_MAKS kaldırıldı (kota yok) → env önceliği başka bir sayı ayarıyla test edilir.
-    env = {"GUNLUK_HEDEF": "4", "KADANS_DK": "5", "MOD": "normal"}
+    # KADANS_DK min 65'e yükseldi (2026-11-11: günde 3 video) → geçerli değer.
+    env = {"GUNLUK_HEDEF": "4", "KADANS_DK": "65", "MOD": "normal"}
     degerler, _ = ad.yukle(yol, env=env)
     assert degerler["GUNLUK_HEDEF"] == "2", "state env'i yener"
-    assert degerler["KADANS_DK"] == "5", "env state'te yoksa devreye girer"
+    assert degerler["KADANS_DK"] == "65", "env state'te yoksa devreye girer"
     assert degerler["MOD"] == "normal"
 
 

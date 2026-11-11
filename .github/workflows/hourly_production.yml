@@ -2,15 +2,14 @@ name: BOBİ TV v6.4 PRO — Saatlik Üretim + Kota Takibi
 
 on:
   schedule:
-    # HEDEF KADANS: HER 15 DAKİKADA BİR (modules/kadans.py → KADANS_DK=15).
-    # ⚠️ GitHub cron GÜVENİLİR DEĞİLDİR: '*/15' yazmak 15 dakikada bir koşacağı
-    # anlamına GELMEZ. Ölçüm (2026-11-10): '*/10' fiilen günde 1-2 koşuya düştü.
-    # Birincil tetikleyici DIŞ DAĞITICI olmalı (cron-job.org, 15 dk) — bkz.
-    # docs/TETIKLEYICI_KURULUM.md. Bu cron yalnızca YEDEKTİR.
-    # NOT: 15 dk = günde 96 koşu. GÜNLÜK YÜKLEME TAVANI YOK (kullanıcı kararı
-    # 2026-11-11: "kotayı kaldır"). Kadans yalnızca
-    # "ne zaman deneneceğini" belirler. Kalan koşular no-op (yeşil) döner.
-    - cron: '*/15 * * * *'
+    # HEDEF KADANS: 8 SAATTE BİR (modules/kadans.py → KADANS_DK=480, günde 3).
+    # ⚠️ GitHub cron GÜVENİLİR DEĞİLDİR: bu cron yalnızca YEDEKTİR; birincil
+    # tetikleyici zincirleme adımıdır (koşu bitince bir sonrakini kendisi açar).
+    # 2026-11-11 KARARI: 15 dk kadans kanalı yaktı — 1 saatte silinen videolar
+    # Shorts akışına hiç girmiyordu (ortalama 0.8 izlenme). Yeni rejim:
+    # 8 saatte bir = günde 3 video, sabit saatler (00/08/16 UTC).
+    # GÜNLÜK YÜKLEME TAVANI YOK (kota kaldırıldı) — kadans yalnız zamanlama.
+    - cron: '0 */8 * * *'
   workflow_dispatch:
     inputs:
       force:
@@ -30,9 +29,10 @@ concurrency:
 
 jobs:
   uret-ve-yayinla:
-    name: BOBİ TV v6.3 Pro (Konular Dönüşümlü + 15sn Minimum + 15dk + Kapak)
+    name: BOBİ TV v6.4 Pro (Konular Dönüşümlü + 15sn Minimum + 8 saat + Kapak)
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    # 8 saatlik slota kadar bekleme + üretim süresi tek job içinde.
+    timeout-minutes: 520
 
     steps:
       - name: Repo'yu çek
@@ -385,8 +385,8 @@ jobs:
           "
 
       # =====================================================================
-      # 15 DAKİKA KADANSINI ZİNCİRLE (kullanıcı kararı 2026-11-11:
-      # "her 15 dakikada video üretilecek ve yüklenecek").
+      # 8 SAAT KADANSINI ZİNCİRLE (kullanıcı kararı 2026-11-11:
+      # "8 saatte bir video üretilip yüklensin" — günde 3).
       #
       # NEDEN: GitHub'ın kendi cron'u GÜVENİLMEZ. Ölçüm (2026-11-10):
       # '*/15' yazılı olduğu halde fiilen günde 2-3 koşu oldu
@@ -402,12 +402,15 @@ jobs:
       #     süresi + pay).
       #   • GH_PAT yoksa adım sessizce geçer (cron yine çalışır).
       # =====================================================================
-      - name: Bir sonraki 15 dk turunu zincirle
+      - name: Bir sonraki 8 saat turunu zincirle
         if: always()
-        timeout-minutes: 22
+        # Slot beklemesi artık 8 saate kadar çıkabilir → adım zaman aşımı 500 dk
+        # (job 350 dk olduğu için fiilen job süresi belirleyicidir; bekleme
+        # job sınırına göre kırpılır ve tetikleme yine zamanında yapılır).
+        timeout-minutes: 500
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
-          KADANS_DK: "15"
+          KADANS_DK: "480"
         run: |
           python - <<'PY'
           import json
@@ -418,7 +421,7 @@ jobs:
           from datetime import datetime, timedelta, timezone
 
           # =================================================================
-          # 15 DAKİKA KADANSI — MUTLAK ZAMAN DİLİMİ (slot) YÖNTEMİ
+          # 8 SAAT KADANSI — MUTLAK ZAMAN DİLİMİ (slot) YÖNTEMİ
           #
           # ÖLÇÜM 1: GitHub cron '*/15' yazılıyken günde 2-3 koşu yaptı
           #          (13:06, 13:17, 16:55, 19:41, 22:07) → cron'a güvenilmez.
@@ -436,7 +439,7 @@ jobs:
               print("zincir: GH_PAT yok — atlandı (GitHub cron'una bırakıldı)")
               raise SystemExit(0)
 
-          kadans_dk = int(os.environ.get("KADANS_DK", "15") or "15")
+          kadans_dk = int(os.environ.get("KADANS_DK", "480") or "480")
           repo = "mehetgege3-cmyk/bobi-tv"
           api = f"https://api.github.com/repos/{repo}/actions"
           basliklar = {

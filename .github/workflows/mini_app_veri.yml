@@ -5,7 +5,7 @@ name: Mini App verisi (salt okunur özet)
 
 on:
   schedule:
-    - cron: '*/15 * * * *'   # üretim kadansıyla aynı; GitHub cron gecikirse zararsız
+    - cron: '0 */8 * * *'   # üretim kadansıyla aynı (günde 3); GitHub cron gecikirse zararsız
   workflow_dispatch:
 
 permissions:

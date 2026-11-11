@@ -64,6 +64,26 @@ YAPILMAZ. Bu dosya yalnız gerçekten kalan işleri tutar.
   yalnız kanalda duran geçerli kayıtları "🚀 Yayında" sayıyor.
 - Test: `tests/test_todo34_arsiv_esitleme.py` (9 test).
 
+## ✅ 2026-11-11 — Kanal sağlığı rejimi (KULLANICI KARARI)
+
+**Sorun:** Kanal istatistikleri düştü, videolar gösterim almıyor. Ölçüm: 1
+saatte silinen 21 videonun ortalama izlenmesi **0.8** (0-4 aralığı), hiçbiri
+100'e ulaşmadı; günlük yükleme 4 → 11 → 22. Yorum: videolar Shorts akışına
+girmeden siliniyordu; 15 dk yükleme + 1 saatte silme = "yükle-sil" spam
+sinyali.
+
+| Parametre | Eski | Yeni |
+|---|---|---|
+| `KADANS_DK` | 15 dk | **480 dk (8 saat, günde 3)** |
+| `KADANS_CRON` | `*/15 * * * *` | `0 */8 * * *` (00/08/16 UTC) |
+| `IZLENME_KONTROL_DK` | 60 dk | **360 dk (6 saat)** |
+| `MIN_IZLENME_ESIGI` | 100 | 100 (değişmedi) |
+
+- Zincirleme adımı 8 saatlik slota göre çalışır (job/adım zaman aşımı 520 dk).
+- Panelde `KADANS_DK` seçenekleri `480/240/65`; min 65 (daha sık yükleme
+  kanalı yakıyor).
+- Doküman: `docs/KADANS.md` (yeni ad), Bölüm 5 güncellendi, SKILL.md §7.5.
+
 ## 🔴 Kalan
 
 ### 1. Canlı cookie ile uçtan uca Arena doğrulaması — **KULLANICI GİRDİSİ GEREKİR**

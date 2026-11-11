@@ -197,12 +197,12 @@ def _arsivde_silindi_isaretle(video_id: str, izlenme: int, yas_dk: float):
                 continue
 
 
-def dusuk_izlenmeli_videolari_temizle(min_izlenme: int = 100, kontrol_suresi_dk: int = 60) -> list:
+def dusuk_izlenmeli_videolari_temizle(min_izlenme: int = 100, kontrol_suresi_dk: int = 360) -> list:
     # Tek kaynak main_pipeline.py'dır (env var); buradaki varsayılan yalnızca
-    # doğrudan çağrı fallback'idir. Yaş eşiği 24 saat (1440 dk).
+    # doğrudan çağrı fallback'idir. 2026-11-11 kullanıcı kararı: 6 saat.
     """
     Kanaldaki videoları kontrol eder:
-    Yayınlanma üzerinden en az `kontrol_suresi_dk` (varsayılan 60 dk = 1 saat) geçmiş
+    Yayınlanma üzerinden en az `kontrol_suresi_dk` (varsayılan 360 dk = 6 saat) geçmiş
     ve görüntülenmesi `min_izlenme` (varsayılan 100) altında kalmış videoları
     YouTube Data API v3 `videos.delete` ile otomatik olarak siler.
     """
@@ -451,7 +451,7 @@ def video_yukle(senaryo_paketi: dict) -> str:
         "",
         etkilesim,
         "",
-        "🎬 BOBİ TV — Her 15 dakikada yeni Türkçe absürt komedi Shorts!",
+        "🎬 BOBİ TV — Türkçe absürt komedi Shorts (günde 3 video)",
         "🔔 Abone olmayı ve videoyu sonuna kadar (hatta iki kere 😉) izlemeyi unutma!",
         "",
         " ".join(etiketler),

@@ -201,3 +201,67 @@ def test_belge_kritik_kararlari_yazar():
     assert "initData" in metin, "v2 doğrulama sözleşmesi yazılmalı"
     assert "BotFather" in metin, "domain kaydı adımı yazılmalı"
     assert "2026" in metin
+
+
+# --- Panel entegrasyonu (ekran + /mini) ---------------------------------
+
+
+def test_ekran_kurallari():
+    import modules.telegram_bot as tb
+
+    metin, butonlar = tb.ekran_mini_app()
+    assert "Mini App" in metin
+    assert tb.MINI_APP_URL in metin
+    assert "Salt okunur" in metin or "salt okunur" in metin
+    for satir in butonlar:
+        assert len(satir) <= 3
+        for b in satir:
+            assert len(b["text"]) <= 20
+            assert len(b["callback_data"].encode()) <= 64
+    duz = [b["callback_data"] for satir in butonlar for b in satir]
+    assert "menu_main" in duz and "mini_app_goster" in duz
+    assert len([s for s in metin.split("\n") if s.strip()]) <= 15
+
+
+def test_mini_app_url_https_ve_domain(monkeypatch):
+    """BotFather'a yazılacak adres HTTPS olmalı (Mini App kuralı)."""
+    import modules.telegram_bot as tb
+
+    assert tb.MINI_APP_URL.startswith("https://")
+    assert "github.io" in tb.MINI_APP_URL
+
+
+def test_ozet_dosyasi_yoksa_bilinmiyor(monkeypatch, tmp_path):
+    import modules.telegram_bot as tb
+
+    monkeypatch.chdir(tmp_path)
+    metin, _ = tb.ekran_mini_app()
+    assert "bilinmiyor" in metin.lower()
+
+
+def test_mini_komutu_paneli_yonlendirir(monkeypatch):
+    import modules.telegram_bot as tb
+
+    cagrilar = []
+    monkeypatch.setattr(tb, "panel_goster", lambda *a, **k: cagrilar.append(a))
+    tb.handle_message("/mini")
+    assert cagrilar, "/mini tek paneli Mini App ekranına yönlendirmeli"
+
+
+def test_callback_mini_app_goster(monkeypatch):
+    import modules.telegram_bot as tb
+
+    cagrilar = []
+    monkeypatch.setattr(tb, "answer_callback", lambda cb, metin="": cagrilar.append(("answer", cb)))
+    monkeypatch.setattr(tb, "_ekran_goster", lambda demet: cagrilar.append(("ekran", demet[0])))
+    tb.handle_callback("mini_app_goster", "cb-m")
+    assert ("answer", "cb-m") in cagrilar
+    assert any("Mini App" in c[1] for c in cagrilar if c[0] == "ekran")
+
+
+def test_pages_workflow_yalniz_webapp_yayinlar():
+    """Repo kodu/state Pages'e ÇIKMAMALI — yalnız webapp klasörü."""
+    yazi = Path(".github/workflows/mini_app_pages.yml").read_text(encoding="utf-8")
+    assert "path: 'webapp'" in yazi
+    assert "pages: write" in yazi
+    assert "${{ secrets." not in yazi

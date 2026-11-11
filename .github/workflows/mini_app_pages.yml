@@ -1,0 +1,46 @@
+name: Mini App yayını (GitHub Pages)
+
+# TODO 31: Mini App statik sayfasını Pages'e yayınlar.
+# Not: Pages bir kez (Settings → Pages → Source: GitHub Actions) açılmalı.
+# Yalnız webapp/ klasörü yayınlanır — repo kodu ve state DIŞARI ÇIKMAZ.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'webapp/**'
+      - '.github/workflows/mini_app_pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  yayinla:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.yayin.outputs.page_url }}
+
+    steps:
+      - name: Repo'yu çek
+        uses: actions/checkout@v4
+
+      - name: Pages'i hazırla
+        uses: actions/configure-pages@v5
+
+      - name: Yalnız webapp klasörünü paketle
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'webapp'
+
+      - name: Yayınla
+        id: yayin
+        uses: actions/deploy-pages@v4

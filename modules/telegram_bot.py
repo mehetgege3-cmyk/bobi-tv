@@ -87,6 +87,12 @@ GERI_MENUSU: list[dict[str, str]] = [
 GITHUB_REPO = os.environ.get("GITHUB_REPO", "mehetgege3-cmyk/bobi-tv")
 PIPELINE_SURUM = os.environ.get("PIPELINE_SURUM", "v6.4 PRO")
 
+#: TODO 31 — Mini App adresi (GitHub Pages). BotFather'a KAYITLI domain olmalı
+#: (20 Temmuz 2026 kısıtı). Panelde yalnız bilgi olarak gösterilir.
+MINI_APP_URL = os.environ.get(
+    "MINI_APP_URL", "https://mehetgege3-cmyk.github.io/bobi-tv/"
+)
+
 CALLBACK_DERINLIK: dict[str, int] = {
     "menu_main": 0,
     "rapor_goster": 1,
@@ -1921,6 +1927,7 @@ def ekran_sistem() -> tuple[str, list[list[dict[str, Any]]]]:
         f"🧭 Tetikleyici: {_tetikleyici_sagligi()}",
         f"🚫 {_kota_birim_ozeti()}",
         "📐 Günlük yükleme tavanı: YOK (kota kaldırıldı)",
+        f"📱 Mini App: {'✅ yayında' if MINI_APP_URL.startswith('https://') else '⛔ adres yok'}",
     ]
     butonlar = [
         [{"text": "🔄 Yenile", "callback_data": "sistem_goster"}],
@@ -1957,6 +1964,42 @@ def ekran_ayar_nedir(anahtar: str) -> tuple[str, list[list[dict[str, Any]]]]:
         ],
     ]
     return metin, butonlar
+
+
+def ekran_mini_app() -> tuple[str, list[list[dict[str, Any]]]]:
+    """📱 Mini App ekranı (TODO 31) — adres + veri tazeliği + salt okunur notu.
+
+    Adres bir DÜĞME değil metin olarak verilir: Telegram'da web_app düğmesi
+    yalnız HTTPS + BotFather'da kayıtlı domain ile çalışır; kayıt yapılmadan
+    düğme kullanıcıya hata gösterir. Bu yüzden önce bilgi, sonra kayıt adımı.
+    """
+    satirlar = ["📱 <b>Mini App</b>", ""]
+    satirlar.append(f"🔗 <code>{MINI_APP_URL}</code>")
+    satirlar.append("")
+    # Veri tazeliği — dosya yoksa uydurma yok.
+    try:
+        veri = json.loads(
+            Path("webapp/veri/mini_app_ozet.json").read_text(encoding="utf-8")
+        )
+        guncelleme = str(veri.get("guncelleme", ""))[:16].replace("T", " ")
+        b = veri.get("bugun") or {}
+        satirlar.append(f"🕐 Veri: {guncelleme or BILINMIYOR}")
+        satirlar.append(
+            f"🎥 Bugün: {b.get('uretilen') if b.get('uretilen') is not None else BILINMIYOR} üretildi · "
+            f"{b.get('yayinda') if b.get('yayinda') is not None else BILINMIYOR} yayında"
+        )
+    except (OSError, ValueError):
+        satirlar.append(f"🕐 Veri: {BILINMIYOR} (özet dosyası okunamadı)")
+    satirlar += [
+        "",
+        "🔒 <b>Salt okunur:</b> Mini App'ten üretim başlatılmaz, video silinmez.",
+        "Yazma işlemleri bu panelde; her biri onay + denetim kaydından geçer.",
+    ]
+    butonlar = [
+        [{"text": "🔄 Yenile", "callback_data": "mini_app_goster"}],
+        list(GERI_MENUSU),
+    ]
+    return "\n".join(satirlar), butonlar
 
 
 def ekran_denetim() -> tuple[str, list[list[dict[str, Any]]]]:
@@ -2318,6 +2361,10 @@ def _handle_callback_icerde(callback_data: str, callback_id: str, kullanici_id: 
         answer_callback(callback_id)
         _ekran_goster(ekran_ana())
         return
+    if callback_data == "mini_app_goster":
+        answer_callback(callback_id)
+        _ekran_goster(ekran_mini_app())
+        return
     if callback_data == "denetim_goster":
         answer_callback(callback_id)
         _ekran_goster(ekran_denetim())
@@ -2651,6 +2698,10 @@ def handle_message(text: str) -> str:
         return ""
     if text in ["/stats", "istatistik", "stats"]:
         panel_goster(*ekran_rapor())
+        return ""
+    if text in ["/mini", "/app", "mini", "miniapp"]:
+        # TODO 31: Mini App bilgisi panelin İÇİNDE (yeni mesaj yok, tek panel).
+        panel_goster(*ekran_mini_app())
         return ""
     if text in ["/help", "yardım", "yardim", "help"]:
         panel_goster(*ekran_yardim())

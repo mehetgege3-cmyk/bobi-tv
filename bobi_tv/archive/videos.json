@@ -65,7 +65,13 @@
     "url": "https://www.youtube.com/shorts/0BX3r9hbRc8",
     "senaryo_ozeti": "Bu aynayı alan herkes bir hafta içinde geri dönüyor. Çünkü büyülü, bakan kendi geleceğini görüyor.",
     "hash": "",
-    "tarih": "2026-11-10T20:38:30.571940+00:00"
+    "tarih": "2026-11-10T20:38:30.571940+00:00",
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 378,
+        "zaman": "2026-11-11T05:03:57.340022+00:00"
+      }
+    }
   },
   {
     "dosya_adi": "20261110_0002_wifi_kavgasi_arena",
@@ -76,7 +82,13 @@
     "url": "https://www.youtube.com/shorts/nl0yxVYcffs",
     "senaryo_ozeti": "Wi-Fi yüzünden komşunun kapısını üç kez yumrukladım! Çünkü ağımızda 'İnternet Hırsızı' diye tanımadığım bir cihaz görünüyordu.",
     "hash": "",
-    "tarih": "2026-11-10T20:38:47.027614+00:00"
+    "tarih": "2026-11-10T20:38:47.027614+00:00",
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 447,
+        "zaman": "2026-11-11T05:03:57.340022+00:00"
+      }
+    }
   },
   {
     "dosya_adi": "20261110_0003_yapay_zeka_arena",
@@ -367,7 +379,8 @@
     "url": "https://www.youtube.com/shorts/RWqfE70gXg4",
     "senaryo_ozeti": "Kahvemiz masaya gelmeden önce hesabı ödedi. Ben sade istemiştim; fincan kendi seçimini yapmış.",
     "hash": "",
-    "tarih": "2026-11-11T02:56:25.567985+00:00"
+    "tarih": "2026-11-11T02:56:25.567985+00:00",
+    "izlenme_snapshots": {}
   },
   {
     "dosya_adi": "20261111_0013_bar_fikralari",
@@ -378,7 +391,8 @@
     "url": "https://www.youtube.com/shorts/MKiVLxu8fY0",
     "senaryo_ozeti": "Bara girdim, barmen hesabı yarına yazdığını söyledi! Yarın ödeyeceksin demek, bugün para mı unuttun?",
     "hash": "22fe48a90c36927c084bc28053a51020",
-    "tarih": "2026-11-11T03:14:03.192129+00:00"
+    "tarih": "2026-11-11T03:14:03.192129+00:00",
+    "izlenme_snapshots": {}
   },
   {
     "dosya_adi": "20261111_0014_trafik_kavgasi",
@@ -389,7 +403,8 @@
     "url": "https://www.youtube.com/shorts/zs7SX6K431w",
     "senaryo_ozeti": "İşte bu yüzden iki saattir aynı kavşağın etrafında dönüyorum! Çünkü sana üç yüz metre önce sağa dön dedim, düz gittin!",
     "hash": "9dc23e225e7ce22776edefc58970f6ae",
-    "tarih": "2026-11-11T03:28:52.520819+00:00"
+    "tarih": "2026-11-11T03:28:52.520819+00:00",
+    "izlenme_snapshots": {}
   },
   {
     "dosya_adi": "20261111_0015_ik_toplantisi",
@@ -400,17 +415,38 @@
     "url": "https://www.youtube.com/shorts/LqqqMFs3IK8",
     "senaryo_ozeti": "Ve sonunda kendi kedimin asistanı olarak işe başladım! Ama online mülakatta kameraya ilk o atlamıştı!",
     "hash": "8abee1f70e8e749c9dafb736359098fd",
-    "tarih": "2026-11-11T03:43:23.486551+00:00"
+    "tarih": "2026-11-11T03:43:23.486551+00:00",
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 0,
+        "zaman": "2026-11-11T05:03:57.340022+00:00"
+      }
+    }
   },
   {
     "dosya_adi": "20261111_0016_absurt_sakalar_arena",
     "baslik": "Kütüphanede Sessizlik İstifa Etti 😱 #shorts",
     "video_id": "nAPqDQhQELc",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "absurt_sakalar",
     "url": "https://www.youtube.com/shorts/nAPqDQhQELc",
     "senaryo_ozeti": "Kütüphanedeki sessizlik az önce yüksek sesle istifa etti. Nereye gittiğini sordum, “Biraz susmaya,” diye cevap verdi.",
     "hash": "",
-    "tarih": "2026-11-11T03:57:16.108639+00:00"
+    "tarih": "2026-11-11T03:57:16.108639+00:00",
+    "silinme_izlenme": 0,
+    "silinme_yas_dk": 64.7,
+    "silinme_tarihi": "2026-11-11T05:02:13.838772+00:00"
+  },
+  {
+    "dosya_adi": "20261111_0017_eglenceli_replikler_arena",
+    "baslik": "Kedim Ehliyet Aldı, Güvercinim Taksici 😱 #shorts",
+    "video_id": "nrElerkcwjc",
+    "durum": "yayinda",
+    "kategori": "eglenceli_replikler",
+    "url": "https://www.youtube.com/shorts/nrElerkcwjc",
+    "senaryo_ozeti": "Az önce kedim senin güvercinine korna çaldı! Normal, o güvercin artık taksici ilan edildi.",
+    "hash": "",
+    "tarih": "2026-11-11T05:03:56.931205+00:00",
+    "izlenme_snapshots": {}
   }
 ]

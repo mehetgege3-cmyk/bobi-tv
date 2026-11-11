@@ -1,12 +1,5 @@
 {
-  "bekleyen": [
-    {
-      "baslik": "Kota dolu — videolar stoğa alındı",
-      "govde": "1 video kuyrukta, kota açılınca yüklenecek.",
-      "seviye": "normal",
-      "zaman": "2026-11-11T04:32:56.461658+00:00"
-    }
-  ],
+  "bekleyen": [],
   "sustur_until": null,
   "son_ozet": null
 }

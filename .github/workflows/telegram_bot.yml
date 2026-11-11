@@ -19,6 +19,12 @@ jobs:
     # İş düzeyinde tanımlı: zincirleme adımı da bu değeri okur (kaza koruması).
     env:
       TELEGRAM_DONGU_DK: '330'
+    # 409 Conflict = aynı bot token'ıyla iki poller aynı anda getUpdates
+    # çağırıyor (2026-11-11 kanıtı: 04:02'de başlayan koşu hâlâ ayaktayken
+    # yeni koşu başladı). Kilit: aynı anda TEK poller; yeni koşu bekler.
+    concurrency:
+      group: telegram-poller
+      cancel-in-progress: false
 
     steps:
       - name: Repo'yu çek
@@ -116,6 +122,12 @@ jobs:
                   time.sleep(YOKLAMA_SN)
                   continue
 
+              if resp.status_code == 409:
+                  # Başka bir poller aynı token'ı kullanıyor (Telegram kuralı:
+                  # tek getUpdates). Bu bir ARIZA değil: kilit devrede, bu koşu
+                  # temiz çıkar. Kırmızı tik üretmek yanlış alarm olurdu.
+                  print("[409] başka bir poller etkin — bu koşu temiz çıkıyor")
+                  sys.exit(0)
               if resp.status_code != 200:
                   print(f"::error::Telegram API HTTP hatası: {resp.status_code}")
                   sys.exit(1)

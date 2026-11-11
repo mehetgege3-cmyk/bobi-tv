@@ -25,7 +25,7 @@ from typing import Any
 import requests
 
 import modules.ayar_deposu as ayar_deposu
-from modules import render_karti
+from modules import rehber, render_karti
 from modules.ayar_katalogu import (
     GRUPLAR,
     TEMIZLIK_UYARI,
@@ -117,6 +117,8 @@ CALLBACK_DERINLIK: dict[str, int] = {
     "kuyruk_at_uygula": 3,
     "kuyruk_geri_al": 2,
     "render_kart": 2,
+    "ay:nedir": 3,
+    "sistem_nedir": 2,
     "ay:gecmis": 2,
     "sistem_goster": 2,
     "ay:g": 2,
@@ -899,9 +901,10 @@ def ekran_yardim() -> tuple[str, list[list[dict[str, Any]]]]:
     """Yardım ekranı — /help metin komutu da buraya yönlenir (tek panel)."""
     return get_help_text(), [
         [
+            {"text": "❓ Sistem ne yapar", "callback_data": "sistem_nedir"},
             {"text": "📊 Rapor", "callback_data": "rapor_goster"},
-            {"text": "⚙️ Ayarlar", "callback_data": "ay:kok"},
         ],
+        [{"text": "⚙️ Ayarlar", "callback_data": "ay:kok"}],
         [{"text": "← Geri", "callback_data": "menu_main"}, {"text": "🏠 Menü", "callback_data": "menu_main"}],
     ]
 
@@ -1521,6 +1524,8 @@ def ekran_ayar_detay(anahtar: str) -> tuple[str, list[list[dict[str, Any]]]]:
             satirlar.append("⚠️ Bu ayar RİSKLİ: seçtiğinizde onay istenecek.")
         butonlar.extend(_secenek_dugmeleri(a))
     satirlar.append("")
+    # TODO 22: her ayarın "ne işe yarar?" rehberi tek dokunuş uzakta.
+    butonlar.append([{"text": "❓ Ne işe yarar?", "callback_data": f"ay:nedir:{a['anahtar']}"}])
     butonlar.append(
         [
             {"text": "← Geri", "callback_data": f"ay:g:{a['grup']}"},
@@ -1829,6 +1834,41 @@ def ekran_sistem() -> tuple[str, list[list[dict[str, Any]]]]:
         ],
     ]
     return "\n".join(satirlar), butonlar
+
+
+def ekran_ayar_nedir(anahtar: str) -> tuple[str, list[list[dict[str, Any]]]]:
+    """❓ "Ne işe yarar?" ekranı (TODO 22) — ayarın etkisi ve ETKİSİZLİĞİ.
+
+    Açıklama `modules/rehber.py`den gelir; rehberi olmayan ayarda uydurma metin
+    yazılmaz, "bilinmiyor" denir.
+    """
+    a = ayar_getir(anahtar)
+    if a is None:
+        return ekran_ana()
+    metin = rehber.detay_metni(anahtar, str(a.get("etiket") or anahtar))
+    butonlar = [
+        [
+            {"text": "⚙️ Ayarı aç", "callback_data": f"ay:d:{anahtar}"},
+            {"text": "🏠 Menü", "callback_data": "menu_main"},
+        ],
+        [
+            {"text": "← Geri", "callback_data": f"ay:g:{a['grup']}"},
+            {"text": "🏠 Menü", "callback_data": "menu_main"},
+        ],
+    ]
+    return metin, butonlar
+
+
+def ekran_sistem_nedir() -> tuple[str, list[list[dict[str, Any]]]]:
+    """❓ "Bu sistem ne işe yarıyor?" — uçtan uca akış + dürüst sınırlar."""
+    butonlar = [
+        [
+            {"text": "📊 Durum", "callback_data": "status_now"},
+            {"text": "📦 Kuyruk", "callback_data": "kuyruk_liste"},
+        ],
+        list(GERI_MENUSU),
+    ]
+    return rehber.sistem_metni(), butonlar
 
 
 def _son_render_kosusu() -> tuple[dict[str, Any] | None, str]:
@@ -2141,6 +2181,10 @@ def _handle_callback_icerde(callback_data: str, callback_id: str, kullanici_id: 
         answer_callback(callback_id)
         _ekran_goster(ekran_ana())
         return
+    if callback_data == "sistem_nedir":
+        answer_callback(callback_id)
+        _ekran_goster(ekran_sistem_nedir())
+        return
     if callback_data == "render_kart":
         answer_callback(callback_id)
         _ekran_goster(ekran_render_kart())
@@ -2267,6 +2311,15 @@ def _handle_callback_icerde(callback_data: str, callback_id: str, kullanici_id: 
             return
         answer_callback(callback_id)
         _ekran_goster(ekran_ayar_grup(grup))
+        return
+    if len(parcalar) == 3 and parcalar[0] == "ay" and parcalar[1] == "nedir":
+        # TODO 22: "ne işe yarar?" — salt okuma ekranı.
+        anahtar = parcalar[2]
+        if ayar_getir(anahtar) is None:
+            _bilinmeyen_komut(callback_id)
+            return
+        answer_callback(callback_id)
+        _ekran_goster(ekran_ayar_nedir(anahtar))
         return
     if len(parcalar) == 3 and parcalar[0] == "ay" and parcalar[1] == "s":
         anahtar = parcalar[2]

@@ -306,12 +306,15 @@
     "dosya_adi": "20261111_0008_kurumsal_hayat_arena",
     "baslik": "Kapıyı Açtım, Karşımda Bürolum! 😱 #shorts",
     "video_id": "e5zLotIbiU8",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "kurumsal_hayat",
     "url": "https://www.youtube.com/shorts/e5zLotIbiU8",
     "senaryo_ozeti": "Girdim, ama karşımda bizim büro tam duruyordu. Ne demek? Aslında girdik mi, bir türlü anlayamadım.",
     "hash": "",
-    "tarih": "2026-11-11T01:58:30.929357+00:00"
+    "tarih": "2026-11-11T01:58:30.929357+00:00",
+    "silinme_izlenme": 0,
+    "silinme_yas_dk": 71.8,
+    "silinme_tarihi": "2026-11-11T03:10:34.366969+00:00"
   },
   {
     "dosya_adi": "20261111_0009_spor_hayati",
@@ -356,5 +359,16 @@
     "senaryo_ozeti": "Kahvemiz masaya gelmeden önce hesabı ödedi. Ben sade istemiştim; fincan kendi seçimini yapmış.",
     "hash": "",
     "tarih": "2026-11-11T02:56:25.567985+00:00"
+  },
+  {
+    "dosya_adi": "20261111_0013_bar_fikralari",
+    "baslik": "Bara Gelen Zaman Yolcusu Hesabı Kime Ödetti? 🍹 #shorts",
+    "video_id": "MKiVLxu8fY0",
+    "durum": "yayinda",
+    "kategori": "bar_fikralari",
+    "url": "https://www.youtube.com/shorts/MKiVLxu8fY0",
+    "senaryo_ozeti": "Bara girdim, barmen hesabı yarına yazdığını söyledi! Yarın ödeyeceksin demek, bugün para mı unuttun?",
+    "hash": "22fe48a90c36927c084bc28053a51020",
+    "tarih": "2026-11-11T03:14:03.192129+00:00"
   }
 ]

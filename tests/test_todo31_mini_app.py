@@ -158,6 +158,22 @@ def test_tavan_yok_ifadesi_sayfada():
     assert "tavan" in html.lower()
 
 
+def test_tarayici_telegram_disarisi_teshis_edilir():
+    """v2.1: sendData çalışmadığında kullanıcı YOLSUZ kalmamalı.
+
+    Ölçüldü (2026-11-11): sayfa düz tarayıcıda açılınca tek satırlık
+    'bu ekrandan işlem gönderilemez' mesajı çıkıyordu, çıkış yolu yoktu.
+    Artık: (a) initData ile Telegram tespiti, (b) tanılama satırı,
+    (c) 'botu aç / MENÜ düğmesinden gir' yönlendirmesi.
+    """
+    html = _html()
+    assert "initData" in html, "Telegram içinde miyiz initData ile anlaşılmalı"
+    assert "Tanılama" in html
+    assert "MENÜ" in html or "Menü" in html
+    assert "t.me/" in html or "Telegram'da aç" in html
+    assert "BOT_KULLANICI_ADI" in html
+
+
 def test_yazma_modu_onay_sozlesmesi():
     """SPEC DEĞİŞTİ (2026-11-11, kullanıcı: "Mini App yazma modunu aç").
 

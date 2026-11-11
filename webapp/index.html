@@ -184,6 +184,9 @@
   "use strict";
 
   var VERI_YOLU = "veri/mini_app_ozet.json";
+  // Bot kullanıcı adı (ör. "BobiTvBot"). Boşsa panel linki gösterilmez.
+  // NOT: Bu bir GİZLİ DEĞİL — herkese açık bot adı.
+  var BOT_KULLANICI_ADI = "";
   var TR_GUN = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
 
   // XSS savunması: dış veri ASLA HTML olarak enjekte edilmez (yalnız textContent).
@@ -330,28 +333,61 @@
   };
   var yazma_kapali = false;
 
+  function tg_nesnesi() {
+    return (window.Telegram && window.Telegram.WebApp) || null;
+  }
+
+  // Telegram içinde miyiz? initData DOLU ise kesin Telegram'dır (asıl ölçüt).
+  function telegram_icinde() {
+    var tg = tg_nesnesi();
+    if (!tg) return false;
+    return !!(tg.initData && tg.initData.length > 0);
+  }
+
   function yazma_yetenegi() {
-    var tg = window.Telegram && window.Telegram.WebApp;
+    var tg = tg_nesnesi();
     var el = document.getElementById("yetki");
-    if (!tg) {
+    var icinde = telegram_icinde();
+    if (!tg || !icinde) {
+      // Düz tarayıcı: yazma yok, ama kullanıcı ÇIKIŞ YOLSUZ kalmaz.
       yazma_kapali = true;
-      if (el) el.textContent = "ℹ️ Tarayıcıda açıldı: işlem düğmeleri yalnız Telegram içinde çalışır (onay akışı botta).";
+      if (el) {
+        el.textContent = BOT_KULLANICI_ADI
+          ? "ℹ️ Bu sayfa Telegram dışında açıldı: yazma düğmeleri çalışmaz. İşlemler için botu aç: t.me/" + BOT_KULLANICI_ADI
+          : "ℹ️ Bu sayfa Telegram dışında açıldı: yazma düğmeleri çalışmaz. Botu Telegram'da aç, Menü düğmesinden gir.";
+      }
       return;
     }
     if (typeof tg.sendData !== "function") {
       yazma_kapali = true;
-      if (el) el.textContent = "ℹ️ Bu Telegram sürümü veri göndermeyi desteklemiyor; paneli bottan kullan.";
+      if (el) el.textContent = "ℹ️ Bu Telegram sürümü veri göndermeyi desteklemiyor; isteği botta ONAY ekranından yap.";
       return;
     }
+    yazma_kapali = false;
+    // ÖNEMLİ: sendData yalnız KLAVYE düğmesinden açılan Mini App'te çalışır
+    // (main/side button'dan açılışta Telegram sessizce engelleyebilir).
     if (el) el.textContent = "🔐 Yazma yalnız ONAY ile: istek bota gider, bot onay ekranı açar.";
   }
 
   function istek_gonder(dugme) {
     var eylem = dugme.getAttribute("data-eylem");
     if (!eylem) return;
-    var tg = window.Telegram && window.Telegram.WebApp;
+    var tg = tg_nesnesi();
     if (yazma_kapali || !tg || typeof tg.sendData !== "function") {
-      durum_yaz("Bu ekrandan işlem gönderilemez — paneli Telegram botundan kullan.", true);
+      var sebep = !tg
+        ? "sayfa Telegram dışında açıldı"
+        : (!telegram_icinde() ? "Telegram oturumu tanınmadı (initData boş)" : "bu Telegram sürümü veri göndermiyor");
+      durum_yaz(
+        "Bu ekrandan işlem gönderilemez — " + sebep +
+        ". Botu aç, sohbetin sol altındaki MENÜ düğmesinden Mini App'e gir " +
+        "(veya işlemi bottaki ONAY ekranından yap).",
+        true
+      );
+      var el = document.getElementById("yetki");
+      if (el) el.textContent = "🔎 Tanılama: tg=" + (tg ? "var" : "yok") +
+        " · sendData=" + (tg && typeof tg.sendData === "function" ? "var" : "yok") +
+        " · initData=" + (tg && tg.initData ? "dolu" : "boş") +
+        " · platform=" + ((tg && tg.platform) || "bilinmiyor");
       return;
     }
     dugme.disabled = true;

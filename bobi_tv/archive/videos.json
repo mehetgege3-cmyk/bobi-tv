@@ -166,12 +166,15 @@
     "dosya_adi": "20261110_0009_kahve_hayati_arena",
     "baslik": "Fincan hiç dolmayı bıraktı 😱 #shorts",
     "video_id": "qvvMqEV-5ok",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "kahve_hayati",
     "url": "https://www.youtube.com/shorts/qvvMqEV-5ok",
     "senaryo_ozeti": "Kahvemi bitirdim, fincan yine kendiliğinden doldu işte! Sanırım makine bozuk, kahve akmaya devam ediyor.",
     "hash": "",
-    "tarih": "2026-11-10T23:10:37.808668+00:00"
+    "tarih": "2026-11-10T23:10:37.808668+00:00",
+    "silinme_izlenme": 1,
+    "silinme_yas_dk": 74.6,
+    "silinme_tarihi": "2026-11-11T00:25:31.475542+00:00"
   },
   {
     "dosya_adi": "20261110_0010_kurumsal_hayat_arena",
@@ -205,5 +208,16 @@
     "senaryo_ozeti": "Hanımefendi, bugün de iki tane cenaze çelengi ver. Üç gündür aynı çelengi alıyorsunuz, cenaze kimin?",
     "hash": "",
     "tarih": "2026-11-11T00:12:23.024501+00:00"
+  },
+  {
+    "dosya_adi": "20261111_0002_absurt_komedi_arena",
+    "baslik": "Park Bankası Artık Dilekçe İstiyor 😱 #shorts",
+    "video_id": "zDsSZHhz_eQ",
+    "durum": "yayinda",
+    "kategori": "absurt_komedi",
+    "url": "https://www.youtube.com/shorts/zDsSZHhz_eQ",
+    "senaryo_ozeti": "Bu bank oturmak için dilekçe istiyor, imza da şart. Ben sadece on dakika dinleneyim, sonra gideceğim.",
+    "hash": "",
+    "tarih": "2026-11-11T00:27:40.330933+00:00"
   }
 ]

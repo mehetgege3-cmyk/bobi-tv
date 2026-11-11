@@ -93,7 +93,8 @@ def test_tumunu_olc_state_yazar(monkeypatch: pytest.MonkeyPatch, tmp_path: Path)
         co,
         "cadans_olc",
         lambda w, d, s: {"workflow": w, "durum": "olculdu", "beklenen_dk": d,
-                         "oran": 0.8, "son_24saat_kosu": 115, "medyan_aralik_dk": 12.5},
+                         "oran": 0.8, "son_24saat_kosu": 115,
+                         "medyan_aralik_dk": 12.5, "son5_medyan_dk": d},
     )
     rapor = co.tumunu_olc(SIMDI)
     # İzlenen küme: sabitler + kadans kaynağından gelen üretim workflow'u.
@@ -102,25 +103,42 @@ def test_tumunu_olc_state_yazar(monkeypatch: pytest.MonkeyPatch, tmp_path: Path)
     veri = json.loads((tmp_path / "cadans.json").read_text(encoding="utf-8"))
     assert veri["zaman"] == SIMDI.isoformat()
     satir = co.panel_satiri()
-    assert "Cadans" in satir and "%80" in satir and "✅" in satir
+    assert "Cadans" in satir and "✅ hedefte" in satir
 
 
-def test_panel_satiri_esikleri(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    for oran, ikon in ((0.5, "⚠️"), (0.1, "⛔")):
+def test_panel_satiri_hedefe_oturmayi_anlatir(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Panel, "oran %" yerine SON aralıkların hedefe oturup oturmadığını söyler."""
+    hedef = co._beklenen_dk()
+    for son_medyan, isaret in (
+        (hedef, "✅ hedefte"),
+        (hedef * 0.5, "⚠️ hedeften sık"),
+        (hedef * 0.05, "⏳ geçiş"),
+    ):
         (tmp_path / "cadans.json").write_text(
             json.dumps(
                 {
                     "olcumler": {
                         "hourly_production.yml": {
                             "durum": "olculdu",
-                            "beklenen_dk": co._beklenen_dk(),  # güncel kadans
-                            "oran": oran,
+                            "beklenen_dk": hedef,
+                            "oran": 1.0,
                             "son_24saat_kosu": 5,
-                            "medyan_aralik_dk": 100,
+                            "medyan_aralik_dk": hedef,
+                            "son5_medyan_dk": son_medyan,
                         }
                     }
                 }
             ),
             encoding="utf-8",
         )
-        assert ikon in co.panel_satiri()
+        assert isaret in co.panel_satiri(), f"{son_medyan} için {isaret} beklenirdi"
+
+
+def test_gecis_donemi_eski_rejimi_guncel_sanmaz() -> None:
+    """15 dk → 480 dk geçişinde son aralıklar güncel kadanstan gelir."""
+    # Son 5 aralık 480 dk (yeni rejim), daha eskiler 15 dk (eski rejim).
+    zamanlar = [SIMDI - timedelta(minutes=480 * i) for i in range(1, 7)]
+    zamanlar += [zamanlar[-1] - timedelta(minutes=15 * i) for i in range(1, 20)]
+    r = co.cadans_olc("hourly_production.yml", 480, SIMDI, zamanlar)
+    assert r["son5_medyan_dk"] == 480
+    assert r["medyan_aralik_dk"] == 15, "tüm geçmiş eski rejimi gösterir"

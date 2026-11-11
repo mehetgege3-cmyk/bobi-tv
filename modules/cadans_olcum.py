@@ -122,6 +122,11 @@ def cadans_olc(
     ]
     araliklar = [a for a in araliklar if a > 0]
     medyan = round(median(araliklar), 1) if araliklar else None
+    # GÜNCEL kadans = EN YENİ aralıkların medyanı. Tüm geçmişin medyanı, kadans
+    # değiştiğinde (ör. 15 dk → 480 dk) eski rejimi gösterip yanıltıyordu:
+    # ilk ölçümde 24 saatte 45 koşu vardı (hepsi ESKİ 15 dk zincirinden).
+    son = araliklar[:5]
+    son_medyan = round(median(son), 1) if son else None
     return {
         "workflow": workflow,
         "durum": "olculdu",
@@ -129,6 +134,7 @@ def cadans_olc(
         "son_24saat_kosu": len(son_24),
         "toplam_kosu": len(zamanlar),
         "medyan_aralik_dk": medyan,
+        "son5_medyan_dk": son_medyan,
         "en_uzun_aralik_dk": max(araliklar) if araliklar else None,
         "beklenen_24saat_kosu": round(24 * 60 / beklenen_dk, 1),
         "oran": (round(len(son_24) / (24 * 60 / beklenen_dk), 2) if beklenen_dk else None),
@@ -168,6 +174,12 @@ def _beklenen_dk() -> int:
         return IZLENEN["hourly_production.yml"]
 
 
+def _kisa(dk: float | None) -> str:
+    if dk is None:
+        return "?"
+    return f"{dk / 60:.1f} sa" if dk >= 90 else f"{dk:.0f} dk"
+
+
 def panel_satiri() -> str:
     """Panelde gösterilecek TEK satırlık dürüst özet.
 
@@ -185,14 +197,21 @@ def panel_satiri() -> str:
     beklenen = _beklenen_dk()
     if int(uretim.get("beklenen_dk") or 0) != beklenen:
         return f"📉 Cadans: ölçüm eski ({uretim.get('beklenen_dk')} dk için) — günlük iş yeniler"
-    oran = uretim.get("oran")
-    if oran is None:
+    son_medyan = uretim.get("son5_medyan_dk")
+    if son_medyan is None:
         return f"📉 Cadans: {uretim.get('son_24saat_kosu', '?')} koşu/24sa"
-    yuzde = round(float(oran) * 100)
-    ikon = "✅" if yuzde >= 70 else ("⚠️" if yuzde >= 30 else "⛔")
+    # Hedefe oturma: son aralıklar hedefin %75-160 aralığında mı?
+    oran = float(son_medyan) / beklenen if beklenen else 0.0
+    if 0.75 <= oran <= 1.6:
+        return f"📉 Cadans: ✅ hedefte ({_kisa(float(son_medyan))} aralık)"
+    if 0.4 <= oran < 0.75:
+        return (
+            f"📉 Cadans: ⚠️ hedeften sık (son aralık {_kisa(float(son_medyan))}, "
+            f"hedef {_kisa(float(beklenen))})"
+        )
     return (
-        f"📉 Cadans: {ikon} %{yuzde} (24sa: {uretim.get('son_24saat_kosu')} koşu, "
-        f"medyan {uretim.get('medyan_aralik_dk')} dk)"
+        f"📉 Cadans: ⏳ geçiş (son aralık {_kisa(float(son_medyan))}, "
+        f"hedef {_kisa(float(beklenen))})"
     )
 
 

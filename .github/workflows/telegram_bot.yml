@@ -48,6 +48,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_PAT }}
           TELEGRAM_DONGU_DK: '330'
           TELEGRAM_YOKLAMA_SN: '20'
+          TELEGRAM_TUR_AZAMI: '20'
         run: |
           python - << 'PYEOF'
           import os, json, sys, time, requests
@@ -148,7 +149,11 @@ jobs:
                   else:
                       print("[bosluk] uyari gonderilemedi (logda kalir)")
 
-              yeni_offset, islenen, reddedildi, kesinti = updates_isle(updates, offset)
+              # TODO 28: tur başına iş sınırı — biriken kuyruk tek turu kilitlemez.
+              tur_azami = int(os.environ.get("TELEGRAM_TUR_AZAMI", "20"))
+              yeni_offset, islenen, reddedildi, kesinti = updates_isle(
+                  updates, offset, azami=tur_azami
+              )
               offset = yeni_offset
               offset_guncelleme = datetime.now(timezone.utc).isoformat()
 

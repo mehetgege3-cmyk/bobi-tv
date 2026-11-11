@@ -193,7 +193,16 @@ def process_update(update: dict[str, Any]) -> bool:
     return True
 
 
-def updates_isle(updates: list[dict[str, Any]], offset: int) -> tuple[int, int, int, bool]:
+#: Bir turda işlenecek AZAMİ update sayısı (TODO 28): poller uzun sustuğunda
+#: biriken kuyruk tek turu kilitlemesin, offset güvenli noktada ilerlesin.
+POLLER_TUR_AZAMI = int(os.environ.get("TELEGRAM_TUR_AZAMI", "20") or "20")
+
+
+def updates_isle(
+    updates: list[dict[str, Any]],
+    offset: int,
+    azami: int | None = None,
+) -> tuple[int, int, int, bool]:
     """Güncelleme yığınını sırayla işler (offset kaybı koruması).
 
     Offset YALNIZCA update başarılı şekilde ele alındığında ilerler:
@@ -207,6 +216,11 @@ def updates_isle(updates: list[dict[str, Any]], offset: int) -> tuple[int, int, 
     islenen = 0
     reddedilen = 0
     kesinti = False
+    # TODO 28: tur başına iş sınırı — kalan update'ler sonraki turda işlenir
+    # (offset yalnız İŞLENEN update'ler kadar ilerler, kayıp olmaz).
+    sinir = azami if azami is not None else POLLER_TUR_AZAMI
+    if sinir > 0:
+        updates = updates[:sinir]
     for update in updates:
         try:
             ok = process_update(update)

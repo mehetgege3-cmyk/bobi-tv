@@ -1004,7 +1004,11 @@ def _cevabi_ayikla(full_body: str, prompt: str, prompt_ilk_satir: str) -> str:
         if slice_text.strip() == etiket:
             slice_text = ""
 
-    slice_text = re.sub(r"\n\d+s\s*\|\s*just now[\s\S]*$", "", slice_text, flags=re.IGNORECASE).strip()
+    # Arena zaman etiketi: "2m 37s | just now" / "12:26 PM"
+    slice_text = re.sub(
+        r"\n+\s*(?:\d+m\s*)?\d+s?\s*\|\s*just now[\s\S]*$", "", slice_text, flags=re.IGNORECASE
+    ).strip()
+    slice_text = re.sub(r"\n+\s*\d{1,2}:\d{2}\s*(?:AM|PM)?\s*$", "", slice_text, flags=re.IGNORECASE).strip()
     # Arena, gönderdiğimiz prompt'u (özellikle JSON şablonunu) yankılayıp
     # ARDINDAN gerçek cevabı yazıyor. Yankı cevabın içinde kalırsa ayrıştırıcı
     # şablonu "cevap" sanıyordu (canlı kanıt: koşu 43138461248).

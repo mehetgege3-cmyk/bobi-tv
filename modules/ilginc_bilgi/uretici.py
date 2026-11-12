@@ -99,7 +99,8 @@ def arena_promptu(kategori: str, taktik: etkilesim.TaktikSecimi, kacirilacaklar:
         "7) 'sayilar' cevapta geçen tüm sayıların listesi (metin olarak).\n"
         "8) 'dogru_bilgi' cevabın 1-2 cümlelik ÖZETİ (yorum cevaplarında "
         "kullanılacak; kesin ve doğru olmalı).\n"
-        "9) 'kapak_baslik' en fazla 34 karakter, kapakta kullanılacak çarpıcı ifade.\n"
+        "9) 'kapak_baslik' en fazla 34 karakter; çarpıcı ifade; EMOJI YOK "
+        "(kapak çizimi emojiyi gösteremiyor).\n"
         f"10) Şu konulara YAKLAŞMA (daha önce yapıldı): {kacin}\n"
         "11) TAMAMEN TÜRKÇE. İngilizce kelime yok.\n"
         "12) Emoji kullan ama abartma (2-5 arası).\n"
@@ -159,9 +160,44 @@ def _prompt_kuyrugunu_sil(metin: str) -> str:
     return t
 
 
+#: Arena cevabın SONUNA arayüz etiketi ekliyor (canlı kanıt 43217347241):
+#:   ..."kapak_baslik":"💥 En kısa savaş: 38 dakika!"}\n\n2m 37s | just now\n12:26 PM
+_ARAYUZ_RE = re.compile(
+    r"\n+\s*(?:\d+m\s*)?\d+s?\s*\|\s*just now[\s\S]*$"      # 2m 37s | just now
+    r"|\n+\s*\d{1,2}:\d{2}\s*(?:AM|PM)?\s*$",                   # 12:26 PM
+    re.IGNORECASE,
+)
+
+
+def _ingilizce_onyuzu_at(metin: str) -> str:
+    """Baştaki İngilizce paragrafları atar (gerçek cevap Türkçedir).
+
+    CANLI KANIT (43217347241): ham cevap
+      'Valid JSON: ensure no trailing commas, proper escaping. The text contains
+       no double quotes'
+    ile başlıyordu; 'on', 'the', 'text', 'no' kelimeleri R12'yi (tamamen Türkçe)
+    kırıp gereksiz bir onarım turu harcatıyordu.
+    """
+    parcalar = [p for p in re.split(r"\n{2,}", str(metin or "")) if p.strip()]
+    turkce = set("çğıöşüÇĞİÖŞÜ")
+    while len(parcalar) > 1:
+        ilk, kalan = parcalar[0], parcalar[1:]
+        if set(ilk) & turkce or not any(set(k) & turkce for k in kalan):
+            break
+        parcalar = kalan
+    return "\n\n".join(parcalar).strip()
+
+
+def _arayuz_kirliligini_sil(metin: str) -> str:
+    """Arena'nın cevaba eklediği süre/saat etiketini keser."""
+    return _ARAYUZ_RE.sub("", str(metin or "")).strip()
+
+
 def _json_ayikla(metin: str) -> dict | None:
     """Arena cevabından JSON nesnesini çıkarır (kod bloğu/ön söz toleranslı)."""
-    metin = _prompt_kuyrugunu_sil(_sablon_izini_sil(metin)).strip()
+    metin = _ingilizce_onyuzu_at(
+        _arayuz_kirliligini_sil(_prompt_kuyrugunu_sil(_sablon_izini_sil(metin)))
+    ).strip()
     if not metin or sablon_yankisi_mi(metin):
         return None
     adaylar = re.findall(r"\{.*\}", metin, re.DOTALL)
@@ -193,6 +229,7 @@ def arena_bilgi_uret(
     except Exception as e:
         print(f"[İlginçBilgi] Arena hatası: {str(e)[:120]}")
         return None
+    ham = _arayuz_kirliligini_sil(ham or "")
     # Teşhis: Arena'nın ne döndürdüğü logda görünsün (yankı mı, gerçek cevap mı)
     if ham:
         _t = str(ham).strip()
@@ -212,7 +249,9 @@ def arena_bilgi_uret(
 
 def _duz_metinden_kart(metin: str) -> dict | None:
     """JSON olmayan Arena cevabını bilgi kartına çevirir (başlık tabanlı)."""
-    metin = _prompt_kuyrugunu_sil(_sablon_izini_sil(metin)).strip()
+    metin = _ingilizce_onyuzu_at(
+        _arayuz_kirliligini_sil(_prompt_kuyrugunu_sil(_sablon_izini_sil(metin)))
+    ).strip()
     # Soru cevabın başında yoksa sonda/kapak ifadesinde aranır; yoksa uydurma
     # soru yazmak yerine reddedilir (YouTube deceptive practices riski).
     if len(metin) < 120 or sablon_yankisi_mi(metin) or "?" not in metin:
@@ -263,13 +302,23 @@ def metne_cevir(kart: dict) -> str:
 # ---------------------------------------------------------------------------
 
 
+def _emoji_sil(metin: str) -> str:
+    """Emoji ve değişken seçicileri siler (kapak çizimi emoji basamıyor)."""
+    t = re.sub(
+        r"[\U0001F000-\U0001FAFF\u2600-\u27BF\uFE0F\u2B00-\u2BFF\u2190-\u21FF]",
+        " ",
+        str(metin or ""),
+    )
+    return re.sub(r"\s{2,}", " ", t).strip()
+
+
 def kapak_basligi(baslik: str, azami: int = 34) -> str:
     """Kapak başlığını TAM KELİME sınırında kısaltır.
 
     Neden: `baslik[:34]` gibi bir kesme "…BİRİ Y!" gibi anlamsız kırıntı
     üretiyordu (amatör görünüm). Uzunsa son kelime atılır ve '…' eklenir.
     """
-    metin = str(baslik or "").strip()
+    metin = _emoji_sil(str(baslik or "")).strip()
     for ek in (" #shorts", "#shorts"):
         metin = metin.replace(ek, "")
     temiz = " ".join(metin.split())

@@ -935,3 +935,37 @@ def test_gecici_kok_yoksa_eski_yollar_korunur(monkeypatch):
     mod = importlib.reload(calisma_dizinleri)
     assert str(mod.TTS_YOLU) == "bobi_tv/production/tts"
     assert str(mod.RENDER_YOLU) == "bobi_tv/production/render"
+
+
+def test_arena_arayuz_etiketi_kapak_basligini_bozmuyor():
+    """CANLI KANIT (43217347241): Arena cevabın sonuna '2m 37s | just now / 12:26 PM'
+    ekliyor; kapak başlığı bu çöple bitiyordu ("...38 dakika!\\n\\n2m 37s | just now")."""
+    import json
+
+    ham = (
+        '{"soru":"En kısa savaş?","cevap":"38 dakika.","kapak_baslik":"💥 38 dakika!"}\n\n'
+        "2m 37s | just now\n12:26 PM"
+    )
+    temiz = uretici._arayuz_kirliligini_sil(ham)
+    assert temiz.endswith("}")
+    assert json.loads(temiz)["kapak_baslik"] == "💥 38 dakika!"
+    assert uretici._json_ayikla(ham)["soru"] == "En kısa savaş?"
+
+
+def test_ingilizce_kirlilik_tamamen_kesilir():
+    """CANLI KANIT (43217347241): ham cevap 'Valid JSON: ensure no trailing commas,
+    proper escaping. The text contains no double quotes' ile başlıyordu ve
+    'on, the, text, no' kelimeleri R12'yi kırıp onarım turu harcatıyordu."""
+    metin = (
+        "Valid JSON: ensure no trailing commas, proper escaping. The text contains no double quotes.\n\n"
+        "soğan doğradığında gözlerinin yaşarmasının sebebi bir gazdır. "
+        "Bu gaz gözünün üstündeki sinirleri uyarır ve gözyaşı üretilir. "
+        "Buzdolabında bekletmek bu gazın salınımını azaltır."
+    )
+    assert uretici._ingilizce_onyuzu_at(metin).startswith("soğan doğradığında")
+
+
+def test_kapak_basliginda_emoji_kalmaz():
+    """Sunucuda emoji fontu yok → kapakta kutu/boşluk görünüyordu."""
+    assert uretici.kapak_basligi("💥 En kısa savaş: 38 dakika!") == "En kısa savaş: 38 dakika!"
+    assert uretici.kapak_basligi("Soğanın Seni Ağlatma Sırrı 🧅") == "Soğanın Seni Ağlatma Sırrı"

@@ -71,12 +71,14 @@ jobs:
 
           # 3) HTTP: akış + görsel
           print("[3/3] HTTP: akış okunuyor...", flush=True)
-          akis = arena_http.akisi_oku(chat_id, cerez)
+          akis = arena_http.hash_bekle(chat_id, cerez, azami_sn=300, aralik=15)
           print(f"      cevap: {(akis['metin'] or '(yok)')[:200]}", flush=True)
           print(f"      görsel yolu: {akis['gorsel_yolu']}", flush=True)
           print(f"      hash: {akis['hash']}", flush=True)
           if not akis["hash"]:
-              print("❌ GÖRSEL ÜRETİLMEDİ (akışta hash yok)", flush=True)
+              print("❌ GÖRSEL ÜRETİLMEDİ (300 sn içinde hash gelmedi)", flush=True)
+              print(f"   Arena cevabı: {akis.get('metin','')[:300]}", flush=True)
+              open("kanit/cevap.txt","w",encoding="utf-8").write(akis.get("metin") or "")
               sys.exit(2)
           yol = arena_http.gorsel_indir(akis["hash"], "kanit/arena_kapak.png", cerez)
           if not yol:

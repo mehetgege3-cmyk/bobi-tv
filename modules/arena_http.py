@@ -232,3 +232,41 @@ def gorsel_yolu_ile_indir(hash_veya_yol: str, hedef_yol: str, cerez: str) -> str
         return None
     aday = hash_veya_yol.rsplit("/", 1)[-1]
     return gorsel_indir(aday, hedef_yol, cerez)
+
+
+def hash_bekle(
+    chat_id: str,
+    cerez: str,
+    *,
+    azami_sn: int = 300,
+    aralik: int = 15,
+) -> dict:
+    """Görsel hash'i görünene kadar akışı TEKRAR okur.
+
+    NEDEN (canlı koşu 43311322015): Arena görsel üretimi ilk denemede
+    başarısız olursa kendi cevabında "İlk deneme tüm modellerde başarısız
+    oldu... yeniden deneyeceğim" diyor ve DAHA SONRA yeni bir deneme
+    başlatıyor. Tek seferlik okuma bunu kaçırıyordu (hash yok → yanlış
+    "görsel üretilmedi" sonucu).
+    """
+    bitis = time.time() + azami_sn
+    son: dict = {"metin": "", "gorsel_yolu": None, "hash": None, "durumlar": {}}
+    tur = 0
+    while time.time() < bitis:
+        tur += 1
+        akis = akisi_oku(chat_id, cerez)
+        son = akis
+        if akis["hash"]:
+            print(f"[Arena HTTP] ✅ görsel hash'i bulundu (tur {tur})", flush=True)
+            return akis
+        print(
+            f"[Arena HTTP] tur {tur}: hash yok · cevap: "
+            f"{(akis['metin'] or '(boş)')[:90]}",
+            flush=True,
+        )
+        if akis.get("durumlar", {}).get("finish") and not akis["hash"]:
+            # akış bitti, görsel yok → yine de bir tur daha bekle (yeniden deneme)
+            pass
+        time.sleep(aralik)
+    print("[Arena HTTP] ⛔ süre doldu, görsel hash'i gelmedi", flush=True)
+    return son

@@ -251,7 +251,16 @@ async def arena_kapak_gorseli_uret_async(paket: dict[str, Any]) -> Path | None:
             await page.goto("https://arena.ai/agent/", wait_until="domcontentloaded", timeout=45000)
             await page.wait_for_timeout(3000)
             await arena_api._arena_riza_modalini_kapat(page)
-            await arena_api._promptu_gonder(page, prompt)
+            # ÖLÜ OTURUM FRENİ: Arena login'e yönlendirdiyse 8 dk boşa bekleme
+            if not await arena_api.oturum_gercekten_acik_mi(page):
+                arena_api._oturum_doldu_isaretle()
+                print("[Kapak] ⛔ Arena oturumu YOK — kapak video karesinden üretilecek")
+                await arena_api._tarayiciyi_kapat(browser)
+                return None
+            if not await arena_api._promptu_gonder(page, prompt):
+                print("[Kapak] ⚠️ Prompt gönderilemedi — kapak video karesinden üretilecek")
+                await arena_api._tarayiciyi_kapat(browser)
+                return None
             gorsel = await _gorsel_bekle_ve_indir(page, cikis)
             if gorsel:
                 # Çerez kendini beslesin (aynı oturumdan tazelenmiş çerez)

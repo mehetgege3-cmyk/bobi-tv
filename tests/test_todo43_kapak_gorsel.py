@@ -214,3 +214,24 @@ def test_prompt_gonderimi_dogrulanir():
     assert 'keyboard.press(tus)' in kaynak  # düğme çalışmazsa Enter/Ctrl+Enter yedeği
     assert "keyboard.type(" in kaynak  # GERÇEK tuş vuruşu (insert_text React'i güncellemiyor)
     assert "disabled" in kaynak              # pasif düğmeye tıklamayı fark eder
+
+
+def test_olu_oturum_yonlendirmesi_aninda_yakalanir():
+    """CANLI KANIT (run 43275868230): çerez ölüyken sayfa
+    accounts.google.com'a yönlendi; hat 8 dakika boş bekledi.
+
+    Sözleşme: yönlendirme URL'i görülürse oturum kapalı sayılır (ucuz kontrol).
+    """
+    import inspect
+
+    from modules import arena_api, kapak_gorsel
+
+    kaynak = inspect.getsource(arena_api.oturum_gercekten_acik_mi)
+    for isaret in ("accounts.google.com", "/login", "/signin"):
+        assert isaret in kaynak
+
+    # Kapak hattı bu freni kullanmalı (yoksa yine boşa bekler)
+    kapak_kaynak = inspect.getsource(kapak_gorsel.arena_kapak_gorseli_uret_async)
+    assert "oturum_gercekten_acik_mi" in kapak_kaynak
+    assert "_oturum_doldu_isaretle" in kapak_kaynak
+    assert "_promptu_gonder" in kapak_kaynak

@@ -112,20 +112,46 @@ Testler: `tests/test_todo43_kapak_gorsel.py` (7 test) — prompt tam metni taş�
 yazı yasağı var, eski karar hattı yok, Arena görseli → 1. kare, yedek yol
 ImportError vermez, sync sarmalayıcı loop içinde de çalışır, 1080×1920 kırpma.
 
-### CANLI DOĞRULAMA — 2026-11-12 17:05–17:24 UTC (3 koşu)
+### CANLI DOĞRULAMA — 2026-11-12 17:05–18:14 UTC (6 koşu)
 
 | Koşu | Sonuç |
 |---|---|
 | `43265657831` | ❌ **REGRESYON**: `'NoneType' object has no attribute 'read'` → 0 video. Kapak render'dan sonra üretildiği için `animasyon.py` çöküyordu. DÜZELTİLDİ. |
-| `43266695264` | ✅ Video yayınlandı (`sS9LWGuMuLA`) ama ❌ `[YouTube] ⚠️ Kapak dosyası yok: (boş)` — paket alanları doldurulmuyordu. DÜZELTİLDİ. |
-| `43268041894` | ✅ **TAM**: `[Kapak] ✅ Kapak videonun 1. karesine yerleştirildi` · `[YouTube] 🖼️ Kapak yüklendi` · log: `Kapak: ..._kapak.jpg \| kaynak: video_karesi \| ilk kareye gömüldü: EVET` · https://www.youtube.com/shorts/_u54iIC1I8M |
+| `43266695264` | ✅ Video yayınlandı ama ❌ `[YouTube] ⚠️ Kapak dosyası yok: (boş)` — paket alanları doldurulmuyordu. DÜZELTİLDİ. |
+| `43268041894` | ✅ **Tam çalıştı**: `Kapak: ..._kapak.jpg \| kaynak: video_karesi \| ilk kareye gömüldü: EVET` → [shorts/_u54iIC1I8M](https://www.youtube.com/shorts/_u54iIC1I8M) |
+| `43270740614` | ❌ Teşhis workflow'u `ModuleNotFoundError: modules` (PYTHONPATH yok). DÜZELTİLDİ. |
+| `43271340457` | ❌ **SESSİZ YALAN**: Arena'ya prompt HİÇ gitmiyordu. 480 sn ölçüm: `img=0 canvas=0 metin=1766` sabit; ekran görüntüsünde prompt editörde duruyor. Eski `_promptu_gonder` tıklama başarısızken `True` dönüyordu. DÜZELTİLDİ (doğrulama eklendi). |
+| `43274897203` / `43275868230` | ❌ `[Arena] ❌ GÖNDERİLEMEDİ — editör hâlâ dolu` + DOM dökümü: `Log In / Sign up for free / login: True`, ardından sayfa **accounts.google.com**'a yönlendi. **KÖK NEDEN: ARENA_COOKIES_JSON SÜRESİ DOLMUŞ.** |
 
-**Dürüst durum:** `kaynak: video_karesi` → Arena **görsel** yolu bu koşularda hiç
-denenmedi, çünkü çerez oturumu düşmüş:
-`⛔ ARENA_COOKIES_JSON SÜRESİ DOLMUŞ — çerez yenilenmeli`.
-`ARENA_COOKIES_JSON` güncellenince ilk koşuda log'da
-`[Kapak] ✅ Arena kapak görseli indirildi` / `kaynak=arena_gorsel` aranmalı.
-O satır görünmezse Arena'nın sohbet arayüzü gerçekten görsel üretmiyor demektir.
+### Kesin kök neden (tahmin değil, ölçüm)
+
+`ARENA_COOKIES_JSON` ölü. Kanıt (run `43275868230`, adım DOM dökümü):
+
+```
+DOM[1_sayfa_acildi]  : {'login': True, 'buttons': [... 'Log In', 'Sign up for free' ...]}
+DOM[2_gonderim_sonrasi]: {'url': 'https://accounts.google.com/v3/signin/identifier?...',
+                          'tiptap': 0, 'textarea': 0, 'send_btn': 0}
+```
+
+Bu yüzden: Arena görsel üretim yolu **hiçbir zaman çalışmadı** — üretim, video
+karesi yedeğine düşüyordu. "Arena kapak görseli üretti" iddiası yanlıştı ve
+artık kod bunu saklamıyor.
+
+### Kullanıcı aksiyonu (tek adım)
+
+`arena.ai`'ye giriş yap → Cookie-Editor → Export (JSON) → GitHub → Settings →
+Secrets → `ARENA_COOKIES_JSON` → Update. Sonra:
+`Actions → 🖼️ Arena Görsel Üretim Testi (kanıt) → Run workflow`.
+Koşu `GÖRSEL ÜRETİLDİ ✅` der ve **indirdiği görseli artifact olarak verir**;
+`GÖRSEL GELMEDİ ❌` derse Arena gerçekten görsel üretmiyor demektir.
+
+### Eklenen koruma (2026-11-12)
+
+`arena_api.oturum_gercekten_acik_mi(page)` — URL'de `accounts.google.com` /
+`/login` / `/signin` varsa ya da sayfada "Log In / Sign up" görünüp editör yoksa
+oturum kapalı sayılır; kapak hattı **8 dakika boş beklemek yerine** anında durur,
+`_oturum_doldu_isaretle()` çağırır ve video karesi yedeğine düşer.
+(Forumlarda standart yöntem: pahalı işten önce son URL'i kontrol et.)
 
 ## 3. Arena çerezleri GitHub'a ne zaman eklenmeli?
 

@@ -602,6 +602,39 @@ async def _tarayiciyi_kapat(browser) -> None:
         await asyncio.wait_for(browser.close(), timeout=15)
 
 
+async def oturum_gercekten_acik_mi(page) -> bool:
+    """Sayfanın GERÇEKTEN giriş yapmış hâlde olup olmadığını ölçer.
+
+    NEDEN (2026-11-12 canlı kanıt, run 43275868230): ARENA_COOKIES_JSON süresi
+    dolduğunda sayfa önce `Log In / Sign up for free` gösteriyor, prompt yazma
+    denemesinden sonra **accounts.google.com'a yönleniyor**. O ana kadar hat
+    8 dakika boş sayfada bekliyordu. Forumlardaki standart yöntem: pahalı işten
+    önce SON URL'i kontrol et (`/login`, `signin`, `accounts.google.com`).
+    """
+    try:
+        url = (page.url or "").lower()
+    except Exception:
+        url = ""
+    if any(i in url for i in ("accounts.google.com", "/login", "/signin", "auth.arena.ai")):
+        print(f"[Arena] ⛔ Oturum yok — yönlendirme: {url[:80]}", flush=True)
+        return False
+    try:
+        durum = await page.evaluate(
+            """() => ({
+                metin: (document.body.innerText || '').slice(0, 400),
+                editor: document.querySelectorAll('div.tiptap[contenteditable="true"]').length,
+                giris_dugmesi: [...document.querySelectorAll('button, a')]
+                    .some(b => /log in|sign up|sign in with google/i.test(b.innerText || ''))
+            })"""
+        )
+    except Exception:
+        return False
+    if durum.get("giris_dugmesi") and not durum.get("editor"):
+        print("[Arena] ⛔ Oturum yok — sayfada 'Log In / Sign up' var", flush=True)
+        return False
+    return bool(durum.get("editor"))
+
+
 async def _gonder_dugmesi_durumu(page) -> dict:
     """Gönder düğmesinin gerçek durumunu okur (teşhis için)."""
     try:

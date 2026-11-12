@@ -695,7 +695,12 @@
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
     "hook_ust_bant": "Kleopatra, Piramitlerin Yapılışınd",
-    "izlenme_snapshots": {}
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 0,
+        "zaman": "2026-11-12T03:30:42.835841+00:00"
+      }
+    }
   },
   {
     "dosya_adi": "20261112_0249_0004_ahtapot_uc_kalp",

@@ -301,3 +301,28 @@ gerçekleşebiliyor (401 her şeyi durduruyor).
 4. **Kendi kendini besleme:** her başarılı Arena kullanımından sonra
    `_cerezi_tazele` secret'ı günceller (çalışıyor: "ARENA_COOKIES_JSON
    güncellendi (2358 karakter)") — ama **süresi dolmuş** çerezi canlandırmaz.
+
+## 11. KAPAKTA BAŞLIK ÇİFT BASMA KUSURU (2026-11-13, koşu `43325201001`)
+
+**Gözlem (yayınlanan videonun kapağı):**
+```
+EKMEK NEDEN FIRINDAN ÇIKINCA / BU KA    ← büyük beyaz bant (2. baskı)
+   EKMEK NEDEN FIRINDAN ÇIKINCA BU KA   ← sarı rozet içinde (animasyonun kendi başlığı)
+```
+İki başlık üst üste; alttaki kesik ("BU KA").
+
+**Kök neden (kanıtlı):** Animasyon hattı 1. kareye başlığı **zaten** basıyor
+(`kare0.jpg` içinde sarı rozet + "EKMEK NEDEN FIRINDAN ÇIKINCA BU KA").
+`kapak_hatti` yedek yolu (`kaynak=video_karesi`) aynı başlığı **tekrar**
+bindiriyordu → çakışma.
+
+**Düzeltme:** `KAPAK_BASLIK_BINDIR` ortam değişkeni (varsayılan **`0`**).
+- Video karesi kapağı: başlık **basılmaz** (karede var).
+- Arena görseli kapağı: istem "yazı koyma" dediği için başlık **basılır**
+  (istenirse `KAPAK_BASLIK_BINDIR=1`).
+
+**Ayrıca not:** Rozetteki başlık zaten kesik ("BU KA") — başlık üretimi
+`kapak_baslik` alanında kırpılmış geliyor; bu ayrı bir iş olarak açık kalıyor.
+
+**Ders:** Bir görselin üzerine yazı basmadan önce **görselde yazı var mı**
+kontrol edilmeli. Kaynak türü (`video_karesi` / `arena_gorsel`) bunu belirler.

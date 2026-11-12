@@ -21,6 +21,8 @@ YENİ HAT:
 
 from __future__ import annotations
 
+import os
+
 from pathlib import Path
 from typing import Any
 
@@ -64,7 +66,13 @@ def kapak_uret_ve_yerlestir(paket: dict[str, Any]) -> dict[str, Any]:
                     or paket.get("baslik")
                     or ""
                 )
-                if baslik.strip():
+                # KUSUR DÜZELTMESİ (2026-11-13, koşu 43325201001):
+                # Animasyon 1. kareye başlığı ZATEN basıyor (sarı rozet).
+                # Üstüne ikinci bant basılınca başlık çakışıyordu:
+                #   "EKMEK NEDEN FIRINDAN ÇIKINCA BU KA" iki kez üst üste.
+                # Video karesinde başlık varsa TEKRAR BASMA; Arena görselinde
+                # (yazısız) basmaya devam et.
+                if baslik.strip() and os.environ.get("KAPAK_BASLIK_BINDIR", "0") == "1":
                     if kapak_arena.baslik_kaplama_jpg(str(kare), str(hedef), baslik):
                         sonuc.update(kapak=str(hedef), kaynak="video_karesi")
                 else:

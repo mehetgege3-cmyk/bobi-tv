@@ -203,6 +203,11 @@ def test_prompt_gonderimi_dogrulanir():
     kod True dönüyordu → 8 dk boş sayfa beklendi, log 'gönderildi' dedi.
 
     Sözleşme: _promptu_gonder gönderimi DOĞRULAR; doğrulayamazsa False döner.
+def test_prompt_gonderimi_calisan_orijinaldir():
+    """DERS (canlı koşu 43292738267): 'doğrulama' eklemek gönderimi BOZDU.
+
+    Çalışan sürüm (5199075): editor.click() → keyboard.insert_text → Send'e tıkla.
+    Enter yedeği / kutu boşluğu kontrolü KALDIRILDI — prompt kutuda kalıyordu.
     """
     import inspect
 
@@ -304,6 +309,12 @@ def test_giris_domain_teshisi_ekler():
     assert "domaini:" in kaynak
     assert 'split("@")[-1]' in kaynak
     assert "KABUL ETMİYOR" in kaynak
+    assert 'button[aria-label="Send message"]' in kaynak
+    assert "insert_text" in kaynak
+    assert 'await editor.click()' in kaynak
+    # bozduğumuz yedekler geri gelmemeli
+    assert "_editor_bos" not in kaynak
+    assert 'keyboard.type(' not in kaynak
 
 
 def test_eposta_on_kontrol_yazim_hatasini_yakalar():

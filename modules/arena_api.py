@@ -635,6 +635,7 @@ async def oturum_gercekten_acik_mi(page) -> bool:
     return bool(durum.get("editor"))
 
 
+<<<<<<< HEAD
 async def _gonder_dugmesi_durumu(page) -> dict:
     """Gönder düğmesinin gerçek durumunu okur (teşhis için)."""
     try:
@@ -668,6 +669,14 @@ async def _promptu_gonder(page, prompt: str) -> bool:
     Bu sürüm: GERÇEK TUŞ VURUŞLARIYLA yazar (keyboard.type → input event'leri
     tetikler), düğme durumunu okur, gerekirse Enter'a düşer ve sonunda editörün
     boşalmasını doğrular. Doğrulayamazsa False döner (sessiz yalan yok).
+=======
+async def _promptu_gonder(page, prompt: str) -> bool:
+    """Editöre yazar ve gönderir.
+
+    ÖNEMLİ (2026-11-12): Bu, canlı üretimde ÇALIŞAN orijinal sürümdür
+    (commit 5199075). Araya eklenen "doğrulama"/Enter yedekleri gönderimi
+    BOZDU (canlı koşu 43292738267: prompt kutuda kaldı). Geri alındı.
+>>>>>>> fa0c50e (GERİ ALINDI: çalışan Arena gönderim kodu (Enter/doğrulama denemeleri gönderimi bozmuştu))
     """
     editor = page.locator('div.tiptap[contenteditable="true"]')
     try:

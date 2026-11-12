@@ -133,7 +133,7 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Sistem bağımlılıklarını kur (FFmpeg & Fontlar)
+      - name: 1/4 · Sistem araçları (FFmpeg + fontlar)
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq --no-install-recommends \
@@ -143,7 +143,7 @@ jobs:
             fonts-liberation2 \
             libass9
 
-      - name: Python bağımlılıklarını ve Playwright Chromium'u kur
+      - name: 2/4 · Python paketleri + Chromium (Arena için)
         run: |
           python -m pip install --upgrade pip -q
           python -m pip install -q -r requirements.txt
@@ -197,7 +197,7 @@ jobs:
           print(f"✅ Kanca motoru sağlıklı: {ozet['form']} {ozet['puan']}/100 → {ozet['metin']}")
           PYEOF
 
-      - name: BOBİ TV v6.4 Pro Pipeline'ı çalıştır
+      - name: 3/4 · Pipeline'ı çalıştır — seslendir · render · YouTube'a yükle
         if: steps.rtest.outputs.render_test != '1'
         env:
           YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
@@ -363,7 +363,7 @@ jobs:
               print(metin)
           PYEOF
 
-      - name: Arşivi ve kuyruk durumunu commit et
+      - name: 4/4 · Arşivi ve kuyruk durumunu commit et
         if: always()
         run: |
           git config user.name "BOBİ TV Bot"
@@ -527,7 +527,14 @@ jobs:
                       time.sleep(0)
 
           kosular = kosulari_al()
+          # KENDİ koşumuz listede "completed/in_progress" görünebilir (bu job
+          # hâlâ uyurken üretim job'u bitmişse). Kendi run_id'mizi atlamazsak
+          # zincir HER turda "çalışan koşu var" deyip kendini atlıyordu →
+          # 8 saatlik zincir kırıktı, üretimi yalnız cron kurtarıyordu.
+          kendi = str(os.environ.get("GITHUB_RUN_ID") or "")
           for k in kosular:
+              if str(k.get("id")) == kendi:
+                  continue
               if k["status"] in ("queued", "in_progress"):
                   print(f"zincir: çalışan koşu var (#{k['run_number']}) — atlandı")
                   raise SystemExit(0)

@@ -134,3 +134,18 @@ def test_kota_kapisi_kosuyu_sonlandirmaz():
     adimlar = [a for a in _adimlar() if "Kota" in str(a.get("name", ""))]
     for a in adimlar:
         assert "sys.exit(" not in a["run"], "kota kapısı koşuyu sonlandırıyor"
+
+
+def test_zincir_kendi_kosusunu_atlar():
+    """CANLI HATA (43204255511): 'zincir: çalışan koşu var' deyip kendini atlıyordu.
+
+    `bekle-ve-zincirle` job'u 8 saat uyuyor; uyandığında kendi koşusu listede
+    completed görünüyor ve kontrol onu 'çalışan koşu' sanıp zinciri kırıyordu.
+    Bu yüzden 8 saatlik zincir hiç çalışmadı, üretimi cron kurtarıyordu.
+    """
+    veri = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    zincir_job = veri["jobs"]["bekle-ve-zincirle"]
+    zincir = next(a for a in zincir_job["steps"] if "Slotu bekle" in str(a.get("name", "")))
+    yazi = str(zincir.get("run", ""))
+    assert "GITHUB_RUN_ID" in yazi, "kendi koşu kimliği okunmalı"
+    assert 'str(k.get("id")) == kendi' in yazi or "== kendi" in yazi, "kendi koşu atlanmalı"

@@ -900,3 +900,38 @@ def test_arena_sorgu_dongusu_calisir_imzasi():
     assert "_prompt_kuyrugunu_at(" in kaynak
     # iki argümanlı çağrı: (..., prompt)
     assert "prompt_ilk_satir), prompt" in kaynak.replace("\n", " ").replace("  ", " ") or ", prompt" in kaynak
+
+
+# ---------------------------------------------------------------------------
+# Geçici çıktıların workspace dışına yazılması (kota koruması)
+# ---------------------------------------------------------------------------
+
+
+def test_gecici_kok_verilince_ciktilar_workspace_disina_gider(monkeypatch):
+    """Workspace kotası 128 MB: render/TTS çıktıları snapshot dışına yazılmalı."""
+    import importlib
+
+    monkeypatch.setenv("BOBITV_GECICI_KOK", "/home/user/out")
+    from modules import calisma_dizinleri
+
+    mod = importlib.reload(calisma_dizinleri)
+    try:
+        assert str(mod.TTS_YOLU).startswith("/home/user/out/")
+        assert str(mod.RENDER_YOLU).startswith("/home/user/out/")
+        assert str(mod.OUTPUT_YOLU).startswith("/home/user/out/")
+        assert "bobi_tv" not in str(mod.RENDER_YOLU)
+    finally:
+        monkeypatch.delenv("BOBITV_GECICI_KOK", raising=False)
+        importlib.reload(calisma_dizinleri)
+
+
+def test_gecici_kok_yoksa_eski_yollar_korunur(monkeypatch):
+    """GitHub Actions'ta env yok → davranış değişmemeli (CI önbelleği bu yolu bekler)."""
+    import importlib
+
+    monkeypatch.delenv("BOBITV_GECICI_KOK", raising=False)
+    from modules import calisma_dizinleri
+
+    mod = importlib.reload(calisma_dizinleri)
+    assert str(mod.TTS_YOLU) == "bobi_tv/production/tts"
+    assert str(mod.RENDER_YOLU) == "bobi_tv/production/render"

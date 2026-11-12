@@ -16,6 +16,8 @@ import math
 import wave
 import subprocess
 from pathlib import Path
+
+from modules import calisma_dizinleri
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
@@ -776,7 +778,7 @@ def pro_sahne_videosu_uret(
 
 # Geriye dönük uyumluluk sarmalayıcıları
 def basit_animasyon_uret(senaryo_paketi: dict) -> str:
-    cikti = str(Path("bobi_tv/production/render") / f"{senaryo_paketi['dosya_adi']}_anim.mp4")
+    cikti = str(calisma_dizinleri.RENDER_YOLU / f"{senaryo_paketi['dosya_adi']}_anim.mp4")
     return pro_sahne_videosu_uret(senaryo_paketi, "", cikti)
 
 

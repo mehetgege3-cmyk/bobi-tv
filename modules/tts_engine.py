@@ -15,9 +15,11 @@ import importlib.util
 import subprocess
 from pathlib import Path
 
+from modules import calisma_dizinleri
+
 from modules.senaryo_v7.ayarlar import Ayarlar
 
-TTS_YOLU = Path("bobi_tv/production/tts")
+TTS_YOLU = calisma_dizinleri.TTS_YOLU
 
 ERKEK_SES = "tr-TR-AhmetNeural"
 KADIN_SES = "tr-TR-EmelNeural"

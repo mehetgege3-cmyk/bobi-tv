@@ -13,6 +13,8 @@ import re
 import subprocess
 from pathlib import Path
 
+from modules import calisma_dizinleri
+
 from PIL import Image, ImageDraw, ImageFont
 
 
@@ -755,7 +757,7 @@ def kapak_uret(paket_veya_yol, senaryo_paketi: dict = None) -> str:
     if isinstance(paket_veya_yol, dict):
         paket = paket_veya_yol
         dosya_adi = paket.get("dosya_adi", "video")
-        video_yolu = paket.get("final_video") or str(Path("bobi_tv/output") / f"{dosya_adi}.mp4")
+        video_yolu = paket.get("final_video") or str(calisma_dizinleri.OUTPUT_YOLU / f"{dosya_adi}.mp4")
     else:
         video_yolu = str(paket_veya_yol)
         paket = senaryo_paketi if isinstance(senaryo_paketi, dict) else {}

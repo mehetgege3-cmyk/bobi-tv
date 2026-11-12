@@ -31,6 +31,8 @@ import json
 import shutil
 import subprocess
 from pathlib import Path
+
+from modules import calisma_dizinleri
 from typing import Any
 
 #: YouTube kapak sınırları (aşılırsa yükleme reddedilir).
@@ -391,7 +393,7 @@ def kapak_sec_ve_hazirla(paket: dict[str, Any]) -> dict[str, Any]:
     """
     video = str(paket.get("final_video") or "")
     dosya_adi = str(paket.get("dosya_adi") or "video")
-    cikis_dir = Path("bobi_tv/output")
+    cikis_dir = calisma_dizinleri.OUTPUT_YOLU
     cikis_dir.mkdir(parents=True, exist_ok=True)
 
     kare = str(cikis_dir / f"{dosya_adi}_kare0.jpg")

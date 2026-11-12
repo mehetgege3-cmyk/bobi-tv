@@ -13,12 +13,14 @@ import subprocess
 import wave
 from pathlib import Path
 
+from modules import calisma_dizinleri
+
 from modules.audio_fx import profesyonel_ses_miksla
 from modules.animasyon import pro_sahne_videosu_uret
 from modules.senaryo_v7.ayarlar import Ayarlar
 
-RENDER_YOLU = Path("bobi_tv/production/render")
-OUTPUT_YOLU = Path("bobi_tv/output")
+RENDER_YOLU = calisma_dizinleri.RENDER_YOLU
+OUTPUT_YOLU = calisma_dizinleri.OUTPUT_YOLU
 
 VIDEO_GENISLIK = 1080
 VIDEO_YUKSEKLIK = 1920

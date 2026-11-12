@@ -60,6 +60,16 @@
       "cevap_ozeti": "Bizde soyadı aileden gelir; baba, anne ve çocuklar aynı soyadını taşır. İzlanda'da ise durum bambaşka: çoğu kişinin 'soyadı' aslında babasının, bazen annesinin adıdır.\n\nSistemin adı 'patronimik'. Bir erkek çocuğun adı Jón ve babasının adı Sigurður ise, çocuğun tam adı 'Jón Sigurðsson' olur; yani 'Sigurður'un oğlu Jón'. Kız kardeşi ise 'Sigurðardóttir' olur: 'Sigurður'un kızı'. Yani kardeşler farkl",
       "skor": 100,
       "tarih": "2026-11-12T02:57:29.028278+00:00"
+    },
+    {
+      "video_no": 6,
+      "kategori": "doga_evren",
+      "taktik": "T2",
+      "anahtar": "kopekbaligi_agac",
+      "konu": "Köpekbalıkları Ağaçlardan Daha Yaşlı! 🦈",
+      "cevap_ozeti": "Ağaçların dünyanın en eski canlıları olduğunu düşünmek kolaydır; ormanda yürürken yüzyıllık gövdeler bize zamanın kendisini hatırlatır. Ama gerçek daha tuhaf: köpekbalıkları ağaçlardan çok daha önce ortaya çıktı.\n\nKöpekbalıklarının ataları yaklaşık 450 milyon yıl önce okyanuslarda yaşıyordu. Bugün bildiğimiz anlamda ağaçlar ise yaklaşık 385 milyon yıl önce ortaya çıktı. Yani aradaki fark 60 milyon",
+      "skor": 100,
+      "tarih": "2026-11-12T03:04:47.547839+00:00"
     }
   ],
   "kullanilan_yedekler": [
@@ -68,6 +78,7 @@
     "fermuar_gec",
     "kleopatra_piramit",
     "ahtapot_uc_kalp",
-    "izlanda_soyadi"
+    "izlanda_soyadi",
+    "kopekbaligi_agac"
   ]
 }

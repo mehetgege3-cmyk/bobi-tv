@@ -648,7 +648,13 @@
     "kanca_puan": null,
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
-    "hook_ust_bant": "Beyin Asıl Temizliğini Uyurken Yap"
+    "hook_ust_bant": "Beyin Asıl Temizliğini Uyurken Yap",
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 3,
+        "zaman": "2026-11-12T03:08:10.474059+00:00"
+      }
+    }
   },
   {
     "dosya_adi": "20261112_0213_0002_fermuar_gec",
@@ -665,7 +671,8 @@
     "kanca_puan": null,
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
-    "hook_ust_bant": "Fermuar 60 Yıl Bekledi: İcat Edild"
+    "hook_ust_bant": "Fermuar 60 Yıl Bekledi: İcat Edild",
+    "izlenme_snapshots": {}
   },
   {
     "dosya_adi": "20261112_0222_0003_kleopatra_piramit",
@@ -682,7 +689,8 @@
     "kanca_puan": null,
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
-    "hook_ust_bant": "Kleopatra, Piramitlerin Yapılışınd"
+    "hook_ust_bant": "Kleopatra, Piramitlerin Yapılışınd",
+    "izlenme_snapshots": {}
   },
   {
     "dosya_adi": "20261112_0249_0004_ahtapot_uc_kalp",
@@ -699,7 +707,8 @@
     "kanca_puan": null,
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
-    "hook_ust_bant": "Ahtapotların Üç Kalbi Var — Biri Y"
+    "hook_ust_bant": "Ahtapotların Üç Kalbi Var — Biri Y",
+    "izlenme_snapshots": {}
   },
   {
     "dosya_adi": "20261112_0257_0005_izlanda_soyadi",
@@ -716,6 +725,25 @@
     "kanca_puan": null,
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
-    "hook_ust_bant": "İzlanda'da Aile Soyadı Yok — Baban"
+    "hook_ust_bant": "İzlanda'da Aile Soyadı Yok — Baban",
+    "izlenme_snapshots": {}
+  },
+  {
+    "dosya_adi": "20261112_0304_0006_kopekbaligi_agac",
+    "baslik": "Köpekbalıkları Ağaçlardan Daha Yaşlı! 🦈 #shorts",
+    "video_id": "R-oqi1PUkKw",
+    "durum": "yayinda",
+    "kategori": "doga_evren",
+    "url": "https://www.youtube.com/shorts/R-oqi1PUkKw",
+    "senaryo_ozeti": "",
+    "hash": "",
+    "tarih": "2026-11-12T03:08:09.885342+00:00",
+    "kanca_formu": "",
+    "kanca_ab": "",
+    "kanca_puan": null,
+    "kapak_dosyasi": "",
+    "kapak_yuklendi": null,
+    "hook_ust_bant": "Köpekbalıkları Ağaçlardan Daha Yaş",
+    "izlenme_snapshots": {}
   }
 ]

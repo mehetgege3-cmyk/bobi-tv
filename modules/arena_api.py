@@ -752,6 +752,24 @@ async def _arena_sorgusu_yap(
             print("[Arena] Tiptap editörü görünmedi.", flush=True)
             return None
 
+        # SOHBET KİMLİĞİ — KESİN YOL (HAR kanıtı): Arena mesajı
+        # `POST /nextjs-api/stream/create-chat` ile gönderiyor ve yanıt
+        # `{"id": "<uuid>"}` dönüyor. URL değişmiyor, geçmiş listesi gecikmeli;
+        # bu yanıt ise ANINDA ve KESİN. Yakalanınca cevap + GÖRSEL tarayıcısız
+        # (HTTP) okunabilir: /api/chat/{id}/events, /workspace/cas/user/{hash}.
+        async def _create_chat_yaniti(response):
+            try:
+                if "create-chat" in response.url and response.status == 200:
+                    veri = await response.json()
+                    kid = (veri or {}).get("id")
+                    if kid:
+                        _SON_SAYFA["chat_id"] = kid
+                        print(f"[Arena] 🆔 sohbet kimliği: {kid}", flush=True)
+            except Exception:
+                pass
+
+        page.on("response", _create_chat_yaniti)
+
         await editor.click()
         await page.wait_for_timeout(300)
         await page.keyboard.insert_text(prompt)

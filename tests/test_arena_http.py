@@ -91,3 +91,15 @@ def test_kapak_promptunda_soru_sorma_var():
 
     kaynak = inspect.getsource(kapak_gorsel.gorsel_promptu)
     assert "Soru sorma, yap." in kaynak
+
+
+def test_create_chat_yanitindan_chat_id_yakalanir():
+    """HAR kanıtı: POST /nextjs-api/stream/create-chat → {"id": "<uuid>"}."""
+    import inspect
+
+    from modules import arena_api
+
+    kaynak = inspect.getsource(arena_api)
+    assert "create-chat" in kaynak
+    assert 'page.on("response"' in kaynak
+    assert "def son_chat_id" in kaynak

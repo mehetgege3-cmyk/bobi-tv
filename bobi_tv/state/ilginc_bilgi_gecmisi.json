@@ -30,11 +30,22 @@
       "cevap_ozeti": "Fermuarı 'modern hayatın icadı' sanırız; oysa hikâyesi gecikmelerle dolu. İlk benzer tasarımlar 1850'lerde ortaya çıktı, ama bugün bildiğimiz kilit dişli sistem 1910'ların başında geliştirildi. Buna rağmen yıllarca kimse kıyafetlerde kullanmadı.\n\nNeden? Çünkü ilk sürümler pahalıydı, sıkışıyordu ve insanlar düğmeye alışıktı. Fermuar önce botlarda ve çantalarda kullanıldı; kıyafete girmesi ise 1930'",
       "skor": 100,
       "tarih": "2026-11-12T02:13:44.093381+00:00"
+    },
+    {
+      "video_no": 3,
+      "kategori": "tarih_medeniyet",
+      "taktik": "T4",
+      "anahtar": "kleopatra_piramit",
+      "konu": "Kleopatra, Piramitlerin Yapılışından Çok Ay'a Daha Yakındı! 🏛️",
+      "cevap_ozeti": "Bu soruyu ilk duyduğunda muhtemelen hemen 'piramitlere' diyeceksin; piramitlerle Kleopatra aynı ders kitabı sayfasında durur. Ama tarih, hissettiğimizden farklı çalışıyor.\n\nBüyük Giza Piramidi yaklaşık 2.560 yılda, MÖ 2.560 civarında tamamlandı. Kleopatra ise MÖ 69'da doğdu ve MÖ 30'da öldü. Arada yaklaşık 2.500 yıl var. Apollo 11'in Ay'a inişi ise 1969 yılında gerçekleşti; Kleopatra'nın ölümünden",
+      "skor": 100,
+      "tarih": "2026-11-12T02:22:00.146797+00:00"
     }
   ],
   "kullanilan_yedekler": [
     "gps_izafiyet",
     "uykuda_beyin_temizligi",
-    "fermuar_gec"
+    "fermuar_gec",
+    "kleopatra_piramit"
   ]
 }

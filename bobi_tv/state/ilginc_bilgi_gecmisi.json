@@ -150,6 +150,16 @@
       "cevap_ozeti": "Japonya'da çikolata denince akla ilk gelen şey tatlı bir istek değil, bir gelenektir. Bir dönem ithal çikolata pahalı ve nadirdi; bu yüzden onu hediye etmek özel bir jest sayıldı. Zamanla bu alışkanlık yerleşti ve çikolata, teşekkür etmenin ve ilişkiyi sürdürmenin bir aracı hâline geldi.\n\nGeleneğin en ilginç tarafı, çikolatanın farklı anlamlar taşımasıdır. İş yerinde meslektaşlara verilen çikolata",
       "skor": 100,
       "tarih": "2026-11-12T17:06:26.136134+00:00"
+    },
+    {
+      "video_no": 14,
+      "kategori": "doga_evren",
+      "taktik": "T1",
+      "anahtar": "kum_firtinasi_haber",
+      "konu": "Sahra'nın Tozu Amazon Ormanını Besliyor 🌍",
+      "cevap_ozeti": "Sahra Çölü ile Amazon Ormanı arasında binlerce kilometre var; yine de ikisi arasında görünmez bir bağ olduğu düşünülüyor. Rüzgârlar, çölden kalkan ince tozu okyanusun üzerinden taşıyıp Güney Amerika'ya ulaştırır. Bu tozun içinde bitkiler için önemli mineraller bulunur.\n\nAmazon toprakları şaşırtıcı biçimde fakirdir; ormanın bu kadar gür olmasının nedeni toprağın zenginliği değil, döngünün hızıdır. ",
+      "skor": 100,
+      "tarih": "2026-11-12T17:12:26.021679+00:00"
     }
   ],
   "kullanilan_yedekler": [
@@ -165,6 +175,7 @@
     "gunes_isigi_ay",
     "kopek_burun_izi",
     "kutup_ayi_deri",
-    "japonya_cikolata"
+    "japonya_cikolata",
+    "kum_firtinasi_haber"
   ]
 }

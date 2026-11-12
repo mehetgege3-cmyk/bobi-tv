@@ -4,6 +4,7 @@ on:
   workflow_run:
     workflows:
       - "Arena AI Playwright Agent"
+      - '🖼️ Arena Görsel (tarayıcısız okuma)'
       - "BOBİ TV — Arena AI Senaryo Üretimi"
       - "🧹 BOBİ TV Otomatik Temizleme — <100 İzlenme Videoları Sil"
       - "BOBİ TV — Toplu Manuel Üretim Pipeline"

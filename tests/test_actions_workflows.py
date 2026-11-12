@@ -27,10 +27,14 @@ def test_arena_self_repair_monitors_all_other_current_workflows() -> None:
     repair: Any = yaml.load(repair_path.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
     triggers = repair["on"]["workflow_run"]
     monitored = set(triggers["workflows"])
+    # Bilinçli istisna: teşhis workflow'u çerez dolu olduğunda kırmızı yanar;
+    # bu beklenen bir durumdur (kullanıcı aksiyonu gerektirir), otomatik onarım
+    # denemesi boşa koşu harcar.
     existing = {
         workflow["name"]
         for path in workflow_dir.glob("*.yml")
         if path.name != repair_path.name
+        if path.name not in {"arena_merhaba.yml"}
         if isinstance((workflow := yaml.load(path.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)), dict)
     }
     assert monitored == existing

@@ -24,17 +24,50 @@ from typing import Any
 
 from modules import calisma_dizinleri
 
+def _video_boyutu(ff: str, video_yolu: str) -> tuple[int, int]:
+    """Videonun genişlik/yüksekliğini okur. Okunamazsa 1080×1920 varsayar."""
+    try:
+        r = subprocess.run([ff, "-i", video_yolu], capture_output=True, text=True, timeout=60)
+        import re as _re
+
+        m = _re.search(r"Video:.*?,\s*(\d{2,5})x(\d{2,5})", r.stderr)
+        if m:
+            return int(m.group(1)), int(m.group(2))
+    except Exception:
+        pass
+    return 1080, 1920
+
+
+def ffmpeg_yolu() -> str | None:
+    """ffmpeg çalıştırılabilirini bulur.
+
+    KOŞU 43323078600: `shutil.which("ffmpeg")` boş döndüğü için kapak 1. kareye
+    YERLEŞTİRİLEMEDİ (zincirin son adımı). Ama `imageio-ffmpeg` paketi kendi
+    binary'sini getiriyor; onu da kabul et.
+    """
+    yol = shutil.which("ffmpeg")
+    if yol:
+        return yol
+    try:
+        import imageio_ffmpeg
+
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception:
+        return None
+
+
 def ilk_kare_cikar(video_yolu: str, cikis_jpg: str) -> str | None:
     """Videonun 1. karesini JPG olarak çıkarır (ffmpeg). Başarısızsa None."""
     if not Path(video_yolu).exists():
         return None
-    if not shutil.which("ffmpeg"):
+    _ff = ffmpeg_yolu()
+    if not _ff:
         print("[Kapak] ffmpeg yok — ilk kare çıkarılamadı")
         return None
     try:
         subprocess.run(
             [
-                "ffmpeg", "-y", "-loglevel", "error",
+                _ff, "-y", "-loglevel", "error",
                 "-i", video_yolu,
                 "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920",
                 "-frames:v", "1", "-q:v", "2", cikis_jpg,
@@ -179,18 +212,25 @@ def ilk_kareye_yerlestir(video_yolu: str, kapak_jpg: str, cikis_mp4: str | None 
     """
     if not (Path(video_yolu).exists() and Path(kapak_jpg).exists()):
         return None
-    if not shutil.which("ffmpeg"):
+    _ff = ffmpeg_yolu()
+    if not _ff:
         print("[Kapak] ffmpeg yok — ilk kareye yerleştirme atlandı")
         return None
     hedef = cikis_mp4 or str(Path(video_yolu).with_name(Path(video_yolu).stem + "_kapakli.mp4"))
+
+    # KÖK NEDEN (koşu 43323078600 / yerel ölçüm): kapak 1080×1920'e ölçekleniyordu
+    # ama video 720×1280 ise concat "parameters do not match" ile PATLIYOR
+    # (rc=234, çıktı 0 bayt). Kapak HER ZAMAN videonun kendi çözünürlüğüne
+    # ölçeklenmeli. Ölçüyü ffprobe yerine ffmpeg -i çıktısından okuyoruz.
+    gen, yuk = _video_boyutu(_ff, video_yolu)
     try:
         # 1) Kapağı video çözünürlüğüne getir (kare sayısı 1, süre 1/FPS)
         subprocess.run(
             [
-                "ffmpeg", "-y", "-loglevel", "error",
+                _ff, "-y", "-loglevel", "error",
                 "-loop", "1", "-t", "0.04", "-i", kapak_jpg,
-                "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,"
-                       "crop=1080:1920,setsar=1",
+                "-vf", f"scale={gen}:{yuk}:force_original_aspect_ratio=increase,"
+                       f"crop={gen}:{yuk},setsar=1",
                 "-r", "30", "-frames:v", "1", "-q:v", "2", hedef + "_kare.jpg",
             ],
             check=True, capture_output=True, timeout=120,
@@ -198,7 +238,7 @@ def ilk_kareye_yerlestir(video_yolu: str, kapak_jpg: str, cikis_mp4: str | None 
         # 2) Kareyi videonun başına ekle, kalanı aynen koru
         subprocess.run(
             [
-                "ffmpeg", "-y", "-loglevel", "error",
+                _ff, "-y", "-loglevel", "error",
                 "-i", hedef + "_kare.jpg", "-i", video_yolu,
                 "-filter_complex",
                 "[0:v]fps=30,trim=end_frame=1,setpts=PTS-STARTPTS[v0];"

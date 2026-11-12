@@ -705,7 +705,9 @@ async def _arena_sorgusu_yap(
                 print("[Arena] ⛔ Oturum süresi dolmuş (Login modalı açıldı).", flush=True)
                 return None
 
-            cevap = _cevabi_ayikla(body, prompt, prompt_ilk_satir)
+            cevap = _prompt_kuyrugunu_at(_cevabi_ayikla(body, prompt, prompt_ilk_satir), prompt)
+            if _prompt_yankisi_mi(cevap):
+                cevap = ""  # yalnız prompt yankısı var → gerçek cevap henüz gelmedi
             dusunuyor = "orchestrating" in body.lower() or "thinking" in body.lower()
             bitti_isareti = "Was this task successful?" in body
 
@@ -774,6 +776,35 @@ async def _arena_sorgusu_yap(
         return None
 
 
+#: Prompt'un tanıtıcı parçaları — Arena bunları yankılıyor (canlı kanıt
+#: koşu 43139582417: 3166 karakterlik "cevap" aslında bizim prompt'umuzdu ve
+#: 20 sn hiç değişmedi → sahte "cevap oturdu").
+PROMPT_IZLERI = (
+    "Sen BOBİ TV için Türkçe kısa bilgi",
+    "YAZIM KURALLARI:",
+    "şablonu yankılama",
+)
+
+
+def _prompt_yankisi_mi(metin: str) -> bool:
+    """Dönen metin gerçek cevap değil, gönderdiğimiz prompt'un yankısı mı?"""
+    return any(iz in str(metin or "") for iz in PROMPT_IZLERI)
+
+
+def _prompt_kuyrugunu_at(cevap: str, prompt: str) -> str:
+    """Yankılanan prompt'un arkasındaki GERÇEK cevabı bırakır."""
+    t = str(cevap or "")
+    if not _prompt_yankisi_mi(t):
+        return t
+    for iz in ("şablonu yankılama", "sadece metin yaz.", "Emoji kullan ama abartma"):
+        i = t.rfind(iz)
+        if i != -1:
+            kalan = t[i + len(iz):].strip()
+            if not _prompt_yankisi_mi(kalan):
+                return kalan
+    return ""
+
+
 def _cevabi_ayikla(full_body: str, prompt: str, prompt_ilk_satir: str) -> str:
     prompt_son_satir = [s.strip() for s in prompt.splitlines() if s.strip()][-1][:60]
     idx = full_body.rfind(prompt)
@@ -791,6 +822,10 @@ def _cevabi_ayikla(full_body: str, prompt: str, prompt_ilk_satir: str) -> str:
         m_idx = slice_text.find(marker)
         if m_idx != -1:
             slice_text = slice_text[:m_idx].strip()
+    # Arayüz etiketleri cevap sanılmasın
+    for etiket in ("Was this task successful?", "Workspace", "Connectors"):
+        if slice_text.strip() == etiket:
+            slice_text = ""
 
     slice_text = re.sub(r"\n\d+s\s*\|\s*just now[\s\S]*$", "", slice_text, flags=re.IGNORECASE).strip()
     # Arena, gönderdiğimiz prompt'u (özellikle JSON şablonunu) yankılayıp

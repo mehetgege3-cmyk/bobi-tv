@@ -677,3 +677,36 @@ def test_arena_cevabindan_prompt_yankisi_kesilir():
     cevap = _cevabi_ayikla(body, prompt, ilk)
     assert "SADECE şu JSON" not in cevap
     assert "Gercek cevap" in cevap
+
+
+def test_prompt_yankisi_cevap_sayilmaz():
+    """CANLI KANIT (43139582417): 3166 karakterlik 'cevap' bizim prompt'umuzdu.
+
+    Arena prompt'u yankılıyor, gerçek cevap hiç gelmiyor; eski kod bunu
+    'cevap oturdu' diye kabul edip çöp içerik üretiyordu.
+    """
+    from modules import arena_api
+    from modules.ilginc_bilgi import etkilesim as etk
+
+    taktik = etk.taktik_sec(2, "gunluk_yasam", 0, onceki_taktikler=[])
+    prompt = uretici.arena_promptu("gunluk_yasam", taktik, [])
+    body = "Arena sohbeti\n" + prompt + "\nWas this task successful?\n"
+    cevap = arena_api._cevabi_ayikla(body, prompt, prompt.splitlines()[0][:55])
+    cevap = arena_api._prompt_kuyrugunu_at(cevap, prompt)
+    assert "YAZIM KURALLARI" not in cevap
+    assert cevap.strip() == ""  # gerçek cevap yok → boş
+    kart = uretici.arena_bilgi_uret(
+        "gunluk_yasam", taktik, [], arena_fn=lambda _p: prompt
+    )
+    assert kart is None  # banka devreye girer, çöp içerik üretilmez
+
+
+def test_sorusuz_metin_kart_olmaz():
+    """'?' olmayan metin R1'i kırar; uydurma soru yazmak yerine reddedilir."""
+    import modules.ilginc_bilgi.uretici as u
+
+    metin = (
+        "Fermuar 1851'de icat edildi ama yıllarca kimse kullanmadı. "
+        "İlk sürümler pahalıydı ve sıkışıyordu. Bugün her kıyafette var."
+    )
+    assert u._duz_metinden_kart(metin) is None

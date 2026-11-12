@@ -187,6 +187,10 @@ def arena_bilgi_uret(
     except Exception as e:
         print(f"[İlginçBilgi] Arena hatası: {str(e)[:120]}")
         return None
+    # Teşhis: Arena'nın ne döndürdüğü logda görünsün (yankı mı, gerçek cevap mı)
+    if ham:
+        _t = str(ham).strip()
+        print(f"[İlginçBilgi] Arena ham cevap {len(_t)} karakter | baş: {_t[:90]!r} | son: {_t[-90:]!r}")
     kart = _json_ayikla(ham or "")
     if not kart:
         # Arena JSON yerine düz metin döndürdüyse metni yine de kullan:
@@ -203,7 +207,9 @@ def arena_bilgi_uret(
 def _duz_metinden_kart(metin: str) -> dict | None:
     """JSON olmayan Arena cevabını bilgi kartına çevirir (başlık tabanlı)."""
     metin = _prompt_kuyrugunu_sil(_sablon_izini_sil(metin)).strip()
-    if len(metin) < 120 or sablon_yankisi_mi(metin):
+    # Soru cevabın başında yoksa sonda/kapak ifadesinde aranır; yoksa uydurma
+    # soru yazmak yerine reddedilir (YouTube deceptive practices riski).
+    if len(metin) < 120 or sablon_yankisi_mi(metin) or "?" not in metin:
         return None
     bolumler = kurallar.bolumleri_ayir(metin)
     cevap = bolumler.get(kurallar.BASLIK_CEVAP, "").strip()

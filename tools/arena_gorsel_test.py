@@ -76,7 +76,41 @@ async def main() -> int:
         await page.goto("https://arena.ai/agent/", wait_until="domcontentloaded", timeout=45000)
         await page.wait_for_timeout(3000)
         await arena_api._arena_riza_modalini_kapat(page)
-        await arena_api._promptu_gonder(page, prompt)
+
+        async def adim_ekrani(ad: str) -> None:
+            """Her adımda ekran görüntüsü + DOM dökümü (teşhis)."""
+            yol = CIKIS / f"adim_{ad}.png"
+            try:
+                await page.screenshot(path=str(yol))
+                print(f"📸 adım ekranı: {yol.name}")
+            except Exception as e:
+                print(f"screenshot hatası: {str(e)[:80]}")
+            try:
+                dom = await page.evaluate(
+                    """() => ({
+                        url: location.href,
+                        tiptap: document.querySelectorAll('div.tiptap[contenteditable="true"]').length,
+                        contenteditable: document.querySelectorAll('[contenteditable="true"]').length,
+                        textarea: document.querySelectorAll('textarea').length,
+                        send_btn: document.querySelectorAll('button[aria-label="Send message"]').length,
+                        buttons: [...document.querySelectorAll('button')].slice(0, 12)
+                                  .map(b => (b.getAttribute('aria-label') || b.innerText || '').slice(0, 30)),
+                        login: /Sign in|Continue with Google|Log in/i.test(document.body.innerText || ''),
+                        metin: (document.body.innerText || '').slice(0, 300)
+                    })"""
+                )
+                print(f"🔎 DOM[{ad}]: {dom}", flush=True)
+                rapor.setdefault("adimlar", {})[ad] = dom
+            except Exception as e:
+                print(f"DOM hatası [{ad}]: {str(e)[:80]}")
+
+        await adim_ekrani("1_sayfa_acildi")
+        gonderildi = await arena_api._promptu_gonder(page, prompt)
+        rapor["gonderildi"] = bool(gonderildi)
+        await adim_ekrani("2_gonderim_sonrasi")
+        if not gonderildi:
+            rapor["sebep"] = "gonderilemedi"
+            print("❌ PROMPT GÖNDERİLEMEDİ — teşhis ekranlarına bak (adim_*.png)")
 
         # 8 dakika boyunca her 10 sn'de sayfayı yokla
         for tur in range(48):

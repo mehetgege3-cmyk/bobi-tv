@@ -649,7 +649,21 @@ async def _promptu_gonder(page, prompt: str) -> bool:
         except Exception:
             return False
 
-    await editor.click()
+    # Tıklama yerine JS focus: overlay/modal varsa click 30 sn timeout veriyordu
+    try:
+        await page.evaluate(
+            """() => {
+                const e = document.querySelector('div.tiptap[contenteditable="true"]')
+                       || document.querySelector('[contenteditable="true"]');
+                if (e) { e.focus(); }
+            }"""
+        )
+    except Exception:
+        try:
+            await editor.click(timeout=5000)
+        except Exception as e:
+            print(f"[Arena] Editöre odaklanılamadı: {str(e)[:90]}", flush=True)
+            return False
     await page.wait_for_timeout(300)
 
     # 1) GERÇEK tuş vuruşları (React state güncellensin). Uzunsa hızlı yaz.
@@ -675,7 +689,16 @@ async def _promptu_gonder(page, prompt: str) -> bool:
     # 3) Düğme pasifse / tıklama işe yaramadıysa: Enter, sonra Ctrl+Enter
     if not gonderildi:
         for tus in ("Enter", "Control+Enter"):
-            await editor.click()
+            try:
+                await page.evaluate(
+                    """() => {
+                        const e = document.querySelector('div.tiptap[contenteditable="true"]')
+                               || document.querySelector('[contenteditable="true"]');
+                        if (e) { e.focus(); }
+                    }"""
+                )
+            except Exception:
+                pass
             await page.keyboard.press(tus)
             await page.wait_for_timeout(1200)
             if await _editor_bos():

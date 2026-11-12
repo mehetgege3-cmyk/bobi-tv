@@ -257,3 +257,21 @@ def test_google_oauth_akisi_olculen_secicileri_kullanir():
     # e-posta adımı sonrası Google'a yönlendirme yakalanıyor mu?
     email_kaynak = inspect.getsource(arena_giris._email_ile_giris)
     assert "_google_ile_giris" in email_kaynak
+
+
+def test_kisa_soruda_cevabin_basi_kesilmez():
+    """CANLI HATA (koşu 43298899604): soru "Merhaba", cevap "Merhaba! 👋 ...".
+
+    _cevabi_ayikla rfind() ile cevabın KENDİ başındaki "Merhaba"yı bulup
+    kesiyordu → cevap "! 👋 Size nasıl yardımcı olabilirim?" oluyordu.
+    Kısa sorularda echo İLK eşleşmedir; cevabın tamamı korunmalı.
+    """
+    from modules.arena_api import _cevabi_ayikla
+
+    govde = (
+        "What would you like to do?\n"
+        "Merhaba\n"
+        "Merhaba! 👋 Size nasıl yardımcı olabilirim?"
+    )
+    cevap = _cevabi_ayikla(govde, "Merhaba", "Merhaba")
+    assert cevap.startswith("Merhaba!"), cevap

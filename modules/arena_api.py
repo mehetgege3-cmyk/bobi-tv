@@ -956,7 +956,11 @@ def _ingilizce_onyuzu_at(metin: str) -> str:
 
 def _cevabi_ayikla(full_body: str, prompt: str, prompt_ilk_satir: str) -> str:
     prompt_son_satir = [s.strip() for s in prompt.splitlines() if s.strip()][-1][:60]
-    idx = full_body.rfind(prompt)
+    # CANLI HATA (koşu 43298899604): soru "Merhaba", cevap "Merhaba! 👋 Size nasıl
+    # yardımcı olabilirim?" → rfind() cevabın KENDİ başındaki "Merhaba"yı bulup
+    # kesti, cevap "! 👋 ..." oldu. Kısa sorularda echo ilk eşleşmedir → find().
+    arama = full_body.find if len(prompt.strip()) < 40 else full_body.rfind
+    idx = arama(prompt)
     if idx != -1:
         slice_text = full_body[idx + len(prompt):].strip()
     else:

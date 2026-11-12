@@ -254,7 +254,7 @@ async def arena_canli_senaryo_iste(video_no: int) -> dict | None:
     )
 
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await _tarayici_ac(p.chromium.launch, headless=True)
         context = await browser.new_context(viewport={"width": 1366, "height": 900})
         await context.add_cookies([
             {"name": "arena-auth-prod-v1.0", "value": clean_cookie, "domain": "arena.ai", "path": "/"},
@@ -351,7 +351,7 @@ async def arena_kapak_onerisi_al_async(paket: dict) -> dict | None:
 
     try:
         async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
+            browser = await _tarayici_ac(p.chromium.launch, headless=True)
             context = await browser.new_context(viewport={"width": 1366, "height": 900})
             await context.add_cookies([
                 {"name": "arena-auth-prod-v1.0", "value": clean_cookie, "domain": "arena.ai", "path": "/"},
@@ -407,7 +407,7 @@ async def arena_kisa_cevap_al_async(prompt: str) -> str | None:
 
     try:
         async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
+            browser = await _tarayici_ac(p.chromium.launch, headless=True)
             context = await browser.new_context(viewport={"width": 1366, "height": 900})
             await context.add_cookies([
                 {"name": "arena-auth-prod-v1.0", "value": clean_cookie,
@@ -653,6 +653,19 @@ def _oturum_doldu_isaretle() -> None:
             flush=True,
         )
     _OTURUM_DOLDU["deger"] = True
+
+
+async def _tarayici_ac(async_playwright_fn, *args, **kwargs):
+    """Tarayıcıyı açar; açılış asılı kalırsa beklemeyi keser (45 sn).
+
+    Teşhis (koşu 43145587605): oturum dolduğunda "ara" süre 3 dk 23 sn
+    (03:04:47 tespit → 03:08:10 banka) çıktı; browser.close() artık 15 sn'de
+    kesiliyor, kalan süre Chromium'un kendisinin asılı kalmasından geliyor.
+    Bu bir cevap bekleme timeout'u DEĞİL — yalnız tarayıcı açma freni.
+    """
+    import asyncio
+
+    return await asyncio.wait_for(async_playwright_fn(*args, **kwargs), timeout=45)
 
 
 async def _tarayiciyi_kapat(browser) -> None:

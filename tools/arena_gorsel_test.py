@@ -105,7 +105,27 @@ async def main() -> int:
                 print(f"DOM hatası [{ad}]: {str(e)[:80]}")
 
         await adim_ekrani("1_sayfa_acildi")
+        if not await arena_api.oturum_gercekten_acik_mi(page):
+            rapor["sebep"] = "oturum_kapali"
+            print("⛔ OTURUM KAPALI — çerez geçersiz/ölü")
+            await arena_api._tarayiciyi_kapat(browser)
+            (CIKIS / "arena_test_rapor.json").write_text(
+                json.dumps(rapor, ensure_ascii=False, indent=2), encoding="utf-8")
+            return 4
+
         gonderildi = await arena_api._promptu_gonder(page, prompt)
+        if not gonderildi:
+            # ÖLÇÜLEN ENGEL: ilk gönderimde "Terms of Use" modalı çıkıyor
+            print("↻ Gönderim başarısız → Agree modalı kapatılıp tekrar denenecek")
+            try:
+                agr = page.locator('button:has-text("Agree")').first
+                if await agr.count() and await agr.is_visible():
+                    await agr.click(timeout=5000)
+                    print("✅ Agree kapatıldı")
+                    await page.wait_for_timeout(1500)
+            except Exception as e:
+                print(f"Agree hatası: {str(e)[:80]}")
+            gonderildi = await arena_api._promptu_gonder(page, prompt)
         rapor["gonderildi"] = bool(gonderildi)
         await adim_ekrani("2_gonderim_sonrasi")
         if not gonderildi:

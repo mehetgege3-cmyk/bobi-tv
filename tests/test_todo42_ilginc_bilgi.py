@@ -969,3 +969,19 @@ def test_kapak_basliginda_emoji_kalmaz():
     """Sunucuda emoji fontu yok → kapakta kutu/boşluk görünüyordu."""
     assert uretici.kapak_basligi("💥 En kısa savaş: 38 dakika!") == "En kısa savaş: 38 dakika!"
     assert uretici.kapak_basligi("Soğanın Seni Ağlatma Sırrı 🧅") == "Soğanın Seni Ağlatma Sırrı"
+
+
+def test_kirpilmis_cevap_reddedilir():
+    """CANLI KANIT (43219457635): ham cevap '...nedenleri hâl�' diye KIRPILMIŞ geldi;
+    yarım JSON, yarım kapak başlığı demek. Kırpık cevap hiç kullanılmamalı."""
+    import json
+
+    tam = {
+        "soru": "Kütüphane gerçekten yandı mı?",
+        "cevap": "Aleksandria kütüphanesi tek bir gecede yanmadı; " * 5,
+        "kapak_baslik": "KÜTÜPHANE EFSANESİ",
+    }
+    tam_metin = json.dumps(tam, ensure_ascii=False)
+    assert uretici._json_ayikla(tam_metin)["kapak_baslik"] == "KÜTÜPHANE EFSANESİ"
+    kirpik = tam_metin[:-12] + "hâl\ufffd"
+    assert uretici._json_ayikla(kirpik) is None

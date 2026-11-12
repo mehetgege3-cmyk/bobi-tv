@@ -198,7 +198,9 @@ def _json_ayikla(metin: str) -> dict | None:
     metin = _ingilizce_onyuzu_at(
         _arayuz_kirliligini_sil(_prompt_kuyrugunu_sil(_sablon_izini_sil(metin)))
     ).strip()
-    if not metin or sablon_yankisi_mi(metin):
+    # Yarım kalmış cevap (canlı kanıt 43219457635: "...hâl\ufffd") asla kullanılmaz:
+    # yarım JSON = yarım kapak başlığı, yarım cümle.
+    if not metin or sablon_yankisi_mi(metin) or "\ufffd" in metin:
         return None
     adaylar = re.findall(r"\{.*\}", metin, re.DOTALL)
     for aday in reversed(adaylar):

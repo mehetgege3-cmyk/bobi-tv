@@ -725,3 +725,20 @@ def test_arena_onay_modalini_kapatir():
     # _arena_sorgusu_yap hem açılışta hem döngüde kapatmayı denemeli
     sorgu = inspect.getsource(arena_api._arena_sorgusu_yap)
     assert sorgu.count("_arena_riza_modalini_kapat") >= 2
+
+
+def test_oturum_dolunca_tarayici_acilmaz():
+    """Çerez süresi dolduğunda her çağrıda Playwright açılıp boşa beklenmemeli."""
+    from modules import arena_api
+
+    arena_api.oturum_bayragini_sifirla()
+    try:
+        arena_api._oturum_doldu_isaretle()
+        assert arena_api.oturum_doldu_mu() is True
+        # kapak yolu erken çıkmalı (Playwright hiç çağrılmadan None)
+        assert arena_api.arena_kapak_onerisi_kisa({"baslik": "x"}) is None
+        # kısa cevap yolu da erken çıkmalı
+        assert arena_api.arena_kisa_cevap_al("test") is None
+    finally:
+        arena_api.oturum_bayragini_sifirla()
+    assert arena_api.oturum_doldu_mu() is False

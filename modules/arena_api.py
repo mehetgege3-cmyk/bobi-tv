@@ -462,6 +462,18 @@ def arena_kapak_onerisi_al(paket: dict) -> dict | None:
         return None
 
 
+def arena_kapak_onerisi_kisa(paket: dict) -> dict | None:
+    """Kapak önerisi; oturum düşmüşse Playwright'ı HİÇ başlatmaz.
+
+    (arena_kapak_onerisi_al çerez var mı diye bakıyor ama oturum bayrağını
+    kontrol etmiyordu → her turda boşa tarayıcı açılıyordu.)
+    """
+    if oturum_doldu_mu():
+        print("[Arena Kapak] Oturum dolmuş — yerel kapak üreticisi kullanılacak")
+        return None
+    return arena_kapak_onerisi_al(paket)
+
+
 async def arena_video_uret(video_no: int, output_dir: str = "bobi_tv/output") -> dict | None:
     """
     Birleşik BOBİ TV v6.0 Pro Üretim Hattı:

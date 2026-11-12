@@ -69,7 +69,7 @@ def arena_kapak_onerisi(paket: dict[str, Any]) -> dict[str, Any] | None:
     Arena erişilemezse None döner ve yerel üreticiye düşülür — akış DURMAZ.
     """
     try:
-        from modules.arena_api import arena_kapak_onerisi_al
+        from modules.arena_api import arena_kapak_onerisi_kisa as arena_kapak_onerisi_al
     except Exception:
         return None
     try:

@@ -22,3 +22,12 @@ bobi_tv/production/render/*
 # State dosyalarını takip et
 !bobi_tv/state/
 
+# --- Workspace kotası koruması (2026-11-12) -------------------------------
+# Bu oturumda workspace 156 MB / 2202 dosyaya çıktı ve "Workspace over budget"
+# uyarısı verdi: 127 dosya kaydedilemedi. Sebep: kanal üretiminin ara ses/video
+# çıktıları (WAV + MP4 + ASS) workspace'te birikiyordu — hepsi .gitignore'da
+# zaten dışlanmıştı, yani git'e gitmiyor ama diskte duruyordu.
+# Kural: bobi_tv/production/ ve bobi_tv/output/ altındaki üretim çıktıları
+# workspace'e TAŞINMAZ; yayınlanan videolar YouTube'da, kayıt bobi_tv/archive'de.
+bobi_tv/production/
+bobi_tv/output/

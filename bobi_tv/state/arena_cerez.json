@@ -1,6 +1,6 @@
 {
   "son": {
-    "zaman": "2026-11-12T09:25:38.813573+00:00",
+    "zaman": "2026-11-12T10:23:09.783545+00:00",
     "guncellendi": false,
     "mesaj": "oturum sağlıklı değil — yazılmadı"
   },
@@ -12,6 +12,31 @@
     },
     {
       "zaman": "2026-11-12T09:25:38.813573+00:00",
+      "guncellendi": false,
+      "mesaj": "oturum sağlıklı değil — yazılmadı"
+    },
+    {
+      "zaman": "2026-11-12T10:22:04.150753+00:00",
+      "guncellendi": false,
+      "mesaj": "oturum sağlıklı değil — yazılmadı"
+    },
+    {
+      "zaman": "2026-11-12T10:22:17.444183+00:00",
+      "guncellendi": false,
+      "mesaj": "oturum sağlıklı değil — yazılmadı"
+    },
+    {
+      "zaman": "2026-11-12T10:22:30.392477+00:00",
+      "guncellendi": false,
+      "mesaj": "oturum sağlıklı değil — yazılmadı"
+    },
+    {
+      "zaman": "2026-11-12T10:22:47.856411+00:00",
+      "guncellendi": false,
+      "mesaj": "oturum sağlıklı değil — yazılmadı"
+    },
+    {
+      "zaman": "2026-11-12T10:23:09.783545+00:00",
       "guncellendi": false,
       "mesaj": "oturum sağlıklı değil — yazılmadı"
     }

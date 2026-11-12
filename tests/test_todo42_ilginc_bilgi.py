@@ -854,3 +854,19 @@ def test_secret_yazma_pat_yoksa_sessiz_gecer(monkeypatch):
     metin = arena_cerez.secret_paketi_olustur(_sahte_cerezler())
     basari, mesaj = arena_cerez.secret_yaz(metin)
     assert basari is False and "korunuyor" in mesaj
+
+
+def test_ingilizce_yanki_cevaptan_atilir():
+    """CANLI KANIT (43199457474): cevap '" = "Hello! Introduce yourself..."'
+    satırlarıyla başlıyordu — Arena kendi İngilizce özetini başa koyuyor."""
+    from modules import arena_api
+
+    cevap = (
+        '" = "Hello! Introduce yourself in one sentence."\n\n'
+        "Simple question. Respond in Turkish with a one-sentence self-introduction.\n\n"
+        "Merhaba! Ben faydalı bir asistanım."
+    )
+    assert arena_api._prompt_yankisi_mi(cevap) is True
+    temiz = arena_api._prompt_kuyrugunu_at(cevap, "Merhaba! Tek cümleyle kendini tanıt.")
+    assert temiz.startswith("Merhaba! Ben")
+    assert "Introduce yourself" not in temiz

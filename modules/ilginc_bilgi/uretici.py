@@ -146,7 +146,13 @@ def _sablon_izini_sil(metin: str) -> str:
 def _prompt_kuyrugunu_sil(metin: str) -> str:
     """Şablon yankısından SONRA gelen prompt gövdesini de keser."""
     t = str(metin or "")
-    for iz in ("Sen BOBİ TV için Türkçe kısa bilgi", "KATEGORİ: ", "YAZIM KURALLARI:"):
+    for iz in (
+        "Sen BOBİ TV için Türkçe kısa bilgi",
+        "KATEGORİ: ",
+        "YAZIM KURALLARI:",
+        "Respond in Turkish",
+        "Simple question.",
+    ):
         i = t.rfind(iz)
         if i != -1 and i < len(t) - len(iz):
             t = t[i + len(iz):]

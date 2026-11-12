@@ -908,6 +908,10 @@ PROMPT_IZLERI = (
     "Sen BOBİ TV için Türkçe kısa bilgi",
     "YAZIM KURALLARI:",
     "şablonu yankılama",
+    # Arena, kullanıcı mesajını İngilizce özetleyip cevabın başına koyuyor
+    # (canlı kanıt 43199457474: cevap '" = "Hello! Introduce yourself..."' ile başladı)
+    "Respond in Turkish",
+    "Simple question.",
 )
 
 
@@ -921,13 +925,45 @@ def _prompt_kuyrugunu_at(cevap: str, prompt: str) -> str:
     t = str(cevap or "")
     if not _prompt_yankisi_mi(t):
         return t
-    for iz in ("şablonu yankılama", "sadece metin yaz.", "Emoji kullan ama abartma"):
-        i = t.rfind(iz)
-        if i != -1:
-            kalan = t[i + len(iz):].strip()
-            if not _prompt_yankisi_mi(kalan):
-                return kalan
-    return ""
+    izler = (
+        "şablonu yankılama",
+        "sadece metin yaz.",
+        "Emoji kullan ama abartma",
+        "Respond in Turkish",
+        "Simple question.",
+    )
+    # Yankı üst üste binen parçalardan oluşabilir ("Simple question. Respond in
+    # Turkish with ...") → kesme işlemini sabitlenene kadar tekrarla.
+    for _ in range(6):
+        # Yankının SON işareti esas alınır: "Simple question. Respond in Turkish
+        # with ..." gibi iç içe geçen parçalarda en sondaki işaret yankının bitişidir.
+        adaylar = []
+        for iz in izler:
+            i = t.find(iz)
+            if i != -1:
+                adaylar.append((i, iz))
+        if not adaylar:
+            break
+        i, iz = max(adaylar)
+        kalan = t[i + len(iz):].strip()
+        if not kalan or _prompt_yankisi_mi(kalan):
+            break
+        t = kalan
+    # Son kırıntı: Arena'nın İngilizce özetinin Türkçe olmayan ilk paragrafları
+    # (canlı kanıt: "... Respond in Turkish with a one-sentence self-introduction.")
+    t = _ingilizce_onyuzu_at(t)
+    return "" if _prompt_yankisi_mi(t) else t
+
+
+def _ingilizce_onyuzu_at(metin: str) -> str:
+    """Baştaki Türkçe olmayan paragrafları atar (gerçek cevap Türkçedir)."""
+    import re as _re
+
+    parcalar = [p for p in _re.split(r"\n{2,}", str(metin or "")) if p.strip()]
+    turkce = set("çğıöşüÇĞİÖŞÜ")
+    while len(parcalar) > 1 and not (set(parcalar[0]) & turkce):
+        parcalar.pop(0)
+    return "\n\n".join(parcalar).strip()
 
 
 def _cevabi_ayikla(full_body: str, prompt: str, prompt_ilk_satir: str) -> str:

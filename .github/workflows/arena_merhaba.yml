@@ -53,6 +53,8 @@ jobs:
         id: sor
         env:
           ARENA_COOKIES_JSON: ${{ secrets.ARENA_COOKIES_JSON }}
+          # Çerez kendini beslesin: cevap alınırsa tazelenmiş çerez secret'a yazılır
+          GH_PAT: ${{ secrets.GH_PAT }}
           ARENA_IDLE_DK: "3"
           ARENA_MAKS_DK: ${{ inputs.bekleme_dk }}
           SORU: ${{ inputs.prompt }}

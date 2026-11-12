@@ -5,7 +5,7 @@ Mimari:
    (ARENA_COOKIES_JSON yoksa veya erişilemezse otomatik olarak modules/scenario.py v6.0 kuyruğuna/şablonlarına geçer)
 2. modules/tts_engine.py v6.0 -> Ahmet + Emel Çift Ses + Nefes Kırpma + WordBoundary Senkronu
 3. modules/video_render.py v6.0 -> Vektör Karakter Kartları + Karaoke Altyazı + SFX + Sidechain BGM (-20dB) + -14 LUFS + QC
-4. modules/kapak_uret.py v6.0 -> Montserrat-ExtraBold Kapak
+4. modules/kapak_hatti.py -> Arena metni okur, kapak görseli videonun 1. karesine
 """
 import os
 import re
@@ -25,7 +25,6 @@ from modules.scenario import (
 )
 from modules.tts_engine import senaryo_seslendir
 from modules.video_render import video_render
-from modules.kapak_uret import kapak_uret
 
 KATEGORILER = [s["kategori"] for s in SENARYO_SABLONLARI]
 
@@ -296,86 +295,6 @@ def _arena_sayfasi_hazirla(cookies_raw: str):  # pragma: no cover - Playwright
     return build_clean_arena_cookie(cookies_list)
 
 
-async def arena_kapak_onerisi_al_async(paket: dict) -> dict | None:
-    """Arena AI'den KAPAK önerisi ister (şok başlık + vurgu + renk).
-
-    Kapak fotoğrafı için Arena desteği (kullanıcı isteği 2026-11-11).
-    Senaryo akışıyla AYNI Playwright + çerez yolunu kullanır; erişilemezse
-    None döner ve yerel kapak üreticisine düşülür (üretim DURMAZ).
-    """
-    cookies_raw = os.environ.get("ARENA_COOKIES_JSON", "").strip()
-    if not cookies_raw:
-        print("[Arena Kapak] ARENA_COOKIES_JSON yok — yerel kapak üreticisi kullanılacak")
-        return None
-    if oturum_doldu_mu():
-        print("[Arena Kapak] Oturum dolmuş — yerel kapak üreticisi kullanılacak")
-        return None
-    try:
-        from playwright.async_api import async_playwright
-    except ImportError:
-        print("[Arena Kapak] Playwright kurulu değil — yerel üreticiye geçiliyor")
-        return None
-
-    baslik = str(paket.get("baslik") or "")
-    senaryo = paket.get("senaryo") or {}
-    ilk_cumle = ""
-    try:
-        diyaloglar = senaryo.get("diyaloglar") or []
-        if diyaloglar:
-            ilk_cumle = str(diyaloglar[0].get("metin", ""))
-    except Exception:
-        ilk_cumle = ""
-    prompt = (
-        "Sen Türkçe YouTube Shorts kapak (thumbnail) tasarımcısısın. "
-        "Sana video başlığı ve ilk replik veriliyor. Hiçbir araç ÇAĞIRMA, "
-        "doğrudan tek bir geçerli JSON nesnesi döndür.\n"
-        f"BAŞLIK: {baslik}\n"
-        f"İLK REPLİK: {ilk_cumle[:120]}\n"
-        "Kurallar:\n"
-        "1) sok_baslik: MAKS 4 KELİME, büyük harf, merak uyandıran, yalan vaat yok.\n"
-        "2) vurgu_kelime: sok_baslik içinden renklendirilecek TEK kelime.\n"
-        "3) renk: vurgu için yüksek kontrastlı HEX renk (örn #FF2D55).\n"
-        "4) gerekce: neden bu başlık kaydırma durdurur, 1 cümle.\n"
-        "5) gorsel_prompt: kapak ARKA PLANI için İngilizce tek cümlelik görsel "
-        "prompt (karakter + mekân + duygu; METİN İÇERMEZ; 9:16 dikey çekim).\n"
-        "Şema: {\"sok_baslik\":\"MAKS 4 KELİME\",\"vurgu_kelime\":\"KELİME\","
-        "\"renk\":\"#FF2D55\",\"gerekce\":\"tek cümle\","
-        "\"gorsel_prompt\":\"english prompt\"}"
-    )
-
-    try:
-        clean_cookie = _arena_sayfasi_hazirla(cookies_raw)
-    except Exception as e:
-        print(f"[Arena Kapak] Çerez hazırlama uyarısı: {str(e)[:100]}")
-        return None
-
-    try:
-        async with async_playwright() as p:
-            browser = await _tarayici_ac(p.chromium.launch, headless=True)
-            context = await browser.new_context(viewport={"width": 1366, "height": 900})
-            await context.add_cookies([
-                {"name": "arena-auth-prod-v1.0", "value": clean_cookie, "domain": "arena.ai", "path": "/"},
-                {"name": "arena_build_bucket", "value": "stable", "domain": "arena.ai", "path": "/"},
-                {"name": "user_country_code", "value": "TR", "domain": "arena.ai", "path": "/"},
-            ])
-            page = await context.new_page()
-            print(f"[Arena Kapak] '{baslik[:40]}' için kapak önerisi isteniyor...")
-            cevap = await _arena_sorgusu_yap(page, prompt, min_cevap_uzunlugu=40)
-            await _tarayiciyi_kapat(browser)
-    except Exception as e:
-        print(f"[Arena Kapak] Tarayıcı hatası: {str(e)[:120]}")
-        return None
-
-    if not cevap:
-        return None
-    ham = _json_nesnesi_ayikla(cevap, ("sok_baslik", "vurgu_kelime", "renk"))
-    if not isinstance(ham, dict) or not ham.get("sok_baslik"):
-        print("[Arena Kapak] JSON ayrıştırılamadı — yerel üreticiye geçiliyor")
-        return None
-    print(f"[Arena Kapak] ✅ Öneri: {ham.get('sok_baslik')!r}")
-    return ham
-
-
 async def arena_kisa_cevap_al_async(prompt: str) -> str | None:
     """Arena'ya serbest metin sorusu sorar ve DÜZ METİN cevap döndürür.
 
@@ -449,33 +368,6 @@ def arena_kisa_cevap_al(prompt: str) -> str | None:
     except Exception as e:
         print(f"[Arena Cevap] Sync sarmalayıcı hatası: {str(e)[:120]}")
         return None
-
-
-def arena_kapak_onerisi_al(paket: dict) -> dict | None:
-    """Sync sarmalayıcı — kapak_arena.py bunu çağırır."""
-    try:
-        return asyncio.run(arena_kapak_onerisi_al_async(paket))
-    except RuntimeError:
-        # Zaten çalışan loop varsa yeni thread'de çalıştır
-        import concurrent.futures
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as havuz:
-            return havuz.submit(lambda: asyncio.run(arena_kapak_onerisi_al_async(paket))).result()
-    except Exception as e:
-        print(f"[Arena Kapak] Sync sarmalayıcı hatası: {str(e)[:120]}")
-        return None
-
-
-def arena_kapak_onerisi_kisa(paket: dict) -> dict | None:
-    """Kapak önerisi; oturum düşmüşse Playwright'ı HİÇ başlatmaz.
-
-    (arena_kapak_onerisi_al çerez var mı diye bakıyor ama oturum bayrağını
-    kontrol etmiyordu → her turda boşa tarayıcı açılıyordu.)
-    """
-    if oturum_doldu_mu():
-        print("[Arena Kapak] Oturum dolmuş — yerel kapak üreticisi kullanılacak")
-        return None
-    return arena_kapak_onerisi_al(paket)
 
 
 async def arena_video_uret(video_no: int, output_dir: str = "bobi_tv/output") -> dict | None:
@@ -592,16 +484,11 @@ async def arena_video_uret(video_no: int, output_dir: str = "bobi_tv/output") ->
     # 4. Pro Video Render + Ses Mastering + QC
     video_render(paket)
 
-    # 5. KAPAK — Arena AI destekli (1. kare + Arena şok başlık, otomatik seçim)
-    #    Kullanıcı isteği 2026-11-11: "kapak için Arena'dan destek alsın, ilk
-    #    kareye yerleştirme yapıp seçilsin." Arena erişilemezse yerel üreticiye
-    #    düşer (kapak_sec_ve_hazirla içinde) — üretim DURMAZ.
-    try:
-        from modules.kapak_arena import kapak_sec_ve_hazirla
-        kapak_sec_ve_hazirla(paket)
-    except Exception as e:
-        print(f"[Kapak] Arena hattı hatası, yerel üreticiye düşülüyor: {str(e)[:120]}")
-        kapak_uret(paket)
+    # 5. KAPAK — tek yol: Arena tam metni okur, kapak GÖRSELİ üretir,
+    #    görsel videonun 1. karesine yerleşir (modules/kapak_hatti.py).
+    from modules.kapak_hatti import kapak_uret_ve_yerlestir
+
+    kapak_uret_ve_yerlestir(paket)
 
     return paket
 
@@ -713,6 +600,27 @@ async def _tarayiciyi_kapat(browser) -> None:
 
     with suppress(Exception):
         await asyncio.wait_for(browser.close(), timeout=15)
+
+
+async def _promptu_gonder(page, prompt: str) -> bool:
+    """Editöre yazar ve gönderir (kapak görsel hattı da bunu kullanır)."""
+    editor = page.locator('div.tiptap[contenteditable="true"]')
+    try:
+        await editor.wait_for(state="visible", timeout=30000)
+    except Exception:
+        print("[Arena] Editör görünmedi.", flush=True)
+        return False
+    await editor.click()
+    await page.wait_for_timeout(300)
+    await page.keyboard.insert_text(prompt)
+    await page.wait_for_timeout(400)
+    try:
+        await page.locator('button[aria-label="Send message"]').click(force=True)
+    except Exception as e:
+        print(f"[Arena] Gönder düğmesi hatası: {str(e)[:90]}", flush=True)
+        return False
+    print("[Arena] 📤 Prompt gönderildi", flush=True)
+    return True
 
 
 async def _arena_riza_modalini_kapat(page) -> bool:

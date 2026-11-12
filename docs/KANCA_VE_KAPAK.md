@@ -56,50 +56,61 @@ Kanca artık kalite kapısından geçmeden ÖNCE uygulanıyor; yani kapı sahte 
 
 ---
 
-## 2. Kapak hattı — `modules/kapak_arena.py`
+## 2. Kapak hattı — `kapak_gorsel.py` + `kapak_hatti.py` (2026-11-12 DEVRİM)
 
-Kullanıcının sorusu: *"Arena AI her videoya özel kapak tasarlasın, kapak
-videonun ilk karesine yerleşsin ve otomatik seçilsin — mantıklı mı?"*
+> **Bu bölümün eski hâli (A/B/C/D adayları, okunabilirlik skoru, `sok_baslik`/
+> `vurgu_kelime`/HEX renk JSON şeması, 1. kareden kapak türetme, `ai_gorsel_zemin`)
+> kullanıcı talimatıyla SİLİNDİ.** "Mevcut tüm kuralları çöpe at."
 
-Cevap: **mantıklı** ve altyapı zaten vardı; eksik olan üç şey bu turda kapandı.
+Kullanıcının talimatı (aynen): *"Arena AI'ye videonun içeriği hakkındaki tam
+metni ver, bu metni okusun ve buna uygun Short video için kapak fotoğrafı
+oluştursun … Oluşturduğu resmi indir ve oluşturulan videonun ilk karesine
+yerleştirilip seçilsin."*
 
-| Adım | Durum |
+### Tek yol (kodda tek giriş noktası: `kapak_hatti.kapak_uret_ve_yerlestir`)
+
+```
+1. kapak_gorsel.video_metni(paket)
+      → videonun TAM metni (senaryo.tam_metin → diyaloglar → başlık)
+2. kapak_gorsel.gorsel_promptu(paket)
+      → "VİDEO METNİ (TAM)" bloğu + 7 tasarım kuralı
+        (tek baskın özne, üst 2/3, kontrast, merak/duygu, renk,
+         GÖRSELİN İÇİNE YAZI KOYMA, 9:16, tıklama/izleme teşviki)
+3. kapak_gorsel.arena_kapak_gorseli_uret(paket)      [SYNC sarmalayıcı]
+      → Arena'ya prompt gider, sayfada beliren görsel yakalanır + indirilir
+        (img src / canvas dataURL / background-image; blob: ise img bitmap'i
+         canvas üzerinden kurtarılır; min 400×400 doğrulaması)
+4. kapak_gorsel.gorseli_karesine_oturt()  → 1080×1920 kırpma
+5. kapak_arena.ilk_kareye_yerlestir()     → kapak = videonun 1. KARESİ
+```
+
+### Arena görsel üretemezse (dürüst yedek)
+
+`kapak_arena.ilk_kare_cikar` + `baslik_kaplama_jpg` → video karesi + videonun
+kendi başlığı. **Üretim durmaz**; konsola `kaynak=video_karesi` yazılır.
+Hiçbiri olmazsa `kaynak=yok` ve video kapaksız yüklenir (sessiz yalan yok).
+
+### Dürüst sınır (CANLI DOĞRULANMADI)
+
+Arena'nın **sohbet/agent arayüzünün görsel ÜRETİP ÜRETMEDİĞİ** henüz canlı
+doğrulanmadı. Eski kod notu "Arena sohbet arayüzü görsel ÜRETMEZ" diyordu.
+Üretmezse hat sessizce yedeğe düşer ve log'da `kaynak=video_karesi` görünür.
+Doğrulama: `hourly_production.yml` dispatch → log'da
+`[Kapak] ✅ Arena kapak görseli indirildi` satırı aranır.
+
+### Silinen/korunan dosyalar
+
+| Dosya | Durum |
 |---|---|
-| 1. kareden kapak çıkarma (ffmpeg, 1080×1920) | vardı (`ilk_kare_cikar`) |
-| Arena'dan başlık/vurgu/renk önerisi | vardı (`arena_kapak_onerisi_al`) |
-| 3 aday + okunabilirlik skoru + otomatik seçim | vardı |
-| **Vurgu kelimesini renklendirme** | **YENİ** (`baslik_kaplama`) |
-| **Seçilen kapağı videonun 1. karesine GÖMME** | **YENİ** (`ilk_kareye_yerlestir`) |
-| **AI görsel zemini (D adayı)** | **YENİ** (`ai_gorsel_zemin`, opsiyonel anahtar) |
-| **Anonim GitHub + Arena `gorsel_prompt`** | **YENİ** |
+| `modules/kapak_gorsel.py` | YENİ — metin → prompt → Arena görsel → indir → kırp |
+| `modules/kapak_hatti.py` | YENİ — tek giriş `kapak_uret_ve_yerlestir` |
+| `modules/kapak_arena.py` | SADELEŞTİ — yalnız mekanik: `ilk_kare_cikar`, `baslik_kaplama`, `baslik_kaplama_jpg`, `ilk_kareye_yerlestir` |
+| `modules/kapak_uret.py` | SİLİNDİ (yerel VS/Clash kapak üreticisi) |
+| `arena_api.arena_kapak_onerisi_al(_async/_kisa)` | SİLİNDİ (JSON şema önerisi) |
 
-### Kritik düzeltme: kapak artık gerçekten "ilk kare"
-
-Önceki sürümde `kapak_sec_ve_hazirla()` yalnız YouTube'a yüklenecek JPEG'i
-seçiyordu; **videonun ilk karesi değişmiyordu**. Artık:
-
-```
-seçilen kapak  →  ffmpeg: 1 kareye indir  →  videonun başına ekle
-                  (-c:a copy: ses yeniden encode EDİLMEZ)
-               →  paket["final_video"] bu yeni dosya olur
-```
-
-Kanıt (yerel test videosu, 2 sn):
-`ilk kareye yerlesti → süre 00:00:02.03 → ilk kare pikseli (200,28,59) = kapak
-rengi → Audio: aac korunmuş`. Test:
-`tests/test_todo38_kapak_ilk_kare.py::test_kapak_videonun_ilk_karesine_yerlesir`.
-
-### Dürüst sınır: Arena sohbeti görsel ÜRETMEZ
-
-Arena'nın sohbet arayüzü metin döner (şok başlık, vurgu, renk, **gorsel_prompt**).
-Görselin kendisini üretmek için ayrı bir görsel modeli gerekir:
-
-- `GEMINI_API_KEY` **veya** `OPENAI_API_KEY` tanımlıysa: Arena'nın verdiği
-  `gorsel_prompt` ile AI arka plan üretilir → D adayı.
-- Tanımlı değilse: D adayı **sessizce atlanır**, akış 1. kare + tipografi ile
-  devam eder. "AI kapak yapıldı" denmez — yapılmaz.
-
----
+Testler: `tests/test_todo43_kapak_gorsel.py` (7 test) — prompt tam metni taşır,
+yazı yasağı var, eski karar hattı yok, Arena görseli → 1. kare, yedek yol
+ImportError vermez, sync sarmalayıcı loop içinde de çalışır, 1080×1920 kırpma.
 
 ## 3. Arena çerezleri GitHub'a ne zaman eklenmeli?
 

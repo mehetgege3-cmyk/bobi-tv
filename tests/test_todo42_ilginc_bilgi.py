@@ -632,12 +632,14 @@ def test_yeni_hat_render_zincirini_tetikler(monkeypatch, tmp_path):
             "kategori": "hayvanlar", "taktik": "T1", "kaynak_turu": "arena", "uyarilar": [],
         },
     )
-    import modules.kapak_uret as ku
+    import sys
 
-    monkeypatch.setattr(ku, "kapak_uret", lambda p: cagrilar.setdefault("kapak", True))
+    sahte_kapak = type(sys)("modules.kapak_hatti")
+    sahte_kapak.kapak_uret_ve_yerlestir = lambda p: cagrilar.setdefault("kapak", True)
+    monkeypatch.setitem(sys.modules, "modules.kapak_hatti", sahte_kapak)
 
     paket = au.arena_tam_uretim(1)
-    assert cagrilar.get("tts") and cagrilar.get("render")
+    assert cagrilar.get("tts") and cagrilar.get("render") and cagrilar.get("kapak")
     assert paket["final_video"].endswith("v.mp4")
 
 
@@ -738,8 +740,10 @@ def test_oturum_dolunca_tarayici_acilmaz():
     try:
         arena_api._oturum_doldu_isaretle()
         assert arena_api.oturum_doldu_mu() is True
-        # kapak yolu erken çıkmalı (Playwright hiç çağrılmadan None)
-        assert arena_api.arena_kapak_onerisi_kisa({"baslik": "x"}) is None
+        # kapak GÖRSEL yolu da erken çıkmalı (Playwright hiç açılmadan None)
+        from modules import kapak_gorsel
+
+        assert kapak_gorsel.arena_kapak_gorseli_uret({"baslik": "x"}) is None
         # kısa cevap yolu da erken çıkmalı
         assert arena_api.arena_kisa_cevap_al("test") is None
     finally:

@@ -115,7 +115,12 @@ def test_yuklenmis_paket_render_edilmeden_tuketilir(monkeypatch: pytest.MonkeyPa
     monkeypatch.setattr(mp, "KUYRUK_YOLU", kuyruk)
     monkeypatch.setattr(mp, "LOG_YOLU", tmp_path / "logs")
     monkeypatch.setattr(mp, "zaten_yuklendi_mi", lambda dosya_adi: "vid123")
-    for ad in ("senaryo_seslendir", "video_render", "kapak_uret"):
+    import sys
+
+    sahte_kapak = type(sys)("modules.kapak_hatti")
+    sahte_kapak.kapak_uret_ve_yerlestir = _yasak_fonksiyon("kapak_uret_ve_yerlestir")
+    monkeypatch.setitem(sys.modules, "modules.kapak_hatti", sahte_kapak)
+    for ad in ("senaryo_seslendir", "video_render"):
         monkeypatch.setattr(mp, ad, _yasak_fonksiyon(ad))
 
     paket, dosya = mp.kuyruktan_paket_hazirla()
@@ -138,7 +143,11 @@ def test_yuklenmemis_paket_render_yolu_korunur(monkeypatch: pytest.MonkeyPatch, 
     monkeypatch.setattr(mp, "zaten_yuklendi_mi", lambda dosya_adi: None)
     monkeypatch.setattr(mp, "senaryo_seslendir", lambda paket: paket)
     monkeypatch.setattr(mp, "video_render", lambda paket: None)
-    monkeypatch.setattr(mp, "kapak_uret", lambda paket: None)
+    import sys
+
+    sahte_kapak = type(sys)("modules.kapak_hatti")
+    sahte_kapak.kapak_uret_ve_yerlestir = lambda paket: None
+    monkeypatch.setitem(sys.modules, "modules.kapak_hatti", sahte_kapak)
 
     paket, dosya = mp.kuyruktan_paket_hazirla()
     assert paket is not None and dosya is not None

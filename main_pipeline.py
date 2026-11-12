@@ -23,8 +23,6 @@ sys.path.insert(0, str(Path(__file__).parent))
 from modules.arena_uretici import arena_tam_uretim
 from modules.tts_engine import senaryo_seslendir
 from modules.video_render import video_render
-from modules.kapak_arena import kapak_sec_ve_hazirla  # Arena destekli kapak hattı
-from modules.kapak_uret import kapak_uret  # yedek: Arena hattı çökerse
 from modules.telegram_notify import notify_error, send_message
 from modules.youtube_upload import (
     dusuk_izlenmeli_videolari_temizle,
@@ -202,12 +200,13 @@ def kuyruktan_paket_hazirla() -> tuple[dict | None, Path | None]:
             log_yaz(f"🔄 Kuyruktaki senaryo yeniden render ediliyor: {paket['baslik']}")
             paket = senaryo_seslendir(paket)
             video_render(paket)
-            # Arena destekli kapak: 1. kare + Arena şok başlık, otomatik seçim
+            # Kapak: Arena tam metni okur → görsel üretir → 1. kareye yerleşir
             try:
-                kapak_sec_ve_hazirla(paket)
+                from modules.kapak_hatti import kapak_uret_ve_yerlestir
+
+                kapak_uret_ve_yerlestir(paket)
             except Exception as kapak_hatasi:
-                log_yaz(f"⚠️ Kapak hattı hatası, yerel üreticiye düşülüyor: {kapak_hatasi}", "WARN")
-                kapak_uret(paket)
+                log_yaz(f"⚠️ Kapak hattı hatası: {kapak_hatasi}", "WARN")
         return paket, dosya
     except Exception as e:
         log_yaz(f"Bozuk kuyruk kaydı silindi ({dosya.name}): {e}", "WARN")

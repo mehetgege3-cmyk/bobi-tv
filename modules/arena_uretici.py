@@ -55,16 +55,15 @@ def arena_tam_uretim(video_no: int) -> dict | None:
             video_yolu = video_render(paket)
             paket["final_video"] = video_yolu
 
-            # Kapak: 1. kare + Arena/yerel şok başlık (otomatik seçim)
+            # KAPAK (2026-11-12): Arena tam metni okur → GÖRSEL üretir →
+            # indirilir → videonun 1. karesine yerleşir. Aday/skor hattı SİLİNDİ.
             try:
-                from modules.kapak_arena import kapak_sec_ve_hazirla
+                from modules.kapak_hatti import kapak_uret_ve_yerlestir
 
-                kapak_sec_ve_hazirla(paket)
+                kapak_sonuc = kapak_uret_ve_yerlestir(paket)
+                video_yolu = kapak_sonuc.get("video") or video_yolu
             except Exception as kapak_hatasi:
-                print(f"[İlginçBilgi] ⚠️ Kapak hattı: {str(kapak_hatasi)[:120]} (yerel üretici)")
-                from modules.kapak_uret import kapak_uret
-
-                kapak_uret(paket)
+                print(f"[İlginçBilgi] ⚠️ Kapak hattı: {str(kapak_hatasi)[:120]}")
 
             try:
                 qc = video_kalite_kontrol(video_yolu)

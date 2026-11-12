@@ -1,45 +1,28 @@
-"""Kapak fotoğrafı — Arena AI destekli seçim ve ilk kareye yerleştirme.
+"""Kapak MEKANİĞİ — yalnız mekanik yardımcılar (2026-11-12 sadeleştirme).
 
-Kullanıcı isteği (2026-11-11):
-  "Kapak fotoğrafı için Arena AI'den destek alsın; GitHub'ta otomatik olarak
-   yapsın, ilk kareye yerleştirme yapıp seçilsin."
+Kapak KARARI ve ÜRETİMİ burada DEĞİL:
+    modules/kapak_gorsel.py → Arena'ya videonun TAM metni gider, görsel üretir
+    modules/kapak_hatti.py  → görseli indirir, 1. kareye yerleştirir
 
-Akış (tamamı GitHub Actions içinde otomatik, müdahale yok):
+Burada kalanlar (mekanik):
+    1) ilk_kare_cikar          → videodan 1. kare (ffmpeg)
+    2) baslik_kaplama / _kareye_baslik_bindir → bir görselin üstüne başlık
+       (yalnız Arena görseli gelmediğinde kullanılan yedek yol)
+    3) ilk_kareye_yerlestir    → kapağı videonun 1. karesine koyar
 
-  1. Videonun 1. karesi çıkarılır (ffmpeg) — kapak için doğal aday.
-  2. Arena AI'ye kapak metni + kompozisyon önerisi sorulur
-     (şok başlık, renk paleti, vurgu kelimesi). Arena erişilemezse yerel
-     Montserrat kapak üreticisi devreye girer (akış ASLA durmaz).
-  3. Üç aday üretilir:
-       A) 1. kare + Arena'nın verdiği şok başlık bindirmesi (metin üstte)
-       B) 1. kare, sadece hafif kontrast/renk düzeltmesi (metinsiz)
-       C) yerel profesyonel VS/Clash kapak (kapak_uret.py)
-  4. Seçim otomatik yapılır (Arena'nın önerisi + ölçülebilir kalite skoru):
-       • okunabilirlik (metin/arka plan kontrastı)
-       • yüz/merkez bölgede metin çakışması olmaması
-       • dosya boyutu / çözünürlük (YouTube kapak sınırı 2 MB, 1280x720+)
-  5. Seçilen kapak YouTube'a `thumbnails.set` ile yüklenir.
-
-Neden "ilk kareye yerleştirme": kullanıcı kapağın videonun 1. karesine
-oturtulmasını istedi — yani kapak videonun açılışıyla aynı görsel dili taşır;
-izleyici videoyu açtığında kapakla aynı kareyi görür (stayed-to-watch).
+SİLİNENLER (kullanıcı: "mevcut tüm kuralları çöpe at"): Arena şok başlık JSON
+şeması (sok_baslik/vurgu_kelime/renk), A/B/C/D aday yarışı, okunabilirlik
+skoru, sınır testleri, AI zemin (GEMINI/OPENAI) kapısı, kapak_raporu.
 """
 
 from __future__ import annotations
 
-import json
 import shutil
 import subprocess
 from pathlib import Path
-
-from modules import calisma_dizinleri
 from typing import Any
 
-#: YouTube kapak sınırları (aşılırsa yükleme reddedilir).
-KAPAK_MAKS_BAYT = 2 * 1024 * 1024
-KAPAK_MIN_GENISLIK = 1280
-KAPAK_MIN_YUKSEKLIK = 720
-
+from modules import calisma_dizinleri
 
 def ilk_kare_cikar(video_yolu: str, cikis_jpg: str) -> str | None:
     """Videonun 1. karesini JPG olarak çıkarır (ffmpeg). Başarısızsa None."""
@@ -64,34 +47,6 @@ def ilk_kare_cikar(video_yolu: str, cikis_jpg: str) -> str | None:
         return None
 
 
-def arena_kapak_onerisi(paket: dict[str, Any]) -> dict[str, Any] | None:
-    """Arena AI'den kapak önerisi ister.
-
-    Döner: {"sok_baslik", "vurgu_kelime", "renk", "gerekce"} veya None.
-    Arena erişilemezse None döner ve yerel üreticiye düşülür — akış DURMAZ.
-    """
-    try:
-        from modules.arena_api import arena_kapak_onerisi_kisa as arena_kapak_onerisi_al
-    except Exception:
-        return None
-    try:
-        oneri = arena_kapak_onerisi_al(paket)
-    except Exception as e:
-        print(f"[Kapak] Arena önerisi alınamadı: {str(e)[:120]}")
-        return None
-    if not isinstance(oneri, dict):
-        return None
-    # Zorunlu alanlar + güvenli varsayılanlar
-    baslik = str(oneri.get("sok_baslik") or paket.get("baslik") or "")[:40]
-    return {
-        "sok_baslik": baslik,
-        "vurgu_kelime": str(oneri.get("vurgu_kelime") or "")[:20],
-        "renk": str(oneri.get("renk") or "#FFD400")[:9],
-        "gerekce": str(oneri.get("gerekce") or "")[:160],
-        # AI görsel zemini için İngilizce prompt (varsa) — ai_gorsel_zemin kullanır
-        "gorsel_prompt": str(oneri.get("gorsel_prompt") or "")[:400],
-    }
-
 
 def _font(boyut: int):
     """Montserrat-ExtraBold → DejaVuSans-Bold → varsayılan; ilk bulunanı verir."""
@@ -107,6 +62,7 @@ def _font(boyut: int):
             except Exception:
                 continue
     return ImageFont.load_default()
+
 
 
 def baslik_kaplama(
@@ -186,6 +142,7 @@ def baslik_kaplama(
     return img
 
 
+
 def _kareye_baslik_bindir(
     kaynak_jpg: str,
     cikis_jpg: str,
@@ -207,106 +164,6 @@ def _kareye_baslik_bindir(
         print(f"[Kapak] Başlık bindirme hatası: {str(e)[:120]}")
         return None
 
-
-def ai_gorsel_zemin(prompt: str, cikis_jpg: str) -> str | None:
-    """Arena'nın verdiği görsel prompt ile AI arka plan kapağı üretir.
-
-    DİKKAT (dürüstlük notu): Arena'nın sohbet arayüzü görsel ÜRETMEZ; bu
-    fonksiyon env'de tanımlı bir görsel üretim anahtarı (`GEMINI_API_KEY` veya
-    `OPENAI_API_KEY`) varsa çalışır. Anahtar yoksa None döner ve akış 1. kare
-    + tipografi adaylarıyla devam eder (üretim DURMAZ, sessizce yalan söylemez).
-    Başarılıysa başlık `baslik_kaplama` ile bu zeminin üstüne bindirilir.
-    """
-    anahtar_g = __import__("os").environ.get("GEMINI_API_KEY", "").strip()
-    anahtar_o = __import__("os").environ.get("OPENAI_API_KEY", "").strip()
-    if not prompt.strip() or not (anahtar_g or anahtar_o):
-        return None
-    try:
-        import base64
-
-        import requests
-
-        if anahtar_g:
-            r = requests.post(
-                "https://generativelanguage.googleapis.com/v1beta/models/"
-                "gemini-2.5-flash-image:generateContent",
-                headers={"x-goog-api-key": anahtar_g, "Content-Type": "application/json"},
-                json={
-                    "contents": [{"parts": [{"text": prompt}]}],
-                    "generationConfig": {"responseModalities": ["IMAGE"]},
-                },
-                timeout=90,
-            )
-            if r.status_code != 200:
-                print(f"[Kapak] AI görsel HTTP {r.status_code}: {r.text[:120]}")
-                return None
-            parcalar = (
-                r.json().get("candidates", [{}])[0].get("content", {}).get("parts", [])
-            )
-            for parca in parcalar:
-                veri = (parca.get("inlineData") or parca.get("inline_data") or {}).get("data")
-                if veri:
-                    Path(cikis_jpg).write_bytes(base64.b64decode(veri))
-                    return cikis_jpg if Path(cikis_jpg).exists() else None
-            return None
-
-        r = requests.post(
-            "https://api.openai.com/v1/images/generations",
-            headers={"Authorization": f"Bearer {anahtar_o}"},
-            json={"model": "gpt-image-1", "prompt": prompt, "size": "1024x1536", "n": 1},
-            timeout=120,
-        )
-        if r.status_code != 200:
-            print(f"[Kapak] AI görsel HTTP {r.status_code}: {r.text[:120]}")
-            return None
-        veri = (r.json().get("data") or [{}])[0].get("b64_json")
-        if not veri:
-            return None
-        Path(cikis_jpg).write_bytes(base64.b64decode(veri))
-        return cikis_jpg if Path(cikis_jpg).exists() else None
-    except Exception as e:
-        print(f"[Kapak] AI görsel üretim hatası: {str(e)[:140]}")
-        return None
-
-
-def _kontrast_artir(kaynak_jpg: str, cikis_jpg: str) -> str | None:
-    """Metinsiz aday: 1. kareye hafif canlılık (Shorts'ta küçük görünüyor)."""
-    try:
-        from PIL import Image, ImageEnhance
-    except Exception:
-        return None
-    try:
-        img = Image.open(kaynak_jpg).convert("RGB")
-        img = ImageEnhance.Contrast(img).enhance(1.18)
-        img = ImageEnhance.Color(img).enhance(1.22)
-        img.save(cikis_jpg, "JPEG", quality=92, optimize=True)
-        return cikis_jpg
-    except Exception:
-        return None
-
-
-def _okunabilirlik_skoru(jpg: str) -> float:
-    """0-1 arası kaba okunabilirlik: üst bölgede açık/koyu ayrımı + kontrast.
-
-    Amaç mimari değil, adaylar arasında ayrım yapmak (metinsiz kare düşük alır,
-    koyu şeritli başlıklı kare yüksek alır).
-    """
-    try:
-        from PIL import Image, ImageStat
-    except Exception:
-        return 0.0
-    try:
-        img = Image.open(jpg).convert("L")
-        gen, yuk = img.size
-        ust = img.crop((0, 0, gen, int(yuk * 0.22)))
-        tum = img
-        ust_ort = ImageStat.Stat(ust).mean[0]
-        std = ImageStat.Stat(tum).stddev[0]
-        # Üst bölge ya çok koyu ya çok açık olmalı (bant etkisi) + genel kontrast
-        bant = max(0.0, 1.0 - abs(ust_ort - 32) / 128.0)
-        return round(min(1.0, 0.55 * bant + 0.45 * min(1.0, std / 80.0)), 3)
-    except Exception:
-        return 0.0
 
 
 def ilk_kareye_yerlestir(video_yolu: str, kapak_jpg: str, cikis_mp4: str | None = None) -> str | None:
@@ -363,143 +220,21 @@ def ilk_kareye_yerlestir(video_yolu: str, kapak_jpg: str, cikis_mp4: str | None 
     return None
 
 
-def _sinirlara_uygun(jpg: str) -> bool:
-    """YouTube kapak sınırları: 2 MB ve 1280x720 alt sınır."""
+def baslik_kaplama_jpg(
+    kaynak_jpg: str, cikis_jpg: str, baslik: str, renk: str = "#FFD400"
+) -> str | None:
+    """Kare/görsel üstüne başlık bindirir (yalnız YEDEK yol; Arena görseli esas).
+
+    Arena kapak GÖRSELİ üretirse bu fonksiyon hiç çağrılmaz — görselin içine
+    yazı koymak yasak (bkz. kapak_gorsel.gorsel_promptu).
+    """
     try:
         from PIL import Image
-    except Exception:
-        return True  # Pillow yoksa engelleme yok
-    try:
-        boyut = Path(jpg).stat().st_size
-        if boyut > KAPAK_MAKS_BAYT:
-            return False
-        gen, yuk = Image.open(jpg).size
-        # YouTube kuralı 1280x720; DİKEY (Shorts) kapaklar 1080x1920 gelir.
-        # Bu yüzden "uzun kenar >= 1280 VE kısa kenar >= 720" aranır:
-        # 1280x720 (yatay) ✅, 1080x1920 (dikey) ✅, 640x480 ❌.
-        return (max(gen, yuk) >= KAPAK_MIN_GENISLIK
-                and min(gen, yuk) >= KAPAK_MIN_YUKSEKLIK)
-    except Exception:
-        return False
 
-
-def kapak_sec_ve_hazirla(paket: dict[str, Any]) -> dict[str, Any]:
-    """Kapak hattının tek giriş noktası — pipeline bunu çağırır.
-
-    Döner: {"kapak": seçilen_yol, "adaylar": [...], "secilen": "A|B|C",
-           "skor": float, "arena": bool}
-    Hiçbir aday üretilemezse mevcut kapak_uret() çıktısına düşer; o da
-    başarısızsa "" döner (yükleme kapak göndermeden devam eder).
-    """
-    video = str(paket.get("final_video") or "")
-    dosya_adi = str(paket.get("dosya_adi") or "video")
-    cikis_dir = calisma_dizinleri.OUTPUT_YOLU
-    cikis_dir.mkdir(parents=True, exist_ok=True)
-
-    kare = str(cikis_dir / f"{dosya_adi}_kare0.jpg")
-    kare_yolu = ilk_kare_cikar(video, kare) if video else None
-
-    oneri = arena_kapak_onerisi(paket)
-    adaylar: list[dict[str, Any]] = []
-
-    # A) 1. kare + Arena başlığı
-    if kare_yolu:
-        a_yolu = str(cikis_dir / f"{dosya_adi}_kapakA.jpg")
-        baslik = (oneri or {}).get("sok_baslik") or str(paket.get("baslik") or "")
-        renk = (oneri or {}).get("renk") or "#FFD400"
-        vurgu = (oneri or {}).get("vurgu_kelime") or ""
-        if _kareye_baslik_bindir(kare_yolu, a_yolu, baslik, renk, vurgu):
-            adaylar.append({"ad": "A", "yol": a_yolu, "aciklama": "1. kare + Arena şok başlık"})
-
-    # B) 1. kare, metinsiz ama canlı
-    if kare_yolu:
-        b_yolu = str(cikis_dir / f"{dosya_adi}_kapakB.jpg")
-        if _kontrast_artir(kare_yolu, b_yolu):
-            adaylar.append({"ad": "B", "yol": b_yolu, "aciklama": "1. kare, metinsiz (canlı)"})
-
-    # C) yerel profesyonel kapak (mevcut üretici)
-    try:
-        from modules.kapak_uret import kapak_uret as yerel_kapak
-        c_yolu = yerel_kapak(paket)
-        if c_yolu and Path(c_yolu).exists():
-            adaylar.append({"ad": "C", "yol": c_yolu, "aciklama": "Yerel VS/Clash kapak"})
+        img = Image.open(kaynak_jpg).convert("RGB")
+        img = baslik_kaplama(img, baslik, "", renk)
+        img.save(cikis_jpg, "JPEG", quality=92, optimize=True)
+        return cikis_jpg if Path(cikis_jpg).exists() else None
     except Exception as e:
-        print(f"[Kapak] Yerel üretici hatası: {str(e)[:100]}")
-
-    # D) AI görsel zemini + Arena başlığı (yalnız görsel üretim anahtarı varsa)
-    zemin_prompt = (oneri or {}).get("gorsel_prompt") or ""
-    if zemin_prompt:
-        d_ham = str(cikis_dir / f"{dosya_adi}_kapakD_ham.jpg")
-        d_zemin = ai_gorsel_zemin(zemin_prompt, d_ham)
-        if d_zemin:
-            try:
-                from PIL import Image
-                d_yolu = str(cikis_dir / f"{dosya_adi}_kapakD.jpg")
-                img = Image.open(d_zemin).convert("RGB")
-                # 1080x1920 dikey kırpma (Shorts kapağı)
-                oran = max(1080 / img.width, 1920 / img.height)
-                img = img.resize((int(img.width * oran) + 1, int(img.height * oran) + 1))
-                sol = (img.width - 1080) // 2
-                ust = (img.height - 1920) // 2
-                img = img.crop((sol, ust, sol + 1080, ust + 1920))
-                baslik = (oneri or {}).get("sok_baslik") or str(paket.get("baslik") or "")
-                img = baslik_kaplama(
-                    img, baslik, (oneri or {}).get("vurgu_kelime") or "",
-                    (oneri or {}).get("renk") or "#FFD400",
-                )
-                img.save(d_yolu, "JPEG", quality=92, optimize=True)
-                adaylar.append({"ad": "D", "yol": d_yolu,
-                                "aciklama": "AI görsel zemin + Arena başlık"})
-            except Exception as e:
-                print(f"[Kapak] AI zemin işleme hatası: {str(e)[:120]}")
-
-    for a in adaylar:
-        a["skor"] = _okunabilirlik_skoru(a["yol"])
-        a["uygun"] = _sinirlara_uygun(a["yol"])
-
-    uygunlar = [a for a in adaylar if a["uygun"]]
-    if not uygunlar:
-        print("[Kapak] Uygun aday yok — kapak gönderilmeyecek")
-        return {"kapak": "", "adaylar": adaylar, "secilen": "", "skor": 0.0,
-                "arena": oneri is not None}
-
-    # Seçim: Arena önerisi geldiyse A öncelikli (kullanıcı isteği: ilk kare +
-    # Arena desteği); yoksa en yüksek okunabilirlik skoru.
-    if oneri and any(a["ad"] == "A" for a in uygunlar):
-        secilen = next(a for a in uygunlar if a["ad"] == "A")
-    else:
-        secilen = max(uygunlar, key=lambda a: a["skor"])
-
-    print(
-        f"[Kapak] Seçilen: {secilen['ad']} ({secilen['aciklama']}) "
-        f"skor={secilen['skor']} arena={'var' if oneri else 'yok'}"
-    )
-    paket["kapak_dosyasi"] = secilen["yol"]
-    paket["kapak_yolu"] = secilen["yol"]
-
-    # KULLANICI İSTEĞİ: "kapak video ilk karesine yerleşsin" — seçilen kapak
-    # filmin 1. karesine gömülür ve paket final_video'su GÜNCELLENİR
-    # (yüklenen video kapakla aynı kareyle açılır). Yerleştirme başarısızsa
-    # mevcut video korunur.
-    yerlesti = None
-    if video and Path(video).exists():
-        yerlesti = ilk_kareye_yerlestir(video, secilen["yol"])
-        if yerlesti:
-            paket["final_video"] = yerlesti
-            paket["kapak_ilk_kare"] = yerlesti
-
-    return {
-        "kapak": secilen["yol"],
-        "adaylar": adaylar,
-        "secilen": secilen["ad"],
-        "skor": secilen["skor"],
-        "arena": oneri is not None,
-        "arena_gerekce": (oneri or {}).get("gerekce", ""),
-        "ilk_kareye_yerlesti": bool(yerlesti),
-        "video": paket.get("final_video", ""),
-    }
-
-
-def kapak_raporu() -> str:
-    """Telegram/log için tek satır özet (adaylar + seçim)."""
-    return json.dumps({"not": "kapak_sec_ve_hazirla() çıktısını kullanın"}, ensure_ascii=False)
+        print(f"[Kapak] Başlık bindirme hatası: {str(e)[:120]}")
+        return None

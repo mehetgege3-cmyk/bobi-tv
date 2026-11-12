@@ -586,13 +586,8 @@ def pro_sahne_videosu_uret(
         str(cikis_video_mp4),
     ]
 
-    # 1. Kareye (Frame 0) yerleştirilecek profesyonel kapak görselini hazırla
-    from modules.kapak_uret import kapak_resmi_olustur
-
-    kapak_yolu = senaryo_paketi.get("kapak_yolu") or str(cikis_video_mp4).replace(".mp4", "_thumb.jpg")
-    if not os.path.exists(kapak_yolu):
-        kapak_resmi_olustur(senaryo_paketi, kapak_yolu)
-    senaryo_paketi["kapak_yolu"] = kapak_yolu
+    # Kapak: yalnız kapak_hatti.py üretir (Arena görseli). Burada kapak YOK.
+    kapak_yolu = senaryo_paketi.get("kapak_yolu")
     ilk_kare_kapak_rgb = Image.open(kapak_yolu).convert("RGB").resize((W, H), Image.BILINEAR)
 
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE)

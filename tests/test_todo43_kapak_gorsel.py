@@ -206,7 +206,7 @@ def test_prompt_gonderimi_dogrulanir():
 def test_prompt_gonderimi_calisan_orijinaldir():
     """DERS (canlı koşu 43292738267): 'doğrulama' eklemek gönderimi BOZDU.
 
-    Çalışan sürüm (5199075): editor.click() → keyboard.insert_text → Send'e tıkla.
+    Çalışan sürüm (5199075): editor.click(), keyboard.insert_text, Send'e tıkla.
     Enter yedeği / kutu boşluğu kontrolü KALDIRILDI — prompt kutuda kalıyordu.
     """
     import inspect

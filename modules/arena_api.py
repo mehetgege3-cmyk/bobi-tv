@@ -635,48 +635,12 @@ async def oturum_gercekten_acik_mi(page) -> bool:
     return bool(durum.get("editor"))
 
 
-<<<<<<< HEAD
-async def _gonder_dugmesi_durumu(page) -> dict:
-    """Gönder düğmesinin gerçek durumunu okur (teşhis için)."""
-    try:
-        return await page.evaluate(
-            """() => {
-                const b = document.querySelector('button[aria-label="Send message"]');
-                if (!b) return {var: false};
-                return {
-                    var: true,
-                    disabled: b.disabled === true,
-                    aria_disabled: b.getAttribute('aria-disabled'),
-                    sinif: (b.className || '').toString().slice(0, 120),
-                    html: b.outerHTML.slice(0, 200)
-                };
-            }"""
-        )
-    except Exception as e:
-        return {"hata": str(e)[:80]}
-
-
-async def _promptu_gonder(page, prompt: str) -> bool:
-    """Editöre yazar, gönderir ve GÖNDERİLDİĞİNİ DOĞRULAR.
-
-    CANLI BULGULAR (2026-11-12, ölçümle):
-      • run 43271340457: `insert_text` + düğme tıklaması → prompt EDİTÖRDE KALDI
-        (sayfada 480 sn boyunca img=0, metin sabit). Eski kod yine de True
-        dönüyordu → "gönderildi" yalanı.
-      • run 43273290007: doğrulama eklendi → "❌ GÖNDERİLEMEDİ — editör hâlâ dolu".
-        Sebep: `insert_text` React state'ini güncellemiyor, gönder düğmesi PASİF.
-
-    Bu sürüm: GERÇEK TUŞ VURUŞLARIYLA yazar (keyboard.type → input event'leri
-    tetikler), düğme durumunu okur, gerekirse Enter'a düşer ve sonunda editörün
-    boşalmasını doğrular. Doğrulayamazsa False döner (sessiz yalan yok).
-=======
 async def _promptu_gonder(page, prompt: str) -> bool:
     """Editöre yazar ve gönderir.
 
     ÖNEMLİ (2026-11-12): Bu, canlı üretimde ÇALIŞAN orijinal sürümdür
     (commit 5199075). Araya eklenen "doğrulama"/Enter yedekleri gönderimi
     BOZDU (canlı koşu 43292738267: prompt kutuda kaldı). Geri alındı.
->>>>>>> fa0c50e (GERİ ALINDI: çalışan Arena gönderim kodu (Enter/doğrulama denemeleri gönderimi bozmuştu))
     """
     editor = page.locator('div.tiptap[contenteditable="true"]')
     try:

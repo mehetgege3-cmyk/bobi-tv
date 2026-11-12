@@ -66,6 +66,12 @@
       "taktik": "T1",
       "kategori": "insan_vucudu",
       "tarih": "2026-11-12T10:36:18.345590+00:00"
+    },
+    {
+      "video_no": 11,
+      "taktik": "T2",
+      "kategori": "gunluk_yasam",
+      "tarih": "2026-11-12T12:28:44.800996+00:00"
     }
   ]
 }

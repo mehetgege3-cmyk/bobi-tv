@@ -857,6 +857,29 @@
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
     "hook_ust_bant": "Köpeklerin Burnu da Parmak İzi Gib",
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 0,
+        "zaman": "2026-11-12T12:32:19.378379+00:00"
+      }
+    }
+  },
+  {
+    "dosya_adi": "20261112_1228_0011_sogan_keserken_gozlerimi",
+    "baslik": "Soğan keserken gözler neden yaşar? #shorts",
+    "video_id": "mLosqYJ1czI",
+    "durum": "yayinda",
+    "kategori": "gunluk_yasam",
+    "url": "https://www.youtube.com/shorts/mLosqYJ1czI",
+    "senaryo_ozeti": "",
+    "hash": "",
+    "tarih": "2026-11-12T12:32:18.770614+00:00",
+    "kanca_formu": "",
+    "kanca_ab": "",
+    "kanca_puan": null,
+    "kapak_dosyasi": "",
+    "kapak_yuklendi": null,
+    "hook_ust_bant": "Soğanın Seni Ağlatma Sırrı 🧅",
     "izlenme_snapshots": {}
   }
 ]

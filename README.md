@@ -2,6 +2,24 @@
 
 Türkçe absürt ve ironik komedi diyaloglarını **yüksek tutunmalı (high-retention)** YouTube Shorts videolarına dönüştüren uçtan uca otonom yapay zeka prodüksiyon hattı.
 
+
+### Arena.ai Entegrasyonu (2026-11-13)
+
+Arena'dan **görsel üretimi** ve **cevap** alma hattı canlı kanıtlıdır
+(uçtan uca 144 sn, koşu `43323638730`).
+
+| Doküman | İçerik |
+|---|---|
+| `skills/arena-http-gorsel/SKILL.md` | Skill: ne zaman/nasıl kullanılır, tuzaklar |
+| `docs/ARENA_HTTP_GORSEL.md` | Teknik doküman: uçlar, modüller, ffmpeg incelikleri |
+| `docs/ARENA_HAR_COZUMLEME.md` | Drive'daki HAR dosyasının tam çözümlemesi |
+| `docs/ARENA_DERSLER.md` | Hata kaydı: denenmiş ölü yollar, kök nedenler |
+
+**Kısa özet:** Tarayıcı yalnızca gönderir (`recaptchaV3Token` zorunlu);
+cevap `GET /api/chat/{id}/events`, görsel
+`GET /api/chat/workspace/cas/user/{hash}` ile **tarayıcısız** okunur.
+Koşu izleme: `tools/kosu_bekle.sh` (sabit bekleme yok).
+
 ### Senaryo Motoru v7.0
 - Senaryo çekirdeği `modules/senaryo_v7/` altında sablonlar, dogrulama, zenginlestirme, arsiv, kuyruk ve cikti sorumluluklarına ayrıldı.
 - Dataclass modelleri, duygu/stil/kamera/rol Enum'ları, referanslı karakter kartları (sabit Ahmet/Emel sesi), satır başına TTS/altyazı/kamera alanları, v6/satirlar migration'ı (`semaversiyonu: "7.0"`), merkezi `Ayarlar`, logging ve alan bazlı istisnalar kullanılır. Diyalog modeli: `docs/BOBI_TV_V7_TEMPLATE_MODEL.md`.

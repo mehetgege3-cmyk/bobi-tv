@@ -771,3 +771,42 @@ Bu bölüm, önceki bölümlerdeki eski/yanlış iddiaları geçerli durumla de�
   tüm workflow isimlerini içerir.
 - Secret/token/cookie değeri ASLA commit'e/log'a/dokümana girmez.
 
+
+---
+
+## 30. Arena HTTP Görsel Hattı (2026-11-13 — CANLI KANITLI)
+
+Arena.ai'den **cevap** ve **görsel** almanın tek doğru yolu. Detay:
+`skills/arena-http-gorsel/SKILL.md`, `docs/ARENA_HTTP_GORSEL.md`.
+
+**Mimari:** Tarayıcı **yalnızca gönderir** (`recaptchaV3Token` zorunlu olduğu
+için); cevap ve görsel **HTTP'den** okunur.
+
+```
+POST /nextjs-api/stream/create-chat      → {"id": chat_id}   [tarayıcı ŞART]
+GET  /api/chat/{chat_id}/events          → SSE: text-delta + görsel hash
+GET  /api/chat/workspace/cas/user/{hash} → image/png         [tarayıcı GEREKMEZ]
+GET  /api/me/pulse                       → oturum canlılığı (401 = ölü çerez)
+```
+
+**Değişmez kurallar:**
+1. `chat_id` **`create-chat` yanıtından** alınır (`page.on("response")`).
+   URL'den veya geçmiş listesinden okumak **çalışmaz**.
+2. `arena_api.create_chat_dinleyici_ekle(page)` **her** Arena akışında çağrılır.
+3. Görsel hash'i için akış **tekrar tekrar** okunur (`arena_http.hash_bekle`);
+   Arena kendi kendine yeniden deniyor.
+4. İstem sonuna **`Soru sorma, yap. Tek bir görsel üret; aday sunma.`** eklenir.
+5. Ölü çerezde `oturum_doldu_islem()` → döngüden çık, boşuna denemeyin.
+6. Cevabı **DOM'dan okuma**; ekran görüntüsüyle doğrulama yapma.
+7. Sabit `sleep` **yok** — `tools/kosu_bekle.sh` ile 10 sn'de bir durum sor.
+
+**Kanıtlı sonuç:** uçtan uca (video metni → Arena görseli → videonun 1. karesi)
+**144 saniye** (koşu `43323638730`); görsel 768×1376; kapaklı video 617 KB.
+
+**Kapak 1. kareye yerleştirme:** kapak, **videonun kendi çözünürlüğüne**
+ölçeklenmeli (`_video_boyutu`), yoksa ffmpeg `concat` patlar; ffmpeg yolu
+`ffmpeg_yolu()` ile bulunur (PATH'te yoksa `imageio-ffmpeg`).
+
+**Hata kaydı:** `docs/ARENA_DERSLER.md` — aynı hatayı ikinci kez keşfetmeyin
+(Google OAuth otomasyonu, jetonsuz create-chat, DOM bekleme, eski sohbet
+tuzağı, rfind kesmesi, ffmpeg/çözünürlük hataları hepsi burada).

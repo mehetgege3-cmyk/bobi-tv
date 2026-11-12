@@ -787,3 +787,70 @@ def test_banka_kayitlari_kalite_kapisindan_gecer():
             kategori=bilgi["kategori"],
         )
         assert rapor.skor == 100, (bilgi["anahtar"], rapor.ozet()[:120])
+
+
+# ---------------------------------------------------------------------------
+# Arena çerezi kendini besleme (kullanıcı isteği: "Yap")
+# ---------------------------------------------------------------------------
+
+
+def _sahte_cerezler():
+    import base64
+    import json
+
+    govde = base64.b64encode(
+        json.dumps(
+            {
+                "access_token": "a" * 40,
+                "refresh_token": "r" * 40,
+                "token_type": "bearer",
+                "expires_in": 3600,
+                "user": {"id": "u1", "email": "x@y.z"},
+            }
+        ).encode()
+    ).decode()
+    return [
+        {"name": "arena-auth-prod-v1.0", "value": govde},
+        {"name": "arena_build_bucket", "value": "stable"},
+        {"name": "baska_cerez", "value": "yok"},
+    ]
+
+
+def test_cerez_paketi_uretim_biciminde_ve_dogrulanir():
+    """Yazılacak çerez, üretim hattının okuyucusundan geçmeli (round-trip)."""
+    from modules import arena_cerez
+
+    metin = arena_cerez.secret_paketi_olustur(_sahte_cerezler())
+    assert metin and "arena-auth-prod-v1" in metin
+    assert "baska_cerez" not in metin  # alakasız çerezler yazılmaz
+    assert arena_cerez.secret_dogrula(metin) is True
+    assert arena_cerez.secret_dogrula("bozuk-json") is False
+
+
+def test_oturum_sagliksizsa_secret_yazilmaz(monkeypatch, tmp_path):
+    """Login modalı görüldüyse ölü çerez yazılmaz — çalışan çerez korunur."""
+    from modules import arena_cerez
+
+    cagrildi = {"n": 0}
+
+    def sahte_yaz(metin, repo=None):
+        cagrildi["n"] += 1
+        return True, "yazıldı"
+
+    monkeypatch.setattr(arena_cerez, "secret_yaz", sahte_yaz)
+    kayit = arena_cerez.oturumdan_guncelle(
+        _sahte_cerezler(), oturum_saglikli=False
+    )
+    assert cagrildi["n"] == 0
+    assert kayit["guncellendi"] is False
+
+
+def test_secret_yazma_pat_yoksa_sessiz_gecer(monkeypatch):
+    """PAT yoksa üretim düşmez; sadece yazma atlanır."""
+    from modules import arena_cerez
+
+    monkeypatch.delenv("GH_PAT", raising=False)
+    monkeypatch.delenv("GH_SECRET_PAT", raising=False)
+    metin = arena_cerez.secret_paketi_olustur(_sahte_cerezler())
+    basari, mesaj = arena_cerez.secret_yaz(metin)
+    assert basari is False and "korunuyor" in mesaj

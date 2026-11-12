@@ -1,0 +1,19 @@
+{
+  "son": {
+    "zaman": "2026-11-12T09:25:38.813573+00:00",
+    "guncellendi": false,
+    "mesaj": "oturum sağlıklı değil — yazılmadı"
+  },
+  "gecmis": [
+    {
+      "zaman": "2026-11-12T09:25:30.517400+00:00",
+      "guncellendi": false,
+      "mesaj": "oturum sağlıklı değil — yazılmadı"
+    },
+    {
+      "zaman": "2026-11-12T09:25:38.813573+00:00",
+      "guncellendi": false,
+      "mesaj": "oturum sağlıklı değil — yazılmadı"
+    }
+  ]
+}

@@ -205,6 +205,10 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           ARENA_COOKIES_JSON: ${{ secrets.ARENA_COOKIES_JSON }}
+          # Çerez kendini beslesin: Arena oturumu sağlıklıysa tazelenmiş çerez
+          # GH_PAT ile ARENA_COOKIES_JSON secret'ına geri yazılır (modules/arena_cerez.py).
+          # PAT yoksa/yazma başarısızsa hiçbir şey bozulmaz, mevcut çerez kalır.
+          GH_PAT: ${{ secrets.GH_PAT }}
           # Kapak görsel zemini (opsiyonel): tanımlıysa Arena'nın verdiği
           # `gorsel_prompt` ile AI arka plan üretilir; yoksa 1. kare adayları
           # kullanılır (akış durmaz).

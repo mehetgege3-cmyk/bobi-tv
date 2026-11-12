@@ -420,6 +420,10 @@ async def arena_kisa_cevap_al_async(prompt: str) -> str | None:
             page = await context.new_page()
             print("[Arena Cevap] Arena'ya soruluyor (kısa cevap)...")
             cevap = await _arena_sorgusu_yap(page, prompt, min_cevap_uzunlugu=20)
+            # Kullanıcı isteği ("Yap"): oturum sağlıklıysa TAZELENMİŞ çerezi
+            # secret'a geri yaz → kullanıcı çerezi bir kez verir, sistem besler.
+            if cevap:
+                await _cerezi_tazele(context)
             await _tarayiciyi_kapat(browser)
     except Exception as e:
         print(f"[Arena Cevap] Tarayıcı hatası: {str(e)[:120]}")
@@ -678,6 +682,23 @@ async def _tarayici_ac(async_playwright_fn, *args, **kwargs):
     import asyncio
 
     return await asyncio.wait_for(async_playwright_fn(*args, **kwargs), timeout=45)
+
+
+async def _cerezi_tazele(context) -> None:
+    """Oturumdaki güncel Arena çerezlerini GitHub secret'ına yazar (best effort)."""
+    import asyncio
+
+    try:
+        cerezler = await context.cookies()
+        await asyncio.to_thread(_cerez_modulu().oturumdan_guncelle, cerezler)
+    except Exception as e:  # asla üretimi düşürmez
+        print(f"[Çerez] Tazeleme atlandı: {str(e)[:100]}")
+
+
+def _cerez_modulu():
+    from modules import arena_cerez
+
+    return arena_cerez
 
 
 async def _tarayiciyi_kapat(browser) -> None:

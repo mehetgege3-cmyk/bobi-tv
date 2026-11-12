@@ -10,9 +10,20 @@
       "cevap_ozeti": "Telefonundaki haritayı açıp 'buradan sağa dön' dediğinde, arkanda 20 bin kilometre yükseklikte dönen uydularla konuşuyorsun. Ama işin tuhaf yanı şu: o uyduların saatleri, senin saatinden farklı hızda işliyor.\n\nBunun nedeni Einstein'ın görelilik kuramı. Uydular çok hızlı hareket ettiği için saatleri biraz yavaşlıyor; ama yer çekimi daha zayıf olduğu için saatleri biraz da hızlanıyor. İki etki birle",
       "skor": 100,
       "tarih": "2026-11-11T23:42:08.868416+00:00"
+    },
+    {
+      "video_no": 1,
+      "kategori": "insan_vucudu",
+      "taktik": "T2",
+      "anahtar": "uykuda_beyin_temizligi",
+      "konu": "Beyin Asıl Temizliğini Uyurken Yapıyor! 🧠",
+      "cevap_ozeti": "Uykuyu genelde 'dinlenme' diye düşünürüz; sanki beyin kapanıp hiçbir şey yapmıyormuş gibi. Oysa uyku sırasında beynin en yoğun işlerinden biri başlıyor: temizlik.\n\nBeyin hücrelerinin arasında, gün içinde biriken atık proteinler var. Uyanıkken bu kanallar daralıyor; uykuya geçtiğinde hücreler arası boşluk genişliyor ve beyin-omurilik sıvısı bu aralıklardan daha rahat akıyor. Bilim insanları bu sist",
+      "skor": 100,
+      "tarih": "2026-11-12T02:03:07.748135+00:00"
     }
   ],
   "kullanilan_yedekler": [
-    "gps_izafiyet"
+    "gps_izafiyet",
+    "uykuda_beyin_temizligi"
   ]
 }

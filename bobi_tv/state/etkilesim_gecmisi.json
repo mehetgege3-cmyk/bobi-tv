@@ -96,6 +96,12 @@
       "taktik": "T1",
       "kategori": "doga_evren",
       "tarih": "2026-11-12T17:12:26.022174+00:00"
+    },
+    {
+      "video_no": 15,
+      "taktik": "T2",
+      "kategori": "gunluk_yasam",
+      "tarih": "2026-11-12T17:19:55.008555+00:00"
     }
   ]
 }

@@ -160,6 +160,16 @@
       "cevap_ozeti": "Sahra Çölü ile Amazon Ormanı arasında binlerce kilometre var; yine de ikisi arasında görünmez bir bağ olduğu düşünülüyor. Rüzgârlar, çölden kalkan ince tozu okyanusun üzerinden taşıyıp Güney Amerika'ya ulaştırır. Bu tozun içinde bitkiler için önemli mineraller bulunur.\n\nAmazon toprakları şaşırtıcı biçimde fakirdir; ormanın bu kadar gür olmasının nedeni toprağın zenginliği değil, döngünün hızıdır. ",
       "skor": 100,
       "tarih": "2026-11-12T17:12:26.021679+00:00"
+    },
+    {
+      "video_no": 15,
+      "kategori": "gunluk_yasam",
+      "taktik": "T2",
+      "anahtar": "sakiz_erimeme",
+      "konu": "Yuttuğun Sakız Gerçekten 7 Yıl Kalır mı? 🍬",
+      "cevap_ozeti": "Hepimiz çocukken 'sakız yutarsan yedi yıl midende kalır' uyarısını duymuşuzdur. Bu bilgi doğru değil. Sakızın sindirilemeyen bir kısmı vardır ama mide onu yıllarca tutmaz; bağırsaklar onu birkaç gün içinde vücuttan çıkarır. Yani sakız midede yerleşip kalmaz.\n\nPeki neden böyle bir efsane yayıldı? Çünkü sakızın yapısındaki bazı maddeler insan sindirim enzimleriyle parçalanmaz. Bu, sakızın 'sindirile",
+      "skor": 100,
+      "tarih": "2026-11-12T17:19:55.007976+00:00"
     }
   ],
   "kullanilan_yedekler": [
@@ -176,6 +186,7 @@
     "kopek_burun_izi",
     "kutup_ayi_deri",
     "japonya_cikolata",
-    "kum_firtinasi_haber"
+    "kum_firtinasi_haber",
+    "sakiz_erimeme"
   ]
 }

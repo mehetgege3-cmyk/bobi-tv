@@ -586,9 +586,19 @@ def pro_sahne_videosu_uret(
         str(cikis_video_mp4),
     ]
 
-    # Kapak: yalnız kapak_hatti.py üretir (Arena görseli). Burada kapak YOK.
-    kapak_yolu = senaryo_paketi.get("kapak_yolu")
-    ilk_kare_kapak_rgb = Image.open(kapak_yolu).convert("RGB").resize((W, H), Image.BILINEAR)
+    # Kapak: yalnız kapak_hatti.py üretir (Arena görseli) ve render'DAN SONRA
+    # 1. kareye yerleştirir. Render sırasında kapak yoksa video ÇÖKMEZ:
+    # ilk kare normal sahne olarak çizilir, kapak sonra bindirilir.
+    kapak_yolu = senaryo_paketi.get("kapak_yolu") or senaryo_paketi.get("kapak_dosyasi")
+    ilk_kare_kapak_rgb = None
+    if kapak_yolu:
+        try:
+            ilk_kare_kapak_rgb = Image.open(kapak_yolu).convert("RGB").resize((W, H), Image.BILINEAR)
+        except Exception as e:
+            print(f"[Animasyon] Kapak okunamadı, 1. kare sahneden çizilecek: {str(e)[:100]}")
+            ilk_kare_kapak_rgb = None
+    else:
+        print("[Animasyon] Kapak henüz yok — 1. kare sahne, kapak render sonrası 1. kareye bindirilecek")
 
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
     rng_shake = np.random.default_rng(77)
@@ -597,7 +607,7 @@ def pro_sahne_videosu_uret(
         seg_ptr = 0
         for kare_no in range(toplam_kare):
             # KURAL: Videonun 1. karesi (Frame 0, t=0.00s) profesyonel kapak fotoğrafıdır
-            if kare_no == 0:
+            if kare_no == 0 and ilk_kare_kapak_rgb is not None:
                 proc.stdin.write(ilk_kare_kapak_rgb.tobytes())
                 continue
 

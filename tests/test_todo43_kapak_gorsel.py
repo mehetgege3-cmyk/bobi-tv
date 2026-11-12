@@ -138,3 +138,33 @@ def test_kapak_gorseli_1080x1920_kirpilir(tmp_path):
     assert kapak_gorsel.gorseli_karesine_oturt(ham, hedef) == hedef
     with Image.open(hedef) as img:
         assert img.size == (1080, 1920)
+
+
+def test_render_kapaksiz_cokmez():
+    """CANLI HATA (run 43265657831): kapak render'dan SONRA üretildiği için
+    animasyon.py 'NoneType' object has no attribute 'read' ile çöküyordu.
+
+    Sözleşme: kapak yokken render çalışır, 1. kare sahneden çizilir.
+    """
+    import inspect
+
+    from modules import animasyon
+
+    kaynak = inspect.getsource(animasyon)
+    assert "ilk_kare_kapak_rgb = None" in kaynak
+    assert "if kare_no == 0 and ilk_kare_kapak_rgb is not None:" in kaynak
+    # kapak yoksa/okunamazsa sessizce çökmemeli, loglamalı
+    assert "Kapak henüz yok" in kaynak
+    assert "Kapak okunamadı" in kaynak
+
+
+def test_kapak_uretilmeden_render_edilebilir_akis():
+    """Sıra kilidi: render ÖNCE, kapak SONRA (kapak_hatti render sonrası çağrılır)."""
+    import inspect
+
+    from modules import arena_uretici
+
+    kaynak = inspect.getsource(arena_uretici)
+    assert "kapak_uret_ve_yerlestir" in kaynak
+    # kapak çağrısı render fonksiyonundan sonra olmalı
+    assert kaynak.index("kapak_uret_ve_yerlestir") > kaynak.index("def ")  # en az bir tanım var

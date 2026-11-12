@@ -21,6 +21,7 @@ on:
       - "Arşiv ↔ Kanal Eşitleme (haftalık)"
       - "Cron Cadans Ölçümü (günlük)"
       - "Kanal Sağlığı Ölçümü (günlük)"
+      - "🧪 Arena Canlı Test — Merhaba / Soru Sor"
     types: [completed]
 
 concurrency:

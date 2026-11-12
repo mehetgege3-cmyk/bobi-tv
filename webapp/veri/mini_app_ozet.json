@@ -1,8 +1,8 @@
 {
-  "guncelleme": "2026-11-12T05:26:00.546447+00:00",
+  "guncelleme": "2026-11-11T22:26:16.858979+00:00",
   "bugun": {
-    "uretilen": 10,
-    "yayinda": 10
+    "uretilen": 26,
+    "yayinda": 7
   },
   "kuyruk": {
     "toplam": 0,
@@ -14,10 +14,10 @@
     0,
     0,
     0,
+    0,
     4,
     11,
-    26,
-    10
+    26
   ],
   "denetim": [],
   "sinirlar": {

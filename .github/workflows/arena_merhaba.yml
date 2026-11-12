@@ -1,0 +1,116 @@
+name: "🧪 Arena Canlı Test — Merhaba / Soru Sor"
+
+# AMAÇ: kullanıcı "Arena'ya merhaba yaz, cevap gelecek mi?" diye sorunca tek
+# tıkla kanıt üretmek. Üretim hattının kullandığı GERÇEK yolu (Python +
+# modules/arena_api.py) çalıştırır; ayrı bir "test kodu" değildir.
+#
+# ÖNEMLİ: ARENA_COOKIES_JSON süresi dolmuşsa Arena login modalı gösterir ve
+# cevap HİÇ gelmez. Bu workflow bunu net söyler ve exit 2 ile biter.
+
+on:
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: "Arena'ya sorulacak metin"
+        required: true
+        default: "Merhaba! Tek cümleyle kendini tanıt."
+      bekleme_dk:
+        description: "En fazla kaç dakika cevap beklensin (donmuş sayfa freni)"
+        required: false
+        default: "6"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: arena-canli-test-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  arena-test:
+    name: Arena'ya sor ve cevabı yazdır
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Repoyu çek
+        uses: actions/checkout@v4
+
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Bağımlılıklar (playwright + chromium)
+        run: |
+          python -m pip install --quiet --upgrade pip
+          python -m pip install --quiet playwright==1.48.0
+          python -m playwright install --with-deps chromium
+
+      - name: Arena'ya sor
+        id: sor
+        env:
+          ARENA_COOKIES_JSON: ${{ secrets.ARENA_COOKIES_JSON }}
+          ARENA_IDLE_DK: "3"
+          ARENA_MAKS_DK: ${{ inputs.bekleme_dk }}
+          SORU: ${{ inputs.prompt }}
+        run: |
+          python - << 'PYEOF'
+          import os
+          import sys
+
+          from modules import arena_api
+
+          soru = os.environ.get("SORU", "").strip()
+          print(f"❓ SORU: {soru}", flush=True)
+
+          cevap = arena_api.arena_kisa_cevap_al(soru)
+
+          if not cevap:
+              print("❌ CEVAP GELMEDİ", flush=True)
+              if arena_api.oturum_doldu_mu():
+                  print(
+                      "SEBEP: Arena login modalı açıldı → ARENA_COOKIES_JSON süresi DOLMUŞ.",
+                      flush=True,
+                  )
+                  print(
+                      "ÇÖZÜM: arena.ai'ye giriş yap → Cookie-Editor → Export (JSON) → "
+                      "GitHub Settings → Secrets → ARENA_COOKIES_JSON → Update.",
+                      flush=True,
+                  )
+                  sys.exit(2)
+              print("SEBEP: tarayıcı/ağ hatası ya da cevap 0 karakter döndü.", flush=True)
+              sys.exit(1)
+
+          print("=" * 60, flush=True)
+          print("✅ CEVAP GELDİ:", flush=True)
+          print(cevap, flush=True)
+          print("=" * 60, flush=True)
+          with open("arena_cevap.txt", "w", encoding="utf-8") as f:
+              f.write(cevap)
+          PYEOF
+
+      - name: Cevabı iş özetine yaz (Actions ekranında görünür)
+        if: always()
+        run: |
+          if [ -s arena_cevap.txt ]; then
+            {
+              echo "### ✅ Arena cevabı"
+              echo '```'
+              cat arena_cevap.txt
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "### ❌ Cevap gelmedi"
+              echo "Log'da 'SEBEP:' satırına bak. Çerez doluysa \`ARENA_COOKIES_JSON\` yenilenmeli."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Cevabı artifact olarak yükle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: arena-cevap
+          path: arena_cevap.txt
+          if-no-files-found: ignore

@@ -210,6 +210,13 @@ async def giris_yap_ve_cerez_al(paket: dict[str, Any] | None = None) -> list[dic
         print("[Giriş] Kimlik secret'ları yok — otomatik giriş yapılmıyor", flush=True)
         return None
 
+    # TARAYICI AÇMADAN ön kontrol: yazım hatası varsa 4 dakika boşa gitmesin
+    gecerli, mesaj = eposta_on_kontrol()
+    if not gecerli:
+        print(f"[Giriş] ⛔ ÖN KONTROL: {mesaj}", flush=True)
+        return None
+    print(f"[Giriş] ✅ Ön kontrol: {mesaj}", flush=True)
+
     try:
         from playwright.async_api import async_playwright
     except ImportError:
@@ -268,3 +275,62 @@ def giris_yap_ve_secret_guncelle() -> bool:
     except Exception as e:
         print(f"[Giriş] Çerez yazılamadı: {str(e)[:120]}", flush=True)
         return False
+
+# Sık yazım hataları (2026-11-12 canlı olay: secret'a "gmal.com" girilmişti)
+_YAYGIN_DOMAINLER = (
+    "gmail.com", "googlemail.com", "outlook.com", "hotmail.com", "live.com",
+    "yahoo.com", "icloud.com", "yandex.com", "yandex.ru", "proton.me",
+    "protonmail.com", "mail.ru", "gmx.com", "aol.com", "msn.com",
+)
+
+
+def _levenshtein(a: str, b: str) -> int:
+    """İki metin arasındaki düzenleme mesafesi (klasik DP; yaklaşım YOK)."""
+    if a == b:
+        return 0
+    if not a:
+        return len(b)
+    if not b:
+        return len(a)
+    onceki = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        simdiki = [i]
+        for j, cb in enumerate(b, 1):
+            simdiki.append(
+                min(
+                    onceki[j] + 1,          # silme
+                    simdiki[j - 1] + 1,     # ekleme
+                    onceki[j - 1] + (ca != cb),  # değiştirme
+                )
+            )
+        onceki = simdiki
+    return onceki[-1]
+
+
+def eposta_on_kontrol(eposta: str | None = None) -> tuple[bool, str]:
+    """Tarayıcıyı AÇMADAN e-postayı doğrular (hızlı geri bildirim).
+
+    Neden: Arena domaini reddettiğinde giriş 4 dakika sürüyordu. Yazım hatası
+    (gmal.com) artık saniyeler içinde, anlaşılır mesajla yakalanır.
+    """
+    adres = (eposta if eposta is not None else os.environ.get("LMARENA_EMAIL", "")).strip()
+    if not adres:
+        return False, "LMARENA_EMAIL boş"
+    if adres.count("@") != 1:
+        return False, f"LMARENA_EMAIL geçersiz ('@' sayısı {adres.count('@')})"
+    yerel, domain = adres.split("@")
+    domain = domain.lower().strip(".")
+    if not yerel or not domain:
+        return False, "LMARENA_EMAIL geçersiz (yerel kısım/domain boş)"
+    if "." not in domain:
+        return False, f"LMARENA_EMAIL domaini geçersiz: '{domain}'"
+
+    # Yazım hatası şüphesi: bilinen bir domaine 1 harf uzaklıkta mı?
+    if domain not in _YAYGIN_DOMAINLER:
+        for bilinen in _YAYGIN_DOMAINLER:
+            if _levenshtein(domain, bilinen) <= 1:
+                return False, (
+                    f"YAZIM HATASI ŞÜPHESİ: '{domain}' → muhtemelen '{bilinen}'. "
+                    "LMARENA_EMAIL secret'ını düzeltin."
+                )
+    return True, f"e-posta tamam (domain: {domain})"

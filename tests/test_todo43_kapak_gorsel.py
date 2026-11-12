@@ -304,3 +304,23 @@ def test_giris_domain_teshisi_ekler():
     assert "domaini:" in kaynak
     assert 'split("@")[-1]' in kaynak
     assert "KABUL ETMİYOR" in kaynak
+
+
+def test_eposta_on_kontrol_yazim_hatasini_yakalar():
+    """CANLI OLAY (43283455004): secret'a 'gmal.com' yazılmıştı → 4 dk boşa koştu.
+
+    Sözleşme: yazım hatası tarayıcı AÇILMADAN, anlaşılır mesajla yakalanır.
+    """
+    from modules import arena_giris
+
+    ok, mesaj = arena_giris.eposta_on_kontrol("kullanici@gmal.com")
+    assert ok is False
+    assert "gmail.com" in mesaj          # doğru domain önerilir
+
+    ok, mesaj = arena_giris.eposta_on_kontrol("kullanici@gmai.com")
+    assert ok is False and "gmail.com" in mesaj
+
+    assert arena_giris.eposta_on_kontrol("kullanici@gmail.com")[0] is True
+    assert arena_giris.eposta_on_kontrol("x@outlook.com")[0] is True
+    assert arena_giris.eposta_on_kontrol("bozuk-adres")[0] is False
+    assert arena_giris.eposta_on_kontrol("")[0] is False

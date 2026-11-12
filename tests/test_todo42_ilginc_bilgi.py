@@ -886,3 +886,17 @@ def test_ingilizce_onyuz_yankidan_bagimsiz_atilir():
     assert arena_api._ingilizce_onyuzu_at(cevap).startswith("Merhaba!")
     # JSON kapak cevabı tek parça → korunur
     assert arena_api._ingilizce_onyuzu_at('{"sok_baslik": "X"}') == '{"sok_baslik": "X"}'
+
+
+def test_arena_sorgu_dongusu_calisir_imzasi():
+    """CANLI HATA (43201686135): '_prompt_kuyrugunu_at() missing 1 required
+    positional argument' → Arena tamamen çöktü, içerik bankaya düştü.
+    Bu test kaynak düzeyinde çağrı imzasını kilitler."""
+    import inspect
+
+    from modules import arena_api
+
+    kaynak = inspect.getsource(arena_api._arena_sorgusu_yap)
+    assert "_prompt_kuyrugunu_at(" in kaynak
+    # iki argümanlı çağrı: (..., prompt)
+    assert "prompt_ilk_satir), prompt" in kaynak.replace("\n", " ").replace("  ", " ") or ", prompt" in kaynak

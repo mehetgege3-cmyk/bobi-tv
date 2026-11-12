@@ -832,7 +832,7 @@ async def _arena_sorgusu_yap(
 
             cevap = _ingilizce_onyuzu_at(
                 _prompt_kuyrugunu_at(
-                    _cok_satirli_duzelt(_cevabi_ayikla(body, prompt, prompt_ilk_satir))
+                    _cevabi_ayikla(body, prompt, prompt_ilk_satir), prompt
                 )
             )
             if _prompt_yankisi_mi(cevap):
@@ -957,11 +957,6 @@ def _prompt_kuyrugunu_at(cevap: str, prompt: str) -> str:
     # (canlı kanıt: "... Respond in Turkish with a one-sentence self-introduction.")
     t = _ingilizce_onyuzu_at(t)
     return "" if _prompt_yankisi_mi(t) else t
-
-
-def _cok_satirli_duzelt(metin: str) -> str:
-    """Tek satıra sıkışmış paragraf sınırlarını geri koyar (no-op güvenli)."""
-    return str(metin or "")
 
 
 def _ingilizce_onyuzu_at(metin: str) -> str:

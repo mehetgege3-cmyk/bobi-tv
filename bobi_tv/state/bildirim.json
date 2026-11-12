@@ -23,6 +23,12 @@
       "govde": "Video #8 üretimi başarısız oldu.",
       "seviye": "ozet",
       "zaman": "2026-11-12T03:30:43.117127+00:00"
+    },
+    {
+      "baslik": "1 video yayına alındı",
+      "govde": "Stokta bekleyen: 0",
+      "seviye": "normal",
+      "zaman": "2026-11-12T03:41:02.549244+00:00"
     }
   ],
   "sustur_until": null,

@@ -80,6 +80,16 @@
       "cevap_ozeti": "Buzdolabında bir haftada bozulan yiyecekleri düşün; sonra balı düşün. Arıların ürettiği bu madde, doğru saklandığında neredeyse hiç bozulmuyor. Bunun nedeni üç ayrı savunma hattı.\n\nBirincisi su: baldaki şeker oranı o kadar yüksek ki, içindeki su mikropların kullanabileceği kadar serbest değil. Bakteriler susuz kalıp çoğalamıyor. İkincisi asitlik: bal hafif asidik, bu da birçok mikroorganizmanın se",
       "skor": 100,
       "tarih": "2026-11-12T03:19:05.233876+00:00"
+    },
+    {
+      "video_no": 8,
+      "kategori": "yiyecekler",
+      "taktik": "T1",
+      "anahtar": "bal_bozulmaz",
+      "konu": "Bal Neden Binlerce Yıl Bozulmadan Kalabiliyor? 🍯",
+      "cevap_ozeti": "Buzdolabında bir haftada bozulan yiyecekleri düşün; sonra balı düşün. Arıların ürettiği bu madde, doğru saklandığında neredeyse hiç bozulmuyor. Bunun nedeni üç ayrı savunma hattı.\n\nBirincisi su: baldaki şeker oranı o kadar yüksek ki, içindeki su mikropların kullanabileceği kadar serbest değil. Bakteriler susuz kalıp çoğalamıyor. İkincisi asitlik: bal hafif asidik, bu da birçok mikroorganizmanın se",
+      "skor": 100,
+      "tarih": "2026-11-12T03:37:15.806182+00:00"
     }
   ],
   "kullanilan_yedekler": [
@@ -90,6 +100,7 @@
     "ahtapot_uc_kalp",
     "izlanda_soyadi",
     "kopekbaligi_agac",
+    "bal_bozulmaz",
     "bal_bozulmaz"
   ]
 }

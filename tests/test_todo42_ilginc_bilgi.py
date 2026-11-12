@@ -556,7 +556,10 @@ def test_yedek_banka_kullanilanlari_tekrar_vermez():
     ikinci = yedek_bilgiler.bilgi_sec("hayvanlar", [ilk["anahtar"]])
     assert ikinci is not None and ikinci["anahtar"] != ilk["anahtar"]
     hepsi = [b["anahtar"] for b in yedek_bilgiler.YEDEK_BILGILER]
-    assert yedek_bilgiler.bilgi_sec("hayvanlar", hepsi) is None
+    # Havuz boşalınca üretim DURMAZ (tam otonomi): en eski kayıt yeniden gelir
+    dongu = yedek_bilgiler.bilgi_sec("hayvanlar", hepsi)
+    assert dongu is not None and dongu["anahtar"] in hepsi
+    assert dongu["anahtar"] == hepsi[0]  # en uzun süre önce kullanılan
 
 
 def test_arena_coktugunde_sekiz_video_uretilir(tmp_path):
@@ -742,3 +745,20 @@ def test_oturum_dolunca_tarayici_acilmaz():
     finally:
         arena_api.oturum_bayragini_sifirla()
     assert arena_api.oturum_doldu_mu() is False
+
+
+def test_banka_tukenince_uretim_durmaz(tmp_path):
+    """CANLI HATA (43148464044): banka tükenince '0 yayınlandı' oldu.
+
+    Tam otonomi kuralı: Arena yok + banka bitti → en eski kayıt yeniden kullanılır,
+    üretim ASLA durmaz.
+    """
+    import modules.ilginc_bilgi.uretici as u
+
+    yol = tmp_path / "s.json"
+    uretilen = []
+    for no in range(1, 40):
+        paket = u.uret(no, state_yolu=yol, arena_fn=lambda _p: None)
+        uretilen.append(paket["paket"]["senaryo"]["baslik"])
+    assert len(uretilen) == 39
+    assert all(uretilen)

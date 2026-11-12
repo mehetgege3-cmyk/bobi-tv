@@ -313,10 +313,29 @@ YEDEK_BILGILER: list[dict] = [
 ]
 
 
+#: Banka bitince en eski kayıt bu kadar süre sonra YENİDEN kullanılabilir.
+#: Kullanıcı kuralı: "tam otonomi" — üretim asla "banka tükendi" diye durmamalı.
+#: Tekrar aralığı bilinçli olarak uzun (8 kayıt × 8 kategori ≈ 64 video).
+TEKRAR_ARALIGI = 40
+
+
 def kullanilmamis_bilgiler(kullanilan_anahtarlar: list[str] | None = None) -> list[dict]:
-    """Daha önce kullanılmamış yedek bilgiler."""
-    kullanilan = {str(k) for k in (kullanilan_anahtarlar or [])}
-    return [b for b in YEDEK_BILGILER if b["anahtar"] not in kullanilan]
+    """Daha önce kullanılmamış yedek bilgiler.
+
+    CANLI KANIT (koşu 43148464044, 03:30): banka tükendi → üretim tamamen
+    durdu ("0 yayınlandı"). Otonom üretimde bu kabul edilemez. Havuz boşsa
+    en eski kayıt(lar) yeniden kullanıma açılır (TEKRAR_ARALIGI'ndan sonra).
+    """
+    kullanilan = [str(k) for k in (kullanilan_anahtarlar or [])]
+    kume = set(kullanilan)
+    havuz = [b for b in YEDEK_BILGILER if b["anahtar"] not in kume]
+    if havuz:
+        return havuz
+    # Havuz boş: en uzun süredir kullanılmayanlardan başla
+    kullanim_sirasi = [k for k in kullanilan if k in {b["anahtar"] for b in YEDEK_BILGILER}]
+    if len(kullanim_sirasi) >= len(YEDEK_BILGILER):
+        return sorted(YEDEK_BILGILER, key=lambda b: kullanim_sirasi.index(b["anahtar"]))
+    return list(YEDEK_BILGILER)
 
 
 def bilgi_sec(kategori: str, kullanilan_anahtarlar: list[str] | None = None) -> dict | None:

@@ -474,7 +474,12 @@ def uret(
                 "kapak_baslik": bilgi["baslik"][:34],
             }
             kaynak_turu = "yedek"
-            uyarilar.append(f"Arena yok → doğrulanmış bankadan: {bilgi['anahtar']}")
+            if bilgi["anahtar"] in (durum.get("kullanilan_yedekler") or []):
+                uyarilar.append(
+                    f"banka havuzu boşaldı → en eski kayıt yeniden kullanıldı: {bilgi['anahtar']}"
+                )
+            else:
+                uyarilar.append(f"Arena yok → doğrulanmış bankadan: {bilgi['anahtar']}")
             if bilgi["kategori"] != kategori:
                 uyarilar.append(
                     f"banka '{kategori}' için boş → '{bilgi['kategori']}' bilgisi kullanıldı"

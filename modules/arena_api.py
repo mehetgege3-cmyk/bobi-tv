@@ -295,6 +295,14 @@ def _arena_sayfasi_hazirla(cookies_raw: str):  # pragma: no cover - Playwright
     return build_clean_arena_cookie(cookies_list)
 
 
+_SON_SAYFA: dict = {}
+
+
+def _son_sayfa():
+    """Teşhis için son kullanılan Playwright sayfası (ekran görüntüsü/DOM)."""
+    return _SON_SAYFA.get("page")
+
+
 async def arena_kisa_cevap_al_async(prompt: str) -> str | None:
     """Arena'ya serbest metin sorusu sorar ve DÜZ METİN cevap döndürür.
 
@@ -337,6 +345,7 @@ async def arena_kisa_cevap_al_async(prompt: str) -> str | None:
                  "domain": "arena.ai", "path": "/"},
             ])
             page = await context.new_page()
+            _SON_SAYFA["page"] = page          # teşhis: /tmp'e ekran görüntüsü
             print("[Arena Cevap] Arena'ya soruluyor (kısa cevap)...")
             cevap = await _arena_sorgusu_yap(page, prompt, min_cevap_uzunlugu=20)
             # Kullanıcı isteği ("Yap"): oturum sağlıklıysa TAZELENMİŞ çerezi
@@ -636,11 +645,12 @@ async def oturum_gercekten_acik_mi(page) -> bool:
 
 
 async def _promptu_gonder(page, prompt: str) -> bool:
-    """Editöre yazar ve gönderir.
+    """Editöre yazar ve gönderir — CANLI ÜRETİMDE ÇALIŞAN sürüm.
 
-    ÖNEMLİ (2026-11-12): Bu, canlı üretimde ÇALIŞAN orijinal sürümdür
-    (commit 5199075). Araya eklenen "doğrulama"/Enter yedekleri gönderimi
-    BOZDU (canlı koşu 43292738267: prompt kutuda kaldı). Geri alındı.
+    DERS (2026-11-12, canlı koşu 43292738267): buraya eklediğim "doğrulama",
+    Enter yedeği ve keyboard.type denemeleri gönderimi BOZDU: prompt editörde
+    kalıyor, sohbet hiç başlamıyordu. Aşağıdaki sürüm commit 5199075'te canlıda
+    çalıştığı KANITLANMIŞ olandır. Değiştirmeden önce canlı kanıt isteyin.
     """
     editor = page.locator('div.tiptap[contenteditable="true"]')
     try:
@@ -648,82 +658,17 @@ async def _promptu_gonder(page, prompt: str) -> bool:
     except Exception:
         print("[Arena] Editör görünmedi.", flush=True)
         return False
-
-    async def _editor_bos() -> bool:
-        try:
-            return not (await editor.inner_text()).strip()
-        except Exception:
-            return False
-
-    # Tıklama yerine JS focus: overlay/modal varsa click 30 sn timeout veriyordu
-    try:
-        await page.evaluate(
-            """() => {
-                const e = document.querySelector('div.tiptap[contenteditable="true"]')
-                       || document.querySelector('[contenteditable="true"]');
-                if (e) { e.focus(); }
-            }"""
-        )
-    except Exception:
-        try:
-            await editor.click(timeout=5000)
-        except Exception as e:
-            print(f"[Arena] Editöre odaklanılamadı: {str(e)[:90]}", flush=True)
-            return False
+    await editor.click()
     await page.wait_for_timeout(300)
-
-    # 1) GERÇEK tuş vuruşları (React state güncellensin). Uzunsa hızlı yaz.
+    await page.keyboard.insert_text(prompt)
+    await page.wait_for_timeout(400)
     try:
-        await page.keyboard.type(prompt, delay=1)
+        await page.locator('button[aria-label="Send message"]').click(force=True)
     except Exception as e:
-        print(f"[Arena] Yazma hatası: {str(e)[:90]} — insert_text'e düşülüyor", flush=True)
-        await page.keyboard.insert_text(prompt)
-    await page.wait_for_timeout(800)
-
-    durum = await _gonder_dugmesi_durumu(page)
-    print(f"[Arena] gönder düğmesi: {durum}", flush=True)
-
-    # 2) Düğme etkinse tıkla
-    gonderildi = False
-    if durum.get("var") and not durum.get("disabled") and durum.get("aria_disabled") != "true":
-        try:
-            await page.locator('button[aria-label="Send message"]').first.click(force=True)
-            gonderildi = True
-        except Exception as e:
-            print(f"[Arena] Düğme tıklanamadı: {str(e)[:90]}", flush=True)
-
-    # 3) Düğme pasifse / tıklama işe yaramadıysa: Enter, sonra Ctrl+Enter
-    if not gonderildi:
-        for tus in ("Enter", "Control+Enter"):
-            try:
-                await page.evaluate(
-                    """() => {
-                        const e = document.querySelector('div.tiptap[contenteditable="true"]')
-                               || document.querySelector('[contenteditable="true"]');
-                        if (e) { e.focus(); }
-                    }"""
-                )
-            except Exception:
-                pass
-            await page.keyboard.press(tus)
-            await page.wait_for_timeout(1200)
-            if await _editor_bos():
-                print(f"[Arena] 📤 Prompt gönderildi ({tus} ile, doğrulandı)", flush=True)
-                return True
-
-    # 4) DOĞRULAMA: editör boşaldı mı?
-    for _ in range(12):
-        await page.wait_for_timeout(500)
-        if await _editor_bos():
-            print("[Arena] 📤 Prompt gönderildi (doğrulandı)", flush=True)
-            return True
-
-    print(
-        "[Arena] ❌ GÖNDERİLEMEDİ — editör hâlâ dolu. Düğme durumu: "
-        f"{await _gonder_dugmesi_durumu(page)}",
-        flush=True,
-    )
-    return False
+        print(f"[Arena] Gönder düğmesi hatası: {str(e)[:90]}", flush=True)
+        return False
+    print("[Arena] 📤 Prompt gönderildi", flush=True)
+    return True
 
 
 async def _arena_riza_modalini_kapat(page) -> bool:

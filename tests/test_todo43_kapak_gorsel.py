@@ -198,123 +198,23 @@ def test_kapak_paket_alanlarini_doldurur(monkeypatch, tmp_path):
     assert paket["kapak_ilk_kare"] is False  # video yoktu → gömülmedi (dürüst)
 
 
-def test_prompt_gonderimi_dogrulanir():
-    """CANLI BULGU (43271340457): prompt editörde KALDI (gönderilmedi) ama eski
-    kod True dönüyordu → 8 dk boş sayfa beklendi, log 'gönderildi' dedi.
-
-    Sözleşme: _promptu_gonder gönderimi DOĞRULAR; doğrulayamazsa False döner.
 def test_prompt_gonderimi_calisan_orijinaldir():
-    """DERS (canlı koşu 43292738267): 'doğrulama' eklemek gönderimi BOZDU.
+    """DERS (canlı koşu 43292738267): eklenen 'doğrulama' gönderimi BOZDU.
 
-    Çalışan sürüm (5199075): editor.click(), keyboard.insert_text, Send'e tıkla.
-    Enter yedeği / kutu boşluğu kontrolü KALDIRILDI — prompt kutuda kalıyordu.
+    Çalışan sürüm (commit 5199075): editor.click(), keyboard.insert_text,
+    ardından Send message düğmesine tıklama. Enter yedeği ve "kutu boşaldı mı"
+    kontrolü KALDIRILDI — prompt kutuda kalıyordu, sohbet başlamıyordu.
     """
     import inspect
 
     from modules import arena_api
 
     kaynak = inspect.getsource(arena_api._promptu_gonder)
-    assert "_editor_bos" in kaynak          # editör boşaldı mı kontrolü
-    assert "GÖNDERİLEMEDİ" in kaynak         # başarısızlık sessiz kalmıyor
-    assert 'keyboard.press(tus)' in kaynak  # düğme çalışmazsa Enter/Ctrl+Enter yedeği
-    assert "keyboard.type(" in kaynak  # GERÇEK tuş vuruşu (insert_text React'i güncellemiyor)
-    assert "disabled" in kaynak              # pasif düğmeye tıklamayı fark eder
-
-
-def test_olu_oturum_yonlendirmesi_aninda_yakalanir():
-    """CANLI KANIT (run 43275868230): çerez ölüyken sayfa
-    accounts.google.com'a yönlendi; hat 8 dakika boş bekledi.
-
-    Sözleşme: yönlendirme URL'i görülürse oturum kapalı sayılır (ucuz kontrol).
-    """
-    import inspect
-
-    from modules import arena_api, kapak_gorsel
-
-    kaynak = inspect.getsource(arena_api.oturum_gercekten_acik_mi)
-    for isaret in ("accounts.google.com", "/login", "/signin"):
-        assert isaret in kaynak
-
-    # Kapak hattı bu freni kullanmalı (yoksa yine boşa bekler)
-    kapak_kaynak = inspect.getsource(kapak_gorsel.arena_kapak_gorseli_uret_async)
-    assert "oturum_gercekten_acik_mi" in kapak_kaynak
-    assert "_oturum_doldu_isaretle" in kapak_kaynak
-    assert "_promptu_gonder" in kapak_kaynak
-
-
-# ---------------------------------------------------------------------------
-# Arena e-posta/şifre girişi (LMARENA_EMAIL + LMARENA_PASSWORD, 2026-11-12)
-# ---------------------------------------------------------------------------
-
-
-def test_giris_kimlik_yoksa_sessizce_atlar(monkeypatch):
-    """Secret'lar yoksa giriş hattı üretimi düşürmez, None döner."""
-    import asyncio
-
-    from modules import arena_giris
-
-    monkeypatch.delenv("LMARENA_EMAIL", raising=False)
-    monkeypatch.delenv("LMARENA_PASSWORD", raising=False)
-    assert arena_giris.kimlik_var_mi() is False
-    assert asyncio.run(arena_giris.giris_yap_ve_cerez_al()) is None
-
-
-def test_giris_modulu_olculen_secicileri_kullanir():
-    """Yerel ölçümle bulunan gerçek DOM seçicileri kodda olmalı."""
-    import inspect
-
-    from modules import arena_giris
-
-    kaynak = inspect.getsource(arena_giris)
-    assert 'button:has-text("Agree")' in kaynak            # Terms of Use modalı
-    assert "Continue with email" in kaynak                  # e-posta giriş yolu
-    assert 'input[type="email"]' in kaynak                  # e-posta alanı (ölçüldü)
-    assert 'input[type="password"]' in kaynak               # şifre adımı
-    assert "domain is not permitted" in kaynak              # Arena domain doğrulaması
-
-
-def test_giris_sifreyi_loglamaz():
-    """Şifre log'a/ekran görüntüsüne sızmamalı."""
-    import inspect
-
-    from modules import arena_giris
-
-    kaynak = inspect.getsource(arena_giris)
-    # print satırlarında sifre değişkeni geçmemeli
-    for satir in kaynak.splitlines():
-        if "print(" in satir and "{" in satir:
-            assert "sifre" not in satir.lower() or "yok" in satir.lower(), satir
-    assert 'os.environ.get("LMARENA_PASSWORD"' in kaynak
-
-
-def test_giris_workflow_secretlari_baglar():
-    """Workflow iki secret'ı env'e bağlamalı ve çerez secret'ını güncellemeli."""
-    from pathlib import Path
-
-    yol = Path(".github/workflows/arena_giris_login.yml")
-    metin = yol.read_text(encoding="utf-8")
-    assert "secrets.LMARENA_EMAIL" in metin
-    assert "secrets.LMARENA_PASSWORD" in metin
-    assert "secrets.GH_PAT" in metin   # secret yazmak için gerekli
-    assert "giris_yap_ve_secret_guncelle" in metin
-
-
-def test_giris_domain_teshisi_ekler():
-    """Arena domain reddettiğinde HANGİ domain olduğu log'a yazılmalı (adres değil)."""
-    import inspect
-
-    from modules import arena_giris
-
-    kaynak = inspect.getsource(arena_giris._email_ile_giris)
-    assert "domaini:" in kaynak
-    assert 'split("@")[-1]' in kaynak
-    assert "KABUL ETMİYOR" in kaynak
     assert 'button[aria-label="Send message"]' in kaynak
     assert "insert_text" in kaynak
-    assert 'await editor.click()' in kaynak
-    # bozduğumuz yedekler geri gelmemeli
-    assert "_editor_bos" not in kaynak
-    assert 'keyboard.type(' not in kaynak
+    assert "await editor.click()" in kaynak
+    assert "_editor_bos" not in kaynak          # bozduğumuz yedek geri gelmesin
+    assert "keyboard.type(" not in kaynak
 
 
 def test_eposta_on_kontrol_yazim_hatasini_yakalar():

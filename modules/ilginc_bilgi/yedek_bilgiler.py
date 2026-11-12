@@ -15,6 +15,7 @@ Her kayıt: soru · cevap (200-300 kelime) · sonuc · kaynak · kategori.
 from __future__ import annotations
 
 from modules.ilginc_bilgi.kurallar import BASLIK_CEVAP, BASLIK_SONUC, BASLIK_SORU
+from modules.ilginc_bilgi.yedek_bilgiler_2 import PARTI_2
 
 YEDEK_BILGILER: list[dict] = [
     {
@@ -310,7 +311,7 @@ YEDEK_BILGILER: list[dict] = [
         "kaynak": "Smithsonian Magazine — fermuarın tarihi",
         "sayilar": ["1850", "1910", "1930", "80"],
     },
-]
+] + PARTI_2
 
 
 #: Banka bitince en eski kayıt bu kadar süre sonra YENİDEN kullanılabilir.

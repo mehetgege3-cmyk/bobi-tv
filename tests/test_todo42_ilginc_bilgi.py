@@ -762,3 +762,28 @@ def test_banka_tukenince_uretim_durmaz(tmp_path):
         uretilen.append(paket["paket"]["senaryo"]["baslik"])
     assert len(uretilen) == 39
     assert all(uretilen)
+
+
+def test_banka_16_kayit_ve_her_kategoride_2():
+    """Arena çerezi dolu olduğu sürece banka TEK içerik kaynağı: 16 tur dayanmalı."""
+    from collections import Counter
+
+    kayitlar = yedek_bilgiler.YEDEK_BILGILER
+    assert len(kayitlar) >= 16
+    sayim = Counter(b["kategori"] for b in kayitlar)
+    for kategori in kategoriler.ANAHTARLAR:
+        assert sayim[kategori] >= 2, sayim
+    assert len({b["anahtar"] for b in kayitlar}) == len(kayitlar)
+
+
+def test_banka_kayitlari_kalite_kapisindan_gecer():
+    """Her yedek kayıt 200-300 kelime + 12 kural: skor 100 olmalı."""
+    for bilgi in yedek_bilgiler.YEDEK_BILGILER:
+        assert bilgi["soru"].strip().endswith("?"), bilgi["anahtar"]
+        rapor = kurallar.denetle(
+            yedek_bilgiler.tam_metin(bilgi),
+            kaynak=bilgi["kaynak"],
+            sayilar=bilgi["sayilar"],
+            kategori=bilgi["kategori"],
+        )
+        assert rapor.skor == 100, (bilgi["anahtar"], rapor.ozet()[:120])

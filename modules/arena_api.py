@@ -265,7 +265,7 @@ async def arena_canli_senaryo_iste(video_no: int) -> dict | None:
 
         print(f"[Arena] Video #{video_no} ({kategori}) için Master Loop senaryosu isteniyor...")
         cevap = await _arena_sorgusu_yap(page, prompt, min_cevap_uzunlugu=120)
-        await browser.close()
+        await _tarayiciyi_kapat(browser)
 
     if not cevap:
         return None
@@ -361,7 +361,7 @@ async def arena_kapak_onerisi_al_async(paket: dict) -> dict | None:
             page = await context.new_page()
             print(f"[Arena Kapak] '{baslik[:40]}' için kapak önerisi isteniyor...")
             cevap = await _arena_sorgusu_yap(page, prompt, min_cevap_uzunlugu=40)
-            await browser.close()
+            await _tarayiciyi_kapat(browser)
     except Exception as e:
         print(f"[Arena Kapak] Tarayıcı hatası: {str(e)[:120]}")
         return None
@@ -418,9 +418,9 @@ async def arena_kisa_cevap_al_async(prompt: str) -> str | None:
                  "domain": "arena.ai", "path": "/"},
             ])
             page = await context.new_page()
-            print("[Arena Cevap] İzleyici yorumu için cevap isteniyor...")
+            print("[Arena Cevap] Arena'ya soruluyor (kısa cevap)...")
             cevap = await _arena_sorgusu_yap(page, prompt, min_cevap_uzunlugu=20)
-            await browser.close()
+            await _tarayiciyi_kapat(browser)
     except Exception as e:
         print(f"[Arena Cevap] Tarayıcı hatası: {str(e)[:120]}")
         return None
@@ -653,6 +653,20 @@ def _oturum_doldu_isaretle() -> None:
             flush=True,
         )
     _OTURUM_DOLDU["deger"] = True
+
+
+async def _tarayiciyi_kapat(browser) -> None:
+    """Tarayıcıyı kapatır; kapanma asılı kalırsa beklemeyi keser.
+
+    Bu bir "Arena düşünme süresi" timeout'u DEĞİL (o yasak). Sorun şu:
+    oturum düştüğünde `browser.close()` ~4 dakika asılı kalıyordu
+    (koşu 43144741768: 02:57:28 tespit → 03:01:44 banka dönüşü).
+    """
+    import asyncio
+    from contextlib import suppress
+
+    with suppress(Exception):
+        await asyncio.wait_for(browser.close(), timeout=15)
 
 
 async def _arena_riza_modalini_kapat(page) -> bool:

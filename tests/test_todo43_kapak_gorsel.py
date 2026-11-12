@@ -235,3 +235,60 @@ def test_olu_oturum_yonlendirmesi_aninda_yakalanir():
     assert "oturum_gercekten_acik_mi" in kapak_kaynak
     assert "_oturum_doldu_isaretle" in kapak_kaynak
     assert "_promptu_gonder" in kapak_kaynak
+
+
+# ---------------------------------------------------------------------------
+# Arena e-posta/şifre girişi (LMARENA_EMAIL + LMARENA_PASSWORD, 2026-11-12)
+# ---------------------------------------------------------------------------
+
+
+def test_giris_kimlik_yoksa_sessizce_atlar(monkeypatch):
+    """Secret'lar yoksa giriş hattı üretimi düşürmez, None döner."""
+    import asyncio
+
+    from modules import arena_giris
+
+    monkeypatch.delenv("LMARENA_EMAIL", raising=False)
+    monkeypatch.delenv("LMARENA_PASSWORD", raising=False)
+    assert arena_giris.kimlik_var_mi() is False
+    assert asyncio.run(arena_giris.giris_yap_ve_cerez_al()) is None
+
+
+def test_giris_modulu_olculen_secicileri_kullanir():
+    """Yerel ölçümle bulunan gerçek DOM seçicileri kodda olmalı."""
+    import inspect
+
+    from modules import arena_giris
+
+    kaynak = inspect.getsource(arena_giris)
+    assert 'button:has-text("Agree")' in kaynak            # Terms of Use modalı
+    assert "Continue with email" in kaynak                  # e-posta giriş yolu
+    assert 'input[type="email"]' in kaynak                  # e-posta alanı (ölçüldü)
+    assert 'input[type="password"]' in kaynak               # şifre adımı
+    assert "domain is not permitted" in kaynak              # Arena domain doğrulaması
+
+
+def test_giris_sifreyi_loglamaz():
+    """Şifre log'a/ekran görüntüsüne sızmamalı."""
+    import inspect
+
+    from modules import arena_giris
+
+    kaynak = inspect.getsource(arena_giris)
+    # print satırlarında sifre değişkeni geçmemeli
+    for satir in kaynak.splitlines():
+        if "print(" in satir and "{" in satir:
+            assert "sifre" not in satir.lower() or "yok" in satir.lower(), satir
+    assert 'os.environ.get("LMARENA_PASSWORD"' in kaynak
+
+
+def test_giris_workflow_secretlari_baglar():
+    """Workflow iki secret'ı env'e bağlamalı ve çerez secret'ını güncellemeli."""
+    from pathlib import Path
+
+    yol = Path(".github/workflows/arena_giris_login.yml")
+    metin = yol.read_text(encoding="utf-8")
+    assert "secrets.LMARENA_EMAIL" in metin
+    assert "secrets.LMARENA_PASSWORD" in metin
+    assert "secrets.GH_PAT" in metin   # secret yazmak için gerekli
+    assert "giris_yap_ve_secret_guncelle" in metin

@@ -37,6 +37,7 @@ def test_arena_self_repair_monitors_all_other_current_workflows() -> None:
         # arena_merhaba + arena_gorsel_test: TEŞHİS workflow'ları; çerez dolu/ölüyken
         # kırmızı yanarlar (kullanıcı aksiyonu gerekir) → otomatik onarım boşa koşar.
         if path.name not in {"arena_merhaba.yml", "arena_gorsel_test.yml"}
+        if path.name not in {"arena_merhaba.yml", "arena_gorsel_test.yml", "arena_giris_login.yml"}
         if isinstance((workflow := yaml.load(path.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)), dict)
     }
     assert monitored == existing

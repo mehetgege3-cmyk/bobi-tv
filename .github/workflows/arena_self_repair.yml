@@ -5,6 +5,7 @@ on:
     workflows:
       - "Arena AI Playwright Agent"
       - '🖼️ Arena Görsel (tarayıcısız okuma)'
+      - '🎬 Kapak Uçtan Uca (video metni → Arena → 1. kare)'
       - "BOBİ TV — Arena AI Senaryo Üretimi"
       - "🧹 BOBİ TV Otomatik Temizleme — <100 İzlenme Videoları Sil"
       - "BOBİ TV — Toplu Manuel Üretim Pipeline"

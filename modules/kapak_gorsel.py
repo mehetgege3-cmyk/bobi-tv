@@ -92,7 +92,8 @@ def gorsel_promptu(paket: dict[str, Any]) -> str:
         # "Which image do you prefer?" diye soruyor; cevap alamayınca akış
         # bitmiyor ve görsel teslim edilmiyordu. Bu cümle istekte varsa
         # Arena sormadan doğrudan yapıyor.
-        "Soru sorma, yap.\n\n"
+        "Soru sorma, yap. Tek bir görsel üret; birden fazla aday üretip "
+        "seçenek sunma, onay isteme.\n\n"
         "=== VİDEO METNİ (TAM) ===\n"
         f"{metin}\n"
         "=== VİDEO METNİ SONU ==="
@@ -266,7 +267,14 @@ async def arena_kapak_gorseli_uret_async(paket: dict[str, Any]) -> Path | None:
                 print("[Kapak] ⚠️ Prompt gönderilemedi — kapak video karesinden üretilecek")
                 await arena_api._tarayiciyi_kapat(browser)
                 return None
-            gorsel = await _gorsel_bekle_ve_indir(page, cikis)
+
+            # ---- YENİ YOL (HAR kanıtlı): görsel TARAYICISIZ indirilir ----
+            # Gönderimden sonra sohbet kimliği create-chat yanıtından gelir.
+            # Sonra: /api/chat/{id}/events → hash, /workspace/cas/user/{hash} → PNG
+            gorsel = await _http_ile_gorsel_al(arena_api, cikis)
+            if not gorsel:
+                print("[Kapak] HTTP yolu görsel vermedi — DOM yolu denenecek")
+                gorsel = await _gorsel_bekle_ve_indir(page, cikis)
             if gorsel:
                 # Çerez kendini beslesin (aynı oturumdan tazelenmiş çerez)
                 try:
@@ -278,6 +286,59 @@ async def arena_kapak_gorseli_uret_async(paket: dict[str, Any]) -> Path | None:
     except Exception as e:
         print(f"[Kapak] Arena görsel hattı hatası: {str(e)[:140]}")
         return None
+
+
+async def _http_ile_gorsel_al(arena_api, hedef: Path) -> Path | None:
+    """Gönderilmiş sohbetin görselini HTTP ile indirir (tarayıcı beklemeden).
+
+    KANIT (2026-11-13, koşu 43320057811): chat_id → /api/chat/{id}/events →
+    hash kEXRs3BJ2LtVQH0U3UtMN_e7VtIkyypeG1tguhs1d5g →
+    /api/chat/workspace/cas/user/{hash} → 720×1280 PNG.
+    """
+    import asyncio
+
+    from modules import arena_http
+
+    cerez = arena_http._cerez_basligi()
+    if not cerez:
+        return None
+
+    chat_id = None
+    # create-chat yanıtı ilk saniyelerde gelir; kısa kısa yokla (sabit bekleme yok)
+    for _ in range(20):
+        chat_id = arena_api.son_chat_id()
+        if chat_id:
+            break
+        await asyncio.sleep(1)
+    if not chat_id:
+        print("[Kapak] chat_id yakalanamadı (create-chat yanıtı görülmedi)")
+        return None
+    print(f"[Kapak] 🆔 chat_id={chat_id} · görsel HTTP ile beklenecek")
+
+    akis = await asyncio.to_thread(
+        arena_http.hash_bekle, chat_id, cerez, azami_sn=240, aralik=10
+    )
+    if not akis.get("hash"):
+        print(f"[Kapak] hash gelmedi · Arena cevabı: {(akis.get('metin') or '')[:120]}")
+        return None
+
+    indi = await asyncio.to_thread(
+        arena_http.gorsel_indir, akis["hash"], str(hedef), cerez
+    )
+    if not indi:
+        return None
+    # Boyut doğrulaması: kapak için en az 400×400 olmalı
+    try:
+        from PIL import Image
+
+        with Image.open(indi) as im:
+            if min(im.size) < 400:
+                print(f"[Kapak] görsel çok küçük: {im.size} — yedek yola düşülecek")
+                return None
+            print(f"[Kapak] ✅ Arena görseli hazır: {im.size[0]}×{im.size[1]}")
+    except Exception:
+        return None
+    return Path(indi)
 
 
 async def _gorsel_bekle_ve_indir(page, hedef: Path) -> Path | None:

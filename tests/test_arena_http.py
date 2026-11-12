@@ -91,6 +91,7 @@ def test_kapak_promptunda_soru_sorma_var():
 
     kaynak = inspect.getsource(kapak_gorsel.gorsel_promptu)
     assert "Soru sorma, yap." in kaynak
+    assert "Tek bir görsel üret" in kaynak   # iki aday sunmasın
 
 
 def test_create_chat_yanitindan_chat_id_yakalanir():

@@ -745,6 +745,19 @@ async def _arena_sorgusu_yap(
             print("[Arena] HATA: 500 Middleware hatası.", flush=True)
             return None
 
+        # ESKİ SOHBET TUZAĞI (koşu 43316348923 kanıtı): Arena çerezle açılınca
+        # SON sohbeti açıyor ("Kendi kendini tanıt" başlıklı sohbete mesaj
+        # gitti, bizim istem hiç gönderilmedi). HAR'da yeni sohbet adresi
+        # /agent/00000000-0000-0000-0000-000000000000 biçiminde. Buraya geç.
+        if re.search(r"/agent/[0-9a-f]{8}-", page.url):
+            print(f"[Arena] ↩️ Eski sohbet açıktı ({page.url[-40:]}), yeni sohbete geçiliyor", flush=True)
+            await page.goto(
+                "https://arena.ai/agent/00000000-0000-0000-0000-000000000000",
+                wait_until="domcontentloaded", timeout=45000,
+            )
+            await page.wait_for_timeout(2500)
+            _SON_SAYFA.pop("chat_id", None)
+
         editor = page.locator('div.tiptap[contenteditable="true"]')
         try:
             await editor.wait_for(state="visible", timeout=30000)
@@ -769,6 +782,24 @@ async def _arena_sorgusu_yap(
                 pass
 
         page.on("response", _create_chat_yaniti)
+
+        async def _create_chat_istegi(request):
+            try:
+                if "create-chat" in request.url:
+                    govde = request.post_data or ""
+                    try:
+                        j = json.loads(govde)
+                        metin = "".join(
+                            p.get("text", "")
+                            for p in (j.get("message") or {}).get("parts", [])
+                        )
+                    except Exception:
+                        metin = govde[:120]
+                    print(f"[Arena] 📨 GİDEN MESAJ: {metin[:130]!r}", flush=True)
+            except Exception:
+                pass
+
+        page.on("request", _create_chat_istegi)
 
         await editor.click()
         await page.wait_for_timeout(300)

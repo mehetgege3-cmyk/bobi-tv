@@ -315,7 +315,13 @@ def test_arena_dogruluk_talimati_kurallari_icerir():
 
 def test_rotasyon_on_videoda_dagilir():
     """Rotasyon tablosu 10 videoda 5 taktiği dengeli dağıtır."""
-    kodlar = [etkilesim.taktik_sec(i, "hayvanlar", 0).kod for i in range(21, 31)]
+    # `onceki_taktikler=[]` şart: canlı üretim state'i (bobi_tv/state/etkilesim_gecmisi.json)
+    # repoda duruyor ve "art arda gelme" koruması rotasyonu eziyordu → test makine
+    # durumuna bağlı kalıp canlı koşudan sonra kırılıyordu.
+    kodlar = [
+        etkilesim.taktik_sec(i, "hayvanlar", 0, onceki_taktikler=[]).kod
+        for i in range(21, 31)
+    ]
     beklenen = {etkilesim.ROTASYON_10[i % 10] for i in range(21, 31)}
     assert set(kodlar) == beklenen
     assert len(set(kodlar)) == 5

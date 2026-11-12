@@ -104,3 +104,23 @@ def test_create_chat_yanitindan_chat_id_yakalanir():
     assert "create-chat" in kaynak
     assert 'page.on("response"' in kaynak
     assert "def son_chat_id" in kaynak
+
+
+def test_video_metni_paket_metin_alani_okunur():
+    """Koşu 43321910940: kapak istemine 21 karakter gitti (tam metin değil)."""
+    from modules.kapak_gorsel import video_metni
+
+    metin = "🧠 Merak sorusu... " * 10
+    assert video_metni({"metin": metin}) == metin.strip()
+    # senaryo.tam_metin öncelikli
+    assert video_metni({"metin": "kisa", "senaryo": {"tam_metin": "uzun metin"}}) == "uzun metin"
+
+
+def test_create_chat_dinleyici_her_akista_eklenir():
+    """create-chat yakalama kapak hattında da bağlı olmalı (koşu 43321910940)."""
+    import inspect
+
+    from modules import arena_api, kapak_gorsel
+
+    assert "def create_chat_dinleyici_ekle" in inspect.getsource(arena_api)
+    assert "create_chat_dinleyici_ekle" in inspect.getsource(kapak_gorsel)

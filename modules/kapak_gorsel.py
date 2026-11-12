@@ -47,6 +47,11 @@ def video_metni(paket: dict[str, Any]) -> str:
     tam = str(senaryo.get("tam_metin") or "").strip()
     if tam:
         return tam
+    # Paket doğrudan `metin` taşıyabilir (kapak hattı ve testler bu yolu kullanır;
+    # koşu 43321910940'da metin 21 karakter görünüyordu çünkü bu alan okunmuyordu).
+    duz = str(paket.get("metin") or "").strip()
+    if duz:
+        return duz
     parcalar = [
         str(d.get("metin") or "").strip()
         for d in (senaryo.get("diyaloglar") or [])
@@ -237,7 +242,8 @@ async def arena_kapak_gorseli_uret_async(paket: dict[str, Any]) -> Path | None:
     cikis = calisma_dizinleri.OUTPUT_YOLU / f"{dosya_adi}_arena_kapak_ham.png"
     cikis.parent.mkdir(parents=True, exist_ok=True)
     prompt = gorsel_promptu(paket)
-    print(f"[Kapak] Arena'ya tam video metni gönderildi ({len(video_metni(paket))} karakter)")
+    _metin_uzunluk = len(video_metni(paket)) if callable(video_metni) else len(str(paket.get("metin") or ""))
+    print(f"[Kapak] Arena'ya tam video metni gönderildi ({_metin_uzunluk} karakter)")
 
     try:
         async with async_playwright() as p:
@@ -254,6 +260,8 @@ async def arena_kapak_gorseli_uret_async(paket: dict[str, Any]) -> Path | None:
                 ]
             )
             page = await context.new_page()
+            # chat_id'yi create-chat YANITINDAN yakala (HTTP yolu için şart)
+            arena_api.create_chat_dinleyici_ekle(page)
             await page.goto("https://arena.ai/agent/", wait_until="domcontentloaded", timeout=45000)
             await page.wait_for_timeout(3000)
             await arena_api._arena_riza_modalini_kapat(page)

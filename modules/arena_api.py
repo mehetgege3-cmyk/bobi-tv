@@ -304,8 +304,41 @@ def _son_sayfa():
 
 
 def son_chat_id() -> str | None:
-    """Son gönderimde URL'den yakalanan sohbet kimliği (HTTP okuması için)."""
+    """Son gönderimde yakalanan sohbet kimliği (HTTP okuması için)."""
     return _SON_SAYFA.get("chat_id")
+
+
+def create_chat_dinleyici_ekle(page) -> None:
+    """create-chat yanıtından sohbet kimliğini yakalar + giden mesajı loglar.
+
+    HER Arena akışında çağrılmalı (kapak hattı da `_arena_sorgusu_yap`
+    kullanmıyor; koşu 43321910940'da bu yüzden chat_id yakalanamadı).
+    """
+    async def _yanit(response):
+        try:
+            if "create-chat" in response.url and response.status == 200:
+                veri = await response.json()
+                kid = (veri or {}).get("id")
+                if kid:
+                    _SON_SAYFA["chat_id"] = kid
+                    print(f"[Arena] 🆔 sohbet kimliği: {kid}", flush=True)
+        except Exception:
+            pass
+
+    async def _istek(request):
+        try:
+            if "create-chat" in request.url and request.post_data:
+                j = json.loads(request.post_data)
+                metin = "".join(
+                    p.get("text", "")
+                    for p in (j.get("message") or {}).get("parts", [])
+                )
+                print(f"[Arena] 📨 GİDEN MESAJ ({len(metin)} karakter): {metin[:120]!r}", flush=True)
+        except Exception:
+            pass
+
+    page.on("response", _yanit)
+    page.on("request", _istek)
 
 
 async def arena_kisa_cevap_al_async(prompt: str) -> str | None:

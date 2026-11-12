@@ -776,7 +776,7 @@ async def _arena_sorgusu_yap(
 
             # TEŞHİS (ARENA_TESHIS=1): cevap döngüsünün İÇİNDE, aynı olay
             # döngüsünde ekran görüntüsü + gerçek metin kuyruğu.
-            if os.environ.get("ARENA_TESHIS") == "1" and int(gecen) % 20 < 3:
+            if os.environ.get("ARENA_TESHIS") == "1":
                 try:
                     d = os.environ.get("ARENA_TESHIS_DIZIN", "teshis")
                     os.makedirs(d, exist_ok=True)
@@ -786,7 +786,7 @@ async def _arena_sorgusu_yap(
                         f"UZUNLUK={len(body)}",
                         flush=True,
                     )
-                    print("KUYRUK: " + body[-700:].replace("\n", " | "), flush=True)
+                    print("KUYRUK: " + body[-500:].replace("\n", " | "), flush=True)
                 except Exception as e:
                     print(f"TESHIS HATASI: {str(e)[:100]}", flush=True)
 
@@ -807,6 +807,8 @@ async def _arena_sorgusu_yap(
                     _cevabi_ayikla(body, prompt, prompt_ilk_satir), prompt
                 )
             )
+            if os.environ.get("ARENA_TESHIS") == "1":
+                print(f"AYIKLANAN: {cevap[:200]!r}", flush=True)
             if _prompt_yankisi_mi(cevap):
                 cevap = ""  # yalnız prompt yankısı var → gerçek cevap henüz gelmedi
             dusunuyor = "orchestrating" in body.lower() or "thinking" in body.lower()

@@ -74,10 +74,29 @@ def secret_yaz(ad: str, deger: str) -> tuple[bool, str]:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser()
+    ap = argparse.ArgumentParser(
+        description="GitHub Actions secret yazar (SealedBox). Varsayılan: LMARENA_EMAIL."
+    )
     ap.add_argument("--eposta", default="")
     ap.add_argument("--dosya", default="")
+    ap.add_argument("--ad", default="LMARENA_EMAIL",
+                    help="Secret adı (örn. ARENA_COOKIES_JSON)")
+    ap.add_argument("--dosya-icerik", action="store_true",
+                    help="--dosya'nın TÜM içeriğini secret değeri olarak yaz (çerez/JSON)")
     a = ap.parse_args()
+
+    # ---- Genel mod: dosya içeriğini olduğu gibi secret'a yaz (çerez JSON) ----
+    if a.dosya_icerik:
+        if not a.dosya:
+            print("❌ --dosya-icerik için --dosya gerekli")
+            return 2
+        icerik = Path(a.dosya).read_text(encoding="utf-8").strip()
+        if len(icerik) < 20:
+            print("❌ Dosya içeriği çok kısa — yazılmadı")
+            return 3
+        ok, sonuc = secret_yaz(a.ad, icerik)
+        print(("✅ " if ok else "❌ ") + f"{sonuc} ({len(icerik)} bayt)")
+        return 0 if ok else 1
 
     adres = a.eposta.strip()
     if not adres and a.dosya:

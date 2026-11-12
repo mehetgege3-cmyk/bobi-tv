@@ -127,6 +127,9 @@ def sohbet_id_bekle(cerez: str, bilinen: set[str], *, azami_sn: int = 90) -> str
     """Gönderimden sonra YENİ oluşan sohbetin kimliğini bulur."""
     bitis = time.time() + azami_sn
     while time.time() < bitis:
+        if oturum_doldu_mu():          # 401 → boşuna 15 tur denemeyiz
+            print("[Arena HTTP] oturum doldu — kimlik arama bırakıldı", flush=True)
+            return None
         for kayit in son_sohbetler(cerez, limit=8):
             kid = kayit.get("id")
             if kid and kid not in bilinen:

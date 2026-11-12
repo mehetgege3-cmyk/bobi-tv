@@ -121,3 +121,90 @@ Arena görsel üretimi ilk denemede başarısız olursa cevabında
 6. **Çalışan kodu bozma:** "iyileştirme" adı altında değiştirmeden önce canlı
    kanıt iste.
 7. **Telegram:** tur başına tek mesaj + edit.
+
+---
+
+## 6. Üretim hattını tetikleme (2026-11-13'te öğrenildi)
+
+**Doğru workflow:** `.github/workflows/canli_test.yml`
+→ adı: `Canlı Test — 1 video üret + yükle (tek seferlik)`
+→ Üretim hattının AYNISI (kanca motoru + ses + render + Arena kapak +
+  1. kareye gömme + YouTube yükleme), yalnız **1 video**, `TUR_BASINA_URETIM=1`.
+→ `concurrency` YOK: 8 saatlik üretim job'u açıkken bile anında başlar.
+
+**Girdiler:**
+| Girdi | Varsayılan | Anlamı |
+|---|---|---|
+| `yukle` | `1` | `0` = yalnız üret, YouTube'a yükleme |
+| `konu_no` | `""` (boş) | boş = otomatik sıradaki konu |
+| `force` | `true` | tek kullanımlık zorlama bayrağı |
+
+**Tetikleme komutu (çalışan):**
+```bash
+WID=$(curl -s -H "Authorization: Bearer $TOK" \
+  "https://api.github.com/repos/mehetgege3-cmyk/bobi-tv/actions/workflows" \
+  | python3 -c "
+import json,sys
+for w in json.load(sys.stdin)['workflows']:
+    if w['path'].endswith('canli_test.yml'): print(w['id'])")
+
+curl -s -X POST -H "Authorization: Bearer $TOK" -H "Accept: application/vnd.github+json" \
+  "https://api.github.com/repos/mehetgege3-cmyk/bobi-tv/actions/workflows/$WID/dispatches" \
+  -d '{"ref":"main","inputs":{"yukle":"1","konu_no":"","force":"true"}}'
+```
+
+**`canli_test.yml` kimliği:** `414509563` (2026-11-13 itibarıyla)
+
+**Not:** Tüm workflow listesi ve manuel tetiklenebilenler:
+`docs/WORKFLOW_DIZINI.md` (aşağıdaki bölüm).
+
+## 7. Zaman aşımı politikası (üretimde)
+
+- Arena yanıtı için **sabit süre sınırı YOK**.
+- `ARENA_IDLE_DK=15` → 15 dk hiç değişiklik olmazsa "donmuş sayfa" freni.
+- `ARENA_MAKS_DK=45` → mutlak güvenlik tavanı.
+- Job `timeout-minutes: 90` → yalnız altyapı koruması.
+- **Dışarıdan izlerken** sabit `sleep` yok: `tools/kosu_bekle.sh`.
+
+## 8. Koşu log'u ve izleme — öğrenilen incelikler (2026-11-13)
+
+### 8.1 İş SÜRERKEN log indirilemez
+`GET /actions/jobs/{job_id}/logs` çağrısı, iş bitmeden şunu döndürür:
+```xml
+<Error><Code>BlobNotFound</Code>...The specified blob does not exist.</Error>
+```
+**Yanlış teşhis:** "Log yok, workflow bozuk" demek YANLIŞ.
+**Doğru:** İş bitene kadar `runs/{id}` durumunu sor; log'u **completed**
+olduktan sonra indir.
+
+### 8.2 Adım düzeyinde ilerleme (iş sürerken de çalışır)
+Log yerine **adım listesi** kullanılabilir:
+```bash
+curl -s -H "Authorization: Bearer $TOK" \
+  ".../actions/runs/$RID/jobs" | python3 -c "
+import json,sys
+j=json.load(sys.stdin)['jobs'][0]
+print('DURUM:', j['status'], j['conclusion'])
+for s in j['steps']:
+    print(f\"  {s['number']:2}. {s['name'][:52]:54} {s['status']:10} {s['conclusion'] or ''}\")"
+```
+Çıktı hangi adımda olduğunu **anlık** gösterir (ör. "7. Pipeline'ı çalıştır
+(1 video, canlı test)  in_progress").
+
+### 8.3 Üretim koşusu süresi
+`canli_test.yml` (1 video, üret + kapak + yükle):
+- 9 dakikada **hâlâ** `in_progress` (adım 7: pipeline) — normal.
+- `tools/kosu_bekle.sh` varsayılan 60 tur = 10 dk yetmez; **90-120 tur**
+  kullanın (15-20 dk) ya da `--log` olmadan izleyin.
+- Job `timeout-minutes: 90`.
+
+### 8.4 Koşu kimliklerini nereden alırsınız
+```bash
+# workflow id
+curl -s .../actions/workflows | python3 -c "
+import json,sys
+for w in json.load(sys.stdin)['workflows']:
+    if w['path'].endswith('canli_test.yml'): print(w['id'])"   # 414509563
+# run id (en son koşu)
+curl -s .../actions/workflows/$WID/runs?per_page=1 | ...
+```

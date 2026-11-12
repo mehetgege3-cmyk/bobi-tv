@@ -718,7 +718,12 @@
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
     "hook_ust_bant": "Ahtapotların Üç Kalbi Var — Biri Y",
-    "izlenme_snapshots": {}
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 0,
+        "zaman": "2026-11-12T05:17:26.619594+00:00"
+      }
+    }
   },
   {
     "dosya_adi": "20261112_0257_0005_izlanda_soyadi",
@@ -736,7 +741,12 @@
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
     "hook_ust_bant": "İzlanda'da Aile Soyadı Yok — Baban",
-    "izlenme_snapshots": {}
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 0,
+        "zaman": "2026-11-12T05:17:26.619594+00:00"
+      }
+    }
   },
   {
     "dosya_adi": "20261112_0304_0006_kopekbaligi_agac",
@@ -754,7 +764,12 @@
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
     "hook_ust_bant": "Köpekbalıkları Ağaçlardan Daha Yaş",
-    "izlenme_snapshots": {}
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 1,
+        "zaman": "2026-11-12T05:17:26.619594+00:00"
+      }
+    }
   },
   {
     "dosya_adi": "20261112_0319_0007_bal_bozulmaz",
@@ -772,7 +787,12 @@
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
     "hook_ust_bant": "Bal Neden Binlerce Yıl Bozulmadan",
-    "izlenme_snapshots": {}
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 0,
+        "zaman": "2026-11-12T05:17:26.619594+00:00"
+      }
+    }
   },
   {
     "dosya_adi": "20261112_0337_0008_bal_bozulmaz",
@@ -789,7 +809,13 @@
     "kanca_puan": null,
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
-    "hook_ust_bant": "Bal Neden Binlerce Yıl Bozulmadan"
+    "hook_ust_bant": "Bal Neden Binlerce Yıl Bozulmadan",
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 0,
+        "zaman": "2026-11-12T05:17:26.619594+00:00"
+      }
+    }
   },
   {
     "dosya_adi": "20261112_0349_0009_gunes_isigi_ay",
@@ -806,6 +832,30 @@
     "kanca_puan": null,
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
-    "hook_ust_bant": "Güneş'e Baktığında Aslında Geçmişi"
+    "hook_ust_bant": "Güneş'e Baktığında Aslında Geçmişi",
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 0,
+        "zaman": "2026-11-12T05:17:26.619594+00:00"
+      }
+    }
+  },
+  {
+    "dosya_adi": "20261112_0513_0010_kopek_burun_izi",
+    "baslik": "Köpeklerin Burnu da Parmak İzi Gibi Benzersiz 🐕 #shorts",
+    "video_id": "TjGcmuORpDI",
+    "durum": "yayinda",
+    "kategori": "insan_vucudu",
+    "url": "https://www.youtube.com/shorts/TjGcmuORpDI",
+    "senaryo_ozeti": "",
+    "hash": "",
+    "tarih": "2026-11-12T05:17:26.001733+00:00",
+    "kanca_formu": "",
+    "kanca_ab": "",
+    "kanca_puan": null,
+    "kapak_dosyasi": "",
+    "kapak_yuklendi": null,
+    "hook_ust_bant": "Köpeklerin Burnu da Parmak İzi Gib",
+    "izlenme_snapshots": {}
   }
 ]

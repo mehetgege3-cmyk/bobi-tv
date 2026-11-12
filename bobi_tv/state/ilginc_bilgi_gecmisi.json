@@ -100,6 +100,16 @@
       "cevap_ozeti": "Gökyüzüne baktığında her şeyi 'şu an' gördüğünü sanırsın. Oysa Güneş'in ışığı yola çıktığında henüz burada değildi; bize ulaşması yaklaşık sekiz dakika sürer. Yani güneşe her baktığında, onun sekiz dakika önceki hâlini görürsün. Güneş aniden kaybolsaydı, bunu ancak sekiz dakika sonra fark edebilirdik.\n\nBu gecikme sadece Güneş'e özgü değil. Aynı şey gece gökyüzü için de geçerli: bazı yıldızlar o ka",
       "skor": 100,
       "tarih": "2026-11-12T03:49:19.287012+00:00"
+    },
+    {
+      "video_no": 10,
+      "kategori": "insan_vucudu",
+      "taktik": "T1",
+      "anahtar": "kopek_burun_izi",
+      "konu": "Köpeklerin Burnu da Parmak İzi Gibi Benzersiz 🐕",
+      "cevap_ozeti": "Köpeklerin burnuna dikkatle baktığında küçük çizgi ve noktalardan oluşan bir desen görürsün. Bu desen, insan parmak izi gibi her bireyde farklıdır ve köpek büyüdükçe değişmez. Uzmanlar buna 'burun izi' diyor. Yani bir köpeğin kimliğini burnundan alınan bir baskıyla belirlemek teorik olarak mümkündür.\n\nPeki bu burun neden bu kadar girintili çıkıntılı? Çünkü köpekler dünyayı büyük ölçüde koklayarak ",
+      "skor": 100,
+      "tarih": "2026-11-12T05:13:41.794369+00:00"
     }
   ],
   "kullanilan_yedekler": [
@@ -112,6 +122,7 @@
     "kopekbaligi_agac",
     "bal_bozulmaz",
     "bal_bozulmaz",
-    "gunes_isigi_ay"
+    "gunes_isigi_ay",
+    "kopek_burun_izi"
   ]
 }

@@ -73,3 +73,21 @@ def test_oturum_bayragi_kalici():
     arena_http.oturum_doldu_isaretle()
     assert arena_http.oturum_doldu_mu() is True
     arena_http._OTURUM.clear()
+
+
+def test_prompt_sonuna_soru_sorma_eklenir():
+    """Kullanıcı bulgusu (2026-11-13): Arena 'Which image do you prefer?' diye
+    soruyor; istem sonuna 'Soru sorma, yap.' eklenince doğrudan yapıyor."""
+    assert arena_http.prompt_hazirla("Görsel üret").endswith("Soru sorma, yap.")
+    # iki kez eklenmez
+    bir = arena_http.prompt_hazirla("Görsel üret")
+    assert arena_http.prompt_hazirla(bir) == bir
+
+
+def test_kapak_promptunda_soru_sorma_var():
+    import inspect
+
+    from modules import kapak_gorsel
+
+    kaynak = inspect.getsource(kapak_gorsel.gorsel_promptu)
+    assert "Soru sorma, yap." in kaynak

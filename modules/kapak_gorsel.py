@@ -87,7 +87,12 @@ def gorsel_promptu(paket: dict[str, Any]) -> str:
         "6) GÖRSELİN İÇİNE YAZI KOYMA. Hiçbir kelime, sayı, harf, logo, filigran "
         "olmasın (başlık sonradan eklenecek).\n"
         "7) 9:16 dikey, telefon ekranında küçük boyutta bile anlaşılır olsun.\n\n"
-        "Şimdi görseli üret. Sadece görsel döndür; açıklama, metin veya kod yazma.\n\n"
+        "Şimdi görseli üret. Sadece görsel döndür; açıklama, metin veya kod yazma.\n"
+        # KULLANICI BULGUSU (2026-11-13): Arena görsel ürettikten sonra
+        # "Which image do you prefer?" diye soruyor; cevap alamayınca akış
+        # bitmiyor ve görsel teslim edilmiyordu. Bu cümle istekte varsa
+        # Arena sormadan doğrudan yapıyor.
+        "Soru sorma, yap.\n\n"
         "=== VİDEO METNİ (TAM) ===\n"
         f"{metin}\n"
         "=== VİDEO METNİ SONU ==="

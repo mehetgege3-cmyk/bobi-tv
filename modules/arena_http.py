@@ -38,6 +38,20 @@ UA = (
 
 _OTURUM: dict = {}
 
+# KULLANICI BULGUSU (2026-11-13): Arena görsel ürettikten sonra
+# "Which image do you prefer?" diye SORU soruyor ve cevap bekliyor. Biz
+# cevaplamadığımız için akış bitmiyor, görsel hiç teslim edilmiyordu.
+# Prompt sonuna bu cümle eklenince Arena sormadan doğrudan yapıyor.
+SORU_SORMA = "Soru sorma, yap."
+
+
+def prompt_hazirla(prompt: str) -> str:
+    """Arena'ya giden HER istemin sonuna 'Soru sorma, yap.' ekler."""
+    t = (prompt or "").rstrip()
+    if SORU_SORMA.lower() in t.lower():
+        return t
+    return f"{t}\n\n{SORU_SORMA}"
+
 
 def oturum_doldu_isaretle() -> None:
     """Çerez ölü çıktığında bu koşuda tekrar denemeyi engeller."""

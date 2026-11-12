@@ -33,7 +33,11 @@ from pathlib import Path
 REPO = "mehetgege3-cmyk/bobi-tv"
 SECRET_ADI = "ARENA_COOKIES_JSON"
 COOKIE_ADI = "arena-auth-prod-v1"
-DURUM_YOLU = Path("bobi_tv/state/arena_cerez.json")
+# NOT: bu dosya REPOYA COMMIT EDİLMEZ. hourly_production "git add bobi_tv/state/"
+# yapıyor; koşu ortasında çerez yazıldığı için rebase'te çakışma çıkıyordu
+# (canlı kanıt 43199998482: "CONFLICT in bobi_tv/state/arena_cerez.json").
+# Durum zaten logda satır olarak görünüyor; secret'ın kendisi tek doğruluk kaynağı.
+DURUM_YOLU = Path("/tmp/arena_cerez_durum.json")
 
 
 # ---------------------------------------------------------------------------

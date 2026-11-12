@@ -672,7 +672,12 @@
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
     "hook_ust_bant": "Fermuar 60 Yıl Bekledi: İcat Edild",
-    "izlenme_snapshots": {}
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 1,
+        "zaman": "2026-11-12T03:23:14.286783+00:00"
+      }
+    }
   },
   {
     "dosya_adi": "20261112_0222_0003_kleopatra_piramit",
@@ -744,6 +749,24 @@
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
     "hook_ust_bant": "Köpekbalıkları Ağaçlardan Daha Yaş",
+    "izlenme_snapshots": {}
+  },
+  {
+    "dosya_adi": "20261112_0319_0007_bal_bozulmaz",
+    "baslik": "Bal Neden Binlerce Yıl Bozulmadan Kalabiliyor? 🍯 #shorts",
+    "video_id": "RntD7OQp45Q",
+    "durum": "yayinda",
+    "kategori": "yiyecekler",
+    "url": "https://www.youtube.com/shorts/RntD7OQp45Q",
+    "senaryo_ozeti": "",
+    "hash": "",
+    "tarih": "2026-11-12T03:23:13.839813+00:00",
+    "kanca_formu": "",
+    "kanca_ab": "",
+    "kanca_puan": null,
+    "kapak_dosyasi": "",
+    "kapak_yuklendi": null,
+    "hook_ust_bant": "Bal Neden Binlerce Yıl Bozulmadan",
     "izlenme_snapshots": {}
   }
 ]

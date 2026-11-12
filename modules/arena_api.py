@@ -212,6 +212,9 @@ async def arena_canli_senaryo_iste(video_no: int) -> dict | None:
     cookies_raw = os.environ.get("ARENA_COOKIES_JSON", "").strip()
     if not cookies_raw:
         return None
+    if oturum_doldu_mu():
+        print("[Arena] Oturum dolmuş (bu koşuda tespit edildi) — atlandı.")
+        return None
 
     try:
         from playwright.async_api import async_playwright
@@ -304,6 +307,9 @@ async def arena_kapak_onerisi_al_async(paket: dict) -> dict | None:
     if not cookies_raw:
         print("[Arena Kapak] ARENA_COOKIES_JSON yok — yerel kapak üreticisi kullanılacak")
         return None
+    if oturum_doldu_mu():
+        print("[Arena Kapak] Oturum dolmuş — yerel kapak üreticisi kullanılacak")
+        return None
     try:
         from playwright.async_api import async_playwright
     except ImportError:
@@ -383,6 +389,9 @@ async def arena_kisa_cevap_al_async(prompt: str) -> str | None:
     cookies_raw = os.environ.get("ARENA_COOKIES_JSON", "").strip()
     if not cookies_raw:
         print("[Arena Cevap] ARENA_COOKIES_JSON yok — güvenli yedeğe düşülecek")
+        return None
+    if oturum_doldu_mu():
+        print("[Arena Cevap] Oturum dolmuş (bu koşuda daha önce tespit edildi) — atlandı")
         return None
     try:
         from playwright.async_api import async_playwright
@@ -621,6 +630,31 @@ def _arena_sure_kaydet(saniye: float, karakter: int, dusunme: str = "") -> None:
         print(f"[Arena] süre kaydı yazılamadı: {str(e)[:80]}", flush=True)
 
 
+#: Çerez süresi dolduğunda her çağrıda 3,5 dakika boşa beklemeyi engeller.
+#: CANLI KANIT (koşu 43143883459): içerik + kapak için iki kez denendi, ikisi de
+#: "Oturum süresi dolmuş (Login modalı açıldı)" ile döndü → ~7 dk boşa gitti.
+_OTURUM_DOLDU = {"deger": False}
+
+
+def oturum_doldu_mu() -> bool:
+    return bool(_OTURUM_DOLDU["deger"])
+
+
+def oturum_bayragini_sifirla() -> None:
+    """Test/elle kurtarma için bayrağı temizler."""
+    _OTURUM_DOLDU["deger"] = False
+
+
+def _oturum_doldu_isaretle() -> None:
+    if not _OTURUM_DOLDU["deger"]:
+        print(
+            "[Arena] ⛔ ARENA_COOKIES_JSON SÜRESİ DOLMUŞ — çerez yenilenmeli. "
+            "Bu koşuda Arena atlanıyor, üretim doğrulanmış bankadan sürecek.",
+            flush=True,
+        )
+    _OTURUM_DOLDU["deger"] = True
+
+
 async def _arena_riza_modalini_kapat(page) -> bool:
     """Arena açılışta 'Terms of ... Agree' modalı gösterebiliyor.
 
@@ -733,7 +767,7 @@ async def _arena_sorgusu_yap(
                     continue
 
             if "Sign in to continue" in body or "Continue with Google" in body:
-                print("[Arena] ⛔ Oturum süresi dolmuş (Login modalı açıldı).", flush=True)
+                _oturum_doldu_isaretle()
                 return None
 
             cevap = _prompt_kuyrugunu_at(_cevabi_ayikla(body, prompt, prompt_ilk_satir), prompt)

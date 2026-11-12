@@ -1,6 +1,6 @@
 # TODO — Ajan İçin Kalan İşler
 
-Güncel: **2026-11-11 (akşam)**. Bölüm 6'daki 7 madde `f4d2ca1` ile main'de;
+Güncel: **2026-11-12 (gece)**. Bölüm 6'daki 7 madde `f4d2ca1` ile main'de;
 TEKRAR YAPILMAZ. Bu dosya yalnız gerçekten kalan işleri tutar.
 
 ## ✅ Bu turda kapatılan (A1 + A2 — "A ile yapalım")
@@ -22,6 +22,37 @@ Detay: `docs/KANCA_VE_KAPAK.md`.
 - **Ayar düzeltmesi** — `GUNLUK_HEDEF` varsayılanı 1→3, üst sınır 6→**yok**
   (kullanıcı: "tavan istemiyorum"); `state/ayarlar.json` içinde
   `IZLENME_KONTROL_DK: 60 → 360` (kullanıcı kuralı: 6 saatte 100 izlenme).
+
+## 🔴 EN ÖNEMLİ ENGEL (2026-11-12, canlı log kanıtı) — Arena çerezi SÜRESİ DOLMUŞ
+
+Son 4 canlı koşuda Arena'nın tamamı çöpe gitti; üretim her seferinde
+doğrulanmış yedek bankadan döndü (kalite 100, 205–236 kelime, render 80–101 sn,
+her turda 1 video yayınlandı). Yani kanal DURMUYOR ama Arena içeriği hiç
+kullanılmıyor.
+
+Kanıt (koşu 43143883459, 02:49 UTC):
+```
+Arena ✅ Onay modalı kapatıldı ('Agree')
+Arena ⛔ Oturum süresi dolmuş (Login modalı açıldı).
+```
+Yani sayfa açılıyor, Terms modalı kapanıyor, ama **oturum düşmüş** →
+login modalı çıkıyor, model cevap üretmiyor.
+
+**Kullanıcı girdisi GEREKLİ (kodla çözülemez):** `ARENA_COOKIES_JSON` secret'ı
+2026-11-10T13:18'den beri aynı ve süresi dolmuş.
+
+Yapılacak (5 dakika, tarayıcıdan):
+1. arena.ai'ye giriş yap.
+2. Cookie-Editor eklentisi → **Export** (JSON).
+3. Repo → Settings → Secrets and variables → Actions →
+   `ARENA_COOKIES_JSON` → **Update** → JSON'u yapıştır (markdown link olarak
+   değil, düz JSON; kod `sanitize_cookie_json` ile temizler).
+4. Actions → **Arena Smoke Test** → *Run workflow* → verdict `oturum-gecerli`
+   olmalı. Sonra sıradaki üretim turu Arena içeriğini kullanır.
+
+Çerez yenilendikten sonra ilk turda logda şunlar görünmeli:
+`Arena ✅ Cevap alındı ... karakter` (ham cevap artık gerçek içerik) ve
+`İlginçBilgi ✅ #n <kategori> | <taktik> | skor ... | arena | <kelime> kelime`.
 
 ## ⏳ Kullanıcı girdisi bekleyenler (2 madde — değişmedi)
 

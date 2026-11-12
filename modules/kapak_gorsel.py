@@ -271,6 +271,10 @@ async def arena_kapak_gorseli_uret_async(paket: dict[str, Any]) -> Path | None:
                 print("[Kapak] ⛔ Arena oturumu YOK — kapak video karesinden üretilecek")
                 await arena_api._tarayiciyi_kapat(browser)
                 return None
+            # ÖNEMLİ (koşu 43325201001): aynı koşuda senaryo aşaması da Arena
+            # kullandı; onun chat_id'si kalırsa kapak YANLIŞ sohbetin akışını
+            # okur (hash yok). Gönderimden önce temizle.
+            arena_api._SON_SAYFA.pop("chat_id", None)
             if not await arena_api._promptu_gonder(page, prompt):
                 print("[Kapak] ⚠️ Prompt gönderilemedi — kapak video karesinden üretilecek")
                 await arena_api._tarayiciyi_kapat(browser)
@@ -309,6 +313,12 @@ async def _http_ile_gorsel_al(arena_api, hedef: Path) -> Path | None:
 
     cerez = arena_http._cerez_basligi()
     if not cerez:
+        return None
+
+    # KOŞU 43325201001: çerez iş ortasında ölmüştü (401) ve 8 tur boşa gitti.
+    # Pahalı işe girmeden önce oturumu doğrula.
+    if not await asyncio.to_thread(arena_http.oturum_canli_mi, cerez):
+        print("[Kapak] oturum canlı değil — Arena görseli atlanacak (yedeğe düşülecek)")
         return None
 
     chat_id = None

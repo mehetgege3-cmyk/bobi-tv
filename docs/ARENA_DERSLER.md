@@ -221,3 +221,83 @@ for w in json.load(sys.stdin)['workflows']:
 # run id (en son koşu)
 curl -s .../actions/workflows/$WID/runs?per_page=1 | ...
 ```
+
+## 9. ÜRETİM KOŞUSU SONRASI ÖĞRENİMLER (2026-11-13, koşu `43325201001`)
+
+Koşu **success** (465 sn) ve video yayınlandı:
+**https://www.youtube.com/shorts/MO1QOKxr4NQ** (`ekmek_kabugu`, 20261112_2303_0016)
+**AMA kapak `kaynak=video_karesi`** — Arena görseli kullanılmadı. Nedeni:
+
+### 9.1 Tek koşuda İKİ farklı Arena işi çakışıyor
+`canli_test` akışı sırasıyla:
+1. **Senaryo** için Arena'ya sorar (`{"soru":...,"cevap":...,"sonuc":...}` JSON'u ister)
+2. **Kapak** için tekrar Arena'ya sorar (görsel ister)
+
+Aynı `chat_id` (koşuda `01a1d1ff-...`) **her ikisinde de** yakalandı: kapak
+aşaması, senaryo sohbetinin akışını okudu. Onda `hash` yok (JSON cevabı), bu
+yüzden "tur 1: hash yok" ve ardından çerez öldü.
+
+**Kural:** Kapak aşaması, senaryo aşamasının `chat_id`'sini kullanmamalı.
+`son_chat_id()` **her yeni gönderimden önce temizlenmeli**
+(`_SON_SAYFA.pop("chat_id", None)`), yoksa önceki sohbetin kimliği okunur.
+
+### 9.2 Çerez koşu ortasında öldü (HTTP 401)
+Tur 1'den sonra `events` → **HTTP 401**. Ardından 8 tur boşa denendi
+(`oturum_doldu_mu()` kontrolü `hash_bekle` içinde yok; `sohbet_id_bekle`'de var).
+**İki düzeltme gerekli:**
+1. `hash_bekle` içinde de `oturum_doldu_mu()` kontrolü → 401'de hemen çık.
+2. Kapak aşamasına girmeden önce `GET /api/me/pulse` ile oturumu doğrula;
+   ölüyse hiç denemeye girme (boşa tur harcama).
+
+### 9.3 Arena senaryo cevabı DOM'dan kirli geldi
+`[İlginçBilgi] Arena ham cevap 94 karakter | baş: 'Searched the web\nRunning
+commands\n3\nUsed Bash\n80ms...'` → Arena'nın **araç çalıştırma izleri** cevaba
+karıştı, cevap "kullanılabilir değil" sayıldı ve üretim **doğrulanmış bankaya**
+düştü (`ekmek_kabugu`). Üretim durmadı (doğru davranış) ama Arena senaryosu
+kullanılmadı.
+**Öğrenim:** Arena cevabını temizlerken `Searched the web`, `Running commands`,
+`Used Bash`, `Agent`, `Auto` gibi UI izleri ayıklanmalı.
+
+### 9.4 Kapak yedeği sayesinde üretim durmadı (TASARIM DOĞRU)
+Arena kapak gelmeyince `video_karesi` + başlık kaplaması kullanıldı ve video
+yine yüklendi. Yedek zinciri çalışıyor — kaldırılmamalı.
+
+### 9.5 Kapak istemi 3519 karakter (doğrulandı)
+`[Arena] 📨 GİDEN MESAJ (3519 karakter)` — 2041 karakterlik video metni +
+tasarım kuralları + `Soru sorma, yap.` cümlesi. İstem boyu sorun değil.
+
+## 10. ÇEREZ ÖMRÜ — ÖLÇÜLMÜŞ (2026-11-13)
+
+| Zaman | `GET /api/me/pulse` | Not |
+|---|---|---|
+| ~19:30 | `200 {"pulse":84}` | HAR çerezi ilk doğrulama |
+| ~22:20 | `200 {"pulse":72}` | hâlâ canlı (secret'a yazıldı) |
+| ~22:30 | `200` | görsel indirme başarılı (koşu `43320057811`) |
+| ~23:03 | `200` | kapak koşusu başarılı (`43323638730`) |
+| ~23:20 | **`401`** | üretim koşusu ortasında öldü (`43325201001`) |
+| ~23:50 | **`401`** | hâlâ ölü |
+
+**Sonuç: çerez ~4 saat dayandı, sonra öldü.** Ölüm ani ve **koşu ortasında**
+gerçekleşebiliyor (401 her şeyi durduruyor).
+
+### 10.1 Zorunlu önlemler (koda eklendi)
+1. `arena_http.oturum_canli_mi(cerez)` → `/api/me/pulse`; pahalı işten **önce**
+   çağrılır (`kapak_gorsel._http_ile_gorsel_al`).
+2. `hash_bekle` içinde `oturum_doldu_mu()` → 401'de **hemen çık** (boşa tur yok).
+3. Kapak aşaması gönderimden **önce** `_SON_SAYFA.pop("chat_id")` → önceki
+   aşamanın sohbet kimliği okunmaz.
+4. Çerez ölüyse kapak `video_karesi` yedeğine düşer → **üretim durmaz**
+   (tasarım gereği doğru; kanıt: video yayınlandı).
+
+### 10.2 Çerez ne zaman yenilenmeli
+- `pulse` → **401** ise kesinlikle.
+- Üretim koşusu `kaynak=video_karesi` ile bittiyse ve logda `HTTP 401` varsa.
+- Önleyici: üretim koşuları arasında **4 saatten uzun** ara varsa.
+
+**Yenileme yolları:**
+1. `arena_giris_login.yml` (e-posta/şifre) — Google duvarına takılabiliyor.
+2. Kullanıcı tarayıcısından Cookie-Editor → JSON → `ARENA_COOKIES_JSON`.
+3. HAR dosyasındaki çerez (bir kerelik, ~4 saat).
+4. **Kendi kendini besleme:** her başarılı Arena kullanımından sonra
+   `_cerezi_tazele` secret'ı günceller (çalışıyor: "ARENA_COOKIES_JSON
+   güncellendi (2358 karakter)") — ama **süresi dolmuş** çerezi canlandırmaz.

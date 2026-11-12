@@ -209,6 +209,32 @@ def akisi_oku(chat_id: str, cerez: str) -> dict:
     return sonuc
 
 
+def oturum_canli_mi(cerez: str) -> bool:
+    """`/api/me/pulse` ile oturumun GERÇEKTEN canlı olduğunu ölçer.
+
+    KOŞU 43325201001: pahalı kapak aşamasına girildi, ilk turdan sonra çerez
+    öldü (401) ve 8 tur boşa harcandı. Bu kontrol işe girmeden önce yapılır.
+    """
+    if not cerez:
+        return False
+    try:
+        with _istek("/api/me/pulse", cerez=cerez, sure=25) as r:
+            veri = json.loads(r.read().decode("utf-8", "replace"))
+        if isinstance(veri, dict) and "pulse" in veri:
+            return True
+        return False
+    except urllib.error.HTTPError as e:
+        if e.code in (401, 403):
+            oturum_doldu_isaretle()
+            print(f"[Arena HTTP] oturum ÖLÜ (pulse HTTP {e.code})", flush=True)
+        else:
+            print(f"[Arena HTTP] pulse HTTP {e.code}", flush=True)
+        return False
+    except Exception as e:
+        print(f"[Arena HTTP] pulse hatası: {str(e)[:90]}", flush=True)
+        return False
+
+
 def gorsel_indir(hash_: str, hedef_yol: str, cerez: str) -> str | None:
     """Üretilen görseli TARAYICISIZ indirir. Başarılıysa dosya yolunu döndürür."""
     if not hash_:
@@ -271,6 +297,11 @@ def hash_bekle(
     tur = 0
     while time.time() < bitis:
         tur += 1
+        # KOŞU 43325201001: çerez iş ortasında öldü (HTTP 401) ve 8 tur boşa
+        # denendi. Oturum dolduysa hemen çık.
+        if oturum_doldu_mu():
+            print("[Arena HTTP] oturum doldu (401) — hash bekleme bırakıldı", flush=True)
+            return son
         akis = akisi_oku(chat_id, cerez)
         son = akis
         if akis["hash"]:

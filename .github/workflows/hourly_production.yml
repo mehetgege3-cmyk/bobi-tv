@@ -23,8 +23,13 @@ permissions:
   contents: write
   actions: read
 
+# 2026-11-12 DÜZELTME: iptal edilen bir koşu (workflow_dispatch + cancel) concurrency
+# grubunun kilidini BIRAKMIYOR → sonraki HER koşu saatlerce 'pending' kalıyordu
+# (run 43137635582 hiç başlamadı). Kilit artık koşu kimliğine bağlı: bir tur
+# iptal edilse bile sonraki tur anında başlar. Art arda tetiklemeyi cron + zincir
+# adımı yönettiği için çift üretim riski yok (zincir, çalışan koşu varsa atlıyor).
 concurrency:
-  group: hourly-production
+  group: hourly-production-${{ github.run_id }}
   cancel-in-progress: false
 
 jobs:

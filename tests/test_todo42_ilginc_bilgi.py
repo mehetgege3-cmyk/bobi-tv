@@ -566,3 +566,67 @@ def test_arena_coktugunde_sekiz_video_uretilir(tmp_path):
         assert 200 <= sonuc["paket"]["senaryo"]["kelime_sayisi"] <= 300
         uretilen.append(sonuc["kategori"])
     assert sorted(uretilen) == sorted(kategoriler.ANAHTARLAR)
+
+
+# ---------------------------------------------------------------------------
+# 9) Canlı koşu bulguları (run 43111414945)
+# ---------------------------------------------------------------------------
+
+
+def test_arena_sablon_yankisi_reddedilir():
+    """Arena, prompt'un JSON şablonunu cevap diye yankılıyordu → içerik boştu."""
+    yanki = '..", "kaynak": "...", "sayilar": ["..."], "dogru_bilgi": "...", "kapak_baslik": "..."'
+    assert uretici.sablon_yankisi_mi(yanki) is True
+    assert uretici._json_ayikla(yanki) is None
+    assert uretici._duz_metinden_kart(yanki) is None
+
+    gercek = '{"soru":"Ahtapotların kaç kalbi var?","cevap":"Çoğumuz tek kalp sanırız, oysa üç kalbi var."}'
+    assert uretici.sablon_yankisi_mi(gercek) is False
+
+
+def test_arena_promptu_sablonu_sonda_tekrarlamaz():
+    """Şablon prompt'un sonunda olursa model onu yankılıyor."""
+    taktik = etkilesim.taktik_sec(3, "hayvanlar", 0)
+    prompt = uretici.arena_promptu("hayvanlar", taktik, [])
+    assert prompt.rstrip().endswith("sadece metin yaz.")
+    assert "yankılama" in prompt
+
+
+def test_yeni_hat_render_zincirini_tetikler(monkeypatch, tmp_path):
+    """Yeni hat yalnız senaryo üretiyordu; ses/render/kapak çağrılmalı."""
+    import modules.arena_uretici as au
+    import modules.tts_engine as tts
+    import modules.video_render as vr
+    from modules.ilginc_bilgi import uretici as uretici_mod
+
+    cagrilar = {}
+
+    def sahte_seslendir(paket):
+        cagrilar["tts"] = True
+        paket["ses_dosyalari"] = []
+        return paket
+
+    def sahte_render(paket):
+        cagrilar["render"] = True
+        yol = tmp_path / "v.mp4"
+        yol.write_bytes(b"x" * 30000)
+        return str(yol)
+
+    monkeypatch.setattr(tts, "senaryo_seslendir", sahte_seslendir)
+    monkeypatch.setattr(vr, "video_render", sahte_render)
+    monkeypatch.setattr(vr, "video_kalite_kontrol", lambda p: {"sure": 95.0})
+    monkeypatch.setattr(
+        uretici_mod, "uret",
+        lambda no: {
+            "paket": {"senaryo": {"kelime_sayisi": 220}, "dosya_adi": "t"},
+            "rapor": type("R", (), {"skor": 100})(),
+            "kategori": "hayvanlar", "taktik": "T1", "kaynak_turu": "arena", "uyarilar": [],
+        },
+    )
+    import modules.kapak_uret as ku
+
+    monkeypatch.setattr(ku, "kapak_uret", lambda p: cagrilar.setdefault("kapak", True))
+
+    paket = au.arena_tam_uretim(1)
+    assert cagrilar.get("tts") and cagrilar.get("render")
+    assert paket["final_video"].endswith("v.mp4")

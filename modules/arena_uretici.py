@@ -40,6 +40,41 @@ def arena_tam_uretim(video_no: int) -> dict | None:
             )
             for uyari in sonuc["uyarilar"]:
                 print(f"[İlginçBilgi] ℹ️ {uyari}")
+
+            # ------------------------------------------------------------------
+            # SÜREÇ ZİNCİRİ (2026-11-11 canlı koşu bulgusu): yeni hat yalnız
+            # senaryo paketi üretiyordu; seslendirme/render yapılmadığı için
+            # main_pipeline "final_video yok → üretim başarısız" diyordu ve
+            # HİÇ video yayınlanmadı (run 43111414945: "0 yayınlandı").
+            # Burada seslendirme + render + kapak adımları çalıştırılır.
+            # ------------------------------------------------------------------
+            from modules.tts_engine import senaryo_seslendir
+            from modules.video_render import video_render, video_kalite_kontrol
+
+            paket = senaryo_seslendir(paket)
+            video_yolu = video_render(paket)
+            paket["final_video"] = video_yolu
+
+            # Kapak: 1. kare + Arena/yerel şok başlık (otomatik seçim)
+            try:
+                from modules.kapak_arena import kapak_sec_ve_hazirla
+
+                kapak_sec_ve_hazirla(paket)
+            except Exception as kapak_hatasi:
+                print(f"[İlginçBilgi] ⚠️ Kapak hattı: {str(kapak_hatasi)[:120]} (yerel üretici)")
+                from modules.kapak_uret import kapak_uret
+
+                kapak_uret(paket)
+
+            try:
+                qc = video_kalite_kontrol(video_yolu)
+                paket["video_suresi"] = qc.get("sure", 0)
+                print(
+                    f"[İlginçBilgi] 🎬 Render tamam: {qc.get('sure')}sn | "
+                    f"{os.path.getsize(video_yolu)//1024} KB"
+                )
+            except Exception as qc_hatasi:
+                print(f"[İlginçBilgi] ⚠️ QC uyarısı: {str(qc_hatasi)[:150]}")
             return paket
         except Exception as e:
             print(f"[İlginçBilgi] Üretim hatası: {str(e)[:200]}")

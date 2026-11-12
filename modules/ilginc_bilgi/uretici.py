@@ -75,6 +75,9 @@ def arena_promptu(kategori: str, taktik: etkilesim.TaktikSecimi, kacirilacaklar:
     kat = kategoriler.kategori_al(kategori)
     kacin = "; ".join(kacirilacaklar[-12:]) or "(yok)"
     return (
+        'SADECE şu JSON ile cevap ver (şablonu tekrar yazma, doldur): '
+        '{"soru":"...","cevap":"...","sonuc":"...","baslik":"...",'
+        '"kaynak":"...","sayilar":["..."],"dogru_bilgi":"...","kapak_baslik":"..."}\n\n'
         "Sen BOBİ TV için Türkçe kısa bilgi videoları yazan bir editörsün. "
         "YouTube Shorts için 'ilginç bilgi' içeriği üretiyorsun. Aşağıdaki "
         "kategori ve taktiğe uy.\n\n"
@@ -100,17 +103,29 @@ def arena_promptu(kategori: str, taktik: etkilesim.TaktikSecimi, kacirilacaklar:
         f"10) Şu konulara YAKLAŞMA (daha önce yapıldı): {kacin}\n"
         "11) TAMAMEN TÜRKÇE. İngilizce kelime yok.\n"
         "12) Emoji kullan ama abartma (2-5 arası).\n\n"
-        "SADECE şu JSON'u döndür, başka hiçbir şey yazma:\n"
-        '{"soru": "...", "cevap": "...", "sonuc": "...", "baslik": "...", '
-        '"kaynak": "...", "sayilar": ["..."], "dogru_bilgi": "...", '
-        '"kapak_baslik": "..."}'
+        "12) Emoji kullan ama abartma (2-5 arası).\n"
+        "13) JSON dışında HİÇBİR ŞEY yazma; şablonu yankılama.\n"
+        "14) 'cevap' alanında bölüm başlığı (🧠/🔍/💡) KULLANMA; sadece metin yaz."
     )
+
+
+#: Arena, prompt'un sonundaki JSON şablonunu "cevap" diye yankılayabiliyor
+#: (canlı koşu 43111414945: 883 karakterlik yankı → içerik hiç üretilmedi).
+SABLON_ISARETLERI = ('"soru": "..."', '"cevap": "..."', '"kapak_baslik": "..."')
+
+
+def sablon_yankisi_mi(metin: str) -> bool:
+    """Dönen metin, gönderdiğimiz JSON şablonunun yankısı mı?"""
+    t = str(metin or "")
+    if any(isaret in t for isaret in SABLON_ISARETLERI):
+        return True
+    return t.count('"..."') >= 3
 
 
 def _json_ayikla(metin: str) -> dict | None:
     """Arena cevabından JSON nesnesini çıkarır (kod bloğu/ön söz toleranslı)."""
     metin = str(metin or "").strip()
-    if not metin:
+    if not metin or sablon_yankisi_mi(metin):
         return None
     adaylar = re.findall(r"\{.*\}", metin, re.DOTALL)
     for aday in reversed(adaylar):
@@ -157,7 +172,7 @@ def arena_bilgi_uret(
 def _duz_metinden_kart(metin: str) -> dict | None:
     """JSON olmayan Arena cevabını bilgi kartına çevirir (başlık tabanlı)."""
     metin = str(metin or "").strip()
-    if len(metin) < 120:
+    if len(metin) < 120 or sablon_yankisi_mi(metin):
         return None
     bolumler = kurallar.bolumleri_ayir(metin)
     cevap = bolumler.get(kurallar.BASLIK_CEVAP, "").strip()

@@ -774,6 +774,22 @@ async def _arena_sorgusu_yap(
             gecen = (datetime.now() - gonderim).total_seconds()
             body = await page.locator("body").inner_text()
 
+            # TEŞHİS (ARENA_TESHIS=1): cevap döngüsünün İÇİNDE, aynı olay
+            # döngüsünde ekran görüntüsü + gerçek metin kuyruğu.
+            if os.environ.get("ARENA_TESHIS") == "1" and int(gecen) % 20 < 3:
+                try:
+                    d = os.environ.get("ARENA_TESHIS_DIZIN", "teshis")
+                    os.makedirs(d, exist_ok=True)
+                    await page.screenshot(path=f"{d}/ekran_{int(gecen):03d}.png")
+                    print(
+                        f"--- TESHIS {int(gecen):03d} URL={page.url} "
+                        f"UZUNLUK={len(body)}",
+                        flush=True,
+                    )
+                    print("KUYRUK: " + body[-700:].replace("\n", " | "), flush=True)
+                except Exception as e:
+                    print(f"TESHIS HATASI: {str(e)[:100]}", flush=True)
+
             # Modal sonradan açılabiliyor (ya da ilk denemede kapanmamış olabilir):
             # sayfa metni modal ise kapat ve cevap sayacını sıfırla.
             if "to agree" in body.lower() or "How it Works" in body:

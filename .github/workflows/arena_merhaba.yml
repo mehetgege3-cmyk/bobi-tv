@@ -56,43 +56,22 @@ jobs:
           # Çerez kendini beslesin: cevap alınırsa tazelenmiş çerez secret'a yazılır
           GH_PAT: ${{ secrets.GH_PAT }}
           ARENA_IDLE_DK: "3"
+          ARENA_TESHIS: "1"
           ARENA_MAKS_DK: ${{ inputs.bekleme_dk }}
           SORU: ${{ inputs.prompt }}
         run: |
           mkdir -p teshis
           python - << 'PYEOF'
-          import asyncio
           import os
           import sys
 
           from modules import arena_api
-
-          async def _teshis():
-              """Cevabı NEREDEN okumaya çalışıyoruz? Gerçek metni göster."""
-              try:
-                  import time
-                  for i in range(60):
-                      await asyncio.sleep(20)
-                      s = arena_api._son_sayfa()
-                      if s is None:
-                          print("TEŞHİS: sayfa yok", flush=True)
-                          return
-                      await s.screenshot(path=f"teshis/ekran_{i:02d}.png")
-                      govde = await s.evaluate(
-                          "() => document.body.innerText.slice(-1200)")
-                      print(f"--- TEŞHİS {i:02d} URL={s.url}", flush=True)
-                      print(govde.replace("\n", " | ")[:900], flush=True)
-              except Exception as e:
-                  print(f"TEŞHİS HATASI: {str(e)[:120]}", flush=True)
-
-          teshis = asyncio.create_task(_teshis())
 
           soru = os.environ.get("SORU", "").strip()
           print(f"❓ SORU: {soru}", flush=True)
 
           cevap = arena_api.arena_kisa_cevap_al(soru)
 
-          teshis.cancel()
           if not cevap:
               print("❌ CEVAP GELMEDİ", flush=True)
               if arena_api.oturum_doldu_mu():

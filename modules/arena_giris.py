@@ -105,6 +105,10 @@ async def _email_ile_giris(page) -> bool:
         print(f"[Giriş] 'Continue with email' açılamadı: {str(e)[:100]}", flush=True)
         return False
 
+    # Teşhis: HANGİ DOMAIN reddedildi (e-posta adresi loglanmaz, yalnız domain)
+    domain = email.split("@")[-1].lower() if "@" in email else "?"
+    print(f"[Giriş] e-posta domaini: {domain}", flush=True)
+
     # E-posta alanı
     alan = page.locator('input[type="email"]').first
     try:
@@ -125,8 +129,19 @@ async def _email_ile_giris(page) -> bool:
     except Exception:
         govde = ""
     if "domain is not permitted" in govde.lower():
-        print("[Giriş] ❌ Arena bu e-posta DOMAIN'ini kabul etmiyor", flush=True)
+        print(
+            f"[Giriş] ❌ Arena '{domain}' domainini KABUL ETMİYOR "
+            "(geçici/tek kullanımlık e-posta servisleri engelli). "
+            "Gmail/Outlook gibi kalıcı bir adres gerekir.",
+            flush=True,
+        )
         return False
+    if "verification code" in govde.lower() or "check your email" in govde.lower():
+        print(
+            "[Giriş] ℹ️ Arena e-postaya DOĞRULAMA KODU / sihirli bağlantı gönderdi — "
+            "bu akış otomatikleştirilemez (kullanıcı onayı gerekir).",
+            flush=True,
+        )
 
     # Şifre alanı çıktıysa doldur (şifre log'a yazılmaz)
     try:

@@ -292,3 +292,15 @@ def test_giris_workflow_secretlari_baglar():
     assert "secrets.LMARENA_PASSWORD" in metin
     assert "secrets.GH_PAT" in metin   # secret yazmak için gerekli
     assert "giris_yap_ve_secret_guncelle" in metin
+
+
+def test_giris_domain_teshisi_ekler():
+    """Arena domain reddettiğinde HANGİ domain olduğu log'a yazılmalı (adres değil)."""
+    import inspect
+
+    from modules import arena_giris
+
+    kaynak = inspect.getsource(arena_giris._email_ile_giris)
+    assert "domaini:" in kaynak
+    assert 'split("@")[-1]' in kaynak
+    assert "KABUL ETMİYOR" in kaynak

@@ -636,3 +636,44 @@ def test_yeni_hat_render_zincirini_tetikler(monkeypatch, tmp_path):
     paket = au.arena_tam_uretim(1)
     assert cagrilar.get("tts") and cagrilar.get("render")
     assert paket["final_video"].endswith("v.mp4")
+
+
+def test_yanki_ardindaki_gercek_cevap_kullanilir():
+    """CANLI KANIT (43138461248): Arena 3193 karakter döndü — başta bizim JSON
+    şablonumuzun yankısı, gerçek cevap HEMEN ARDINDAN. Yankıyı görüp tümden
+    reddetmek içeriği çöpe atıyordu."""
+    taktik = etkilesim.taktik_sec(1, "insan_vucudu", 0, onceki_taktikler=[])
+    prompt = uretici.arena_promptu("insan_vucudu", taktik, [])
+    yanki = (
+        'dur): {"soru":"...","cevap":"...","sonuc":"...","baslik":"...","kaynak":"...",'
+        '"sayilar":["..."],"dogru_bilgi":"...","kapak_baslik":"..."}\n\n' + prompt[120:1400] + "\n\n"
+    )
+    gercek = (
+        '{"soru":"Beynimiz uyurken çöplerini nasıl atıyor?",'
+        '"cevap":"Uykuyu sadece dinlenme sanırız, oysa beyin gece boyunca temizlik yapıyor.",'
+        '"sonuc":"İyi uyku beynin çöp kamyonu.","baslik":"Uykuda beyin temizliği",'
+        '"kaynak":"Nature","sayilar":["1"],"dogru_bilgi":"Uyku beyni temizler.",'
+        '"kapak_baslik":"BEYİN ÇÖP TOPLAR"}'
+    )
+    kart = uretici.arena_bilgi_uret(
+        "insan_vucudu", taktik, [], arena_fn=lambda _p: yanki + gercek
+    )
+    assert kart is not None
+    assert kart["soru"].startswith("Beynimiz uyurken")
+    assert "BOBİ TV" not in kart["cevap"]
+    assert kart["kapak_baslik"] == "BEYİN ÇÖP TOPLAR"
+
+
+def test_arena_cevabindan_prompt_yankisi_kesilir():
+    """arena_api._cevabi_ayikla, cevabın başındaki prompt yankısını atmalı."""
+    from modules.arena_api import _cevabi_ayikla
+
+    prompt = "SADECE şu JSON ile cevap ver (şablonu tekrar yazma, doldur): {...}\n\nKATEGORİ: Tarih"
+    ilk = prompt.splitlines()[0][:55]
+    body = (
+        "Arena sohbeti\n" + prompt + "\n\nEski mesaj yankısı: " + ilk + "\n\n"
+        "Gercek cevap burada.\nWas this task successful?\n"
+    )
+    cevap = _cevabi_ayikla(body, prompt, ilk)
+    assert "SADECE şu JSON" not in cevap
+    assert "Gercek cevap" in cevap

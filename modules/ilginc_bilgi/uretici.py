@@ -102,7 +102,6 @@ def arena_promptu(kategori: str, taktik: etkilesim.TaktikSecimi, kacirilacaklar:
         "9) 'kapak_baslik' en fazla 34 karakter, kapakta kullanılacak çarpıcı ifade.\n"
         f"10) Şu konulara YAKLAŞMA (daha önce yapıldı): {kacin}\n"
         "11) TAMAMEN TÜRKÇE. İngilizce kelime yok.\n"
-        "12) Emoji kullan ama abartma (2-5 arası).\n\n"
         "12) Emoji kullan ama abartma (2-5 arası).\n"
         "13) JSON dışında HİÇBİR ŞEY yazma; şablonu yankılama.\n"
         "14) 'cevap' alanında bölüm başlığı (🧠/🔍/💡) KULLANMA; sadece metin yaz."
@@ -122,9 +121,41 @@ def sablon_yankisi_mi(metin: str) -> bool:
     return t.count('"..."') >= 3
 
 
+def _sablon_izini_sil(metin: str) -> str:
+    """Arena'nın yankıladığı JSON şablonunu baştan keser.
+
+    CANLI KANIT (koşu 43138461248, 2026-11-12 02:06): Arena 3193 karakter
+    döndürdü; ilk ~1000 karakter bizim gönderdiğimiz JSON şablonunun yankısı,
+    GERÇEK cevap hemen ARDINDAN geliyordu. Yankıyı görüp tümden reddetmek
+    içeriği çöpe atıyordu (her seferinde yedek bankaya düşüyordu).
+    Artık: son şablon kapanışından sonrası = gerçek cevap.
+    """
+    t = str(metin or "")
+    if not sablon_yankisi_mi(t):
+        return t
+    for kapanis in ('"kapak_baslik": "..."}', '"kapak_baslik":"..."}'):
+        i = t.rfind(kapanis)
+        if i != -1:
+            return t[i + len(kapanis):].strip()
+    i = t.rfind('"..."}')
+    if i != -1:
+        return t[i + len('"..."}'):].strip()
+    return t
+
+
+def _prompt_kuyrugunu_sil(metin: str) -> str:
+    """Şablon yankısından SONRA gelen prompt gövdesini de keser."""
+    t = str(metin or "")
+    for iz in ("Sen BOBİ TV için Türkçe kısa bilgi", "KATEGORİ: ", "YAZIM KURALLARI:"):
+        i = t.rfind(iz)
+        if i != -1 and i < len(t) - len(iz):
+            t = t[i + len(iz):]
+    return t
+
+
 def _json_ayikla(metin: str) -> dict | None:
     """Arena cevabından JSON nesnesini çıkarır (kod bloğu/ön söz toleranslı)."""
-    metin = str(metin or "").strip()
+    metin = _prompt_kuyrugunu_sil(_sablon_izini_sil(metin)).strip()
     if not metin or sablon_yankisi_mi(metin):
         return None
     adaylar = re.findall(r"\{.*\}", metin, re.DOTALL)
@@ -171,7 +202,7 @@ def arena_bilgi_uret(
 
 def _duz_metinden_kart(metin: str) -> dict | None:
     """JSON olmayan Arena cevabını bilgi kartına çevirir (başlık tabanlı)."""
-    metin = str(metin or "").strip()
+    metin = _prompt_kuyrugunu_sil(_sablon_izini_sil(metin)).strip()
     if len(metin) < 120 or sablon_yankisi_mi(metin):
         return None
     bolumler = kurallar.bolumleri_ayir(metin)

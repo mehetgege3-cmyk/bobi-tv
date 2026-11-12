@@ -793,6 +793,15 @@ def _cevabi_ayikla(full_body: str, prompt: str, prompt_ilk_satir: str) -> str:
             slice_text = slice_text[:m_idx].strip()
 
     slice_text = re.sub(r"\n\d+s\s*\|\s*just now[\s\S]*$", "", slice_text, flags=re.IGNORECASE).strip()
+    # Arena, gönderdiğimiz prompt'u (özellikle JSON şablonunu) yankılayıp
+    # ARDINDAN gerçek cevabı yazıyor. Yankı cevabın içinde kalırsa ayrıştırıcı
+    # şablonu "cevap" sanıyordu (canlı kanıt: koşu 43138461248).
+    _ilk = prompt_ilk_satir.strip()
+    if _ilk:
+        _i = slice_text.rfind(_ilk)
+        if _i > 0:
+            slice_text = slice_text[_i + len(_ilk):].strip()
+
     lines = list(slice_text.splitlines())
     if lines and re.match(r"^Thought for \d+", lines[0].strip(), re.IGNORECASE):
         lines = lines[1:]

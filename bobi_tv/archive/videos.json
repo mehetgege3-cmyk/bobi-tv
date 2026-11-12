@@ -932,7 +932,12 @@
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
     "hook_ust_bant": "Kutup Ayısının Derisi Aslında Sims",
-    "izlenme_snapshots": {}
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 1,
+        "zaman": "2026-11-12T23:33:55.896055+00:00"
+      }
+    }
   },
   {
     "dosya_adi": "20261112_1712_0014_kum_firtinasi_haber",
@@ -949,7 +954,13 @@
     "kanca_puan": null,
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
-    "hook_ust_bant": "Sahra'nın Tozu Amazon Ormanını Bes"
+    "hook_ust_bant": "Sahra'nın Tozu Amazon Ormanını Bes",
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 2,
+        "zaman": "2026-11-12T23:33:55.896055+00:00"
+      }
+    }
   },
   {
     "dosya_adi": "20261112_1719_0015_sakiz_erimeme",
@@ -966,6 +977,30 @@
     "kanca_puan": null,
     "kapak_dosyasi": "bobi_tv/output/20261112_1719_0015_sakiz_erimeme_kapak.jpg",
     "kapak_yuklendi": null,
-    "hook_ust_bant": "Yuttuğun Sakız Gerçekten 7 Yıl Kal"
+    "hook_ust_bant": "Yuttuğun Sakız Gerçekten 7 Yıl Kal",
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 4,
+        "zaman": "2026-11-12T23:33:55.896055+00:00"
+      }
+    }
+  },
+  {
+    "dosya_adi": "20261112_2303_0016_ekmek_kabugu",
+    "baslik": "Ekmek Neden Fırından Çıkınca Bu Kadar Güzel Kokuyor? 🍞 #shorts",
+    "video_id": "MO1QOKxr4NQ",
+    "durum": "yayinda",
+    "kategori": "yiyecekler",
+    "url": "https://www.youtube.com/shorts/MO1QOKxr4NQ",
+    "senaryo_ozeti": "",
+    "hash": "",
+    "tarih": "2026-11-12T23:33:55.557912+00:00",
+    "kanca_formu": "",
+    "kanca_ab": "",
+    "kanca_puan": null,
+    "kapak_dosyasi": "bobi_tv/output/20261112_2303_0016_ekmek_kabugu_kapak.jpg",
+    "kapak_yuklendi": null,
+    "hook_ust_bant": "Ekmek Neden Fırından Çıkınca Bu Ka",
+    "izlenme_snapshots": {}
   }
 ]

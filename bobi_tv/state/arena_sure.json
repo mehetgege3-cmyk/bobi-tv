@@ -1,13 +1,13 @@
 {
   "son": {
-    "zaman": "2026-11-12T12:41:10.690696+00:00",
-    "saniye": 13.0,
-    "karakter": 610,
+    "zaman": "2026-11-12T23:03:56.238779+00:00",
+    "saniye": 93.3,
+    "karakter": 94,
     "arena_dusunme": ""
   },
-  "ortalama": 54.2,
+  "ortalama": 56.1,
   "en_uzun": 228.7,
-  "ornek": 19,
+  "ornek": 20,
   "olcumler": [
     {
       "zaman": "2026-11-11T10:00:28.880853+00:00",
@@ -121,6 +121,12 @@
       "zaman": "2026-11-12T12:41:10.690696+00:00",
       "saniye": 13.0,
       "karakter": 610,
+      "arena_dusunme": ""
+    },
+    {
+      "zaman": "2026-11-12T23:03:56.238779+00:00",
+      "saniye": 93.3,
+      "karakter": 94,
       "arena_dusunme": ""
     }
   ]

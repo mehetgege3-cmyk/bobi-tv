@@ -170,6 +170,16 @@
       "cevap_ozeti": "Hepimiz çocukken 'sakız yutarsan yedi yıl midende kalır' uyarısını duymuşuzdur. Bu bilgi doğru değil. Sakızın sindirilemeyen bir kısmı vardır ama mide onu yıllarca tutmaz; bağırsaklar onu birkaç gün içinde vücuttan çıkarır. Yani sakız midede yerleşip kalmaz.\n\nPeki neden böyle bir efsane yayıldı? Çünkü sakızın yapısındaki bazı maddeler insan sindirim enzimleriyle parçalanmaz. Bu, sakızın 'sindirile",
       "skor": 100,
       "tarih": "2026-11-12T17:19:55.007976+00:00"
+    },
+    {
+      "video_no": 16,
+      "kategori": "yiyecekler",
+      "taktik": "T5",
+      "anahtar": "ekmek_kabugu",
+      "konu": "Ekmek Neden Fırından Çıkınca Bu Kadar Güzel Kokuyor? 🍞",
+      "cevap_ozeti": "Fırından yeni çıkmış ekmeğin kokusu, çoğu insanın en sevdiği kokulardan biridir. Bu koku, hamurun içindeki şekerlerin ve proteinlerin yüksek ısıda birbirleriyle tepkimeye girmesinden doğar. Sıcak fırında yüzey hızla kurur, kahverengileşir ve kokuya neden olan yüzlerce farklı bileşik açığa çıkar. Yani ekmek kokusu, bir yiyeceğin pişerken kimyasının değişmesinin sonucudur.\n\nİşin ilginç yanı, kabuğun",
+      "skor": 100,
+      "tarih": "2026-11-12T23:03:56.728739+00:00"
     }
   ],
   "kullanilan_yedekler": [
@@ -187,6 +197,7 @@
     "kutup_ayi_deri",
     "japonya_cikolata",
     "kum_firtinasi_haber",
-    "sakiz_erimeme"
+    "sakiz_erimeme",
+    "ekmek_kabugu"
   ]
 }

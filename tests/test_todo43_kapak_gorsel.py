@@ -324,3 +324,25 @@ def test_eposta_on_kontrol_yazim_hatasini_yakalar():
     assert arena_giris.eposta_on_kontrol("x@outlook.com")[0] is True
     assert arena_giris.eposta_on_kontrol("bozuk-adres")[0] is False
     assert arena_giris.eposta_on_kontrol("")[0] is False
+
+
+def test_google_oauth_akisi_olculen_secicileri_kullanir():
+    """ÖLÇÜLDÜ (2026-11-12): gmail hesaplarında Arena Google OAuth'a yönlendiriyor.
+
+    Gerçek ekran: accounts.google.com/v3/signin/identifier
+      input[name="identifier"] → input[name="Password"]
+    """
+    import inspect
+
+    from modules import arena_giris
+
+    kaynak = inspect.getsource(arena_giris._google_ile_giris)
+    assert 'input[name="identifier"]' in kaynak
+    assert 'input[name="Password"]' in kaynak
+    # 2FA / doğrulama ekranı ayrı mesajla raporlanır (sessiz başarısızlık yok)
+    assert "2 ADIMLI DOĞRULAMA" in kaynak
+    assert "accounts.google.com" in kaynak
+
+    # e-posta adımı sonrası Google'a yönlendirme yakalanıyor mu?
+    email_kaynak = inspect.getsource(arena_giris._email_ile_giris)
+    assert "_google_ile_giris" in email_kaynak

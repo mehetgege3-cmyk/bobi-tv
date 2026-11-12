@@ -136,6 +136,11 @@ async def _email_ile_giris(page) -> bool:
             flush=True,
         )
         return False
+    # ÖLÇÜLDÜ: Google ile açılmış hesapta Arena doğrudan Google OAuth'a atıyor
+    if "accounts.google.com" in (page.url or ""):
+        print("[Giriş] ℹ️ Arena Google OAuth'a yönlendirdi — Google akışına geçiliyor", flush=True)
+        return await _google_ile_giris(page)
+
     if "verification code" in govde.lower() or "check your email" in govde.lower():
         print(
             "[Giriş] ℹ️ Arena e-postaya DOĞRULAMA KODU / sihirli bağlantı gönderdi — "
@@ -171,6 +176,82 @@ async def _email_ile_giris(page) -> bool:
 
     return await giris_basarili_mi(page)
 
+
+
+async def _google_ile_giris(page) -> bool:
+    """Google OAuth akışı (ölçüldü: e-posta Google hesabıysa Arena buraya atıyor).
+
+    Adımlar: accounts.google.com/v3/signin/identifier
+      → input[name="identifier"] (e-posta) → Enter
+      → input[name="Password"] (şifre) → Enter
+      → arena.ai'ye geri dönüş
+    Şifre log'a YAZILMAZ; şifre alanındayken ekran görüntüsü ALINMAZ.
+    """
+    email = os.environ.get("LMARENA_EMAIL", "").strip()
+    sifre = os.environ.get("LMARENA_PASSWORD", "").strip()
+
+    # 1) E-posta adımı
+    try:
+        alan = page.locator('input[name="identifier"]').first
+        await alan.wait_for(state="visible", timeout=20000)
+        await alan.fill(email)
+        await page.wait_for_timeout(400)
+        await page.keyboard.press("Enter")
+        print("[Giriş] Google: e-posta adımı gönderildi", flush=True)
+    except Exception as e:
+        print(f"[Giriş] Google e-posta adımı hatası: {str(e)[:110]}", flush=True)
+        return False
+
+    await page.wait_for_timeout(4000)
+
+    # 2) Şifre adımı
+    try:
+        sifre_alani = page.locator('input[name="Password"]').first
+        if not await sifre_alani.count():
+            sifre_alani = page.locator('input[type="password"]').first
+        await sifre_alani.wait_for(state="visible", timeout=20000)
+        await sifre_alani.fill(sifre)
+        await page.wait_for_timeout(300)
+        await page.keyboard.press("Enter")
+        print("[Giriş] Google: şifre adımı gönderildi", flush=True)
+    except Exception:
+        govde = ""
+        try:
+            govde = (await page.locator("body").inner_text()).lower()
+        except Exception:
+            pass
+        if "2-step" in govde or "verify" in govde or "try another way" in govde:
+            print(
+                "[Giriş] ⛔ Google 2 ADIMLI DOĞRULAMA / cihaz onayı istiyor — "
+                "bu adım otomatikleştirilemez (kullanıcı onayı gerekir).",
+                flush=True,
+            )
+        else:
+            print("[Giriş] ⛔ Google şifre alanı gelmedi — beklenmeyen ekran", flush=True)
+        return False
+
+    # 3) Arena'ya dönüş
+    for _ in range(15):
+        await page.wait_for_timeout(2000)
+        if "accounts.google.com" not in page.url and "arena.ai" in page.url:
+            break
+
+    try:
+        govde = (await page.locator("body").inner_text()).lower()
+    except Exception:
+        govde = ""
+    for engel, aciklama in (
+        ("couldn't sign you in", "Google girişi reddetti"),
+        ("browser or app may not be secure", "Google bu tarayıcıyı güvensiz buldu"),
+        ("wrong password", "şifre hatalı"),
+        ("verify it’s you", "Google kimlik doğrulaması istiyor (2FA)"),
+        ("verify it's you", "Google kimlik doğrulaması istiyor (2FA)"),
+    ):
+        if engel in govde:
+            print(f"[Giriş] ⛔ Google: {aciklama}", flush=True)
+            return False
+
+    return await giris_basarili_mi(page)
 
 async def giris_basarili_mi(page) -> bool:
     """Giriş gerçekten oldu mu? (login düğmesi kayboldu + editör var)"""

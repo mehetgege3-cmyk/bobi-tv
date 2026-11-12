@@ -37,7 +37,7 @@ jobs:
           GH_PAT: ${{ secrets.GH_PAT }}
           ARENA_IDLE_DK: "15"
           ARENA_MAKS_DK: "15"
-        run: python tools/arena_gorsel_test.py
+        run: PYTHONPATH=. python tools/arena_gorsel_test.py
 
       - name: Sonucu iş özetine yaz
         if: always()

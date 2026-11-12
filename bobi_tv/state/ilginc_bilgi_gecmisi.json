@@ -130,6 +130,16 @@
       "cevap_ozeti": "Pompeii'yi düşün 🏛️ 79 yılında Vezüv patladığında şehir kül ve pomza altında kaldı; o an aslında dev bir koruma kutusuna girdi. Hava yok, yağmur yok, güneş yok. Fresklerin renkleri, ahşap mobilyaların izleri, hatta ekmek somunlarının biçimi bile olduğu gibi dondu. Sonra 1748'de kazmalar girdi ve tuhaf hesap başladı: ne kadar çok kazarsan o kadar çok şey ortaya çıkıyor, ama ne kadar çok ortaya çıka",
       "skor": 100,
       "tarih": "2026-11-12T12:38:45.737848+00:00"
+    },
+    {
+      "video_no": 13,
+      "kategori": "hayvanlar",
+      "taktik": "T4",
+      "anahtar": "kutup_ayi_deri",
+      "konu": "Kutup Ayısının Derisi Aslında Simsiyah 🐻‍❄️",
+      "cevap_ozeti": "Kutup ayısını beyaz sanırız; oysa tüylerinin altındaki deri simsiyahtır. Bu koyu renk güneş ışığını daha iyi emer ve hayvanın vücut ısısını korumasına yardım eder. Peki beyazlık nereden geliyor? Tüyler aslında pigmentli değil; içi boş yapıları ışığı dağıttığı için bize beyaz görünür. Yani kar gibi görünen şey, renkli bir boya değil, ışığın oyunudur.\n\nBir düşün: kışın koyu renk mont giydiğinde güne",
+      "skor": 100,
+      "tarih": "2026-11-12T16:30:23.370561+00:00"
     }
   ],
   "kullanilan_yedekler": [
@@ -143,6 +153,7 @@
     "bal_bozulmaz",
     "bal_bozulmaz",
     "gunes_isigi_ay",
-    "kopek_burun_izi"
+    "kopek_burun_izi",
+    "kutup_ayi_deri"
   ]
 }

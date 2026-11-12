@@ -822,7 +822,7 @@
     "dosya_adi": "20261112_0927_0009_gunes_isigi_ay",
     "baslik": "Güneş'e Baktığında Aslında Geçmişi Görüyorsun ☀️ #shorts",
     "video_id": "nms5LAmsdsM",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "bilim_teknoloji",
     "url": "https://www.youtube.com/shorts/nms5LAmsdsM",
     "senaryo_ozeti": "",
@@ -839,7 +839,10 @@
         "izlenme": 1,
         "zaman": "2026-11-12T10:39:33.944533+00:00"
       }
-    }
+    },
+    "silinme_izlenme": 1,
+    "silinme_yas_dk": 418.4,
+    "silinme_tarihi": "2026-11-12T16:29:56.256495+00:00"
   },
   {
     "dosya_adi": "20261112_1036_0010_kopek_burun_izi",
@@ -880,7 +883,12 @@
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
     "hook_ust_bant": "Soğanın Seni Ağlatma Sırrı 🧅",
-    "izlenme_snapshots": {}
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 1,
+        "zaman": "2026-11-12T16:33:56.687503+00:00"
+      }
+    }
   },
   {
     "dosya_adi": "20261112_1238_0012_bir_antik_kenti_ortaya_c",
@@ -897,6 +905,30 @@
     "kanca_puan": null,
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
-    "hook_ust_bant": "Kazdıkça kaybediyorsun"
+    "hook_ust_bant": "Kazdıkça kaybediyorsun",
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 1,
+        "zaman": "2026-11-12T16:33:56.687503+00:00"
+      }
+    }
+  },
+  {
+    "dosya_adi": "20261112_1630_0013_kutup_ayi_deri",
+    "baslik": "Kutup Ayısının Derisi Aslında Simsiyah 🐻‍❄️ #shorts",
+    "video_id": "RZOOEeDBmQQ",
+    "durum": "yayinda",
+    "kategori": "hayvanlar",
+    "url": "https://www.youtube.com/shorts/RZOOEeDBmQQ",
+    "senaryo_ozeti": "",
+    "hash": "",
+    "tarih": "2026-11-12T16:33:56.207403+00:00",
+    "kanca_formu": "",
+    "kanca_ab": "",
+    "kanca_puan": null,
+    "kapak_dosyasi": "",
+    "kapak_yuklendi": null,
+    "hook_ust_bant": "Kutup Ayısının Derisi Aslında Sims",
+    "izlenme_snapshots": {}
   }
 ]

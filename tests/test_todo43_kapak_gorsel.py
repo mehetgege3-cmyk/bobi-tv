@@ -196,3 +196,20 @@ def test_kapak_paket_alanlarini_doldurur(monkeypatch, tmp_path):
     assert paket["kapak_yolu"] == sonuc["kapak"]
     assert paket["kapak_kaynagi"] == "arena_gorsel"
     assert paket["kapak_ilk_kare"] is False  # video yoktu → gömülmedi (dürüst)
+
+
+def test_prompt_gonderimi_dogrulanir():
+    """CANLI BULGU (43271340457): prompt editörde KALDI (gönderilmedi) ama eski
+    kod True dönüyordu → 8 dk boş sayfa beklendi, log 'gönderildi' dedi.
+
+    Sözleşme: _promptu_gonder gönderimi DOĞRULAR; doğrulayamazsa False döner.
+    """
+    import inspect
+
+    from modules import arena_api
+
+    kaynak = inspect.getsource(arena_api._promptu_gonder)
+    assert "_editor_bos" in kaynak          # editör boşaldı mı kontrolü
+    assert "GÖNDERİLEMEDİ" in kaynak         # başarısızlık sessiz kalmıyor
+    assert "keyboard.press(\"Enter\")" in kaynak  # düğme çalışmazsa Enter yedeği
+    assert "disabled" in kaynak              # pasif düğmeye tıklamayı fark eder

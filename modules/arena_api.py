@@ -603,24 +603,66 @@ async def _tarayiciyi_kapat(browser) -> None:
 
 
 async def _promptu_gonder(page, prompt: str) -> bool:
-    """Editöre yazar ve gönderir (kapak görsel hattı da bunu kullanır)."""
+    """Editöre yazar ve gönderir; GÖNDERİLDİĞİNİ DOĞRULAR.
+
+    CANLI BULGU (2026-11-12): "Send message" düğmesine tıklanınca düğme mevcut
+    ama gönderim sessizce olmuyordu (düğme pasif/devre dışı). Eski sürüm yine de
+    `True` dönüyordu → kapak hattı 8 dakika boş sayfada bekliyordu ve log'a
+    "gönderildi" yazıyordu. Bu SESSİZ YALANDI.
+
+    Yeni sözleşme: editör boşaldıysa/Enter ile gönderim olduysa True; aksi hâlde
+    False ve "GÖNDERİLEMEDİ" yazar. Çağıran taraf buna göre yedek yola düşer.
+    """
     editor = page.locator('div.tiptap[contenteditable="true"]')
     try:
         await editor.wait_for(state="visible", timeout=30000)
     except Exception:
         print("[Arena] Editör görünmedi.", flush=True)
         return False
+
+    async def _editor_bos() -> bool:
+        try:
+            return not (await editor.inner_text()).strip()
+        except Exception:
+            return False
+
     await editor.click()
     await page.wait_for_timeout(300)
     await page.keyboard.insert_text(prompt)
-    await page.wait_for_timeout(400)
+    await page.wait_for_timeout(600)
+
+    # 1) Gönder düğmesi: görünür + etkin olmalı
+    gonderildi = False
     try:
-        await page.locator('button[aria-label="Send message"]').click(force=True)
-    except Exception as e:
-        print(f"[Arena] Gönder düğmesi hatası: {str(e)[:90]}", flush=True)
-        return False
-    print("[Arena] 📤 Prompt gönderildi", flush=True)
-    return True
+        dugme = page.locator('button[aria-label="Send message"]').first
+        if await dugme.count():
+            try:
+                await dugme.wait_for(state="visible", timeout=5000)
+                devre_disi = await dugme.get_attribute("disabled")
+                if devre_disi is None:
+                    await dugme.click(force=True)
+                    gonderildi = True
+                else:
+                    print("[Arena] ⚠️ Gönder düğmesi pasif (disabled)", flush=True)
+            except Exception as e:
+                print(f"[Arena] Gönder düğmesi tıklanamadı: {str(e)[:90]}", flush=True)
+    except Exception:
+        pass
+
+    # 2) Düğme işe yaramadıysa Enter ile gönder (Arena editörü Enter'ı gönderir)
+    if not gonderildi:
+        await editor.click()
+        await page.keyboard.press("Enter")
+
+    # 3) DOĞRULAMA: editör boşaldı mı? (gönderim gerçekten oldu mu)
+    for _ in range(10):
+        await page.wait_for_timeout(400)
+        if await _editor_bos():
+            print("[Arena] 📤 Prompt gönderildi (doğrulandı)", flush=True)
+            return True
+
+    print("[Arena] ❌ GÖNDERİLEMEDİ — editör hâlâ dolu (gönderim doğrulanamadı)", flush=True)
+    return False
 
 
 async def _arena_riza_modalini_kapat(page) -> bool:

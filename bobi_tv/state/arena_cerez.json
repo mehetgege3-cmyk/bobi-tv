@@ -1,6 +1,6 @@
 {
   "son": {
-    "zaman": "2026-11-12T10:23:09.783545+00:00",
+    "zaman": "2026-11-12T10:25:17.305961+00:00",
     "guncellendi": false,
     "mesaj": "oturum sağlıklı değil — yazılmadı"
   },
@@ -37,6 +37,16 @@
     },
     {
       "zaman": "2026-11-12T10:23:09.783545+00:00",
+      "guncellendi": false,
+      "mesaj": "oturum sağlıklı değil — yazılmadı"
+    },
+    {
+      "zaman": "2026-11-12T10:25:07.330834+00:00",
+      "guncellendi": false,
+      "mesaj": "oturum sağlıklı değil — yazılmadı"
+    },
+    {
+      "zaman": "2026-11-12T10:25:17.305961+00:00",
       "guncellendi": false,
       "mesaj": "oturum sağlıklı değil — yazılmadı"
     }

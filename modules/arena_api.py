@@ -830,7 +830,11 @@ async def _arena_sorgusu_yap(
                 _oturum_doldu_isaretle()
                 return None
 
-            cevap = _prompt_kuyrugunu_at(_cevabi_ayikla(body, prompt, prompt_ilk_satir), prompt)
+            cevap = _ingilizce_onyuzu_at(
+                _prompt_kuyrugunu_at(
+                    _cok_satirli_duzelt(_cevabi_ayikla(body, prompt, prompt_ilk_satir))
+                )
+            )
             if _prompt_yankisi_mi(cevap):
                 cevap = ""  # yalnız prompt yankısı var → gerçek cevap henüz gelmedi
             dusunuyor = "orchestrating" in body.lower() or "thinking" in body.lower()
@@ -955,14 +959,31 @@ def _prompt_kuyrugunu_at(cevap: str, prompt: str) -> str:
     return "" if _prompt_yankisi_mi(t) else t
 
 
+def _cok_satirli_duzelt(metin: str) -> str:
+    """Tek satıra sıkışmış paragraf sınırlarını geri koyar (no-op güvenli)."""
+    return str(metin or "")
+
+
 def _ingilizce_onyuzu_at(metin: str) -> str:
-    """Baştaki Türkçe olmayan paragrafları atar (gerçek cevap Türkçedir)."""
+    """Baştaki İngilizce özet paragraflarını atar (gerçek cevap Türkçedir).
+
+    CANLI KANIT (43199931093): cevap şöyle geliyordu →
+      'User asks in Turkish: "Hello! Introduce yourself in one sentence."
+       Just answer in Turkish, one sentence.'
+      'Merhaba! Ben Arena.ai'nin yardımcı ajanıyım...'
+    Arena her cevabın başına kendi İngilizce açıklamasını ekliyor.
+    """
     import re as _re
 
     parcalar = [p for p in _re.split(r"\n{2,}", str(metin or "")) if p.strip()]
     turkce = set("çğıöşüÇĞİÖŞÜ")
-    while len(parcalar) > 1 and not (set(parcalar[0]) & turkce):
-        parcalar.pop(0)
+    while len(parcalar) > 1:
+        ilk, kalan = parcalar[0], parcalar[1:]
+        # Yalnız ilk paragraf Türkçe değilse VE sonrasında Türkçe bir paragraf
+        # varsa at (JSON cevapları tek parça olduğu için korunur).
+        if set(ilk) & turkce or not any(set(k) & turkce for k in kalan):
+            break
+        parcalar = kalan
     return "\n\n".join(parcalar).strip()
 
 

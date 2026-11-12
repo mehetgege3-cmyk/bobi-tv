@@ -870,3 +870,19 @@ def test_ingilizce_yanki_cevaptan_atilir():
     temiz = arena_api._prompt_kuyrugunu_at(cevap, "Merhaba! Tek cümleyle kendini tanıt.")
     assert temiz.startswith("Merhaba! Ben")
     assert "Introduce yourself" not in temiz
+
+
+def test_ingilizce_onyuz_yankidan_bagimsiz_atilir():
+    """CANLI KANIT (43199931093): cevap 'User asks in Turkish: ...' ile başlıyordu
+    ve yankı işaretlerinden hiçbiri geçmiyordu → ön yüz temizliği bağımsız olmalı."""
+    from modules import arena_api
+
+    cevap = (
+        'User asks in Turkish: "Hello! Introduce yourself in one sentence." '
+        "Just answer in Turkish, one sentence.\n\n"
+        "Merhaba! Ben Arena.ai'nin yardımcı ajanıyım."
+    )
+    assert arena_api._prompt_yankisi_mi(cevap) is False  # yankı işareti yok
+    assert arena_api._ingilizce_onyuzu_at(cevap).startswith("Merhaba!")
+    # JSON kapak cevabı tek parça → korunur
+    assert arena_api._ingilizce_onyuzu_at('{"sok_baslik": "X"}') == '{"sok_baslik": "X"}'

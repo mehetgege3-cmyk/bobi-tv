@@ -44,7 +44,9 @@ jobs:
       - name: Bağımlılıklar (playwright + chromium)
         run: |
           python -m pip install --quiet --upgrade pip
-          python -m pip install --quiet playwright==1.48.0
+          # arena_api → modules.scenario → tts_engine zinciri numpy/Pillow ister
+          # (ilk denemede "No module named 'numpy'" ile düştü)
+          python -m pip install --quiet -r requirements.txt
           python -m playwright install --with-deps chromium
 
       - name: Arena'ya sor

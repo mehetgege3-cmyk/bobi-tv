@@ -191,12 +191,25 @@ for s in j['steps']:
 Çıktı hangi adımda olduğunu **anlık** gösterir (ör. "7. Pipeline'ı çalıştır
 (1 video, canlı test)  in_progress").
 
-### 8.3 Üretim koşusu süresi
-`canli_test.yml` (1 video, üret + kapak + yükle):
-- 9 dakikada **hâlâ** `in_progress` (adım 7: pipeline) — normal.
-- `tools/kosu_bekle.sh` varsayılan 60 tur = 10 dk yetmez; **90-120 tur**
-  kullanın (15-20 dk) ya da `--log` olmadan izleyin.
-- Job `timeout-minutes: 90`.
+### 8.3 Üretim koşusu süresi — GERÇEK ÖLÇÜM (2026-11-13)
+`canli_test.yml` (1 video, üret + kapak + yükle), koşu `43325201001`:
+
+| Süre | Durum |
+|---|---|
+| 0–2 dk | Kurulum adımları (checkout, python, ffmpeg, pip) |
+| 2 dk → **25+ dk** | **Adım 7 "Pipeline'ı çalıştır"** tek adımda sürüyor |
+
+Adım 7 içinde: senaryo (Arena) → ses/TTS → render → kapak (Arena + 1. kare)
+→ YouTube yükleme. **Bu tek adım 25-40 dk sürebilir; takılma değildir.**
+
+**Pratik sonuç:**
+- `tools/kosu_bekle.sh` en az **200-240 tur** (33-40 dk) kullanın; 60/85 tur
+  yetmez.
+- Daha iyisi: adım listesini 5-10 dk'da bir sorgulayın (§8.2) — adım 7
+  `completed` olunca bitmiştir.
+- Log, iş bitene kadar **indirilemez** (§8.1). Bu yüzden uzun koşularda
+  ilerlemeyi yalnız adım listesinden görürsünüz.
+- Job `timeout-minutes: 90` — 90 dk sonra zorla kesilir.
 
 ### 8.4 Koşu kimliklerini nereden alırsınız
 ```bash

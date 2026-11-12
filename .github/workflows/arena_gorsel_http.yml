@@ -63,7 +63,11 @@ jobs:
 
           # 2) HTTP: yeni sohbet kimliği
           print("[2/3] HTTP: sohbet kimliği aranıyor...", flush=True)
-          chat_id = arena_http.sohbet_id_bekle(cerez, onceki, azami_sn=90)
+          chat_id = arena_api.son_chat_id()          # 1) URL'den (en güvenilir)
+          if chat_id:
+              print(f"      chat_id (URL'den)={chat_id}", flush=True)
+          if not chat_id:
+              chat_id = arena_http.sohbet_id_bekle(cerez, onceki, azami_sn=60)  # 2) geçmiş
           if not chat_id:
               print("❌ Yeni sohbet kimliği bulunamadı", flush=True)
               sys.exit(1)

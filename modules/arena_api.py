@@ -303,6 +303,11 @@ def _son_sayfa():
     return _SON_SAYFA.get("page")
 
 
+def son_chat_id() -> str | None:
+    """Son gönderimde URL'den yakalanan sohbet kimliği (HTTP okuması için)."""
+    return _SON_SAYFA.get("chat_id")
+
+
 async def arena_kisa_cevap_al_async(prompt: str) -> str | None:
     """Arena'ya serbest metin sorusu sorar ve DÜZ METİN cevap döndürür.
 
@@ -761,6 +766,19 @@ async def _arena_sorgusu_yap(
             await page.wait_for_timeout(1000)
             if page.url != "https://arena.ai/agent/":
                 break
+
+        # SOHBET KİMLİĞİ (2026-11-13): gönderimden sonra URL
+        # `https://arena.ai/agent/<uuid>` oluyor. Bu kimlik, cevabı ve
+        # ÜRETİLEN GÖRSELİ tarayıcısız (HTTP) okumak için gerekli.
+        # Kanıt: HAR dosyası — /api/chat/{id}/events ve
+        # /api/chat/workspace/cas/user/{hash}.
+        try:
+            m = re.search(r"/agent/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})", page.url)
+            if m:
+                _SON_SAYFA["chat_id"] = m.group(1)
+                print(f"[Arena] 🆔 sohbet kimliği: {_SON_SAYFA['chat_id']}", flush=True)
+        except Exception:
+            pass
 
         prompt_ilk_satir = prompt.splitlines()[0][:55]
         son_uzunluk = 0

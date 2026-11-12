@@ -1,36 +1,5 @@
 {
-  "bekleyen": [
-    {
-      "baslik": "1 hata oluştu",
-      "govde": "Video #27 üretimi başarısız oldu.",
-      "seviye": "ozet",
-      "zaman": "2026-11-11T23:42:09.456086+00:00"
-    },
-    {
-      "baslik": "1 video yayına alındı",
-      "govde": "Stokta bekleyen: 0",
-      "seviye": "normal",
-      "zaman": "2026-11-12T02:07:14.797542+00:00"
-    },
-    {
-      "baslik": "1 video yayına alındı",
-      "govde": "Stokta bekleyen: 0",
-      "seviye": "normal",
-      "zaman": "2026-11-12T02:54:00.140143+00:00"
-    },
-    {
-      "baslik": "1 hata oluştu",
-      "govde": "Video #8 üretimi başarısız oldu.",
-      "seviye": "ozet",
-      "zaman": "2026-11-12T03:30:43.117127+00:00"
-    },
-    {
-      "baslik": "1 video yayına alındı",
-      "govde": "Stokta bekleyen: 0",
-      "seviye": "normal",
-      "zaman": "2026-11-12T03:41:02.549244+00:00"
-    }
-  ],
+  "bekleyen": [],
   "sustur_until": null,
-  "son_ozet": "2026-11-11T06:14:10.410413+00:00"
+  "son_ozet": "2026-11-12T09:31:07.928700+00:00"
 }

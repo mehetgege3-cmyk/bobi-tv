@@ -90,6 +90,16 @@
       "cevap_ozeti": "Buzdolabında bir haftada bozulan yiyecekleri düşün; sonra balı düşün. Arıların ürettiği bu madde, doğru saklandığında neredeyse hiç bozulmuyor. Bunun nedeni üç ayrı savunma hattı.\n\nBirincisi su: baldaki şeker oranı o kadar yüksek ki, içindeki su mikropların kullanabileceği kadar serbest değil. Bakteriler susuz kalıp çoğalamıyor. İkincisi asitlik: bal hafif asidik, bu da birçok mikroorganizmanın se",
       "skor": 100,
       "tarih": "2026-11-12T03:37:15.806182+00:00"
+    },
+    {
+      "video_no": 9,
+      "kategori": "bilim_teknoloji",
+      "taktik": "T6",
+      "anahtar": "gunes_isigi_ay",
+      "konu": "Güneş'e Baktığında Aslında Geçmişi Görüyorsun ☀️",
+      "cevap_ozeti": "Gökyüzüne baktığında her şeyi 'şu an' gördüğünü sanırsın. Oysa Güneş'in ışığı yola çıktığında henüz burada değildi; bize ulaşması yaklaşık sekiz dakika sürer. Yani güneşe her baktığında, onun sekiz dakika önceki hâlini görürsün. Güneş aniden kaybolsaydı, bunu ancak sekiz dakika sonra fark edebilirdik.\n\nBu gecikme sadece Güneş'e özgü değil. Aynı şey gece gökyüzü için de geçerli: bazı yıldızlar o ka",
+      "skor": 100,
+      "tarih": "2026-11-12T09:27:23.557885+00:00"
     }
   ],
   "kullanilan_yedekler": [
@@ -101,6 +111,7 @@
     "izlanda_soyadi",
     "kopekbaligi_agac",
     "bal_bozulmaz",
-    "bal_bozulmaz"
+    "bal_bozulmaz",
+    "gunes_isigi_ay"
   ]
 }

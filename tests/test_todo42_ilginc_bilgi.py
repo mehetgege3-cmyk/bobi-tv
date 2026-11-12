@@ -710,3 +710,18 @@ def test_sorusuz_metin_kart_olmaz():
         "İlk sürümler pahalıydı ve sıkışıyordu. Bugün her kıyafette var."
     )
     assert u._duz_metinden_kart(metin) is None
+
+
+def test_arena_onay_modalini_kapatir():
+    """ARENA_CONSENT_BUTTON_LABELS sabiti hiç kullanılmıyordu → modal açıkken
+    cevap hiç gelmiyordu (koşu 43140690378: 4,5 dk bekleme, dönen metin modal)."""
+    import inspect
+
+    from modules import arena_api
+
+    kaynak = inspect.getsource(arena_api._arena_riza_modalini_kapat)
+    assert "ARENA_CONSENT_BUTTON_LABELS" in kaynak
+    assert "Agree" in arena_api.ARENA_CONSENT_BUTTON_LABELS
+    # _arena_sorgusu_yap hem açılışta hem döngüde kapatmayı denemeli
+    sorgu = inspect.getsource(arena_api._arena_sorgusu_yap)
+    assert sorgu.count("_arena_riza_modalini_kapat") >= 2

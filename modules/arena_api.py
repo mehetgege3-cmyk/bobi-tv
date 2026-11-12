@@ -621,6 +621,27 @@ def _arena_sure_kaydet(saniye: float, karakter: int, dusunme: str = "") -> None:
         print(f"[Arena] süre kaydı yazılamadı: {str(e)[:80]}", flush=True)
 
 
+async def _arena_riza_modalini_kapat(page) -> bool:
+    """Arena açılışta 'Terms of ... Agree' modalı gösterebiliyor.
+
+    Kapatılmazsa cevap HİÇ gelmiyor ve sayfa metni modal olarak kalıyor.
+    CANLI KANIT (koşu 43140690378, 02:21→02:25): 4,5 dakika beklendi; dönen
+    metin "... Learn more about How it Works / Or hit Enter on your keyboard to
+    agree / Agree / Close" oldu. ARENA_CONSENT_BUTTON_LABELS sabiti vardı ama
+    hiçbir yerde kullanılmıyordu.
+    """
+    for etiket in ARENA_CONSENT_BUTTON_LABELS:
+        try:
+            btn = page.get_by_role("button", name=etiket, exact=True)
+            if await btn.count():
+                await btn.first.click(force=True, timeout=5000)
+                print(f"[Arena] ✅ Onay modalı kapatıldı ('{etiket}')", flush=True)
+                return True
+        except Exception as e:
+            print(f"[Arena] Onay modalı uyarısı ({etiket}): {str(e)[:70]}", flush=True)
+    return False
+
+
 async def _arena_sorgusu_yap(
     page,
     prompt: str,
@@ -661,6 +682,8 @@ async def _arena_sorgusu_yap(
     try:
         await page.goto("https://arena.ai/agent/", wait_until="domcontentloaded", timeout=45000)
         await page.wait_for_timeout(3000)
+        await _arena_riza_modalini_kapat(page)
+        await page.wait_for_timeout(1000)
 
         ilk_body = await page.locator("body").inner_text()
         if "MIDDLEWARE_INVOCATION_FAILED" in ilk_body:
@@ -700,6 +723,14 @@ async def _arena_sorgusu_yap(
             await page.wait_for_timeout(2000)
             gecen = (datetime.now() - gonderim).total_seconds()
             body = await page.locator("body").inner_text()
+
+            # Modal sonradan açılabiliyor (ya da ilk denemede kapanmamış olabilir):
+            # sayfa metni modal ise kapat ve cevap sayacını sıfırla.
+            if "to agree" in body.lower() or "How it Works" in body:
+                if await _arena_riza_modalini_kapat(page):
+                    gonderim = datetime.now()
+                    son_degisim = datetime.now()
+                    continue
 
             if "Sign in to continue" in body or "Continue with Google" in body:
                 print("[Arena] ⛔ Oturum süresi dolmuş (Login modalı açıldı).", flush=True)

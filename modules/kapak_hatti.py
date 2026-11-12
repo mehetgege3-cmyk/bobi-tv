@@ -85,11 +85,17 @@ def kapak_uret_ve_yerlestir(paket: dict[str, Any]) -> dict[str, Any]:
                 paket["final_video"] = yeni_video
                 sonuc["video"] = yeni_video
                 sonuc["ilk_kare"] = True
+                paket["kapak_ilk_kare"] = True
                 print(f"[Kapak] ✅ Kapak videonun 1. karesine yerleştirildi: {Path(yeni_video).name}")
         except Exception as e:
             print(f"[Kapak] 1. kareye yerleştirme hatası: {str(e)[:140]}")
 
     if sonuc["kapak"]:
+        # YouTube yüklemesi ve log bu alanları okur (kapak_dosyasi = JPEG)
+        paket["kapak_dosyasi"] = sonuc["kapak"]
+        paket["kapak_yolu"] = sonuc["kapak"]
+        paket["kapak_kaynagi"] = sonuc["kaynak"]
+        paket.setdefault("kapak_ilk_kare", False)
         print(f"[Kapak] Seçilen: {Path(sonuc['kapak']).name} | kaynak={sonuc['kaynak']}")
     else:
         print("[Kapak] ⚠️ Kapak üretilemedi — video kapaksız yüklenecek (üretim sürer)")

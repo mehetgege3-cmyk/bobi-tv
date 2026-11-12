@@ -378,6 +378,7 @@ def pipeline_calistir():
                 )
                 log_yaz(
                     f"🖼️ Kapak: {Path(kapak_yolu).name if kapak_yolu else 'YOK'} "
+                    f"| kaynak: {next((p.get('kapak_kaynagi', '') for p in hazir_paketler if p.get('dosya_adi') == d_adi), '') or '?'} "
                     f"| ilk kareye gömüldü: "
                     f"{next((p.get('kapak_ilk_kare', '') for p in hazir_paketler if p.get('dosya_adi') == d_adi), '') and 'EVET' or 'HAYIR'}"
                 )

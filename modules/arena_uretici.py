@@ -62,6 +62,14 @@ def arena_tam_uretim(video_no: int) -> dict | None:
 
                 kapak_sonuc = kapak_uret_ve_yerlestir(paket)
                 video_yolu = kapak_sonuc.get("video") or video_yolu
+                if kapak_sonuc.get("kapak"):
+                    paket["kapak_dosyasi"] = kapak_sonuc["kapak"]
+                    paket["kapak_yolu"] = kapak_sonuc["kapak"]
+                    paket["kapak_ilk_kare"] = bool(kapak_sonuc.get("ilk_kare"))
+                    paket["kapak_kaynagi"] = kapak_sonuc.get("kaynak", "")
+                    senaryo = paket.setdefault("senaryo", {})
+                    senaryo["kapak_dosyasi"] = kapak_sonuc["kapak"]
+                    senaryo["kapak_yolu"] = kapak_sonuc["kapak"]
             except Exception as kapak_hatasi:
                 print(f"[İlginçBilgi] ⚠️ Kapak hattı: {str(kapak_hatasi)[:120]}")
 

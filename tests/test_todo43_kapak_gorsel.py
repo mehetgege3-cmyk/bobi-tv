@@ -168,3 +168,31 @@ def test_kapak_uretilmeden_render_edilebilir_akis():
     assert "kapak_uret_ve_yerlestir" in kaynak
     # kapak çağrısı render fonksiyonundan sonra olmalı
     assert kaynak.index("kapak_uret_ve_yerlestir") > kaynak.index("def ")  # en az bir tanım var
+
+
+def test_kapak_paket_alanlarini_doldurur(monkeypatch, tmp_path):
+    """CANLI HATA (43266695264): kapak üretildi ama YouTube'a 'Kapak dosyası
+    yok: (boş)' dedi — çünkü paket['kapak_dosyasi'] doldurulmuyordu.
+
+    Sözleşme: kapak üretildiyse paket kapak_dosyasi/kapak_yolu/kapak_ilk_kare/
+    kapak_kaynagi alanlarıyla işaretlenir.
+    """
+    from PIL import Image
+
+    from modules import kapak_gorsel, kapak_hatti
+
+    ham = tmp_path / "ham.png"
+    Image.new("RGB", (900, 1600), (5, 5, 5)).save(ham)
+    monkeypatch.setattr(kapak_gorsel, "arena_kapak_gorseli_uret", lambda p: ham)
+    monkeypatch.setattr(kapak_hatti.calisma_dizinleri, "OUTPUT_YOLU", tmp_path)
+    from modules import kapak_arena
+
+    monkeypatch.setattr(kapak_arena, "ilk_kareye_yerlestir", lambda v, k: None)
+
+    paket = {"dosya_adi": "p", "final_video": "", "senaryo": {}}
+    sonuc = kapak_hatti.kapak_uret_ve_yerlestir(paket)
+    assert sonuc["kaynak"] == "arena_gorsel"
+    assert paket["kapak_dosyasi"] == sonuc["kapak"]
+    assert paket["kapak_yolu"] == sonuc["kapak"]
+    assert paket["kapak_kaynagi"] == "arena_gorsel"
+    assert paket["kapak_ilk_kare"] is False  # video yoktu → gömülmedi (dürüst)

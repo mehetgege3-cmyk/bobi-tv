@@ -16,6 +16,22 @@
       "kalite_ortalama": null,
       "yorum": "veri yetersiz (1/5 video) — yorum yok",
       "kanca_en_iyi_form": ""
+    },
+    {
+      "zaman": "2026-11-12T16:03:58.245410+00:00",
+      "gun": 7,
+      "uretilen": 55,
+      "silinen": 30,
+      "izlenme_ornek": 34,
+      "ortalama_izlenme": 6.88,
+      "medyan_izlenme": 0.0,
+      "en_yuksek_izlenme": 99,
+      "akisa_giren": 0,
+      "akisa_girme_orani": 0,
+      "kalite_ornek": 2,
+      "kalite_ortalama": 74.5,
+      "yorum": "🔴 akışa giriş yok — algoritma hâlâ dağıtmıyor; içerik/kanca gözden geçir",
+      "kanca_en_iyi_form": ""
     }
   ]
 }

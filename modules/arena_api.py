@@ -602,16 +602,39 @@ async def _tarayiciyi_kapat(browser) -> None:
         await asyncio.wait_for(browser.close(), timeout=15)
 
 
+async def _gonder_dugmesi_durumu(page) -> dict:
+    """Gönder düğmesinin gerçek durumunu okur (teşhis için)."""
+    try:
+        return await page.evaluate(
+            """() => {
+                const b = document.querySelector('button[aria-label="Send message"]');
+                if (!b) return {var: false};
+                return {
+                    var: true,
+                    disabled: b.disabled === true,
+                    aria_disabled: b.getAttribute('aria-disabled'),
+                    sinif: (b.className || '').toString().slice(0, 120),
+                    html: b.outerHTML.slice(0, 200)
+                };
+            }"""
+        )
+    except Exception as e:
+        return {"hata": str(e)[:80]}
+
+
 async def _promptu_gonder(page, prompt: str) -> bool:
-    """Editöre yazar ve gönderir; GÖNDERİLDİĞİNİ DOĞRULAR.
+    """Editöre yazar, gönderir ve GÖNDERİLDİĞİNİ DOĞRULAR.
 
-    CANLI BULGU (2026-11-12): "Send message" düğmesine tıklanınca düğme mevcut
-    ama gönderim sessizce olmuyordu (düğme pasif/devre dışı). Eski sürüm yine de
-    `True` dönüyordu → kapak hattı 8 dakika boş sayfada bekliyordu ve log'a
-    "gönderildi" yazıyordu. Bu SESSİZ YALANDI.
+    CANLI BULGULAR (2026-11-12, ölçümle):
+      • run 43271340457: `insert_text` + düğme tıklaması → prompt EDİTÖRDE KALDI
+        (sayfada 480 sn boyunca img=0, metin sabit). Eski kod yine de True
+        dönüyordu → "gönderildi" yalanı.
+      • run 43273290007: doğrulama eklendi → "❌ GÖNDERİLEMEDİ — editör hâlâ dolu".
+        Sebep: `insert_text` React state'ini güncellemiyor, gönder düğmesi PASİF.
 
-    Yeni sözleşme: editör boşaldıysa/Enter ile gönderim olduysa True; aksi hâlde
-    False ve "GÖNDERİLEMEDİ" yazar. Çağıran taraf buna göre yedek yola düşer.
+    Bu sürüm: GERÇEK TUŞ VURUŞLARIYLA yazar (keyboard.type → input event'leri
+    tetikler), düğme durumunu okur, gerekirse Enter'a düşer ve sonunda editörün
+    boşalmasını doğrular. Doğrulayamazsa False döner (sessiz yalan yok).
     """
     editor = page.locator('div.tiptap[contenteditable="true"]')
     try:
@@ -628,40 +651,49 @@ async def _promptu_gonder(page, prompt: str) -> bool:
 
     await editor.click()
     await page.wait_for_timeout(300)
-    await page.keyboard.insert_text(prompt)
-    await page.wait_for_timeout(600)
 
-    # 1) Gönder düğmesi: görünür + etkin olmalı
-    gonderildi = False
+    # 1) GERÇEK tuş vuruşları (React state güncellensin). Uzunsa hızlı yaz.
     try:
-        dugme = page.locator('button[aria-label="Send message"]').first
-        if await dugme.count():
-            try:
-                await dugme.wait_for(state="visible", timeout=5000)
-                devre_disi = await dugme.get_attribute("disabled")
-                if devre_disi is None:
-                    await dugme.click(force=True)
-                    gonderildi = True
-                else:
-                    print("[Arena] ⚠️ Gönder düğmesi pasif (disabled)", flush=True)
-            except Exception as e:
-                print(f"[Arena] Gönder düğmesi tıklanamadı: {str(e)[:90]}", flush=True)
-    except Exception:
-        pass
+        await page.keyboard.type(prompt, delay=1)
+    except Exception as e:
+        print(f"[Arena] Yazma hatası: {str(e)[:90]} — insert_text'e düşülüyor", flush=True)
+        await page.keyboard.insert_text(prompt)
+    await page.wait_for_timeout(800)
 
-    # 2) Düğme işe yaramadıysa Enter ile gönder (Arena editörü Enter'ı gönderir)
+    durum = await _gonder_dugmesi_durumu(page)
+    print(f"[Arena] gönder düğmesi: {durum}", flush=True)
+
+    # 2) Düğme etkinse tıkla
+    gonderildi = False
+    if durum.get("var") and not durum.get("disabled") and durum.get("aria_disabled") != "true":
+        try:
+            await page.locator('button[aria-label="Send message"]').first.click(force=True)
+            gonderildi = True
+        except Exception as e:
+            print(f"[Arena] Düğme tıklanamadı: {str(e)[:90]}", flush=True)
+
+    # 3) Düğme pasifse / tıklama işe yaramadıysa: Enter, sonra Ctrl+Enter
     if not gonderildi:
-        await editor.click()
-        await page.keyboard.press("Enter")
+        for tus in ("Enter", "Control+Enter"):
+            await editor.click()
+            await page.keyboard.press(tus)
+            await page.wait_for_timeout(1200)
+            if await _editor_bos():
+                print(f"[Arena] 📤 Prompt gönderildi ({tus} ile, doğrulandı)", flush=True)
+                return True
 
-    # 3) DOĞRULAMA: editör boşaldı mı? (gönderim gerçekten oldu mu)
-    for _ in range(10):
-        await page.wait_for_timeout(400)
+    # 4) DOĞRULAMA: editör boşaldı mı?
+    for _ in range(12):
+        await page.wait_for_timeout(500)
         if await _editor_bos():
             print("[Arena] 📤 Prompt gönderildi (doğrulandı)", flush=True)
             return True
 
-    print("[Arena] ❌ GÖNDERİLEMEDİ — editör hâlâ dolu (gönderim doğrulanamadı)", flush=True)
+    print(
+        "[Arena] ❌ GÖNDERİLEMEDİ — editör hâlâ dolu. Düğme durumu: "
+        f"{await _gonder_dugmesi_durumu(page)}",
+        flush=True,
+    )
     return False
 
 

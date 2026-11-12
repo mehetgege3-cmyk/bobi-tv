@@ -211,5 +211,6 @@ def test_prompt_gonderimi_dogrulanir():
     kaynak = inspect.getsource(arena_api._promptu_gonder)
     assert "_editor_bos" in kaynak          # editör boşaldı mı kontrolü
     assert "GÖNDERİLEMEDİ" in kaynak         # başarısızlık sessiz kalmıyor
-    assert "keyboard.press(\"Enter\")" in kaynak  # düğme çalışmazsa Enter yedeği
+    assert 'keyboard.press(tus)' in kaynak  # düğme çalışmazsa Enter/Ctrl+Enter yedeği
+    assert "keyboard.type(" in kaynak  # GERÇEK tuş vuruşu (insert_text React'i güncellemiyor)
     assert "disabled" in kaynak              # pasif düğmeye tıklamayı fark eder

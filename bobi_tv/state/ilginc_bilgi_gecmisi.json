@@ -140,6 +140,16 @@
       "cevap_ozeti": "Kutup ayısını beyaz sanırız; oysa tüylerinin altındaki deri simsiyahtır. Bu koyu renk güneş ışığını daha iyi emer ve hayvanın vücut ısısını korumasına yardım eder. Peki beyazlık nereden geliyor? Tüyler aslında pigmentli değil; içi boş yapıları ışığı dağıttığı için bize beyaz görünür. Yani kar gibi görünen şey, renkli bir boya değil, ışığın oyunudur.\n\nBir düşün: kışın koyu renk mont giydiğinde güne",
       "skor": 100,
       "tarih": "2026-11-12T16:30:23.370561+00:00"
+    },
+    {
+      "video_no": 14,
+      "kategori": "kulturler",
+      "taktik": "T6",
+      "anahtar": "japonya_cikolata",
+      "konu": "Japonya'da Çikolata Sevgiden Çok Bir Görev 🍫",
+      "cevap_ozeti": "Japonya'da çikolata denince akla ilk gelen şey tatlı bir istek değil, bir gelenektir. Bir dönem ithal çikolata pahalı ve nadirdi; bu yüzden onu hediye etmek özel bir jest sayıldı. Zamanla bu alışkanlık yerleşti ve çikolata, teşekkür etmenin ve ilişkiyi sürdürmenin bir aracı hâline geldi.\n\nGeleneğin en ilginç tarafı, çikolatanın farklı anlamlar taşımasıdır. İş yerinde meslektaşlara verilen çikolata",
+      "skor": 100,
+      "tarih": "2026-11-12T17:06:26.136134+00:00"
     }
   ],
   "kullanilan_yedekler": [
@@ -154,6 +164,7 @@
     "bal_bozulmaz",
     "gunes_isigi_ay",
     "kopek_burun_izi",
-    "kutup_ayi_deri"
+    "kutup_ayi_deri",
+    "japonya_cikolata"
   ]
 }

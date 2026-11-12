@@ -848,7 +848,7 @@
     "dosya_adi": "20261112_1036_0010_kopek_burun_izi",
     "baslik": "Köpeklerin Burnu da Parmak İzi Gibi Benzersiz 🐕 #shorts",
     "video_id": "rinmcHL5t_s",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "insan_vucudu",
     "url": "https://www.youtube.com/shorts/rinmcHL5t_s",
     "senaryo_ozeti": "",
@@ -865,7 +865,10 @@
         "izlenme": 0,
         "zaman": "2026-11-12T12:32:19.378379+00:00"
       }
-    }
+    },
+    "silinme_izlenme": 1,
+    "silinme_yas_dk": 386.0,
+    "silinme_tarihi": "2026-11-12T17:05:59.206427+00:00"
   },
   {
     "dosya_adi": "20261112_1228_0011_sogan_keserken_gozlerimi",

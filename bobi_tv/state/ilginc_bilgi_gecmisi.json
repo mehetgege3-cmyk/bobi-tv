@@ -40,12 +40,23 @@
       "cevap_ozeti": "Bu soruyu ilk duyduğunda muhtemelen hemen 'piramitlere' diyeceksin; piramitlerle Kleopatra aynı ders kitabı sayfasında durur. Ama tarih, hissettiğimizden farklı çalışıyor.\n\nBüyük Giza Piramidi yaklaşık 2.560 yılda, MÖ 2.560 civarında tamamlandı. Kleopatra ise MÖ 69'da doğdu ve MÖ 30'da öldü. Arada yaklaşık 2.500 yıl var. Apollo 11'in Ay'a inişi ise 1969 yılında gerçekleşti; Kleopatra'nın ölümünden",
       "skor": 100,
       "tarih": "2026-11-12T02:22:00.146797+00:00"
+    },
+    {
+      "video_no": 4,
+      "kategori": "hayvanlar",
+      "taktik": "T6",
+      "anahtar": "ahtapot_uc_kalp",
+      "konu": "Ahtapotların Üç Kalbi Var — Biri Yüzerken Duruyor! 🐙",
+      "cevap_ozeti": "Çoğumuz hayvanların tek kalbi olduğunu düşünürüz, oysa ahtapotlarda işler bambaşka. Ahtapotların tam üç kalbi vardır ve bu kalplerin her biri farklı bir iş yapar. İki kalp solungaçlara kan pompalar, üçüncüsü ise vücudun geri kalanına temiz kanı taşır. İşin ilginç yanı, bu kalplerden biri yüzerken durur. Yani ahtapot yüzdüğü sürece üçüncü kalbi çalışmaz ve hayvan bu yüzden deniz tabanında sürünmeyi",
+      "skor": 100,
+      "tarih": "2026-11-12T02:49:26.662187+00:00"
     }
   ],
   "kullanilan_yedekler": [
     "gps_izafiyet",
     "uykuda_beyin_temizligi",
     "fermuar_gec",
-    "kleopatra_piramit"
+    "kleopatra_piramit",
+    "ahtapot_uc_kalp"
   ]
 }

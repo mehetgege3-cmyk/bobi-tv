@@ -112,6 +112,21 @@ Testler: `tests/test_todo43_kapak_gorsel.py` (7 test) — prompt tam metni taş�
 yazı yasağı var, eski karar hattı yok, Arena görseli → 1. kare, yedek yol
 ImportError vermez, sync sarmalayıcı loop içinde de çalışır, 1080×1920 kırpma.
 
+### CANLI DOĞRULAMA — 2026-11-12 17:05–17:24 UTC (3 koşu)
+
+| Koşu | Sonuç |
+|---|---|
+| `43265657831` | ❌ **REGRESYON**: `'NoneType' object has no attribute 'read'` → 0 video. Kapak render'dan sonra üretildiği için `animasyon.py` çöküyordu. DÜZELTİLDİ. |
+| `43266695264` | ✅ Video yayınlandı (`sS9LWGuMuLA`) ama ❌ `[YouTube] ⚠️ Kapak dosyası yok: (boş)` — paket alanları doldurulmuyordu. DÜZELTİLDİ. |
+| `43268041894` | ✅ **TAM**: `[Kapak] ✅ Kapak videonun 1. karesine yerleştirildi` · `[YouTube] 🖼️ Kapak yüklendi` · log: `Kapak: ..._kapak.jpg \| kaynak: video_karesi \| ilk kareye gömüldü: EVET` · https://www.youtube.com/shorts/_u54iIC1I8M |
+
+**Dürüst durum:** `kaynak: video_karesi` → Arena **görsel** yolu bu koşularda hiç
+denenmedi, çünkü çerez oturumu düşmüş:
+`⛔ ARENA_COOKIES_JSON SÜRESİ DOLMUŞ — çerez yenilenmeli`.
+`ARENA_COOKIES_JSON` güncellenince ilk koşuda log'da
+`[Kapak] ✅ Arena kapak görseli indirildi` / `kaynak=arena_gorsel` aranmalı.
+O satır görünmezse Arena'nın sohbet arayüzü gerçekten görsel üretmiyor demektir.
+
 ## 3. Arena çerezleri GitHub'a ne zaman eklenmeli?
 
 `ARENA_COOKIES_JSON` + `ARENA_SMOKE_TEST` ile doğrulama sırası:

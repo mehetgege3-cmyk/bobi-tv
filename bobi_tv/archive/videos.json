@@ -1097,5 +1097,22 @@
     "kapak_dosyasi": "bobi_tv/output/20261113_0637_0004_kleopatra_piramit_kapak.jpg",
     "kapak_yuklendi": null,
     "hook_ust_bant": "Kleopatra, Piramitlerin Yapılışınd"
+  },
+  {
+    "dosya_adi": "20261113_0654_0005_ilginc_bilgi",
+    "baslik": "{ #shorts",
+    "video_id": "EQPd1GlVCMw",
+    "durum": "yayinda",
+    "kategori": "hayvanlar",
+    "url": "https://www.youtube.com/shorts/EQPd1GlVCMw",
+    "senaryo_ozeti": "",
+    "hash": "",
+    "tarih": "2026-11-13T07:00:19.905049+00:00",
+    "kanca_formu": "",
+    "kanca_ab": "",
+    "kanca_puan": null,
+    "kapak_dosyasi": "bobi_tv/output/20261113_0654_0005_ilginc_bilgi_kapak.jpg",
+    "kapak_yuklendi": null,
+    "hook_ust_bant": "{"
   }
 ]

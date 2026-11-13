@@ -32,31 +32,67 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-ARSIV = Path("bobi_tv/archive/videos.json")
+def canli_videolar(access: str) -> list[dict]:
+    """KANALDAKİ GERÇEK videoları YouTube Data API'den çeker.
 
+    HATA DÜZELTMESİ (2026-11-13, kullanıcı: "60 video yok kanalda"):
+      Önceki sürüm `bobi_tv/archive/videos.json` dosyasını sayıyordu. O dosya
+      KANAL DEĞİL, geçmiş kayıt defteriydi: 64 kaydın 37'si
+      `silindi_dusuk_izlenme`, 9'u `kaldirildi`. Gerçek kanalda 13 video var.
+      Artık tek doğru kaynak: channels.list → uploads playlistItems.list.
+    """
+    import urllib.request
 
-def arsiv_oku() -> list[dict]:
-    """Yayınlanmış kayıtları okur (video_id + baslik)."""
-    if not ARSIV.exists():
-        print(f"❌ Arşiv yok: {ARSIV}")
+    H = {"Authorization": f"Bearer {access}"}
+
+    def api(url: str) -> dict:
+        with urllib.request.urlopen(urllib.request.Request(url, headers=H), timeout=30) as r:
+            return json.loads(r.read().decode("utf-8"))
+
+    kanal = api(
+        "https://www.googleapis.com/youtube/v3/channels"
+        "?part=snippet,contentDetails,statistics&mine=true"
+    )
+    if not kanal.get("items"):
+        print("❌ Kanal bulunamadı (jeton izinleri?)")
         return []
-    try:
-        veri = json.loads(ARSIV.read_text(encoding="utf-8"))
-    except Exception as e:
-        print(f"❌ Arşiv okunamadı: {e}")
-        return []
-    kayitlar = []
-    for k in veri if isinstance(veri, list) else []:
-        vid = str(k.get("video_id") or k.get("id") or "").strip()
-        if not vid:
-            continue
-        kayitlar.append(
-            {
-                "video_id": vid,
-                "baslik": str(k.get("baslik") or k.get("title") or "").strip(),
-                "durum": str(k.get("durum") or ""),
-            }
+    ch = kanal["items"][0]
+    yukleme = ch["contentDetails"]["relatedPlaylists"]["uploads"]
+    st = ch["statistics"]
+    print(
+        f"[KapakYenile] KANAL: {ch['snippet']['title']} — "
+        f"{st.get('videoCount')} video, {st.get('subscriberCount')} abone, "
+        f"{st.get('viewCount')} izlenme"
+    )
+
+    idler, sayfa = [], None
+    while True:
+        url = (
+            "https://www.googleapis.com/youtube/v3/playlistItems"
+            f"?part=contentDetails&playlistId={yukleme}&maxResults=50"
         )
+        if sayfa:
+            url += f"&pageToken={sayfa}"
+        d = api(url)
+        idler += [i["contentDetails"]["videoId"] for i in d.get("items", [])]
+        sayfa = d.get("nextPageToken")
+        if not sayfa:
+            break
+
+    kayitlar = []
+    for i in range(0, len(idler), 50):
+        d = api(
+            "https://www.googleapis.com/youtube/v3/videos"
+            f"?part=snippet,status&id={','.join(idler[i:i + 50])}"
+        )
+        for v in d.get("items", []):
+            kayitlar.append(
+                {
+                    "video_id": v["id"],
+                    "baslik": v["snippet"].get("title", ""),
+                    "durum": v["status"].get("privacyStatus", ""),
+                }
+            )
     return kayitlar
 
 
@@ -75,12 +111,18 @@ def main() -> int:
         print("❌ GEMINI_COOKIES yok — kapak üretilemez")
         return 2
 
-    kayitlar = arsiv_oku()
+    # Erişim jetonu hem envanter hem yükleme için gerekli
+    tok = youtube_upload.token_yukle()
+    access = youtube_upload.token_yenile(tok)
+    if not access:
+        print("❌ YouTube erişim jetonu alınamadı")
+        return 2
+
+    kayitlar = canli_videolar(access)
     if a.video_id:
         kayitlar = [k for k in kayitlar if k["video_id"] == a.video_id]
     else:
-        # Yalnız yayında olanlar
-        kayitlar = [k for k in kayitlar if not k["durum"] or k["durum"] == "yayinda"]
+        kayitlar = [k for k in kayitlar if k["durum"] == "public"]
     kayitlar = kayitlar[: max(1, a.azami)]
     if not kayitlar:
         print("❌ İşlenecek video bulunamadı")
@@ -89,12 +131,6 @@ def main() -> int:
     print(f"[KapakYenile] {len(kayitlar)} video işlenecek (kuru={a.kuru})")
     cikti = Path(a.cikti)
     cikti.mkdir(parents=True, exist_ok=True)
-
-    tok = youtube_upload.token_yukle()
-    access = youtube_upload.token_yenile(tok)
-    if not access:
-        print("❌ YouTube erişim jetonu alınamadı")
-        return 2
 
     basarili = basarisiz = 0
     for k in kayitlar:

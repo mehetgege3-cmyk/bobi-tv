@@ -215,3 +215,131 @@ def gorsel_uret(prompt: str, hedef_yol: str, *, sure: int = 240) -> str | None:
 def goruntu_uret_ve_sakla(prompt: str, dosya_adi: str = "gemini_web_kapak.png") -> str | None:
     kok = os.environ.get("BOBITV_GECICI_KOK", "kanit")
     return gorsel_uret(prompt, str(Path(kok) / dosya_adi))
+
+# ---------------------------------------------------------------------------
+# METİN üretimi (senaryo / ilginç bilgi) — Arena'nın yerini alır
+# ---------------------------------------------------------------------------
+# ÖLÇÜM (2026-11-13): StreamGenerate yanıtı çerçeve biçiminde gelir:
+#   )]}'\n\n<uzunluk>\n[[...]]\n<uzunluk>\n[[...]]...
+# Cevap metni `rc_*` bloğunun 2. elemanıdır: ["rc_...", ["<metin>"], ...
+# Aynı metin birden çok çerçevede BÜYÜYEREK gelir (akış); en uzunu tam cevaptır.
+
+def _metin_ayikla(yanit: str) -> str:
+    """StreamGenerate yanıtından en uzun cevap metnini çıkarır.
+
+    ÇERÇEVE BİÇİMİ (ölçüldü 2026-11-13):
+        )]}'\n\n<uzunluk>\n[["wrb.fr",null,"<İÇ JSON>",...]]...
+    TUZAK: uzunluk öneki 1 karakter FAZLA sayıyor → `json.loads` "Extra data"
+    hatası verir. Bu yüzden `raw_decode` ile toleranslı ayrıştırılır.
+    """
+    import json as _j
+
+    cozucu = _j.JSONDecoder()
+    en_iyi = ""
+    for m in re.finditer(r"\n(\d+)\n", yanit):
+        n = int(m.group(1))
+        parca = yanit[m.end(): m.end() + n + 4].strip()  # +4 tolerans
+        if not parca.startswith("[["):
+            continue
+        try:
+            dis, _ = cozucu.raw_decode(parca)
+        except Exception:
+            continue
+        for oge in dis if isinstance(dis, list) else []:
+            if not (isinstance(oge, list) and len(oge) >= 3):
+                continue
+            ic = oge[2]
+            if not isinstance(ic, str):
+                continue
+            try:
+                govde = _j.loads(ic)
+            except Exception:
+                continue
+            for blok in (govde if isinstance(govde, list) else []):
+                if not isinstance(blok, list):
+                    continue
+                for aday in blok:
+                    if (
+                        isinstance(aday, list)
+                        and len(aday) >= 2
+                        and isinstance(aday[0], str)
+                        and aday[0].startswith("rc_")
+                        and isinstance(aday[1], list)
+                        and aday[1]
+                        and isinstance(aday[1][0], str)
+                        and len(aday[1][0]) > len(en_iyi)
+                    ):
+                        en_iyi = aday[1][0]
+    return en_iyi.strip()
+
+
+def metin_uret(prompt: str, *, sure: int = 240) -> str | None:
+    """Gemini web'den DÜZ METİN alır. Başarısızsa None (uydurma yok).
+
+    Arena'nın `arena_kisa_cevap_al` yerine kullanılır: web çerezi yeterli,
+    API anahtarı ve kotası gerekmez.
+    """
+    _SON["hata"] = None
+    if not prompt.strip():
+        return None
+    c = cerez()
+    if not c:
+        _SON["hata"] = "GEMINI_COOKIES yok"
+        return None
+    at = jeton(c)
+    if not at:
+        _SON["hata"] = _SON["hata"] or "jeton yok"
+        return None
+
+    ic: list = [None] * 81
+    ic[0] = [prompt, 0, None, None, None, None, 0]
+    ic[1] = ["tr"]
+    ic[2] = METADATA
+    ic[6] = [1]
+    ic[7] = 1
+    ic[10] = 1
+    ic[11] = 0
+    ic[17] = [[0]]
+    ic[18] = 0
+    ic[27] = 1
+    ic[30] = [4]
+    ic[41] = [1]
+    ic[53] = 0
+    ic[61] = []
+    ic[68] = 1
+    ic[79] = 1
+    ic[80] = 1
+    uid = str(uuid.uuid4()).upper()
+    ic[59] = uid
+    veri = urllib.parse.urlencode(
+        {"at": at, "f.req": json.dumps([None, json.dumps(ic)])}
+    ).encode()
+    req = urllib.request.Request(
+        f"{GENERATE}?hl=tr&_reqid=100000&rt=c", data=veri, method="POST",
+        headers={
+            **BASLIKLAR,
+            "cookie": c,
+            "content-type": "application/x-www-form-urlencoded;charset=UTF-8",
+            "origin": "https://gemini.google.com",
+            "referer": "https://gemini.google.com/app",
+            "x-same-domain": "1",
+            "x-goog-ext-525005358-jspb": f'["{uid}",1]',
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=sure) as r:
+            yanit = r.read().decode("utf-8", "replace")
+    except urllib.error.HTTPError as e:
+        _SON["hata"] = f"StreamGenerate HTTP {e.code}"
+        if e.code in (401, 403):
+            _SON["jeton"] = None
+        return None
+    except Exception as e:
+        _SON["hata"] = f"{type(e).__name__}: {str(e)[:100]}"
+        return None
+
+    metin = _metin_ayikla(yanit)
+    if not metin:
+        _SON["hata"] = "yanıtta metin bulunamadı"
+        return None
+    return metin

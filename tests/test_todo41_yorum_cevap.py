@@ -173,9 +173,10 @@ def test_arena_promptu_dogru_bilgiyi_ve_yasagi_icerir(monkeypatch, durum):
         yakalanan["prompt"] = prompt
         return "Haklısın, doğrusu 3."
 
-    import modules.arena_api as aa
+    # KULLANICI (2026-11-13): Arena çöpe atıldı → cevap üretimi Gemini web'den.
+    import modules.gemini_web as gw
 
-    monkeypatch.setattr(aa, "arena_kisa_cevap_al", sahte)
+    monkeypatch.setattr(gw, "metin_uret", sahte)
     cevap = yc.arena_cevabi_uret(
         {"metin": "Bence yanlış biliyorsunuz"},
         dogru_bilgi="Ahtapotların 3 kalbi vardır.",
@@ -196,9 +197,9 @@ def test_arena_promptu_dogru_bilgiyi_ve_yasagi_icerir(monkeypatch, durum):
 
 
 def test_tur_kuru_calisma_kayit_uretir(tmp_path, monkeypatch):
-    import modules.arena_api as aa
+    import modules.gemini_web as gw
 
-    monkeypatch.setattr(aa, "arena_kisa_cevap_al", lambda p: "Haklısın, doğrusu 3 kalp.")
+    monkeypatch.setattr(gw, "metin_uret", lambda p: "Haklısın, doğrusu 3 kalp.")
     monkeypatch.setattr(
         yc, "yorumlari_oku",
         lambda vid, tok, azami=10: [

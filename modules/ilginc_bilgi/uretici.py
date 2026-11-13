@@ -221,8 +221,11 @@ def arena_bilgi_uret(
 ) -> dict | None:
     """Arena'dan bilgi kartı ister. Erişilemezse None (çağıran bankaya düşer)."""
     if arena_fn is None:
+        # KULLANICI (2026-11-13): "Arena AI'yi ve Gemini API'yi çöpe at; Gemini
+        # cookie işimize yarar." → içerik artık Gemini WEB çerezinden gelir.
+        # Arena çerezi ölü (401) ve kullanımdan kaldırıldı.
         try:
-            from modules.arena_api import arena_kisa_cevap_al as arena_fn  # type: ignore
+            from modules.gemini_web import metin_uret as arena_fn  # type: ignore
         except Exception:
             return None
     prompt = arena_promptu(kategori, taktik, kacirilacaklar)

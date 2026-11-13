@@ -72,3 +72,31 @@ oldu, platform "Workspace over budget" verdi ve **33 dosya kaydedilmedi**.
 
 **Ders:** "Kanıt" demek "dosyayı sakla" demek değil. Link + küçük görsel +
 log satırı kanıt için yeterli; 27 MB'lık video değil.
+
+## K9 — TEK SAĞLAYICI: GEMINI WEB ÇEREZİ (2026-11-13)
+
+> Kullanıcı: *"Bu sorunsuz çalışıyor. Arena AI'yi ve Gemini API'yi çöpe at.
+> Artık bunu kullanalım, Gemini cookie işimize yarar."*
+
+**ÇÖPE ATILANLAR:**
+
+| Atılan | Neden |
+|---|---|
+| **Arena AI** (kapak + senaryo + yorum) | Çerez sürekli 401; tarayıcı duvarı; güvenilmez |
+| **Gemini API** (`GEMINI_API_KEY`) | Görsel kotası `limit: 0` (ücretsiz katmanda yok) |
+
+**KALAN TEK YOL: `GEMINI_COOKIES` (gemini.google.com oturum çerezi)**
+
+| İş | Fonksiyon | Durum |
+|---|---|---|
+| Kapak görseli | `gemini_web.gorsel_uret` | ✅ koşu 43378192358 |
+| Senaryo / ilginç bilgi | `gemini_web.metin_uret` | ✅ canlı test (hidra kartı) |
+| Yorum cevabı | `gemini_web.metin_uret` | ✅ test yeşil |
+
+**Kapak hattı:** Gemini WEB → (başarısızsa) video karesi. Üretim **durmaz**.
+
+**Çerez ömrü:** `__Secure-1PSIDTS` kısa ömürlü. Öldüğünde:
+`tools/gemini_cerez_kur.py --dosya <export.json>` → doğrular + secret'a yazar.
+
+**Ders:** API anahtarı "geçerli" olması kota olduğu anlamına gelmez. Web çerezi
+abonelik kotasını kullanır — bu yüzden API'den daha çok iş görüyor.

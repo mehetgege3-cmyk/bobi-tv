@@ -209,7 +209,8 @@ def arena_cevabi_uret(
     Arena erişilemezse None döner → güvenli yedek metin kullanılır.
     """
     try:
-        from modules.arena_api import arena_kisa_cevap_al
+        # KULLANICI (2026-11-13): "Arena AI'yi çöpe at; Gemini cookie kullan."
+        from modules.gemini_web import metin_uret as arena_kisa_cevap_al  # type: ignore
     except Exception:
         return None
 

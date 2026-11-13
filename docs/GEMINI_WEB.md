@@ -169,3 +169,70 @@ kusuru yok (Arena görselinde `KAPAK_BASLIK_BINDIR` kuralı geçerli değil —
 Gemini isteminde "yazı koyma" var).
 
 **GEMINI_COOKIES workflow'lara bağlandı:** `canli_test.yml` + `hourly_production.yml`.
+
+## 11. KULLANILAN KAPAK İSTEMİ (tam metin)
+
+Örnek dosya: **`docs/ornek_kapak_istemi.txt`** (gerçek üretimden).
+
+### Ölçümler (konu: `uykuda_beyin_temizligi`)
+
+| Parça | Karakter |
+|---|---|
+| Sabit tasarım şablonu | 1488 |
+| Dikey (9:16) zorlama eki | 85 |
+| **Video metni** | **1660** (düzeltmeden ÖNCE **41** ❌) |
+| **Gönderilen toplam** | **3192** |
+
+### Şablon (sabit kısım)
+
+```
+Sen YouTube Shorts için kapak (thumbnail) tasarlayan bir görsel tasarımcısısın.
+Aşağıda bir videonun TAM METNİ var. Önce metni baştan sona dikkatlice oku,
+konuyu ve en şaşırtıcı noktayı belirle; sonra bu videoya kapak olacak TEK bir
+dikey (9:16) görsel ÜRET.
+
+GÖRSELİN AMACI: izleyici akışta kaydırırken durup tıklasın, sonuna kadar
+izlesin, beğenip yorum yazsın.
+
+TASARIM KURALLARI (profesyonel, üzerine düşünülmüş):
+1) Metnin en çarpıcı/sürpriz fikrini tek bir sahneyle anlat; soyut değil somut.
+2) Güçlü görsel hiyerarşi: baskın tek özne, sade arka plan, yüksek kontrast,
+   net siluet, merkezde/üst 2/3'te özne (alt alan yazı/arayüz için boş kalsın).
+3) Duygu ve merak: şaşkınlık, ölçek farkı, beklenmedik detay, 'bu nasıl olur'.
+   Abartılı sahte şok, korku, kan, şiddet, çıplaklık YOK.
+4) Renk: sıcak-soğuk kontrastı, tek baskın renk + tek vurgu rengi, sinematik ışık.
+5) Stil: modern, sinematik, 3D/fotoğrafik gerçekçilik; jenerik stok görsel değil.
+6) GÖRSELİN İÇİNE YAZI KOYMA. Kelime, sayı, harf, logo, filigran olmasın.
+7) 9:16 dikey, telefon ekranında küçük boyutta bile anlaşılır olsun.
+
+Şimdi görseli üret. Sadece görsel döndür; açıklama, metin veya kod yazma.
+Soru sorma, yap. Tek bir görsel üret; birden fazla aday üretip seçenek sunma,
+onay isteme.
+
+=== VİDEO METNİ (TAM) ===
+<videonun tam metni buraya gömülür>
+=== VİDEO METNİ SONU ===
+
+ÖNEMLİ: Görsel DİKEY (9:16, portre) olsun. Yazı, harf, logo koyma.
+Soru sorma, yap.
+```
+
+## 12. YAKALANAN KUSUR (2026-11-13, üretim sonrası)
+
+**Belirti:** Kapak üretildi ama isteme giden "video metni" yalnızca
+**41 karakter** = videonun BAŞLIĞI (`Beyin Asıl Temizliğini Uyurken Yapıyor! 🧠`).
+
+**Kök neden:** `video_metni()` şu sırayı deniyordu:
+`senaryo.tam_metin` → `metin` → `senaryo.diyaloglar` → **`baslik`**.
+İlginç-bilgi bankası kaydında bu alanların hiçbiri yok; içerik
+`soru` + `cevap` + `sonuc` alanlarında. Bu yüzden **başlığa düştü**.
+
+**Etki:** Kullanıcının "tam video metni → kapak" kuralı ihlal ediliyordu;
+kapak 41 karakterlik başlıktan üretiliyordu (yine de konuyla uyumlu çıktı
+çünkü başlık açıklayıcıydı — ama garanti değil).
+
+**Düzeltme:** `video_metni()` içine **ilginç-bilgi yolu** eklendi:
+`soru` + `cevap` + `sonuc` birleştirilir.
+
+**Doğrulama:** aynı konu için video metni **41 → 1660 karakter**;
+toplam istem **3192 karakter**. Testler: 812 passed.

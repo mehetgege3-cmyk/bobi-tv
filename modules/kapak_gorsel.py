@@ -59,6 +59,17 @@ def video_metni(paket: dict[str, Any]) -> str:
     ]
     if parcalar:
         return "\n".join(parcalar)
+    # İLGİNÇ BİLGİ BANKASI (2026-11-13, koşu 43375662500'de YAKALANDI):
+    # Banka kaydında `senaryo` da `metin` de yok; içerik `soru`+`cevap`+`sonuc`
+    # alanlarında. Bu yol olmadığı için video_metni BAŞLIĞA düşüyordu ve kapağa
+    # 41 karakterlik başlık gidiyordu — "tam video metni" kuralı ihlal ediliyordu.
+    bilgi = "\n\n".join(
+        str(paket.get(k) or "").strip()
+        for k in ("soru", "cevap", "sonuc")
+        if str(paket.get(k) or "").strip()
+    ).strip()
+    if bilgi:
+        return bilgi
     return str(paket.get("baslik") or senaryo.get("baslik") or "").strip()
 
 

@@ -1,0 +1,33 @@
+name: 🧪 Senaryo Şablonunu Gemini'ye Danış
+# KULLANICI (2026-11-13): "Mevcut şablonu geminiye at ve bize daha kaliteli
+# etkileşimi yüksek olması için gerekli tüm değişiklikleri yapsın."
+#
+# Bu workflow HİÇBİR ŞEYİ DEĞİŞTİRMEZ. Yalnız Gemini'den öneri alır, artifact
+# olarak verir. Uygulama ayrı ve insan onaylı bir adımdır.
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  danis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -q requests
+      - name: Gemini'ye şablonu gönder
+        env:
+          GEMINI_COOKIES: ${{ secrets.GEMINI_COOKIES }}
+          PYTHONPATH: .
+        run: python tools/sablon_danis.py
+      - name: Öneriyi sakla
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gemini-sablon-onerisi
+          path: docs/SABLON_GEMINI_CEVAP.md
+          if-no-files-found: warn
+          retention-days: 14

@@ -47,3 +47,28 @@ Her iddia **gerçek dosya / log / DOM** ile kanıtlanır.
 
 API anahtarı **sohbete yazılmaz**; GitHub Secrets'a yazılır. Anahtar "geçerli"
 demek "kota var" demek **değildir** — ikisi ayrı ayrı ölçülür.
+
+## K7 — WORKSPACE BÜTÇESİ: 128 MB / 10.000 DOSYA (2026-11-13, kullanıcı: "bir daha yapma")
+
+**Olay:** Kanıt için GitHub artifact'larından videolar indirildi
+(27 MB + 22 MB + 20 MB + 17 MB = **86 MB**). Workspace **179 MB / 2.786 dosya**
+oldu, platform "Workspace over budget" verdi ve **33 dosya kaydedilmedi**.
+
+**KURAL — pazarlıksız:**
+1. **Video asla workspace'e indirilmez** (`*.mp4`, `*.mov`, `*.mkv`, `*.webm`).
+   Video zaten YouTube'da yayında → **link yeterli kanıttır**.
+2. İnceleme gerekiyorsa `/tmp`'ye indir (kalıcı değil), iş bitince sil.
+3. Kanıt olarak yalnız **küçük** dosyalar: kapak JPG/PNG (≤1 MB), log, JSON.
+4. Artifact zip'inden **sadece gereken dosyayı** çıkar (`unzip "*.jpg"`),
+   tüm arşivi açma.
+5. HAR/PCAP gibi ağ dökümleri: hem büyük hem **token sızdırır** → workspace'e
+   konmaz. (Bu olayda `har/arena.md` 7,9 MB ve içinde gerçek JWT + ya29
+   token'ları vardı; silindi.)
+6. Her büyük indirme öncesi/sonrası: `python3 tools/disk_bekci.py`
+
+**Otomatik koruma:**
+- `tools/disk_bekci.py` — bütçe + yasak uzantı kontrolü (çıkış 1 = ihlal)
+- `.gitignore` — `*.mp4`, `*.mov`, `*.mkv`, `*.webm`, `*.avi`, `*.har`, `har/`
+
+**Ders:** "Kanıt" demek "dosyayı sakla" demek değil. Link + küçük görsel +
+log satırı kanıt için yeterli; 27 MB'lık video değil.

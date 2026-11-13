@@ -31,3 +31,15 @@ bobi_tv/production/render/*
 # workspace'e TAŞINMAZ; yayınlanan videolar YouTube'da, kayıt bobi_tv/archive'de.
 bobi_tv/production/
 bobi_tv/output/
+
+# --- WORKSPACE BÜTÇESİ (2026-11-13 olayı) -------------------------------
+# Kanıt videoları workspace'e İNDİRİLMEZ: 86 MB tek seferde indirildi,
+# 128 MB limit aşıldı, 33 dosya kaydedilmedi. Video YouTube'da yayında.
+*.mp4
+*.mov
+*.mkv
+*.webm
+*.avi
+# HAR dosyaları: 7,9 MB ve içinde GERÇEK JWT / ya29 token'ları vardı
+*.har
+har/

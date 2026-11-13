@@ -5,6 +5,8 @@
 > 3. Her komuttan **önce** ne/niçin/nasıl Türkçe açıkla (K3).
 > 4. Hata = 5 uzman bakışı + araştırma + kök neden (K4).
 > 5. Kanıtsız iddia yok, çalışmayan şey "çalışıyor" denmez (K5).
+> 6. **Workspace bütçesi 128 MB / 10.000 dosya.** Video/arşiv workspace'e
+>    İNDİRİLMEZ (link yeterli). Kontrol: `python3 tools/disk_bekci.py` (K7).
 >
 > **Model/API adları ezberden yazılmaz — doğrulanır.** 2026-11-13'te ezber
 > yanıldı: `gemini-2.5-flash` yeni kullanıcılara kapandı, görsel üretim

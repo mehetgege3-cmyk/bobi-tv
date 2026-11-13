@@ -126,3 +126,48 @@ O log artık yok. Aynı hatayı bir daha teşhis etmek gerekirse:
 3. `docs/KAPAK_TESHIS.md` — kök nedenler ve düzeltmeler
 
 **Kural:** artık kanıtı log'da değil, indirip ölçerek üret.
+
+---
+
+## SON TEMİZLİK — 2026-11-13 09:10 UTC
+
+**Kullanıcı:** *"Çalışan koşulları durdur sil."*
+
+| Koşu | Ne yapıyordu | Sonuç |
+|---|---|---|
+| `43384308713` | Telegram Bot Poller (7 saattir) | ✅ iptal + silindi |
+| `43365741824` | Üretim → zincirleme job'u | ✅ **force-cancel** + silindi |
+
+### Zincirleme job'u neden iptal edilemiyordu
+
+`hourly_production.yml` satır 471: *"Slotu bekle ve zincirle (tetikle)"* adımı
+`time.sleep(480 dk)` ile **8 saat uyuyor**. Normal `cancel` çağrısı bu adımda
+409 Conflict döndürüyordu; **`force-cancel`** ucu kabul etti.
+
+```
+POST /actions/runs/{id}/force-cancel   → 204 ✅
+POST /actions/runs/{id}/cancel         → 409 Conflict ❌
+```
+
+### ⚠️ YAN ETKİ — üretim workflow'u KAPANDI
+
+`force-cancel`, iptal edilen koşunun workflow'unu **`disabled_manually`**
+durumuna aldı:
+
+```
+BOBİ TV — Üretim (8 saatte bir) + Kota Takibi | disabled_manually
+```
+
+**Yani üretim durdu.** Kullanıcı isterse açılır:
+
+```bash
+gh workflow enable hourly_production.yml
+# veya: Actions → BOBİ TV — Üretim → Enable workflow
+```
+
+### Nihai durum
+
+```
+GitHub Actions koşu geçmişi: 0
+Workflow sayısı: 16 (15 aktif, 1 kapalı)
+```

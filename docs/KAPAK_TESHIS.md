@@ -90,7 +90,36 @@ Partner Program + doğrulanmış hesap gerekiyor, API kapalı.
 
 ## MEVCUT VİDEOLARIN KAPAKLARINI GÜNCELLEME
 
-**60 yayınlanmış video** var (`bobi_tv/archive/videos.json`).
+### ⚠️ HATA DÜZELTMESİ — "60 video" YANLIŞTI
+
+İlk sürümde `bobi_tv/archive/videos.json` sayıldı ve **60 video** denildi.
+**Bu yanlıştı.** O dosya kanal değil, geçmiş kayıt defteridir:
+
+| durum | adet | ne demek |
+|---|---|---|
+| `silindi_dusuk_izlenme` | 37 | otomatik silme kuralı sildi (6 saatte 100 izlenme altı) |
+| `kaldirildi` | 9 | YouTube/manuel kaldırma |
+| `yayinda` | 17 | kayıt "yayında" diyor |
+| (yok) | 1 | — |
+
+oEmbed ile doğrulama: "yayında" görünen 17 kayıttan **yalnız 10'u erişilebilir**,
+7'si 404/özel.
+
+**GERÇEK ENVANTER (YouTube Data API, `channels.list` + uploads playlist):**
+
+```
+KANAL: BOBİ TV  (UCJzCURUGVP3-baKe7N9FNjw)
+  abone=2   video=13   izlenme=6136
+```
+
+### KURAL (bundan sonra)
+
+> Kanal verisi **her zaman** YouTube Data API'den alınır.
+> `archive/videos.json` yalnız yerel geçmiş içindir, kanal envanteri DEĞİLDİR.
+
+Araç: `tools/kanal_envanteri.py` · Workflow: **📊 Kanal Envanteri**
+`tools/kapak_yenile.py` artık `canli_videolar()` ile API'yi okuyor — arşiv
+kullanımı tamamen kaldırıldı.
 
 ```bash
 # 3 video (varsayılan günlük)
@@ -120,3 +149,23 @@ gören merak edip tıklasın.`
 | Paylaşım önizlemesi | ✅ Evet |
 | **Kanal → Shorts sekmesi** | ❌ Hayır — `oar2.jpg`, YouTube seçer |
 | Shorts akışı (feed) | ❌ Hayır |
+
+---
+
+## UYGULAMA SONUCU (2026-11-13)
+
+| Koşu | İş | Sonuç |
+|---|---|---|
+| 43386571176 | Yeni üretim (kapak gömme testi) | ✅ https://www.youtube.com/shorts/dT-fJ7roco8 — 1. kare KAPAK, süre **1.5 sn** |
+| 43386568087 | Kapak yenile (3 video) | ✅ 3/3 |
+| 43388062706 | Kapak yenile (10 video, API envanteri) | ✅ 10/10 |
+
+**Toplam: kanaldaki 13 videonun tamamı** yeni Gemini kapağıyla güncellendi.
+
+**Kapak süresi ölçümü** (indirilen videodan, `ffmpeg` kare boyutu değişimi):
+```
+kare  0: 35.292 B  ← kapak
+kare 40: 18.899 B  ← hâlâ kapak
+kare 45: 18.333 B  ← içerik başladı
+→ 45 / 30 fps = 1.5 saniye ✅
+```

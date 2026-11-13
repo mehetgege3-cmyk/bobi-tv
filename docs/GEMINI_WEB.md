@@ -137,3 +137,35 @@ için yatay görseli kırpmak görselin çoğunu atar.
 - Ağır kullanımda Google limit koyabilir; nazik aralık bırakılmalı.
 - Üretilen görsellerde **SynthID** filigranı olabilir.
 - `__Secure-1PSIDTS` kısa ömürlü → periyodik yenileme gerekir.
+
+---
+
+## 10. ÜRETİMDE DOĞRULANDI (2026-11-13, koşu `43375662500`)
+
+**Sonuç: ✅ GERÇEK ÜRETİMDE ÇALIŞTI.**
+
+```
+[GeminiWeb] ✅ görsel indi: 162058 bayt → ..._gemini_web.jpg
+[Kapak] Seçilen: ..._kapak.jpg | kaynak=gemini_web
+🖼️ Kapak: ... | kaynak: gemini_web | ilk kareye gömüldü: EVET
+[YouTube] 🚀 Yayınlandı: https://www.youtube.com/shorts/eaIy0nXb7mI
+=== Tamamlandı: 1 yayınlandı, 0 kuyrukta (175sn) ===
+```
+
+| Ölçüm | Değer |
+|---|---|
+| Koşu süresi | **175 sn** (önceki Arena'lı koşu 465 sn) |
+| Kapak kaynağı | **`gemini_web`** (ilk kez Arena DEĞİL) |
+| Görsel boyutu | 162.058 bayt → 1080×1920 kapak |
+| Video | https://www.youtube.com/shorts/eaIy0nXb7mI |
+| Konu | `uykuda_beyin_temizligi` |
+
+**Kanıt dosyaları:** `kanit/uretim_gemini/.../*_kapak.jpg`,
+`*_gemini_web.jpg`, `*_kapakli.mp4`.
+
+**Öğrenilen:** Gemini web yolu Arena'dan **~290 sn daha hızlı** (çerez 401
+freni ve hash bekleme yok). Kapak ilk kareye doğru gömüldü, çift başlık
+kusuru yok (Arena görselinde `KAPAK_BASLIK_BINDIR` kuralı geçerli değil —
+Gemini isteminde "yazı koyma" var).
+
+**GEMINI_COOKIES workflow'lara bağlandı:** `canli_test.yml` + `hourly_production.yml`.

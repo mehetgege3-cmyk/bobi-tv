@@ -73,6 +73,7 @@ def main() -> int:
         "url_video_izi": [],
         "url_diger": [],
         "mime_izi": [],
+        "gorsel_sade_denemesi": None,
         "gorsel_denemesi": None,
         "hukum": "",
     }
@@ -95,11 +96,19 @@ def main() -> int:
         rapor["metin_yaniti"] = f"HATA: {gemini_web.durum().get('hata')}"
         print("[prob] metin kanalı boş döndü", flush=True)
 
-    # --- 2) GÖRSEL kanalını video istemiyle dene --------------------------
-    #     Bazı sürümlerde görsel ucu video da döndürebiliyor (çıktı uzantısı
-    #     .jpg/.png dışındaysa video demektir).
+    # --- 2) GÖRSEL kanalı: ÖNCE sade görsel istemi (yetenek referansı) ----
+    #     Video istemiyle görsel üretmek anlamsız olabilir; önce "görsel
+    #     üretimi şu an ÇALIŞIYOR MU" sorusunu temiz bir istemle ölçüyoruz.
     cikis = Path("out/gemini_video_prob")
     cikis.mkdir(parents=True, exist_ok=True)
+    GORSEL_ISTEM = (
+        "Dikey 9:16 formatta, gece gökyüzünde yıldızlar ve altın renkli bir "
+        "teleskop silüeti. Sinematik ışık, fotoğraf gerçekçiliğinde."
+    )
+    gorsel_sade = gemini_web.gorsel_uret(GORSEL_ISTEM, str(cikis / "sade.png"), sure=240)
+    rapor["gorsel_sade_denemesi"] = gorsel_sade or f"HATA: {gemini_web.durum().get('hata')}"
+    print(f"[prob] görsel (sade istem): {rapor['gorsel_sade_denemesi']}", flush=True)
+
     gorsel = gemini_web.gorsel_uret(ISTEM, str(cikis / "deneme.png"), sure=240)
     rapor["gorsel_denemesi"] = gorsel or f"HATA: {gemini_web.durum().get('hata')}"
     print(f"[prob] görsel kanalı: {rapor['gorsel_denemesi']}", flush=True)
@@ -142,6 +151,12 @@ def main() -> int:
     md.append("")
     md.append("## MIME izleri")
     md.append(f"`{rapor['mime_izi']}`" if rapor["mime_izi"] else "_YOK_")
+    md.append("")
+    md.append("## Görsel kanalı — SADE istem (yetenek referansı)")
+    md.append(f"`{rapor.get('gorsel_sade_denemesi')}`")
+    md.append("")
+    md.append("## Görsel kanalı — VİDEO istemiyle")
+    md.append(f"`{rapor['gorsel_denemesi']}`")
     md.append("")
     md.append("## Görsel kanalı denemesi")
     md.append(f"`{rapor['gorsel_denemesi']}`")

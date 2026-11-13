@@ -17,6 +17,12 @@ _Video izi taşıyan URL YOK._
 ## MIME izleri
 _YOK_
 
+## Görsel kanalı — SADE istem (yetenek referansı)
+`out/gemini_video_prob/sade.png`
+
+## Görsel kanalı — VİDEO istemiyle
+`HATA: yanıtta görsel URL yok (güvenlik/limit olabilir)`
+
 ## Görsel kanalı denemesi
 `HATA: yanıtta görsel URL yok (güvenlik/limit olabilir)`
 

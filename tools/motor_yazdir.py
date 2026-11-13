@@ -57,6 +57,15 @@ KURALLAR:
 - Arayüz: `modules/yeni_motor/motor.py` içinde `video_uret(video_no: int) -> dict`
   fonksiyonu olacak. main_pipeline bu fonksiyonu çağıracak.
 
+ORTAM (bunlar tasarım değil, gerçekler — uymak zorunlu):
+- Gemini API ANAHTARI YOK, `google-genai` kullanılamaz. Görsel üretimi için
+  `from modules.gemini_web import gorsel_uret` kullan (çerez tabanlı, çalışıyor).
+  İmza: `gorsel_uret(prompt: str, hedef_yol: str) -> str | None`
+- `video_yukle(paket)` şu alanları ZORUNLU ister:
+  {"dosya_adi": "<uzantısız ad>", "baslik": "...", "aciklama": "...",
+   "final_video": "<mp4 yolu>", "etiketler": [...]}
+- ffmpeg ve edge-tts workflow'da kurulu. PIL kurulu.
+
 Yapı, sınıf, dosya sayısı, algoritma — SENİN kararın. Yaratıcı ol.
 Kısa ve çalışan kod yaz. Uzun soyutlama katmanları kurma.
 """
@@ -163,6 +172,32 @@ def _arayuz_var_mi() -> str | None:
     return None
 
 
+def _dogrula() -> dict:
+    """tools/motor_dogrula.py'yi koşar, JSON raporunu okur."""
+    import subprocess
+
+    try:
+        subprocess.run(
+            [sys.executable, "tools/motor_dogrula.py"],
+            capture_output=True, text=True, timeout=900,
+        )
+    except Exception as e:
+        return {"gecti": False, "hata": f"doğrulama koşulamadı: {type(e).__name__}: {e}"}
+    try:
+        return json.loads(Path("docs/MOTOR_DOGRULAMA.json").read_text(encoding="utf-8"))
+    except Exception as e:
+        return {"gecti": False, "hata": f"doğrulama raporu okunamadı: {e}"}
+
+
+def _dosyalari_oku() -> dict[str, str]:
+    if not HEDEF.exists():
+        return {}
+    return {
+        str(f.relative_to(Path.cwd())): f.read_text(encoding="utf-8")
+        for f in HEDEF.rglob("*.py")
+    }
+
+
 def main() -> int:
     rapor: dict = {"plan": None, "dosyalar": [], "hatalar": {}, "arayuz": None, "turlar": []}
 
@@ -212,9 +247,47 @@ def main() -> int:
     rapor["arayuz"] = arayuz or "TAMAM — video_uret mevcut"
     print(f"[motor] arayüz: {rapor['arayuz']}", flush=True)
 
+    # --- GERÇEK ÇALIŞTIRMA: sözdizimi geçen kod çalışan kod değildir -------
+    dogrulama = _dogrula()
+    rapor["dogrulama"] = dogrulama
+    print(f"[motor] doğrulama: {dogrulama.get('gecti')} {dogrulama.get('hata') or ''}", flush=True)
+
+    # Başarısızsa Gemini'ye HATAYI göster, kendisi düzeltsin (en fazla 2 tur)
+    tur = 0
+    while not dogrulama.get("gecti") and tur < 2:
+        tur += 1
+        print(f"[motor] onarım turu {tur} — Gemini'ye hata gösteriliyor", flush=True)
+        mevcut = _dosyalari_oku()
+        istek = (
+            BRIEF
+            + f"\n\nMOTORUN ÇALIŞTIRILDI ve ŞU HATAYI VERDİ:\n\n"
+            + f"{dogrulama.get('hata')}\n\n```\n{(dogrulama.get('traceback') or '')[-1200:]}\n```\n\n"
+            + "Mevcut dosyalar:\n"
+            + "\n".join(f"### {ad}\n```python\n{kod}\n```" for ad, kod in mevcut.items())
+            + "\n\nHatayı düzelt. TÜM dosyaları eksiksiz yeniden yaz. "
+            + "Her bloktan önce `# DOSYA: modules/yeni_motor/<ad>.py` satırı olsun."
+        )
+        d = gemini_web.metin_uret(istek, sure=300)
+        if not d:
+            print("[motor] onarım yanıtı alınamadı", flush=True)
+            break
+        y, _h = _yaz(_python_bloklari(d))
+        rapor["turlar"].append({"tur": f"onarim-{tur}", "yanit_boyu": len(d), "yazilan": len(y)})
+        dogrulama = _dogrula()
+        rapor["dogrulama"] = dogrulama
+        print(f"[motor] onarım {tur} sonucu: {dogrulama.get('gecti')} "
+              f"{dogrulama.get('hata') or ''}", flush=True)
+
     # --- rapor ---
     RAPOR_JSON.write_text(json.dumps(rapor, ensure_ascii=False, indent=2), encoding="utf-8")
     md = ["# GEMİNİ'NİN YAZDIĞI MOTOR", "", f"**Arayüz:** {rapor['arayuz']}", ""]
+    dg = rapor.get("dogrulama") or {}
+    md.append(f"**Uçtan uca doğrulama:** {'✅ GEÇTİ' if dg.get('gecti') else '❌ BAŞARISIZ'}")
+    if dg.get("olcum"):
+        md.append(f"`{dg['olcum']}`")
+    if dg.get("hata"):
+        md.append(f"\n**Hata:** `{dg['hata']}`")
+    md.append("")
     md.append("## Üretilen dosyalar")
     md += [f"- `{d}`" for d in rapor["dosyalar"]] or ["_YOK_"]
     if rapor["hatalar"]:
@@ -228,7 +301,8 @@ def main() -> int:
     md.append("```")
     RAPOR_MD.write_text("\n".join(md) + "\n", encoding="utf-8")
     print("[motor] docs/MOTOR_URETIMI.md yazıldı", flush=True)
-    return 0 if rapor["arayuz"].startswith("TAMAM") else 1
+    gecti = bool((rapor.get("dogrulama") or {}).get("gecti"))
+    return 0 if gecti else 1
 
 
 if __name__ == "__main__":

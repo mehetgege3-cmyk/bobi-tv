@@ -36,12 +36,18 @@ jobs:
       - name: Bağımlılıklar
         run: |
           pip install -q -r requirements.txt
+          pip install -q edge-tts pillow
           sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
 
       - name: Gemini motoru yazsın
         env:
           GEMINI_COOKIES: ${{ secrets.GEMINI_COOKIES }}
-        run: python3 tools/motor_yazdir.py || echo "::warning::motor yazımı tamamlanmadı (rapora bak)"
+        run: |
+          python3 tools/motor_yazdir.py || echo "::warning::motor doğrulamayı geçmedi (rapora bak)"
+
+      - name: Doğrulama raporu
+        if: always()
+        run: cat docs/MOTOR_DOGRULAMA.json 2>/dev/null || echo "(doğrulama raporu yok)"
 
       - name: Üretilen motoru göster
         run: |
@@ -55,7 +61,7 @@ jobs:
         run: |
           git config user.name "bobi-agent"
           git config user.email "agent@bobi.tv"
-          git add modules/yeni_motor docs/MOTOR_URETIMI.md docs/MOTOR_URETIMI.json 2>/dev/null || true
+          git add modules/yeni_motor docs/MOTOR_URETIMI.md docs/MOTOR_URETIMI.json docs/MOTOR_DOGRULAMA.json 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "Değişiklik yok"
           else
@@ -72,5 +78,6 @@ jobs:
             modules/yeni_motor/
             docs/MOTOR_URETIMI.md
             docs/MOTOR_URETIMI.json
+            docs/MOTOR_DOGRULAMA.json
           if-no-files-found: warn
           retention-days: 14

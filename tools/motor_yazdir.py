@@ -100,25 +100,48 @@ Hemen kodu ver, önsöz yazma.
 
 
 def _python_bloklari(yanit: str) -> dict[str, str]:
-    """```python bloklarını dosya adlarıyla ayıklar."""
-    dosyalar: dict[str, str] = {}
-    # Blok öncesi "# DOSYA: path" işaretini yakala
-    desen = re.compile(
-        r"#\s*DOSYA:\s*(\S+)\s*[\r\n]+```(?:python|py)?\s*\n(.*?)```",
-        re.DOTALL,
-    )
-    for m in desen.finditer(yanit):
-        ad = m.group(1).strip().strip("`")
-        kod = m.group(2)
-        dosyalar[ad] = kod
+    """Kod bloklarını dosya adlarıyla ayıklar — 4 biçimi de yakalar.
 
-    # İşaret yoksa: blokları sırayla "dosya_1.py" diye kaydet (fallback)
+    Gemini her turda biçim değiştiriyor (koşu 43418292954: 0 dosya ayıklandı).
+    Yakalanan biçimler:
+      1. `# DOSYA: x.py` bloğun ÜSTÜNDE
+      2. `# DOSYA: x.py` bloğun İÇİNDE ilk satır
+      3. ```python dosya.py  (fence dil etiketinde ad)
+      4. hiç işaret yok → sırayla uretilen_N.py
+    """
+    dosyalar: dict[str, str] = {}
+
+    # 1) işaret üstte
+    for m in re.finditer(
+        r"#\s*DOSYA[:\s]+[`\s]*(\S+?\.py)[`\s]*[\r\n]+```(?:python|py)?\s*\n(.*?)```",
+        yanit, re.DOTALL,
+    ):
+        dosyalar[m.group(1)] = m.group(2)
+
+    # 2) işaret içeride
+    for m in re.finditer(r"```(?:python|py)?\s*\n(.*?)```", yanit, re.DOTALL):
+        govde = m.group(1)
+        ilk = govde.lstrip().split("\n", 1)[0]
+        im = re.search(r"#\s*DOSYA[:\s]+[`\s]*(\S+?\.py)", ilk)
+        if im and im.group(1) not in dosyalar:
+            dosyalar[im.group(1)] = govde
+
+    # 3) fence etiketinde dosya adı:  ```python motor.py
+    for m in re.finditer(
+        r"```(?:python|py)\s+(\S+?\.py)\s*\n(.*?)```", yanit, re.DOTALL
+    ):
+        dosyalar.setdefault(m.group(1), m.group(2))
+
+    # 4) hiçbiri yoksa sırayla
     if not dosyalar:
-        for i, m in enumerate(
-            re.finditer(r"```(?:python|py)?\s*\n(.*?)```", yanit, re.DOTALL), 1
-        ):
-            dosyalar[f"modules/yeni_motor/uretilen_{i}.py"] = m.group(1)
-    return dosyalar
+        for i, m in enumerate(re.finditer(r"```(?:python|py)?\s*\n(.*?)```", yanit, re.DOTALL), 1):
+            dosyalar[f"uretilen_{i}.py"] = m.group(1)
+
+    # yalnız adı verilmişse modules/yeni_motor/ altına oturt
+    return {
+        (ad if ad.startswith("modules/") else f"modules/yeni_motor/{Path(ad).name}"): kod
+        for ad, kod in dosyalar.items()
+    }
 
 
 def _temizle(kod: str) -> str:
@@ -192,10 +215,14 @@ def _dogrula() -> dict:
 def _dosyalari_oku() -> dict[str, str]:
     if not HEDEF.exists():
         return {}
-    return {
-        str(f.relative_to(Path.cwd())): f.read_text(encoding="utf-8")
-        for f in HEDEF.rglob("*.py")
-    }
+    kok = Path.cwd().resolve()
+    out: dict[str, str] = {}
+    for f in HEDEF.rglob("*.py"):
+        try:
+            out[str(f.resolve().relative_to(kok))] = f.read_text(encoding="utf-8")
+        except Exception:
+            out[str(f)] = f.read_text(encoding="utf-8")
+    return out
 
 
 def main() -> int:
@@ -218,6 +245,9 @@ def main() -> int:
         return 1
     print(f"[motor] kod yanıtı: {len(yanit)} karakter", flush=True)
 
+    Path("docs/MOTOR_HAM.md").write_text(
+        "# Gemini'nin ham kod yanıtı\n\n```\n" + yanit + "\n```\n", encoding="utf-8"
+    )
     dosyalar = _python_bloklari(yanit)
     print(f"[motor] ayıklanan dosya: {len(dosyalar)} → {list(dosyalar)}", flush=True)
     yazilan, hatalar = _yaz(dosyalar)

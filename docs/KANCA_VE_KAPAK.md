@@ -163,7 +163,7 @@ oturum kapalı sayılır; kapak hattı **8 dakika boş beklemek yerine** anında
 2. **Doğrulama koşulu:** ekledikten sonra `Actions → Arena Smoke Test` →
    `Run workflow`. Beklenen verdict: `oturum-gecerli`.
    `oturum-gecersiz` ise çerez sohbet sayfasında değil, yanlış domain'de alınmış
-   demektir (detay: `docs/ARENA_COMPOSER_TESHIS.md`).
+   demektir.
 3. **Yenileme:** çerez ~2-4 haftada düşer. Düşünce Telegram'a "çerezi yenile"
    uyarısı gider (`modules/arena_cerez_uyari.py`, 30 dk'da bir, spam yok).
 4. **Ölçüm:** ekledikten sonra 🩺 Kanal Sağlığı ekranında `🪝 Kanca` satırı ve
@@ -207,7 +207,7 @@ Gerçek kanal üzerinde tek seferlik uçtan uca deneme. **Sonuç: başarılı.**
 | Render | 17.39 sn · 1080×1920 · H.264+AAC · 3470 KB |
 | Arena kapak | **17 sn** yanıt (Arena'nın kendi süresi 8 sn) · öneri: "MAKARNAMI YİYEN BEN" |
 | Kapak seçimi | A adayı (1. kare + Arena başlık), okunabilirlik 0.953 |
-| İlk kareye gömme | ✅ (`..._kapakli.mp4`) — kanıt: `docs/kanit/canli_test_video_ilk_kare.png` |
+| İlk kareye gömme | ⚠️ **YANLIŞ ÇIKTI** — `_kapakli.mp4` üretiliyordu ama `paket["final_video"]` güncellenmediği için YouTube'a kapaksız video gidiyordu. Düzeltildi 2026-11-13: `docs/KAPAK_TESHIS.md` |
 | YouTube | ✅ https://www.youtube.com/shorts/XSoVlWV304s |
 | Toplam | 306 sn |
 

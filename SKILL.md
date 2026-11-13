@@ -763,10 +763,9 @@ Bu bölüm, önceki bölümlerdeki eski/yanlış iddiaları geçerli durumla de�
   secret'ı bozuyordu. Artık yok.
 - Çerez düşünce `arena_smoke_test.yml` (manuel) exit 2 (`oturum-gecersiz`)
   verir; kullanıcı Cookie-Editor ile elle yeniler.
-- Tanılama: `skills/arena-playwright-agent/scripts/arena-selftest.mjs`
-  (8 çıkış kodu, `docs/ARENA_COMPOSER_TESHIS.md`).
-- Gelecek: Seçenek B (GitHub App token + doğru format) / C (Telegram uyarılı
-  yarı-otomatik) — `docs/TODO_ajana.md` ve `docs/GITHUB_APP_TOKEN.md`.
+- ⛔ **Arena tamamen kaldırıldı** (2026-11-13 kullanıcı kararı: "arena ai'yi
+  çöpe at"). Çerez ölü (401), otomasyon kodu `arsiv/arena_olu_kod/` altında.
+  Yerine **Gemini web çerezi** (Bölüm 32).
 
 ### 24.5 Telegram güvenlik kuralları
 - Token/chat ID secret olarak saklanır, loglara/dokümana yazılmaz.
@@ -787,44 +786,10 @@ Bu bölüm, önceki bölümlerdeki eski/yanlış iddiaları geçerli durumla de�
 
 ---
 
-## 30. Arena HTTP Görsel Hattı (2026-11-13 — CANLI KANITLI)
+## 30. (boş — Arena kaldırıldı)
 
-Arena.ai'den **cevap** ve **görsel** almanın tek doğru yolu. Detay:
-`skills/arena-http-gorsel/SKILL.md`, `docs/ARENA_HTTP_GORSEL.md`.
-
-**Mimari:** Tarayıcı **yalnızca gönderir** (`recaptchaV3Token` zorunlu olduğu
-için); cevap ve görsel **HTTP'den** okunur.
-
-```
-POST /nextjs-api/stream/create-chat      → {"id": chat_id}   [tarayıcı ŞART]
-GET  /api/chat/{chat_id}/events          → SSE: text-delta + görsel hash
-GET  /api/chat/workspace/cas/user/{hash} → image/png         [tarayıcı GEREKMEZ]
-GET  /api/me/pulse                       → oturum canlılığı (401 = ölü çerez)
-```
-
-**Değişmez kurallar:**
-1. `chat_id` **`create-chat` yanıtından** alınır (`page.on("response")`).
-   URL'den veya geçmiş listesinden okumak **çalışmaz**.
-2. `arena_api.create_chat_dinleyici_ekle(page)` **her** Arena akışında çağrılır.
-3. Görsel hash'i için akış **tekrar tekrar** okunur (`arena_http.hash_bekle`);
-   Arena kendi kendine yeniden deniyor.
-4. İstem sonuna **`Soru sorma, yap. Tek bir görsel üret; aday sunma.`** eklenir.
-5. Ölü çerezde `oturum_doldu_islem()` → döngüden çık, boşuna denemeyin.
-6. Cevabı **DOM'dan okuma**; ekran görüntüsüyle doğrulama yapma.
-7. Sabit `sleep` **yok** — `tools/kosu_bekle.sh` ile 10 sn'de bir durum sor.
-
-**Kanıtlı sonuç:** uçtan uca (video metni → Arena görseli → videonun 1. karesi)
-**144 saniye** (koşu `43323638730`); görsel 768×1376; kapaklı video 617 KB.
-
-**Kapak 1. kareye yerleştirme:** kapak, **videonun kendi çözünürlüğüne**
-ölçeklenmeli (`_video_boyutu`), yoksa ffmpeg `concat` patlar; ffmpeg yolu
-`ffmpeg_yolu()` ile bulunur (PATH'te yoksa `imageio-ffmpeg`).
-
-**Hata kaydı:** `docs/ARENA_DERSLER.md` — aynı hatayı ikinci kez keşfetmeyin
-(Google OAuth otomasyonu, jetonsuz create-chat, DOM bekleme, eski sohbet
-tuzağı, rfind kesmesi, ffmpeg/çözünürlük hataları hepsi burada).
-
----
+Arena AI ve Gemini API 2026-11-13'te tamamen çöpe atıldı. Tek sağlayıcı
+**Gemini web çerezi** → Bölüm 31 ve 32.
 
 ## 31. Gemini Entegrasyonu (2026-11-13)
 

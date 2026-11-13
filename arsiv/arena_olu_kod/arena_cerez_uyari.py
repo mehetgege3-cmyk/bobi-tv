@@ -34,7 +34,7 @@ STATE = Path("bobi_tv/state/arena_cerez_uyari.json")
 #: Aynı uyarılar arasındaki en kısa süre (dakika).
 TEKRAR_ARALIGI_DK = 30
 
-#: Kullanıcıya gösterilen eylem adımları (doküman: docs/GITHUB_APP_TOKEN.md
+#: Kullanıcıya gösterilen eylem adımları (doküman: arşivlenmiş — docs/ yok
 #: değil — çerez yenileme adımları README/Cerez bölümünde).
 ADIMLAR = [
     "1) Tarayıcıda arena.ai'ye gir (oturum açık olsun)",

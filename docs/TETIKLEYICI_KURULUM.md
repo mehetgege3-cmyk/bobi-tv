@@ -4,7 +4,7 @@
 
 GitHub Actions `schedule` (cron) **garantili bir zamanlayıcı değildir**: yüksek yüklü
 dönemlerde koşuları kuyruğa alır, geciktirir ve atlar. `*/10 * * * *` ayarlandığında
-fiilen günde 1-2 koşuya düştüğü gözlemlendi (bkz. `docs/OTOMASYON_TESHIS_2026-11-10.md`).
+fiilen günde 1-2 koşuya düştüğü gözlemlendi (bkz. `docs/KADANS.md` §Zincirleme).
 
 Bu yüzden `hourly_production.yml` artık **iki dış tetikleyici** kabul eder:
 

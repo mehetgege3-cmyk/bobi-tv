@@ -43,10 +43,10 @@ def uret() -> str:
         "## Notlar",
         "",
         "- **Manuel ✅** = `workflow_dispatch` var, GitHub API ile tetiklenebilir.",
-        "- Yeni workflow eklendiğinde `arena_self_repair.yml` izleme listesine de",
-        "  eklenmeli; `tests/test_actions_workflows.py` bunu şart koşar.",
-        "- Üretim tetikleme: `canli_test.yml` (bkz. `docs/ARENA_DERSLER.md` §6).",
-        "- Arena görsel hattı: `skills/arena-http-gorsel/SKILL.md`.",
+        "- Yeni workflow: `.github/workflows/` altına `.yml` koy, sonra",
+        "  `python3 tools/workflow_dizini_uret.py` çalıştır (bu dosya yenilenir).",
+        "- Üretim tetikleme: `canli_test.yml` (bkz. `docs/AYARLAR.md`).",
+        "- Kapak hattı: `docs/KAPAK_TESHIS.md` · kurallar: `docs/KURALLAR.md`.",
     ]
     return "\n".join(satirlar) + "\n"
 

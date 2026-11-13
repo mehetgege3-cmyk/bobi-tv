@@ -10,10 +10,10 @@ Arena'dan **görsel üretimi** ve **cevap** alma hattı canlı kanıtlıdır
 
 | Doküman | İçerik |
 |---|---|
-| `skills/arena-http-gorsel/SKILL.md` | Skill: ne zaman/nasıl kullanılır, tuzaklar |
-| `docs/ARENA_HTTP_GORSEL.md` | Teknik doküman: uçlar, modüller, ffmpeg incelikleri |
-| `docs/ARENA_HAR_COZUMLEME.md` | Drive'daki HAR dosyasının tam çözümlemesi |
-| `docs/ARENA_DERSLER.md` | Hata kaydı: denenmiş ölü yollar, kök nedenler |
+| `docs/GEMINI_WEB.md` | **Tek sağlayıcı** — Gemini web çereziyle görsel/metin üretimi |
+| `docs/GEMINI_ENTEGRASYON.md` | Sağlayıcı karşılaştırması, eski API ölçümleri |
+| `docs/KAPAK_TESHIS.md` | Kapak neden görünmüyordu — kök nedenler + düzeltmeler |
+| `docs/KURALLAR.md` | Bağlayıcı çalışma kuralları (K1–K9) |
 
 **Kısa özet:** Tarayıcı yalnızca gönderir (`recaptchaV3Token` zorunlu);
 cevap `GET /api/chat/{id}/events`, görsel
@@ -22,14 +22,9 @@ Koşu izleme: `tools/kosu_bekle.sh` (sabit bekleme yok).
 
 ### Senaryo Motoru v7.0
 - Senaryo çekirdeği `modules/senaryo_v7/` altında sablonlar, dogrulama, zenginlestirme, arsiv, kuyruk ve cikti sorumluluklarına ayrıldı.
-- Dataclass modelleri, duygu/stil/kamera/rol Enum'ları, referanslı karakter kartları (sabit Ahmet/Emel sesi), satır başına TTS/altyazı/kamera alanları, v6/satirlar migration'ı (`semaversiyonu: "7.0"`), merkezi `Ayarlar`, logging ve alan bazlı istisnalar kullanılır. Diyalog modeli: `docs/BOBI_TV_V7_TEMPLATE_MODEL.md`.
+- Dataclass modelleri, duygu/stil/kamera/rol Enum'ları, referanslı karakter kartları (sabit Ahmet/Emel sesi), satır başına TTS/altyazı/kamera alanları, v6/satirlar migration'ı (`semaversiyonu: "7.0"`), merkezi `Ayarlar`, logging ve alan bazlı istisnalar kullanılır. Diyalog modeli: `modules/senaryo_v7/models.py`.
 - Geriye dönük uyumluluk: `from modules.scenario import senaryo_paketi_olustur` ve `senaryo_paketi_olustur(video_no)` aynen çalışır.
-- Kalite kapısı: `pytest -q`, `mypy --strict`, `ruff check`, `ruff format --check`. Mimari kararlar ve kabul kriterleri: `docs/BOBI_TV_V7_MIGRATION_PLAN.md`.
-
-### Arena AI Otomatik Onarım
-- Mevcut GitHub Actions workflow'larından biri başarısız olursa `.github/workflows/arena_self_repair.yml`, redakte edilmiş log ve ilgili dosya bağlamını Arena AI'ya yollar.
-- Arena'nın unified diff'i `git apply` ile doğrulanır; test, mypy ve Ruff kapıları geçmeden `main`'e push yapılmaz.
-- İş akışı `ARENA_COOKIES_JSON` secret'ını ister; push için `GITHUB_TOKEN` kullanır, varsa `GH_PAT`'e geçer. Ayrıntı ve sınırlar: `docs/ARENA_SELF_REPAIR.md`.
+- Kalite kapısı: `pytest -q`, `mypy --strict`, `ruff check`, `ruff format --check`. Mimari: `modules/senaryo_v7/`.
 
 ### v6.3 PRO: Sürekli Değişen Konular + 15sn Minimum
 - **Konu rotasyonu:** Bar fıkraları, paradoks hikâyeleri, absürt komedi/şakalar, çılgın ama zararsız hikâyeler, ters köşe fıkralar, eğlenceli replik düelloları ve saygılı kültürler arası mizah. Son 6 yayın kategorisi rotasyon seçiminde geriye atılır; yeni yüklemelerin kategorisi arşivlenir.
@@ -78,11 +73,11 @@ bobi-tv/
 │   ├── production/             # Senaryo şablonları (prompt_template.md) ve geçici çalışma alanı
 │   └── output/                 # Üretilen nihai MP4 ve kapak görselleri
 ├── docs/
-│   ├── BOBI_TV_V6_PRO_MIMARI_VE_KURALLAR.md  # Shorts algoritma rehberi ve mimari
-│   ├── BOBI_TV_V6_3_KONU_15DK_KAPAK.md       # Konu rotasyonu, minimum 15sn, Frame 0 kapak ve 15dk işleyiş
-│   ├── BOBI_TV_V7_MIGRATION_PLAN.md           # 8 TODO maddesinin gerekçe/uygulama/kabul kriterleri
-│   ├── BOBI_TV_V7_TEMPLATE_MODEL.md           # Diyalog, karakter, duygu enum ve satır metadata sözleşmesi
-│   └── ARENA_SELF_REPAIR.md                   # Hata günlüğü -> Arena diff -> test -> main akışı
+│   ├── KURALLAR.md             # Bağlayıcı çalışma kuralları K1–K9
+│   ├── KADANS.md               # Üretim kadansı (8 saatte bir) + bağlayıcı Bölüm 5
+│   ├── KAPAK_TESHIS.md         # Kapak kök nedenleri ve düzeltmeleri
+│   ├── GEMINI_WEB.md           # Tek sağlayıcı: Gemini web çerezi
+│   └── AYARLAR.md              # Ayar kataloğu
 ├── arena-ask.mjs               # Arena.ai çerez birleştirme (<4KB) ve Tiptap otomasyon CLI aracı
 ├── arena-senaryo.mjs           # Master Loop JSON senaryo üretici Node betiği
 ├── arena-self-repair.mjs       # Arena AI'dan hata için unified diff alan runner

@@ -1,6 +1,6 @@
 """Üretim kadansı: 8 saatte bir (günde 3) — tek doğruluk kaynağı sözleşmesi.
 
-Karar 2026-11-11. Kural: docs/BOBI_TV_V6_PRO_MIMARI_VE_KURALLAR.md Bölüm 5.
+Karar 2026-11-11. Kural: docs/KADANS.md Bölüm 5.
 Bu testler üç yerdeki değerin AYNI kalmasını zorlar (kadans, cron, katalog).
 """
 from __future__ import annotations
@@ -91,17 +91,18 @@ def test_katalogda_kadans_ayari_var() -> None:
 
 
 def test_skill_ve_kural_dosyasi_kadansi_yazar() -> None:
-    """SKILL.md ve bağlayıcı kural dosyası 15 dakikayı belgelemeli."""
+    """SKILL.md ve bağlayıcı kural dosyası kadansı belgelemeli.
+
+    2026-11-13: kural `docs/KADANS.md`'ye taşındı; V6 plan dosyası silindi
+    (tarihseldi, %90'ı eski plan). Bağlayıcı metin artık KADANS.md Bölüm 5.
+    """
     skill = Path("SKILL.md").read_text(encoding="utf-8")
     assert "8 SAATTE BİR" in skill or "8 saatte bir" in skill.lower()
     assert "modules/kadans.py" in skill
 
-    kural = Path("docs/BOBI_TV_V6_PRO_MIMARI_VE_KURALLAR.md").read_text(encoding="utf-8")
+    kural = Path("docs/KADANS.md").read_text(encoding="utf-8")
     assert "Bölüm 5" in kural
     assert "0 */8 * * *" in kural
     assert "KADANS_DK" in kural
 
-    kadans_doc = Path("docs/KADANS.md")
-    assert kadans_doc.exists()
-    icerik = kadans_doc.read_text(encoding="utf-8")
-    assert "480" in icerik and "360" in icerik and "6 saat" in icerik
+    assert "480" in kural and "360" in kural and "6 saat" in kural

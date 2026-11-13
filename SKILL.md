@@ -1,4 +1,15 @@
 # BOBİ TV — Otonom YouTube Shorts Üretim Ajanı
+> ## ⛔ §0 — ÖNCE OKU: KALICI KURALLAR → `docs/KURALLAR.md`
+> 1. **Her zaman internet araştırması + en güncel resmî doküman** (K1).
+> 2. Her komuttan **sonra** öğrenileni anında `docs/`'a yaz (K2).
+> 3. Her komuttan **önce** ne/niçin/nasıl Türkçe açıkla (K3).
+> 4. Hata = 5 uzman bakışı + araştırma + kök neden (K4).
+> 5. Kanıtsız iddia yok, çalışmayan şey "çalışıyor" denmez (K5).
+>
+> **Model/API adları ezberden yazılmaz — doğrulanır.** 2026-11-13'te ezber
+> yanıldı: `gemini-2.5-flash` yeni kullanıcılara kapandı, görsel üretim
+> Interactions API'ye taşındı, `gemini-2.5-flash-image` legacy oldu.
+
 
 **Skill dosyası:** `SKILL.md`\
 **Ajan adı:** BOBİ\

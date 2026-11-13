@@ -118,3 +118,82 @@ gerekmeden** kapaklar Gemini'den gelmeye başlar.
 
 `tests/test_gemini_api.py` — 5 test (anahtar yok, boş prompt, durum, aday listesi).
 Toplam: **806 passed, 1 skipped**.
+
+---
+
+# 9. GÜNCEL DOKÜMAN OKUMASI (2026-11-13) — K1 kuralı gereği
+
+Kaynaklar: `ai.google.dev/gemini-api/docs/image-generation`,
+`ai.google.dev/gemini-api/docs/rate-limits` (ikisi de okundu), + REST örnekleri.
+
+## 9.1 Doküman DEĞİŞMİŞ: görsel üretim artık "Nano Banana" + Interactions API
+
+| Ürün adı | Model adı | Durum |
+|---|---|---|
+| **Nano Banana 2.1** | `gemini-nano-banana-2.1` | **önerilen** (iş atı) |
+| Nano Banana 2 Lite | `gemini-3.1-flash-lite-image` | en hızlı/ucuz |
+| Nano Banana 2 | `gemini-3.1-flash-image` | önceki nesil |
+| Nano Banana Pro | `gemini-3-pro-image` | premium, "Thinking" |
+| **Nano Banana** | `gemini-2.5-flash-image` | **LEGACY** — doküman "migrate et" diyor |
+
+**Yeni uç nokta:** `POST /v1beta/interactions` (gövde: `{"model","input"}`),
+yanıt `interaction.output_image.data`. `generateContent` sayfası artık
+**"(Legacy)"** başlıklı: `ai.google.dev/gemini-api/docs/generate-content/image-generation`.
+
+**Tüm üretilen görsellerde SynthID filigranı var.**
+
+## 9.2 KOTA: sebep bulundu — **limit: 0**
+
+Tam hata gövdesi (`gemini-2.5-flash-image`, `x-goog-api-key`):
+```
+429 RESOURCE_EXHAUSTED
+Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests,
+  limit: 0, model: gemini-2.5-flash-preview-image,
+  description: Generate content requests per day limit exceeded on Free Tier.
+Please retry in 2h15m03s.
+```
+Yeni Interactions API (`gemini-nano-banana-2.1`):
+```
+429 too_many_requests
+Rate limit exceeded for model gemini-nano-banana-2.1
+  (limit: 0 input tokens per minute on Free Tier). Please upgrade your tier.
+```
+
+**Denenen 7 yol, hepsi 429/limit 0:**
+`gemini-2.5-flash-image` (sade gövde, `responseModalities` TEXT+IMAGE, `v1`,
+`v1beta?key=`), `gemini-3-pro-image`, `gemini-3.1-flash-image`,
+`gemini-3.1-flash-lite-image`, `gemini-nano-banana-2.1` (hem `generateContent`
+hem `interactions`), `nano-banana-pro-preview`.
+
+→ **Sorun çağrı biçimi DEĞİL.** Bu projede ücretsiz katmanda **görsel kotası 0**.
+
+## 9.3 Ücretsiz katman gerçekleri (dokümandan, ezber değil)
+
+- **"Rate limits are applied per project, not per API key."**
+  → **Aynı projede yeni anahtar almak kotayı DÜZELTMEZ.** Yeni **proje** şart.
+- **RPD (günlük) kotası Pasifik gece yarısı sıfırlanır.**
+- Görsel modeller için **IPM** (images per minute) ayrı sayılır.
+- Faturalandırma (Tier 1) açılana kadar ücretsiz katman geçerli.
+
+**Ölçümle doğrulama:** 2026-11-13 05:45 UTC'de hata "retry in 2h15m03s" dedi
+→ 08:00 UTC = Pasifik gece yarısı (12 Kasım 21:45 PST + 2s14d). **Tutarlı.**
+
+## 9.4 Kod güncellendi
+
+`modules/gemini_api.py`:
+- `GORSEL_ADAYLARI` artık **güncel doküman sırası** (`gemini-nano-banana-2.1`
+  başta, legacy `gemini-2.5-flash-image` sonda).
+- `kota_sifirlanma()` — 429'daki `retry in Xh Ym` ayrıştırılır, UTC an döner.
+  429 logu artık şunu yazar: `Sıfırlanma: 2026-11-13 08:00 UTC`.
+
+## 9.5 Kullanıcıya net durum
+
+| İddia | Kanıt |
+|---|---|
+| "Gemini 2.5-flash-image çalışıyor" | **AI Studio arayüzünde** çalışır; **API'de** bu anahtar/proje için `limit: 0` |
+| Anahtar geçersiz mi? | **Hayır** — 401 değil, 429; "anahtar geçersiz" demiyor |
+| Çağrı biçimi yanlış mı? | **Hayır** — resmî dokümandaki 4 biçim de denendi |
+
+**Kalıcı çözüm (biri şart):**
+1. **Yeni bir Google Cloud projesi** + orada API anahtarı (kota proje başına),
+2. veya aynı projede **faturalandırma (Billing)** açmak (Tier 1).

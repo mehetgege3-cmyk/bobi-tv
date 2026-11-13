@@ -19,7 +19,7 @@
 | `telegram_bot.yml` | BOBİ TV Telegram Bot Poller (güvenlik düzeltmeli) | ✅ | */5 * * * * |
 | `test_pipeline.yml` | BOBİ TV v6.0 — Uçtan Uca Kalite Testi | ✅ | — |
 | `weekly_report.yml` | BOBİ TV — Haftalık Performans Raporu | ✅ | 0 7 * * 1 |
-| `yorum_cevap.yml` | Yorum Cevaplama — Arena AI (saatlik) | ✅ | 17 * * * * |
+| `yorum_cevap.yml` | Yorum Cevaplama — Gemini (saatlik) | ✅ | 17 * * * * |
 
 ## Notlar
 

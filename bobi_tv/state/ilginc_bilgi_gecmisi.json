@@ -190,6 +190,16 @@
       "cevap_ozeti": "Venedik'i görünce insan ister istemez 'bu binalar nasıl batmıyor' diye düşünür. Cevap şaşırtıcı: şehir devasa sayıda ahşap kazığın üzerinde duruyor. Lagünün yumuşak çamuru taşımaya elverişli olmadığı için inşaatçılar önce uzun ahşap kazıkları çamura çakmış, sonra üstüne taş platformlar kurmuştur.\n\nİşin en tuhaf kısmı şu: ahşap suyun içinde çürümez. Oksijen olmayan, tuzlu ve soğuk lagün suyunda ahş",
       "skor": 100,
       "tarih": "2026-11-13T04:29:52.632500+00:00"
+    },
+    {
+      "video_no": 2,
+      "kategori": "insan_vucudu",
+      "taktik": "T5",
+      "anahtar": "uykuda_beyin_temizligi",
+      "konu": "Beyin Asıl Temizliğini Uyurken Yapıyor! 🧠",
+      "cevap_ozeti": "Uykuyu genelde 'dinlenme' diye düşünürüz; sanki beyin kapanıp hiçbir şey yapmıyormuş gibi. Oysa uyku sırasında beynin en yoğun işlerinden biri başlıyor: temizlik.\n\nBeyin hücrelerinin arasında, gün içinde biriken atık proteinler var. Uyanıkken bu kanallar daralıyor; uykuya geçtiğinde hücreler arası boşluk genişliyor ve beyin-omurilik sıvısı bu aralıklardan daha rahat akıyor. Bilim insanları bu sist",
+      "skor": 100,
+      "tarih": "2026-11-13T06:01:15.718359+00:00"
     }
   ],
   "kullanilan_yedekler": [
@@ -209,6 +219,7 @@
     "kum_firtinasi_haber",
     "sakiz_erimeme",
     "ekmek_kabugu",
-    "venedik_kazik"
+    "venedik_kazik",
+    "uykuda_beyin_temizligi"
   ]
 }

@@ -1039,6 +1039,29 @@
     "kapak_dosyasi": "bobi_tv/output/20261113_0429_0001_venedik_kazik_kapak.jpg",
     "kapak_yuklendi": null,
     "hook_ust_bant": "Venedik Neden Milyonlarca Ağaç Kaz",
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 1,
+        "zaman": "2026-11-13T06:03:45.238350+00:00"
+      }
+    }
+  },
+  {
+    "dosya_adi": "20261113_0601_0002_uykuda_beyin_temizligi",
+    "baslik": "Beyin Asıl Temizliğini Uyurken Yapıyor! 🧠 #shorts",
+    "video_id": "eaIy0nXb7mI",
+    "durum": "yayinda",
+    "kategori": "insan_vucudu",
+    "url": "https://www.youtube.com/shorts/eaIy0nXb7mI",
+    "senaryo_ozeti": "",
+    "hash": "",
+    "tarih": "2026-11-13T06:03:44.763680+00:00",
+    "kanca_formu": "",
+    "kanca_ab": "",
+    "kanca_puan": null,
+    "kapak_dosyasi": "bobi_tv/output/20261113_0601_0002_uykuda_beyin_temizligi_kapak.jpg",
+    "kapak_yuklendi": null,
+    "hook_ust_bant": "Beyin Asıl Temizliğini Uyurken Yap",
     "izlenme_snapshots": {}
   }
 ]

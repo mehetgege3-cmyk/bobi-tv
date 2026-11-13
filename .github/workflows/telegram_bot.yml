@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 350
     # İş düzeyinde tanımlı: zincirleme adımı da bu değeri okur (kaza koruması).
     env:
-      TELEGRAM_DONGU_DK: '330'
+      TELEGRAM_DONGU_DK: '300'
     # 409 Conflict = aynı bot token'ıyla iki poller aynı anda getUpdates
     # çağırıyor (2026-11-11 kanıtı: 04:02'de başlayan koşu hâlâ ayaktayken
     # yeni koşu başladı). Kilit: aynı anda TEK poller; yeni koşu bekler.
@@ -48,14 +48,18 @@ jobs:
         # Kullanıcı mesajı Telegram'da bekler; poller çalışana kadar "tepki yok"
         # görünür ve biriken mesajlar toplu işlenir. Çözüm cron'a güvenmek değil,
         # tek koşuyu ~5.5 saat ayakta tutup 20 sn'de bir getUpdates çağırmak.
-        # Adım 330 dk, job 350 dk; süre dolunca TEMİZ çıkış (exit 0) ve yeni koşu
+        # ZAMAN AŞIMI KUSURU (2026-11-13, koşu 43338430740): döngü 330 dk + adım
+        # timeout 330 dk → EŞİTTİ ve yarışı kaybediyordu:
+        #   'has timed out after 330 minutes' → sürekli kırmızı.
+        # Düzeltme: döngü 300 dk, adım timeout 320 dk (20 dk güvenli pay).
+        # Eski not: adım 330 dk, job 350 dk; süre dolunca TEMİZ çıkış (exit 0) ve yeni koşu
         # devralır. TELEGRAM_DONGU_DK=0 → eski tek-seferlik davranış.
-        timeout-minutes: 330
+        timeout-minutes: 320
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           GH_TOKEN: ${{ secrets.GH_PAT }}
-          TELEGRAM_DONGU_DK: '330'
+          TELEGRAM_DONGU_DK: '300'
           TELEGRAM_YOKLAMA_SN: '20'
           TELEGRAM_TUR_AZAMI: '20'
         run: |

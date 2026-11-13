@@ -4,14 +4,6 @@
 
 | Dosya | Ad | Manuel | Cron |
 |---|---|---|---|
-| `arena-agent.yml` | Arena AI Playwright Agent | ✅ | 0 */6 * * * |
-| `arena_giris_login.yml` | 🔐 Arena Giriş + Çerez Yenile (e-posta/şifre) | ✅ | 0 4,16 * * * |
-| `arena_gorsel_http.yml` | 🖼️ Arena Görsel (tarayıcısız okuma) | ✅ | — |
-| `arena_gorsel_test.yml` | 🖼️ Arena Görsel Üretim Testi (kanıt) | ✅ | — |
-| `arena_merhaba.yml` | 🧪 Arena Canlı Test — Merhaba / Soru Sor | ✅ | — |
-| `arena_self_repair.yml` | Arena AI Autonomous Self-Repair | — | — |
-| `arena_senaryo.yml` | BOBİ TV — Arena AI Senaryo Üretimi | ✅ | 0 5 * * * |
-| `arena_smoke_test.yml` | Arena Smoke Test — Tanılama (manuel tetik) | ✅ | — |
 | `arsiv_esitleme.yml` | Arşiv ↔ Kanal Eşitleme (haftalık) | ✅ | 17 4 * * 0 |
 | `cadans_olcum.yml` | Cron Cadans Ölçümü (günlük) | ✅ | 43 6 * * * |
 | `canli_test.yml` | Canlı Test — 1 video üret + yükle (tek seferlik) | ✅ | — |
@@ -20,11 +12,9 @@
 | `hourly_production.yml` | BOBİ TV v6.4 PRO — Saatlik Üretim + Kota Takibi | ✅ | 0 */8 * * * |
 | `kanal_sagligi.yml` | Kanal Sağlığı Ölçümü (günlük) | ✅ | 23 7 * * * |
 | `kanal_temizle.yml` | BOBİ TV — Kanal Temizle | ✅ | — |
-| `kapak_uctan_uca.yml` | 🎬 Kapak Uçtan Uca (video metni → Arena → 1. kare) | ✅ | — |
 | `mini_app_pages.yml` | Mini App yayını (GitHub Pages) | ✅ | — |
 | `mini_app_veri.yml` | Mini App verisi (salt okunur özet) | ✅ | 0 */8 * * * |
 | `telegram_bot.yml` | BOBİ TV Telegram Bot Poller (güvenlik düzeltmeli) | ✅ | */5 * * * * |
-| `test_arena_ask.yml` | 🤖 Arena AI Test — Saat Sorgusu (v2, Oturum Canlı Tutma) | ✅ | 17 */6 * * * |
 | `test_pipeline.yml` | BOBİ TV v6.0 — Uçtan Uca Kalite Testi | ✅ | — |
 | `weekly_report.yml` | BOBİ TV — Haftalık Performans Raporu | ✅ | 0 7 * * 1 |
 | `yorum_cevap.yml` | Yorum Cevaplama — Arena AI (saatlik) | ✅ | 17 * * * * |

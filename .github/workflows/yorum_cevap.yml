@@ -1,13 +1,10 @@
 name: "Yorum Cevaplama — Arena AI (saatlik)"
 
-# KULLANICI FİKRİ (2026-11-11): izleyici yorumlarını Arena AI'ye gönderip
 # gelen cevabı yoruma yazmak → kanal "interaktif" olur, düzeltmeler ikinci
 # dalga etkileşime dönüşür.
 #
 # GÜVENLİK KAPILARI (modules/yorum_cevap.py):
 #   • Sağlık/para/güvenlik kategorilerinde otomatik cevap YOK.
-#   • Arena'ya videonun DOĞRU bilgisi verilir → yanlış bilgi savunulmaz.
-#   • Arena erişilemezse %100 doğru şablon cevap.
 #   • Kişi başına günde 1, saatte 6, video başına 10 tavan (comment spam yok).
 #   • Spam/hakaret/link içeren yorumlara cevap yok.
 #
@@ -62,9 +59,9 @@ jobs:
 
       - name: Yorumları cevapla
         env:
+          GEMINI_COOKIES: ${{ secrets.GEMINI_COOKIES }}
           YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
-          ARENA_COOKIES_JSON: ${{ secrets.ARENA_COOKIES_JSON }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           YORUM_KURU: ${{ inputs.kuru == 'true' && '1' || '0' }}

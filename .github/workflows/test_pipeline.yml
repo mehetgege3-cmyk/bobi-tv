@@ -38,11 +38,11 @@ jobs:
 
       - name: Pipeline testini çalıştır
         env:
+          GEMINI_COOKIES: ${{ secrets.GEMINI_COOKIES }}
           YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          ARENA_COOKIES_JSON: ${{ secrets.ARENA_COOKIES_JSON }}
           GUNLUK_HEDEF: '1'
           YUKLEME_ATLA: ${{ github.event.inputs.yukle == '1' && '0' || '1' }}
         run: |

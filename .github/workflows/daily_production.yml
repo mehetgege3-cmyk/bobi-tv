@@ -44,11 +44,11 @@ jobs:
 
       - name: Pipeline'ı çalıştır
         env:
+          GEMINI_COOKIES: ${{ secrets.GEMINI_COOKIES }}
           YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          ARENA_COOKIES_JSON: ${{ secrets.ARENA_COOKIES_JSON }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           GUNLUK_HEDEF: ${{ github.event.inputs.hedef || '2' }}
           # GUNLUK_MAKS kaldırıldı — günlük yükleme tavanı YOK.

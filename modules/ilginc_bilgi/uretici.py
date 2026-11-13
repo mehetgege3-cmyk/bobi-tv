@@ -3,7 +3,7 @@
 AKIŞ
   1. Kategori seç (tekrarsız rastgele)      → `kategoriler.siradaki_kategori`
   2. Etkileşim taktiği seç (rotasyon)        → `etkilesim.taktik_sec`
-  3. Arena'ya TEK istek at (soru+cevap+sonuç JSON) → `arena_bilgi_uret`
+  3. Gemini WEB'e TEK istek at (soru+cevap+sonuç JSON) → `bilgi_uret`
      Arena çökerse → `yedek_bilgiler.bilgi_sec` (doğrulanmış banka)
   4. 12 kuralı denetle                       → `kurallar.denetle`
   5. Reddedilirse 1 kez onarım isteği, sonra bankaya düş
@@ -70,7 +70,7 @@ def durum_yaz(veri: dict, yol: Path | None = None) -> None:
 # ---------------------------------------------------------------------------
 
 
-def arena_promptu(kategori: str, taktik: etkilesim.TaktikSecimi, kacirilacaklar: list[str]) -> str:
+def bilgi_promptu(kategori: str, taktik: etkilesim.TaktikSecimi, kacirilacaklar: list[str]) -> str:
     """Arena'ya giden TEK istek. Çıktı katı JSON'dur."""
     kat = kategoriler.kategori_al(kategori)
     kacin = "; ".join(kacirilacaklar[-12:]) or "(yok)"
@@ -213,24 +213,24 @@ def _json_ayikla(metin: str) -> dict | None:
     return None
 
 
-def arena_bilgi_uret(
+def bilgi_uret(
     kategori: str,
     taktik: etkilesim.TaktikSecimi,
     kacirilacaklar: list[str],
-    arena_fn=None,
+    metin_fn=None,
 ) -> dict | None:
     """Arena'dan bilgi kartı ister. Erişilemezse None (çağıran bankaya düşer)."""
-    if arena_fn is None:
+    if metin_fn is None:
         # KULLANICI (2026-11-13): "Arena AI'yi ve Gemini API'yi çöpe at; Gemini
         # cookie işimize yarar." → içerik artık Gemini WEB çerezinden gelir.
         # Arena çerezi ölü (401) ve kullanımdan kaldırıldı.
         try:
-            from modules.gemini_web import metin_uret as arena_fn  # type: ignore
+            from modules.gemini_web import metin_uret as metin_fn  # type: ignore
         except Exception:
             return None
-    prompt = arena_promptu(kategori, taktik, kacirilacaklar)
+    prompt = bilgi_promptu(kategori, taktik, kacirilacaklar)
     try:
-        ham = arena_fn(prompt)
+        ham = metin_fn(prompt)
     except Exception as e:
         print(f"[İlginçBilgi] Arena hatası: {str(e)[:120]}")
         return None
@@ -480,7 +480,7 @@ def paket_olustur(
 def uret(
     video_no: int,
     *,
-    arena_fn=None,
+    metin_fn=None,
     state_yolu: Path | None = None,
     yayin_sayisi: int | None = None,
     zorla_kategori: str | None = None,
@@ -515,7 +515,7 @@ def uret(
     uyarilar.extend(taktik.uyarilar)
 
     # 1) Arena
-    kart = arena_bilgi_uret(kategori, taktik, kacirilacaklar, arena_fn=arena_fn)
+    kart = bilgi_uret(kategori, taktik, kacirilacaklar, metin_fn=metin_fn)
     kaynak_turu = "arena"
 
     # 2) Arena yoksa doğrulanmış banka
@@ -565,7 +565,7 @@ def uret(
     # 4) Reddedilirse tek onarım denemesi
     if not rapor.yayinlanabilir and kaynak_turu == "arena":
         uyarilar.append(f"1. deneme reddedildi: {rapor.ozet()[:180]} → onarım isteniyor")
-        kart2 = arena_bilgi_uret(kategori, taktik, kacirilacaklar, arena_fn=arena_fn)
+        kart2 = bilgi_uret(kategori, taktik, kacirilacaklar, metin_fn=metin_fn)
         if kart2:
             metin2 = metne_cevir(kart2)
             rapor2 = kurallar.denetle(

@@ -28,7 +28,7 @@ def test_poller_dongu_ile_calisir() -> None:
     adim = _adim()
     govde = adim["run"]
     env = adim["env"]
-    assert env["TELEGRAM_DONGU_DK"] == "330"
+    assert env["TELEGRAM_DONGU_DK"] == "300"
     assert env["TELEGRAM_YOKLAMA_SN"] == "20"
     assert "while True:" in govde, "yoklama döngüsü yok"
     # mesaj yokken sys.exit(0) YAPILMAMALI (eski hata)
@@ -49,7 +49,7 @@ def test_poller_zaman_asimlari_github_limiti_altinda() -> None:
     d = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
     job = next(iter(d["jobs"].values()))
     assert job["timeout-minutes"] == 350
-    assert _adim()["timeout-minutes"] == 330
+    assert _adim()["timeout-minutes"] == 320
 
 
 def test_ag_hatasi_donguyu_oldurmez() -> None:
@@ -66,3 +66,18 @@ def test_start_panelleri_cogaltmaz() -> None:
     govde = kaynak.split("def handle_message", 1)[1].split("def ", 1)[0]
     assert "yeni_mesaj=True" not in govde, "/start hâlâ taze panel açıyor"
     assert "MENU_KOMUTLARI" in govde
+
+
+def test_adim_timeout_donguden_buyuk_olmail():
+    """KUSUR (2026-11-13, koşu 43338430740): döngü 330 dk + adım timeout 330 dk
+    EŞİTTİ → 'has timed out after 330 minutes' → sürekli kırmızı.
+
+    Kural: adım timeout'u döngü süresinden EN AZ 10 dk büyük olmalı ki döngü
+    kendi süresi dolunca TEMİZ çıkabilsin.
+    """
+    adim = _adim()
+    dk = int(adim["env"]["TELEGRAM_DONGU_DK"])
+    assert adim["timeout-minutes"] > dk, (
+        f"adım timeout {adim['timeout-minutes']} dk, döngü {dk} dk → pay yok"
+    )
+    assert adim["timeout-minutes"] - dk >= 10

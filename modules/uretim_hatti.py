@@ -1,6 +1,7 @@
 """
 BOBİ TV — Arena AI Üretim Wrapper
-arena_api.py'nin sync wrapper'ı + İLGİNÇ BİLGİ HATTI (yeni format).
+İLGİNÇ BİLGİ HATTI (tek üretim yolu). Arena tamamen KALDIRILDI; içerik
+Gemini web çerezinden gelir (`modules/gemini_web.py`).
 
 FORMAT DEVRİMİ (2026-11-11, kullanıcı):
   "Bu kategorileri, formatı ve konuların hepsini çöpe at."
@@ -14,7 +15,6 @@ erişilemezse doğrulanmış bilgi bankasına düşer (üretim durmaz).
 import asyncio
 import os
 
-from modules.arena_api import arena_video_uret
 
 
 def ilginc_bilgi_aktif() -> bool:
@@ -22,7 +22,7 @@ def ilginc_bilgi_aktif() -> bool:
     return os.environ.get("ILGINC_BILGI_AKTIF", "1").strip().lower() not in ("0", "false", "hayir", "hayır")
 
 
-def arena_tam_uretim(video_no: int) -> dict | None:
+def uretim_hatti_calistir(video_no: int) -> dict | None:
     """
     Sync wrapper: Arena video üretimi.
     Döner: {baslik, aciklama, final_video, ...} veya None
@@ -87,9 +87,8 @@ def arena_tam_uretim(video_no: int) -> dict | None:
             print(f"[İlginçBilgi] Üretim hatası: {str(e)[:200]}")
             return None
 
-    # --- Geri dönüş yolu: eski VS / iki karakterli diyalog hattı ---
-    try:
-        return asyncio.run(arena_video_uret(video_no))
-    except Exception as e:
-        print(f"[Arena] Üretim hatası: {e}")
-        return None
+    # ESKİ DİYALOG HATTI SİLİNDİ (2026-11-13): arena_api'ye bağlıydı ve Arena
+    # tamamen çöpe atıldı. `ILGINC_BILGI_AKTIF=0` artık desteklenmiyor —
+    # tek içerik hattı ilginç-bilgi (Gemini web çerezi).
+    print("[Üretim] ILGINC_BILGI_AKTIF=0: eski diyalog hattı kaldırıldı")
+    return None

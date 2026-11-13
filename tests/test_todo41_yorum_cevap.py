@@ -166,7 +166,7 @@ def test_guvenli_yedek_dogru_bilgiyi_kullanir():
 # ---------------------------------------------------------------------------
 
 
-def test_arena_promptu_dogru_bilgiyi_ve_yasagi_icerir(monkeypatch, durum):
+def test_prompt_dogru_bilgiyi_ve_yasagi_icerir(monkeypatch, durum):
     yakalanan = {}
 
     def sahte(prompt):
@@ -177,7 +177,7 @@ def test_arena_promptu_dogru_bilgiyi_ve_yasagi_icerir(monkeypatch, durum):
     import modules.gemini_web as gw
 
     monkeypatch.setattr(gw, "metin_uret", sahte)
-    cevap = yc.arena_cevabi_uret(
+    cevap = yc.cevap_uret(
         {"metin": "Bence yanlış biliyorsunuz"},
         dogru_bilgi="Ahtapotların 3 kalbi vardır.",
         soru="Ahtapotların kaç kalbi var?",
@@ -239,7 +239,7 @@ def test_tur_yasakli_kategoride_hic_cevap_yazmaz(tmp_path, monkeypatch):
     assert any("otomatik cevap yasak" in s for s in sonuc["sebepler"])
 
 
-def test_tur_arena_coktugunde_guvenli_yedek_kullanir(tmp_path, monkeypatch):
+def test_tur_gemini_coktugunde_guvenli_yedek_kullanir(tmp_path, monkeypatch):
     monkeypatch.setattr(
         yc, "yorumlari_oku",
         lambda vid, tok, azami=10: [
@@ -250,7 +250,7 @@ def test_tur_arena_coktugunde_guvenli_yedek_kullanir(tmp_path, monkeypatch):
     sonuc = yc.tur_calistir(
         [{"video_id": "v1", "kategori": "hayvanlar",
           "dogru_bilgi": "Ahtapotların 3 kalbi vardır."}],
-        "tok", arena_fn=lambda *a, **k: None,
+        "tok", metin_fn=lambda *a, **k: None,
         state_yolu=tmp_path / "y.json", kuru_calisma=True,
     )
     assert sonuc["cevaplanan"] == 1
@@ -291,7 +291,7 @@ def test_yorum_cevap_workflow_var_ve_guvenli():
     env = {}
     for a in job["steps"]:
         env.update(a.get("env") or {})
-    assert env.get("ARENA_COOKIES_JSON", "").startswith("${{ secrets.")
+    assert env.get("GEMINI_COOKIES", "").startswith("${{ secrets.")
     assert env.get("YOUTUBE_TOKEN", "").startswith("${{ secrets.")
     # Üretim hattıyla aynı concurrency grubunda OLMAMALI (kuyruğu kilitlemesin)
     assert d.get("concurrency", {}).get("group") == "yorum-cevap"

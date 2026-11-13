@@ -5,15 +5,12 @@ name: "Canlı Test — 1 video üret + yükle (tek seferlik)"
 #    tek seferlik canlı deneme GitHub'da çalıştır. Timeout kullanma."
 #
 # Bu workflow ÜRETİM HATTININ AYNISINI çalıştırır (kanca motoru + ses + render +
-# Arena kapak + ilk kareye gömme + YouTube yükleme). Tek fark: YALNIZ 1 VİDEO
 # üretir ve TUR_BASINA_URETIM=1'e sabitler.
 #
 # ÖNEMLİ: `concurrency` YOK — 8 saatlik üretim job'u hâlâ açıkken bile bu test
 # HEMEN başlar (kuyrukta beklemez). Kanal sağlığı/silme mantığı DEĞİŞMEZ:
 # yüklenen video da 6 saatte 100 izlenme kuralına tabidir.
 #
-# Zaman aşımı politikası: Arena yanıtı için SABİT SÜRE SINIRI YOK
-# (ARENA_IDLE_DK=15 dk donmuş-sayfa freni, ARENA_MAKS_DK=45 dk güvenlik freni).
 # Job timeout'u yalnız altyapı korumasıdır (90 dk).
 
 on:
@@ -69,16 +66,12 @@ jobs:
       - name: Klasör yapısını hazırla
         run: mkdir -p bobi_tv/output bobi_tv/render bobi_tv/logs/quality bobi_tv/state
 
-      # Arena'nın GERÇEK yanıt süresini görebilmek için satır satır log.
-      # SABİT TIMEOUT YOK: arena_api ARENA_IDLE_DK / ARENA_MAKS_DK frenlerini
-      # kullanır; her 10 sn'de "⏳ Arena 01:20 · düşünüyor · 340 karakter" basar.
       - name: Pipeline'ı çalıştır (1 video, canlı test)
         env:
           YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          ARENA_COOKIES_JSON: ${{ secrets.ARENA_COOKIES_JSON }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           # Gemini WEB oturum çerezi (API anahtarı DEĞİL). Görsel üretimi
           # bu çerezle çalışıyor: StreamGenerate → googleusercontent URL.
@@ -96,7 +89,6 @@ jobs:
           YUKLEME_ATLA: ${{ inputs.yukle == '1' && '0' || '1' }}
           TETIK_FORCE: ${{ inputs.force }}
           VIDEO_NO: ${{ inputs.konu_no }}
-          # Arena frenleri (sabit timeout DEĞİL)
           ARENA_IDLE_DK: "15"
           ARENA_MAKS_DK: "45"
           PYTHONUNBUFFERED: "1"

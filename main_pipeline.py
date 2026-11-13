@@ -20,7 +20,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from modules.arena_uretici import arena_tam_uretim
+from modules.uretim_hatti import uretim_hatti_calistir
 from modules.tts_engine import senaryo_seslendir
 from modules.video_render import video_render
 from modules.telegram_notify import notify_error, send_message
@@ -338,7 +338,7 @@ def pipeline_calistir():
             continue
 
         log_yaz(f"🎬 Video #{video_no} ilginç bilgi hattı (8 kategori + etkileşim taktiği) başlıyor...")
-        paket = arena_tam_uretim(video_no)
+        paket = uretim_hatti_calistir(video_no)
         if paket and paket.get("final_video") and Path(paket["final_video"]).exists():
             sure_bilgi = paket.get("video_suresi", 0)
             log_yaz(f"✅ Pro Video + 1. Kare Kapak hazır: {paket['baslik']} ({sure_bilgi}sn)")

@@ -193,7 +193,7 @@ def cevap_verilebilir_mi(
 # ---------------------------------------------------------------------------
 
 
-def arena_cevabi_uret(
+def cevap_uret(
     yorum: dict[str, Any],
     dogru_bilgi: str,
     soru: str = "",
@@ -210,7 +210,7 @@ def arena_cevabi_uret(
     """
     try:
         # KULLANICI (2026-11-13): "Arena AI'yi çöpe at; Gemini cookie kullan."
-        from modules.gemini_web import metin_uret as arena_kisa_cevap_al  # type: ignore
+        from modules.gemini_web import metin_uret as metin_uret_fn  # type: ignore
     except Exception:
         return None
 
@@ -234,7 +234,7 @@ def arena_cevabi_uret(
         f"İZLEYİCİNİN YORUMU: {yorum_metni}"
     )
     try:
-        cevap = arena_kisa_cevap_al(prompt)
+        cevap = metin_uret_fn(prompt)
     except Exception as e:
         print(f"[Yorum] Arena cevabı alınamadı: {str(e)[:120]}")
         return None
@@ -371,7 +371,7 @@ def yoruma_cevap_yaz(yorum_uzun_id: str, metin: str, access_token: str) -> bool:
 def tur_calistir(
     videolar: list[dict[str, Any]],
     access_token: str,
-    arena_fn=None,
+    metin_fn=None,
     state_yolu: Path | None = None,
     simdi: datetime | None = None,
     kuru_calisma: bool = False,
@@ -386,7 +386,7 @@ def tur_calistir(
     """
     simdi = simdi or datetime.now(UTC)
     durum = _durum_yukle(state_yolu)
-    arena = arena_fn or arena_cevabi_uret
+    uretici = metin_fn or cevap_uret
     cevaplanan = 0
     atlanan = 0
     sebepler: dict[str, int] = {}
@@ -411,14 +411,14 @@ def tur_calistir(
                 continue
 
             dogru = str(video.get("dogru_bilgi") or "")
-            cevap = arena(yorum, dogru, str(video.get("soru") or ""),
+            cevap = uretici(yorum, dogru, str(video.get("soru") or ""),
                           str(video.get("baslik") or ""))
             if not cevap:
                 cevap = guvenli_yedek_cevap(dogru)
             gecti, gerekce = dogruluk_kapisi(cevap, dogru)
             if not gecti:
                 cevap = guvenli_yedek_cevap(dogru)
-                gerekce = f"arena cevabı reddedildi ({gerekce}) → güvenli yedek"
+                gerekce = f"Gemini cevabı reddedildi ({gerekce}) → güvenli yedek"
 
             metin = f"{cevap} {IMZA}" if IMZA not in cevap else cevap
             yazildi = False

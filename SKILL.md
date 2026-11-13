@@ -810,3 +810,28 @@ GET  /api/me/pulse                       → oturum canlılığı (401 = ölü �
 **Hata kaydı:** `docs/ARENA_DERSLER.md` — aynı hatayı ikinci kez keşfetmeyin
 (Google OAuth otomasyonu, jetonsuz create-chat, DOM bekleme, eski sohbet
 tuzağı, rfind kesmesi, ffmpeg/çözünürlük hataları hepsi burada).
+
+---
+
+## 31. Gemini Entegrasyonu (2026-11-13)
+
+Arena çerezi öldüğünde ikinci sağlayıcı. Detay: `docs/GEMINI_ENTEGRASYON.md`.
+
+**Anahtar:** `GEMINI_API_KEY` secret'ı. Biçim `AQ.Ab8RN6...` (klasik `AIza...`
+değil) — API kabul ediyor, kimlik doğrulama geçiyor.
+
+**Ölçülen durum (pazarlıksız gerçek):**
+| Yetenek | Durum |
+|---|---|
+| Metin (`gemini-3.8-flash`) | ⚠️ geçici 503 (yüksek talep) — retry ile çözülür |
+| **Görsel** (tüm görsel modelleri) | ❌ **429 `limit: 0`** — ücretsiz katmanda görsel kotası TANIMLI DEĞİL |
+
+**Kota çözümü kodla olmaz:** Google AI Studio / Cloud projesinde faturalandırma
+açılmalı ya da görsel yetkili başka anahtar gerekir.
+
+**Kod:** `modules/gemini_api.py` (`metin_uret`, `gorsel_uret`, `durum`);
+kapak hattında **2. sıra**: Arena → **Gemini** → video karesi.
+Kota açıldığı gün ek kod gerekmeden kapaklar Gemini'den gelir.
+
+**Unutma:** `gemini-2.5-flash` YENİ kullanıcılara kapalı (404); API
+`gemini-3.8-flash` öneriyor.

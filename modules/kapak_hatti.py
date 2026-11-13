@@ -52,6 +52,31 @@ def kapak_uret_ve_yerlestir(paket: dict[str, Any]) -> dict[str, Any]:
     except Exception as e:
         print(f"[Kapak] Arena görsel hattı hatası: {str(e)[:140]}")
 
+    # --- 1b) GEMINI görsel yedeği (Arena çerezi ölüyken) --------------------
+    # Ölçüm 2026-11-13: görsel modelleri "limit: 0" (ücretsiz katmanda yok).
+    # Kota açılırsa bu yol OTOMATİK devreye girer; ek kod gerekmez.
+    if not sonuc["kapak"]:
+        try:
+            from modules import gemini_api
+
+            if gemini_api.anahtar():
+                from modules.kapak_gorsel import gorsel_promptu
+
+                ham_g = gemini_api.gorsel_uret(
+                    gorsel_promptu(paket),
+                    str(cikis / f"{dosya_adi}_gemini_ham.png"),
+                )
+                if ham_g:
+                    from modules.kapak_gorsel import gorseli_karesine_oturt
+
+                    kirp = gorseli_karesine_oturt(ham_g, cikis / f"{dosya_adi}_kapak.jpg")
+                    if kirp:
+                        sonuc.update(kapak=str(kirp), kaynak="gemini_gorsel")
+                else:
+                    print(f"[Kapak] Gemini görsel vermedi: {gemini_api.durum().get('hata')}")
+        except Exception as e:
+            print(f"[Kapak] Gemini yolu hatası: {str(e)[:120]}")
+
     # --- 2) Yedek: video karesi + videonun kendi başlığı --------------------
     if not sonuc["kapak"] and video:
         try:

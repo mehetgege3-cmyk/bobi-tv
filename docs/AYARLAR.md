@@ -55,7 +55,7 @@ Panel, her değerin hangi katmandan geldiğini etiketle gösterir: `6 (state)` /
 
 ## 🔑 Sistem durumu — SADECE GÖRÜNTÜLE (değer asla yazdırılmaz)
 
-`YOUTUBE_TOKEN`, `YOUTUBE_CLIENT_SECRET`, `ARENA_COOKIES_JSON`, `PEXELS_API_KEY`, `GH_TOKEN`,
+`GEMINI_COOKIES`, `YOUTUBE_TOKEN`, `YOUTUBE_CLIENT_SECRET`, `PEXELS_API_KEY`, `GH_TOKEN`,
 `TELEGRAM_BOT_TOKEN` → panelde yalnız **✅ tanımlı / ⛔ eksik** + kaynak (GitHub Secrets).
 Secret değerleri mesajda, commit'te, logda, state'te ASLA görünmez.
 

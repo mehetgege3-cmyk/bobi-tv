@@ -117,7 +117,7 @@ gerekmeden** kapaklar Gemini'den gelmeye başlar.
 ## 8. Testler
 
 `tests/test_gemini_api.py` — 5 test (anahtar yok, boş prompt, durum, aday listesi).
-Toplam: **806 passed, 1 skipped**.
+Toplam: **679 passed, 1 skipped** (2026-11-13 güncel).
 
 ---
 

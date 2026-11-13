@@ -137,47 +137,62 @@ Bu yüzden: Arena görsel üretim yolu **hiçbir zaman çalışmadı** — üret
 karesi yedeğine düşüyordu. "Arena kapak görseli üretti" iddiası yanlıştı ve
 artık kod bunu saklamıyor.
 
-### Kullanıcı aksiyonu (tek adım)
+### ÇÖZÜM: Arena tamamen terk edildi (2026-11-13)
 
-`arena.ai`'ye giriş yap → Cookie-Editor → Export (JSON) → GitHub → Settings →
-Secrets → `ARENA_COOKIES_JSON` → Update. Sonra:
-`Actions → 🖼️ Arena Görsel Üretim Testi (kanıt) → Run workflow`.
-Koşu `GÖRSEL ÜRETİLDİ ✅` der ve **indirdiği görseli artifact olarak verir**;
-`GÖRSEL GELMEDİ ❌` derse Arena gerçekten görsel üretmiyor demektir.
+Kullanıcı kararı: *"arena ai'yi ve gemini api'yi sok at çöpe at artık bunu
+kullanalım gemini cookie işimize yarar."*
 
-### Eklenen koruma (2026-11-12)
+| Sağlayıcı | Durum | Neden |
+|---|---|---|
+| Arena AI | ⛔ **çöpe atıldı** | Çerez 401, tarayıcı duvarı, güvenilmez |
+| Gemini API | ⛔ **çöpe atıldı** | Görsel kotası `limit: 0` |
+| **Gemini web çerezi** | ✅ **TEK SAĞLAYICI** | Görsel + metin çalışıyor, kanıtlı |
 
-`arena_api.oturum_gercekten_acik_mi(page)` — URL'de `accounts.google.com` /
-`/login` / `/signin` varsa ya da sayfada "Log In / Sign up" görünüp editör yoksa
-oturum kapalı sayılır; kapak hattı **8 dakika boş beklemek yerine** anında durur,
-`_oturum_doldu_isaretle()` çağırır ve video karesi yedeğine düşer.
-(Forumlarda standart yöntem: pahalı işten önce son URL'i kontrol et.)
+Arena kodu `arsiv/arena_olu_kod/` altında duruyor (tarihsel). Üretim ona bakmaz.
+Çalışan yol: `docs/GEMINI_WEB.md` ve SKILL.md §32.
 
-## 3. Arena çerezleri GitHub'a ne zaman eklenmeli?
+## 3. Gemini web çerezi — kurulum ve doğrulama (2026-11-13 GÜNCEL)
 
-`ARENA_COOKIES_JSON` + `ARENA_SMOKE_TEST` ile doğrulama sırası:
+> **DEĞİŞİKLİK:** Bu bölüm eskiden "Arena çerezleri"ni anlatıyordu. Arena AI
+> 2026-11-13'te **tamamen çöpe atıldı** (kullanıcı kararı: *"arena ai'yi ve
+> gemini api'yi sok at çöpe at"*). Tek sağlayıcı **Gemini web çerezi**.
 
-1. **Şimdi eklenebilir** — çerez yalnız *senaryo + kapak önerisi* için kullanılır.
-   Geçersizse üretim DURMAZ: yerel senaryo şablonu + yerel kapak üreticisi
-   devreye girer (`ARENA_COOKIES_JSON yok → yerel kapak üreticisi`).
-2. **Doğrulama koşulu:** ekledikten sonra `Actions → Arena Smoke Test` →
-   `Run workflow`. Beklenen verdict: `oturum-gecerli`.
-   `oturum-gecersiz` ise çerez sohbet sayfasında değil, yanlış domain'de alınmış
-   demektir.
-3. **Yenileme:** çerez ~2-4 haftada düşer. Düşünce Telegram'a "çerezi yenile"
-   uyarısı gider (`modules/arena_cerez_uyari.py`, 30 dk'da bir, spam yok).
-4. **Ölçüm:** ekledikten sonra 🩺 Kanal Sağlığı ekranında `🪝 Kanca` satırı ve
-   kalite ortalaması dolar. Çerez yoksa bu satırlar "veri yok" der — bu bir hata
-   değil, dürüst durumdur.
+### Çerez neden gerekli
+
+Kapak görseli, senaryo ve yorum cevabı **hepsi** Gemini web'den gelir.
+`GEMINI_COOKIES` yoksa bunların hiçbiri üretilemez — **uydurma içerik yazılmaz**.
+
+### Kurulum
+
+```bash
+# 1) Çerezi doğrula (secret'a YAZMADAN)
+python3 tools/gemini_cerez_kur.py --kuru
+
+# 2) Doğruysa GitHub Secret'a yaz
+python3 tools/gemini_cerez_kur.py --dosya <export.json>
+```
+
+### Doğrulama
+
+```bash
+PYTHONPATH=. python3 -c "from modules import gemini_web; print(gemini_web.durum())"
+```
+
+Beklenen: `hazir=True`. Değilse çerez düşmüş → Cookie-Editor ile yenile.
+
+### Yenileme
+
+Çerez ~2-4 haftada düşer. Düştüğünde üretim **durmaz** ama kapak üretilemez;
+durum `gemini_web.durum()` ile görülür. Durum bilgisi Telegram paneline düşer.
 
 ---
 
 ## 4. YAPILMADI / sınırlar (dürüstlük)
 
-- **Canlı Arena çerez testi yapılmadı** — bu ortamda geçerli çerez yok.
-  Kullanıcı ekleyip `Arena Smoke Test` koşmalı.
-- **AI görsel zemin canlı denenmedi** — `GEMINI_API_KEY`/`OPENAI_API_KEY`
-  tanımlı değil. Kod yolu test edildi (anahtar yok → `None`, akış durmaz).
+- **Arena yolu kapandı** — 2026-11-13'te tamamen çöpe atıldı; test edilecek
+  bir şey kalmadı. Gemini web çerezi bunun yerini aldı (kanıtlı).
+- **Gemini API görsel üretimi ÇALIŞMIYOR** — ücretsiz katmanda görsel kotası
+  `limit: 0`. Bu yüzden web çerezi kullanılıyor; API anahtarı kullanılmıyor.
 - **8 saatlik kadansın izlenmeye etkisi henüz ÖLÇÜLMEDİ** — kadans 11 Kasım'da
   değişti; ölçüm için en az 3-5 gün ve `kanal_sagligi_gecmis.json` birikmesi
   gerekiyor. Bu dosya artık her gün tek satır biriktiriyor.

@@ -98,10 +98,10 @@ REHBER: dict[str, dict[str, str]] = {
         "zaman": "Token süresi dolduğunda.",
         "degil": "Değeri gösterilmez; eksikse yükleme başarısız olur (sebep loga yazılır).",
     },
-    "ARENA_COOKIES_JSON": {
-        "ne": "Arena oturum çerezleri — senaryo/kapak üretimi için.",
+    "GEMINI_COOKIES": {
+        "ne": "Gemini web çerezleri — TEK sağlayıcı (kapak görseli + senaryo + yorum cevabı).",
         "zaman": "Sonraki üretimde.",
-        "degil": "Değeri gösterilmez; yoksa senaryo üretilemez (uydurma senaryo yazılmaz).",
+        "degil": "Değeri gösterilmez; yoksa kapak ve senaryo üretilemez (uydurma yazılmaz).",
     },
     "GH_TOKEN": {
         "ne": "Panelin GitHub API'sine erişimi (koşu durumu, tetikleme).",
@@ -124,7 +124,7 @@ REHBER: dict[str, dict[str, str]] = {
 SECRET_ANAHTARLAR = {
     "YOUTUBE_TOKEN",
     "YOUTUBE_CLIENT_SECRET",
-    "ARENA_COOKIES_JSON",
+    "GEMINI_COOKIES",
     "GH_TOKEN",
     "TELEGRAM_BOT_TOKEN",
 }

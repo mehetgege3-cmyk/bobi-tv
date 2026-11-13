@@ -88,7 +88,7 @@ Aynı anda **`ARENA_COOKIES_JSON` her yerden kaldırıldı.**
 | `GEMINI_COOKIES` olan üretim workflow'u | 2 | **5** |
 | Testler | 817 | **674** (143 Arena testi arşivlendi) |
 
-**Kalan 14 workflow:**
+**Kalan workflow (16 — 2026-11-13 itibarıyla, `kanal_envanteri` ve `kapak_yenile` eklendi):**
 
 | Workflow | İş |
 |---|---|
@@ -101,3 +101,14 @@ Aynı anda **`ARENA_COOKIES_JSON` her yerden kaldırıldı.**
 | `weekly_report.yml`, `cadans_olcum.yml`, `arsiv_esitleme.yml` | raporlama |
 | `mini_app_pages.yml`, `mini_app_veri.yml` | mini app |
 | `test_pipeline.yml` | test koşusu |
+
+---
+
+## 6. Sonra eklenen workflow'lar (2026-11-13)
+
+| Workflow | Neden |
+|---|---|
+| `kanal_envanteri.yml` | Kanal videolarını **API'den** listeler ("60 video" hatası sonrası) |
+| `kapak_yenile.yml` | Mevcut videoların kapağını Gemini ile yeniler (günlük 3 + elle) |
+
+Güncel tam liste: `docs/WORKFLOW_DIZINI.md` (otomatik üretilir).

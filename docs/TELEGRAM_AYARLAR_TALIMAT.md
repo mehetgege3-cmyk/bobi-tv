@@ -14,14 +14,14 @@ Bunları **önce** ölç, sonucu commit mesajına yaz. Ölçmeden koda dokunma.
 |---|---|---|---|
 | **P1** | `trigger_production()` gerçekten çalışıyor mu? | `GH_PAT` secret tanımlı mı? Bot "Üret"e basınca `hourly_production.yml` koşuyor mu? | Çalışmıyorsa "Üret" düğmesi ölü. Paneli buna göre kur, raporda **bildir**. |
 | **P2** | State push'u gerçekten gidiyor mu? | `telegram_bot.yml` içindeki `git push origin main \|\| echo "Push atlandı"` | `\|\| echo` **kaldır**, başarısızlıkta `exit 1`. Yoksa panelde değiştirdiğin ayar sessizce kaybolur. |
-| **P3** | Baz sayılar | `pytest -q` → **137 passed + 1 skipped** beklenir | Farklıysa gerçek sayıyı ölç, talimattaki 137'yi düzelt, raporda yaz. |
+| **P3** | Baz sayılar | `pytest -q` → **679 passed + 1 skipped** beklenir | Farklıysa gerçek sayıyı ölç, talimattaki 679'u düzelt, raporda yaz. |
 | **P4** | Kota matematiği | YouTube 10.000 birim/gün, `videos.insert` ≈1600 → **günde en fazla 6** | Kodda `GUNLUK_MAKS` üst sınırı **6** olacak. |
 
 ---
 
 ## 1. TEMEL KURALLAR (ihlal edilemez)
 
-1. **Test silme / skip'leme / gevşetme yasak.** Gevşek `>=` assert yazma; tam değer yaz ya da testi hiç yazma. Baz **137 passed + 1 skipped** korunur, üstüne eklenir.
+1. **Test silme / skip'leme / gevşetme yasak.** Gevşek `>=` assert yazma; tam değer yaz ya da testi hiç yazma. Baz **679 passed + 1 skipped** korunur, üstüne eklenir.
 2. **Secret değeri** mesajda, commit'te, logda, hata çıktısında, state'te **görünmeyecek.** Sadece "tanımlı / eksik".
 3. **`force-push`, `rm -rf`, `git reset --hard` yasak.**
 4. **`|| echo "Push atlandı"` kalıbı yasak** — push başarısızlığı sessizce yutulmaz.
@@ -99,7 +99,7 @@ Bu grupta **hiçbir düğme değişiklik yapmaz**; sadece değer gösterir + "ne
 
 ### ⚙️ Grup 4 — `sistem` (SADECE GÖRÜNTÜLE, değer asla yazdırılmaz)
 
-`YOUTUBE_TOKEN`, `YOUTUBE_CLIENT_SECRET`, `ARENA_COOKIES_JSON`, `PEXELS_API_KEY`, `GH_TOKEN`, `TELEGRAM_BOT_TOKEN` → panelde yalnız `✅ tanımlı` / `⛔ eksik` + kaynak (`GitHub Secrets`).
+`GEMINI_COOKIES`, `YOUTUBE_TOKEN`, `YOUTUBE_CLIENT_SECRET`, `PEXELS_API_KEY`, `GH_TOKEN`, `TELEGRAM_BOT_TOKEN` → panelde yalnız `✅ tanımlı` / `⛔ eksik` + kaynak (`GitHub Secrets`).
 
 ### Katalogdan ÇIKARILANLAR (gerekçeli)
 
@@ -258,7 +258,7 @@ OTOMATIK_SIL_AKTIF: '1'
 # Silme eşiği TEK KAYNAK: ... (yorum satırı)
 ```
 
-Secret satırları (`YOUTUBE_TOKEN`, `TELEGRAM_BOT_TOKEN`, `ARENA_COOKIES_JSON`, `PEXELS_API_KEY`) **kalır** — köprü bunlara dokunmaz.
+Secret satırları (`GEMINI_COOKIES`, `YOUTUBE_TOKEN`, `TELEGRAM_BOT_TOKEN`, `PEXELS_API_KEY`) **kalır** — köprü bunlara dokunmaz.
 
 **Testler:** `ayarlar.json`'daki değer pipeline'ın gördüğü env'e yansıyor · workflow'da `GUNLUK_MAKS:`/`GUNLUK_HEDEF:` **sabit yazısı kalmadı** (grep assert) · köprü adımı secret'ları env'e yazmıyor · `ayarlar.json` yoksa varsayılanlar uygulanıyor.
 
@@ -325,7 +325,7 @@ Panelde sonuç: süre · çıktı dosyası boyutu · QC sonucu · "yükleme yap�
 
 ## 16. KABUL KRİTERLERİ (hepsi geçmeden push yok)
 
-1. `pytest -q` → **≥137 passed, 1 skipped**; hiçbir test silinmemiş/skip'lenmemiş.
+1. `pytest -q` → **≥679 passed, 1 skipped**; hiçbir test silinmemiş/skip'lenmemiş.
 2. `ruff check` yeni dosyalarda temiz; `mypy` toplam hata sayısı **bazın üstüne çıkmıyor** (baz: 185).
 3. `grep -c "GUNLUK_MAKS:" .github/workflows/hourly_production.yml` → **0**.
 4. `grep -c '|| echo "Push atlandı"' .github/workflows/telegram_bot.yml` → **0**.
@@ -347,7 +347,7 @@ Panelde sonuç: süre · çıktı dosyası boyutu · QC sonucu · "yükleme yap�
 5. feat(kota): GUNLUK_MAKS tavanı 6 + KOTA_DOLU_DAVRANIS + render testi düğmesi (TODO 10,11,12)
 ```
 
-Her commit mesajının sonunda: `Baz: 137 passed + 1 skipped → Şimdi: N passed + 1 skipped`.
+Her commit mesajının sonunda: `Baz: 679 passed + 1 skipped → Şimdi: N passed + 1 skipped`.
 Yapılamayan madde varsa: `YAPILMADI: <sebep>`.
 
 ---

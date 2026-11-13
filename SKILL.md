@@ -16,7 +16,7 @@
 **Skill dosyası:** `SKILL.md`\
 **Ajan adı:** BOBİ\
 **Kanal markası:** BOBİ TV\
-**Sürüm:** 6.4 PRO — Dönen Konu Havuzu, En Az 15sn, 10dk Cron (Güvenilir Değil) + Kota Sınırı & Frame 0 Profesyonel Kapak\
+**Sürüm:** 2026-11-13 — Tek sağlayıcı Gemini web çerezi · 8 saatte bir kadans · 1.5 sn kapak · 679 test\
 **Dil:** Türkçe (`tr`)\
 **Hedef platform:** Yalnızca YouTube\
 **Çalışma modeli:** Bulut öncelikli hibrit (bulut + gerektiğinde yerel bilgisayar)\
@@ -276,10 +276,11 @@ tik ve 96 otonom self-repair denemesi olurdu.
 16 saat hiç çalışmadı. `*/15` yazmak 15 dakikada bir çalışacağı anlamına
 **gelmez**. Bu yüzden:
 
-- **Birincil tetikleyici:** dış dağıtıcı (cron-job.org) → `workflow_dispatch`
-  veya `repository_dispatch` (`bobi-tv-produce`), 15 dakikada bir.
+- **Birincil tetikleyici:** koşu bitince bir sonrakini açan **zincirleme adımı**
+  (`hourly_production.yml` → "Bir sonraki 8 saat turunu zincirle"). 2026-11-11
+  kararı: dış dağıtıcı (cron-job.org) **kaldırıldı** — zincirleme onun yerini aldı.
   Kurulum: `docs/TETIKLEYICI_KURULUM.md`.
-- **Yedek:** GitHub cron `*/15`.
+- **Yedek:** GitHub cron **`0 */8 * * *`** (00/08/16 UTC).
 - **Gerçek sıklık denetimi:** workflow'un "son koşudan bu yana" adımı logda
   geçen dakikayı yazar. 480 dk ayarında ~480 görmelisin (panel: 🛠 Sistem → 📉 Cadans); 60+ fark varsa
   dış dağıtıcı ölmüş, cron yedeğe düşmüşsündür.
@@ -773,7 +774,7 @@ Bu bölüm, önceki bölümlerdeki eski/yanlış iddiaları geçerli durumla de�
   `modules/telegram_bot.py`.
 
 ### 24.6 Kabul kriterleri (her commit öncesi)
-- `python3 -m pytest -q` yeşil; test sayısı DÜŞMEZ (mevcut: 116 passed,
+- `python3 -m pytest -q` yeşil; test sayısı DÜŞMEZ (mevcut: 679 passed,
   1 skipped). `pytest.mark.integration` render testi normal koşuda skip.
 - `ruff check` + `ruff format --check` (ilgili dosyalar).
 - `mypy --strict` (ilgili dosyalar).
@@ -839,9 +840,52 @@ f_req = json.dumps([None, json.dumps(ic)])   # ✅ DOĞRU (2 öğe, iç sarmalan
 **Görsel indirme:** yanıttaki `googleusercontent.com` URL'i + çerez.
 URL'e **`=s2048`** eklenince 286×512 → **1408×768**.
 
-**Dikey zorlaması (Shorts şart):** isteme
-`"ÖNEMLİ: Görsel DİKEY (9:16, portre) olsun. Yazı, harf, logo koyma. Soru sorma, yap."`
+**Kapak istemi (K8 — kullanıcının tek cümlesi):**
+`"<video başlığı> İsimli short video için kapak fotoğrafı istiyorum; etkileşim
+ve izlenme rekorları kırması için profesyonel şekilde tasarla. Kapak
+fotoğrafını gören merak edip tıklasın."`
+
+> ⚠️ **2026-11-13 KULLANICI KARARI:** Eski ek kurallar (*"dikey ol"*, *"yazı
+> koyma"*, *"Soru sorma, yap"*) **İPTAL**. Kullanıcı: *"Şablonu çöpe at. Sadece
+> benim dediğimi yap."* İstem = video başlığı + bu tek cümle, başka hiçbir şey.
 → ölçüldü 768×1376 (oran 1.79).
 
-**Kapak sırası:** Gemini WEB → Arena → Gemini API → video karesi.
+**Kapak sırası:** Gemini web çerezi → (başarısızsa) video karesi.
+Arena ve Gemini API 2026-11-13'te **çöpe atıldı** — sırada yerleri yok.
 **Çerez ömrü:** `1PSIDTS` kısa; **Gemini sekmesini açık bırakma** (daha hızlı ölür).
+
+---
+
+## 33. DURUM ÖZETİ — 2026-11-13 (bu bölüm her turda güncellenir)
+
+### Tek sağlayıcı
+| Sağlayıcı | Durum |
+|---|---|
+| **Gemini web çerezi** | ✅ **TEK SAĞLAYICI** — kapak + senaryo + yorum cevabı |
+| Arena AI | ⛔ çöpe atıldı (çerez 401, tarayıcı duvarı) |
+| Gemini API | ⛔ çöpe atıldı (görsel kotası `limit: 0`) |
+
+Secret: yalnız `GEMINI_COOKIES`. `ARENA_COOKIES_JSON`, `GEMINI_API_KEY`,
+`LMARENA_EMAIL`, `LMARENA_PASSWORD` **ölü** — silinebilir.
+
+### Kapak hattı — 2026-11-13 DÜZELTMELERİ
+| Kök neden | Düzeltme |
+|---|---|
+| `paket["final_video"]` güncellenmiyordu → YouTube'a **kapaksız** video | `paket["final_video"] = video_yolu` |
+| Kapak **33 ms** görünüyordu (1 kare) | `trim=end_frame=45` → **1.5 sn** |
+| Shorts rafı `oar2.jpg` API ile değiştirilemez | Kabul — Studio'da elle |
+| Animasyon 1. karede metin yerine `{` | ⚠️ **AÇIK** — düzeltilmedi |
+
+Ayrıntı: `docs/KAPAK_TESHIS.md`.
+
+### Kanal gerçeği
+Kanal verisi **her zaman** YouTube Data API'den alınır.
+`bobi_tv/archive/videos.json` kanal envanteri **DEĞİLDİR** — geçmiş kayıt
+defteridir. 2026-11-13'te bu dosya sayılıp "60 video" dendi; kanalda **13**
+vardı. Araçlar: `tools/kanal_envanteri.py`, `tools/kapak_yenile.py`.
+
+### Açık işler
+1. Animasyon şablonunda `{` interpolasyon hatası (1. kare + video başlığı).
+2. `EQPd1GlVCMw` videosunun başlığı `{ #shorts` — `videos.update` ile düzeltilebilir.
+3. **Süre ↔ izlenme ters ilişkisi:** 20 sn'lik videolar 1.100+ izlenme,
+   1-2 dk'lık videolar 0-14. Araştırılmadı.

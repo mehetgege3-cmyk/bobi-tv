@@ -9,7 +9,7 @@
 | `canli_test.yml` | Canlı Test — 1 video üret + yükle (tek seferlik) | ✅ | — |
 | `cleanup_low_views.yml` | 🧹 BOBİ TV Otomatik Temizleme — <100 İzlenme Videoları Sil | ✅ | 0 * * * * |
 | `daily_production.yml` | BOBİ TV — Toplu Manuel Üretim Pipeline | ✅ | — |
-| `hourly_production.yml` | BOBİ TV v6.4 PRO — Saatlik Üretim + Kota Takibi | ✅ | 0 */8 * * * |
+| `hourly_production.yml` | BOBİ TV — Üretim (8 saatte bir) + Kota Takibi | ✅ | 0 */8 * * * |
 | `kanal_envanteri.yml` | 📊 Kanal Envanteri (gerçek video sayısı) | ✅ | — |
 | `kanal_sagligi.yml` | Kanal Sağlığı Ölçümü (günlük) | ✅ | 23 7 * * * |
 | `kanal_temizle.yml` | BOBİ TV — Kanal Temizle | ✅ | — |

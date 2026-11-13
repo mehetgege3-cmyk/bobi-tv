@@ -1,134 +1,204 @@
-# 🎬 BOBİ TV — v6.3 Video Pipeline / v7.0 Senaryo Motoru
+# 🎬 BOBİ TV — Otonom YouTube Shorts Üretim Hattı
 
-Türkçe absürt ve ironik komedi diyaloglarını **yüksek tutunmalı (high-retention)** YouTube Shorts videolarına dönüştüren uçtan uca otonom yapay zeka prodüksiyon hattı.
+Türkçe ilginç bilgi videolarını **sıfır insan müdahalesiyle** üretip YouTube
+Shorts'a yükleyen otonom hat.
 
+**Son güncelleme: 2026-11-13** · 679 test · 16 workflow · 38 modül
 
-### Arena.ai Entegrasyonu (2026-11-13)
+---
 
-Arena'dan **görsel üretimi** ve **cevap** alma hattı canlı kanıtlıdır
-(uçtan uca 144 sn, koşu `43323638730`).
+## ⚡ Tek sağlayıcı: Gemini web çerezi
+
+Arena AI ve Gemini API **2026-11-13'te tamamen çöpe atıldı** (kullanıcı kararı).
+Tek çalışan sağlayıcı **Gemini web çerezi**dir: kapak görseli, senaryo ve yorum
+cevabı hepsi buradan gelir.
 
 | Doküman | İçerik |
 |---|---|
-| `docs/GEMINI_WEB.md` | **Tek sağlayıcı** — Gemini web çereziyle görsel/metin üretimi |
-| `docs/GEMINI_ENTEGRASYON.md` | Sağlayıcı karşılaştırması, eski API ölçümleri |
-| `docs/KAPAK_TESHIS.md` | Kapak neden görünmüyordu — kök nedenler + düzeltmeler |
-| `docs/KURALLAR.md` | Bağlayıcı çalışma kuralları (K1–K9) |
+| `docs/GEMINI_WEB.md` | **Tek sağlayıcı** — çerezle görsel/metin üretimi, çalışan yol |
+| `docs/GEMINI_ENTEGRASYON.md` | Neden Arena/Gemini API çöpe atıldı — ölçümler |
+| `docs/KAPAK_TESHIS.md` | Kapak neden görünmüyordu — 4 kök neden + düzeltmeler |
+| `docs/KURALLAR.md` | **Bağlayıcı çalışma kuralları K1–K9** — önce bunu oku |
 
-**Kısa özet:** Tarayıcı yalnızca gönderir (`recaptchaV3Token` zorunlu);
-cevap `GET /api/chat/{id}/events`, görsel
-`GET /api/chat/workspace/cas/user/{hash}` ile **tarayıcısız** okunur.
-Koşu izleme: `tools/kosu_bekle.sh` (sabit bekleme yok).
+**Kapak istemi (K8 — kullanıcının tek cümlesi, ek kural yok):**
 
-### Senaryo Motoru v7.0
-- Senaryo çekirdeği `modules/senaryo_v7/` altında sablonlar, dogrulama, zenginlestirme, arsiv, kuyruk ve cikti sorumluluklarına ayrıldı.
-- Dataclass modelleri, duygu/stil/kamera/rol Enum'ları, referanslı karakter kartları (sabit Ahmet/Emel sesi), satır başına TTS/altyazı/kamera alanları, v6/satirlar migration'ı (`semaversiyonu: "7.0"`), merkezi `Ayarlar`, logging ve alan bazlı istisnalar kullanılır. Diyalog modeli: `modules/senaryo_v7/models.py`.
-- Geriye dönük uyumluluk: `from modules.scenario import senaryo_paketi_olustur` ve `senaryo_paketi_olustur(video_no)` aynen çalışır.
-- Kalite kapısı: `pytest -q`, `mypy --strict`, `ruff check`, `ruff format --check`. Mimari: `modules/senaryo_v7/`.
-
-### v6.3 PRO: Sürekli Değişen Konular + 15sn Minimum
-- **Konu rotasyonu:** Bar fıkraları, paradoks hikâyeleri, absürt komedi/şakalar, çılgın ama zararsız hikâyeler, ters köşe fıkralar, eğlenceli replik düelloları ve saygılı kültürler arası mizah. Son 6 yayın kategorisi rotasyon seçiminde geriye atılır; yeni yüklemelerin kategorisi arşivlenir.
-- **Kimlik güvenliği:** Irk/ten rengi/etnik köken hedefli aşağılayıcı fıkra veya stereotip üretilmez; çok kültürlü mizah, karakter ve durum komedisi şeklinde kapsayıcı yazılır.
-- **Süre garantisi:** Kısa senaryolar render öncesi konuşma replikleriyle uzatılır; Render QC 15.0 saniyenin altındaki videoyu reddeder. YouTube'a yalnızca en az 15 saniyelik, QC'den geçen video gönderilir.
-
-### v6.2 PRO: İlk Kare Kapak + 15 Dakika Üretim + Performans Kontrolü
-- **Profesyonel kapak:** Özel 1080×1920 VS/Clash kapak görseli videonun Frame 0'ına gömülür; render sonrası ilk kare tekrar çıkarılır ve YouTube özel kapak olarak yüklenir.
-- **15 dakikada bir:** `.github/workflows/hourly_production.yml` cron'u `*/15 * * * *`; bir çalıştırmada 1 video, günlük yapılandırılmış tavan 96 videodur.
-- **İzlenme eşiği:** Her çalışmada, yayını en az 60 dakika önce yapılmış ve YouTube Data API'de 100'den az görüntülenen adaylar otomatik silinir; arşiv durumu ve Telegram bildirimi güncellenir.
-- **OAuth önkoşulu:** Otomatik silme için `YOUTUBE_TOKEN` refresh token'ı kanal videosu silmeye izin veren `https://www.googleapis.com/auth/youtube.force-ssl` veya daha geniş bir YouTube OAuth scope'u ile verilmiş olmalıdır. Silme API izin vermezse video korunur ve log'a hata yazılır.
-- **Operasyonel uyarı:** 15 dakikada bir üretim günde 96'ya kadar video anlamına gelir; GitHub Actions zamanlama gecikebilir, YouTube yükleme/API limitleri uygulanabilir ve 100 izlenme kararı için YouTube `viewCount` gecikmeli olabilir. Silme işlemi kalıcıdır; eşik, 60 dakika geçtikten sonra ilk uygun denetimde uygulanır.
-
+```
+<video başlığı> İsimli short video için kapak fotoğrafı istiyorum; etkileşim ve
+izlenme rekorları kırması için profesyonel şekilde tasarla. Kapak fotoğrafını
+gören merak edip tıklasın.
+```
 
 ---
 
-## 🚀 v6.3 PRO Mimari Özeti
+## 🔄 Üretim akışı
+
+```
+video metni
+   ↓
+Gemini web  →  kapak görseli (1080×1920)
+   ↓
+kapak_arena.ilk_kareye_yerlestir()  →  videonun 1. karesine 1.5 sn göm
+   ↓
+paket["final_video"] GÜNCELLENİR   ← 2026-11-13 DÜZELTMESİ
+   ↓
+youtube_upload.video_yukle()  →  YouTube + thumbnails.set
+```
+
+> ⚠️ **2026-11-13 düzeltmesi:** `paket["final_video"]` güncellenmediği için
+> YouTube'a **kapaksız** video gidiyordu. Log "gömüldü: EVET" diyordu ama
+> yükleme orijinal dosyayı okuyordu. Ayrıntı: `docs/KAPAK_TESHIS.md`.
+
+---
+
+## ⏱️ Üretim kadansı — 8 saatte bir (günde 3)
+
+| Parametre | Değer | Yeri |
+|---|---|---|
+| `KADANS_DK` | **480** (8 saat) | `modules/kadans.py` |
+| `KADANS_CRON` | **`0 */8 * * *`** (00/08/16 UTC) | `modules/kadans.py` |
+| `IZLENME_KONTROL_DK` | **360** (6 saat) | `main_pipeline.py` |
+| `MIN_IZLENME_ESIGI` | **100** | `main_pipeline.py` |
+| Günlük yükleme tavanı | **YOK** | — |
+
+Bağlayıcı kural: `docs/KADANS.md` Bölüm 5. Önceki "15 dakikada bir" rejimi
+kanalı yaktı (1 saatte 21 silinen video, ortalama 0.8 izlenme) — iptal edildi.
+
+---
+
+## 📁 Yapı
 
 ```text
 bobi-tv/
-├── .github/workflows/
-│   ├── hourly_production.yml   # Her 15 dk üretim, 60 dk/100 izlenme otomatik kontrol + Artifact
-│   ├── arena_senaryo.yml       # Günlük Arena AI Master Loop senaryo üretimi
-│   ├── daily_production.yml    # Manuel toplu üretim tetikleyicisi
-│   ├── test_pipeline.yml       # Uçtan uca v6.0 Render & QC doğrulama testi
-│   ├── arena-agent.yml         # Arena.ai Playwright çerez & oturum testi
-│   └── arena_self_repair.yml   # Tüm workflow hatalarında Arena teşhis + kalite kapılı main onarımı
-├── modules/
-│   ├── arena_api.py            # Arena.ai Headless Playwright Yönetmen + Çerez Yenileyici
-│   ├── arena_uretici.py        # Senkron üretim sarmalayıcısı
-│   ├── scenario.py             # v6 uyumlu façade; tek argümanlı senaryo_paketi_olustur(video_no)
-│   ├── senaryo_v7/             # Tipli v7 çekirdeği: sablonlar/dogrulama/zenginlestirme/arsiv/kuyruk/cikti/cli
-│   ├── tts_engine.py           # Çift Sesli (Ahmet+Emel), Sıfır Ölü Boşluklu TTS + WordBoundary
-│   ├── audio_fx.py             # Stüdyo SFX (whoosh, pop, vine_boom, riser, ding) + Sidechain BGM (-14 LUFS)
-│   ├── animasyon.py            # 1080x1920 30FPS Vektör Karakter Kartları + Kutulu Karaoke Altyazı + Zoom/Shake
-│   ├── video_render.py         # Çok kanallı ses miksajı + FFmpeg rawvideo borusu + ffprobe Kalite Kontrolü (QC)
-│   ├── kapak_uret.py           # 1080x1920 profesyonel VS/Clash kapak + Frame 0 çıkarımı
-│   ├── youtube_upload.py       # YouTube API: ilk yorum, özel kapak, <100/60dk otomatik silme + kota koruması
-│   └── telegram_notify.py      # Telegram anlık yayın, kuyruk ve hata bildirimleri
-├── bobi_tv/
-│   ├── assets/
-│   │   ├── fonts/              # Montserrat-ExtraBold.ttf & Montserrat-Bold.ttf (Türkçe İ/Ş/Ğ tam uyumlu)
-│   │   └── sfx/                # Önbellekli stüdyo ses efektleri (.wav)
-│   ├── queue/                  # YouTube kotasına (uploadLimitExceeded) takılan hazır işlerin bekleme kuyruğu
-│   ├── archive/                # Yayınlanan videoların geçmişi ve tekrar önleme (MD5) kayıtları
-│   ├── production/             # Senaryo şablonları (prompt_template.md) ve geçici çalışma alanı
-│   └── output/                 # Üretilen nihai MP4 ve kapak görselleri
-├── docs/
-│   ├── KURALLAR.md             # Bağlayıcı çalışma kuralları K1–K9
-│   ├── KADANS.md               # Üretim kadansı (8 saatte bir) + bağlayıcı Bölüm 5
-│   ├── KAPAK_TESHIS.md         # Kapak kök nedenleri ve düzeltmeleri
-│   ├── GEMINI_WEB.md           # Tek sağlayıcı: Gemini web çerezi
-│   └── AYARLAR.md              # Ayar kataloğu
-├── main_pipeline.py            # Ana orkestrasyon ve akıllı kuyruk yöneticisi
-├── requirements.txt            # Python bağımlılıkları
-└── SKILL.md                    # BOBİ Ajan Anayasası ve v6.0 PRO Kalıcı Kuralları
+├── .github/workflows/            16 workflow
+│   ├── hourly_production.yml     üretim (8 saatte bir) + zincirleme
+│   ├── daily_production.yml      manuel toplu üretim
+│   ├── canli_test.yml            tek video üret + yükle (canlı test)
+│   ├── kapak_yenile.yml          mevcut videoların kapağını Gemini ile yenile
+│   ├── kanal_envanteri.yml       kanal videolarını API'den listele
+│   ├── kanal_sagligi.yml         günlük kanal ölçümü
+│   ├── cadans_olcum.yml          kadans gerçekleşme ölçümü
+│   ├── cleanup_low_views.yml     düşük izlenme temizliği
+│   ├── yorum_cevap.yml           yorum cevaplama (Gemini)
+│   ├── telegram_bot.yml          Telegram kontrol paneli (poller)
+│   ├── arsiv_esitleme.yml        arşiv senkronizasyonu
+│   ├── kanal_temizle.yml         kanal temizliği
+│   ├── weekly_report.yml         haftalık rapor
+│   ├── mini_app_pages.yml        Mini App yayını (GitHub Pages)
+│   ├── mini_app_veri.yml         Mini App verisi
+│   └── test_pipeline.yml         uçtan uca test
+├── modules/                      38 modül
+│   ├── gemini_web.py             ★ TEK SAĞLAYICI (web çerezi)
+│   ├── gemini_api.py             ⛔ kullanılmıyor (kota 0)
+│   ├── kapak_hatti.py            kapak üretimi + 1. kareye gömme hattı
+│   ├── kapak_arena.py            ffmpeg: 45 kare = 1.5 sn gömme
+│   ├── kapak_gorsel.py           görseli 1080×1920 kareye oturtma
+│   ├── youtube_upload.py         yükleme + thumbnails.set + otomatik silme
+│   ├── uretim_hatti.py           TTS → render → kapak → paket
+│   ├── tts_engine.py             tr-TR Ahmet/Emel çift ses
+│   ├── animasyon.py              1080×1920 30fps vektör + karaoke altyazı
+│   ├── video_render.py           ffmpeg miksaj + ffprobe QC
+│   ├── telegram_bot.py           Telegram paneli (132K, en büyük modül)
+│   ├── ilginc_bilgi/             içerik hattı v8.0
+│   └── senaryo_v7/               senaryo motoru v7 (sablonlar/doğrulama/...)
+├── tools/                        5 canlı araç
+│   ├── disk_bekci.py             workspace bütçe denetimi (K7)
+│   ├── gemini_cerez_kur.py       Gemini çerezini doğrula + secret'a yaz
+│   ├── kanal_envanteri.py        kanal videolarını API'den listele
+│   ├── kapak_yenile.py           mevcut videoların kapağını yenile
+│   └── workflow_dizini_uret.py   docs/WORKFLOW_DIZINI.md üretir
+├── docs/                         18 doküman (aşağıda)
+├── tests/                        679 test
+├── arsiv/arena_olu_kod/          ÖLÜ Arena kodu — çalışmıyor, tarihsel
+├── kanit/2026-11/                tarihli kanıtlar (gemini/ = canlı sağlayıcı)
+├── bobi_tv/                      VERİ
+│   ├── assets/                   fontlar (Montserrat) + SFX
+│   ├── archive/                  yayın geçmişi + tekrar önleme (MD5)
+│   ├── state/                    kalıcı durum JSON'ları
+│   └── queue/                    kota kuyruğu
+├── webapp/                       Mini App (GitHub Pages)
+├── main_pipeline.py              ana orkestrasyon
+└── SKILL.md                      ajan anayasası
 ```
 
 ---
 
-## 💎 Shorts Hazırlarken Uygulanan 8 Altın Kural (v6.0 Standartları)
+## 🔑 GitHub Secrets
 
-1. **0.0 Saniye Kancası (Sıfır Ölü Boşluk):** Videonun başında sessiz bekleme yoktur (`hook_suresi = 0.0`). İlk karede sarı şok başlık bandı, `whoosh` ses efekti ve olayın sonucundan başlayan ilk replik aynı salisede girer.
-2. **Çift Sesli Zıt Diyalog:** Tekdüze anlatım yerine Karakter 1 **`tr-TR-AhmetNeural` (Erkek)** ve Karakter 2 **`tr-TR-EmelNeural` (Kadın)** sesleriyle karşılıklı konuşur.
-2a. **Süre ve çeşitlilik (v6.3):** Her yayın en az **15 saniye** olmalı; daha kısa senaryo otomatik genişletilir, QC'den geçmezse yayınlanmaz. Konular son 6 kategorinin dışına rotasyonla seçilir.
-3. **Nefes Boşluğu Kırpma (`silenceremove`):** TTS motorunun cümle başı ve sonuna eklediği 250–400ms ölü sessizlikler FFmpeg ile kesilir; `WordBoundary` zaman damgaları 0ms kaymayla yeniden kalibre edilir.
-4. **Aktif-Kelime Kutulu Karaoke Altyazı:** Mobil izleyicilerin %60–80'i sesi kapalı başladığı için, o an okunan kelimenin arkasına yuvarlatılmış parlak sarı/kırmızı kutu (*pill*) çizilir ve Türkçe büyük harf kurallarına (`i -> İ`, `ı -> I`) tam uyulur.
-5. **Vektörel Karakter Portreleri & Yaylanan Balonlar:** Sunucularda kırık emoji kutusu (`□`) oluşmaması için her karaktere özel vektörel portre rozeti ve ses şiddetine (RMS) duyarlı canlı ekolayzır çubukları çizilir.
-6. **Twist Darbesi (Zoom + Shake + 808 Vine Boom):** Sondan bir önceki ters köşe cümlesinde `riser` + `vine_boom` çalar, üst bant kırmızıya döner, kamera **%118 zoom** ve hafif sarsıntı (*shake*) yapar.
-7. **Sidechain Fon Müziği & `-14 LUFS` Ses Dengelemesi:** 118 BPM telifsiz ritmik fon müziği konuşma sırasında otomatik **`-20 dB`** seviyesine kısılır ve çıkış sesi YouTube Shorts standardı olan **`-14 LUFS`** seviyesine normalize edilir.
-8. **%100 Dilbilgisel Kusursuz Döngü (Seamless Loop):** Son cümle yarım kalarak 0.0 saniyedeki ilk cümleye bağlanır; izleyici videonun bittiğini fark etmeden ikinci tura başlar (**>%100 APV**).
+| Secret | Durum | Açıklama |
+|---|:---:|---|
+| `GEMINI_COOKIES` | ✅ **zorunlu** | Gemini web çerezleri (11 çerez). `tools/gemini_cerez_kur.py` ile kurulur |
+| `YOUTUBE_TOKEN` | ✅ zorunlu | OAuth JSON (`client_id`, `client_secret`, `refresh_token`) |
+| `YOUTUBE_CLIENT_SECRET` | ✅ zorunlu | Google Cloud OAuth istemci yapılandırması |
+| `TELEGRAM_BOT_TOKEN` | ➖ | Telegram paneli |
+| `TELEGRAM_CHAT_ID` | ➖ | Bildirim hedefi |
+| `GH_PAT` | ➖ | Workflow tetikleme, secret yazma |
+| `ARENA_COOKIES_JSON` | ⛔ **ölü** | Arena çöpe atıldı. Silinebilir |
+| `GEMINI_API_KEY` | ⛔ **kullanılmıyor** | Görsel kotası `limit: 0`. Silinebilir |
+| `LMARENA_EMAIL` / `LMARENA_PASSWORD` | ⛔ **ölü** | Arena girişi. Silinebilir |
 
----
-
-## ⚙️ GitHub Secrets Yapılandırması
-
-| Secret Adı | Zorunlu | Açıklama |
-|------------|:-------:|----------|
-| `YOUTUBE_TOKEN` | ✅ | YouTube Data API v3 OAuth JSON (`client_id`, `client_secret`, `refresh_token`) |
-| `YOUTUBE_CLIENT_SECRET` | ✅ | Google Cloud OAuth istemci yapılandırması |
-| `ARENA_COOKIES_JSON` | ✅ | Cookie-Editor ile alınan Arena.ai oturum çerezleri (otomatik yenilenir) |
-| `GH_PAT` | ✅ | Yenilenen Arena çerezini Secret'a geri yazmak ve workflow tetiklemek için PAT |
-| `TELEGRAM_BOT_TOKEN` | ➖ | Yayın, kuyruk ve hata bildirimleri için Telegram Bot Token |
-| `TELEGRAM_CHAT_ID` | ➖ | Bildirimlerin gönderileceği Telegram Chat ID |
-| `PEXELS_API_KEY` | ➖ | Opsiyonel dikey HD B-Roll stok arka plan videosu anahtarı |
+> **K6:** API anahtarı/çerez sohbete yazılmaz, yalnız GitHub Secrets'a.
 
 ---
 
-## 🧪 Çalıştırma Komutları
+## 🧪 Çalıştırma
 
 ```bash
-# Sadece yerel Pro MP4 + Kapak üretimi ve ffprobe Kalite Kontrolü (YouTube'a yüklemeden test)
+# Test
+python3 -m pytest -q                          # 679 passed, 1 skipped
+
+# Yerel üretim (YouTube'a yüklemeden)
 YUKLEME_ATLA=1 GUNLUK_HEDEF=1 python3 main_pipeline.py
 
-# Tam otonom üretim + YouTube yükleme + Otomatik ilk yorum + Akıllı kota kuyruğu
+# Tam otonom üretim + yükleme
 GUNLUK_HEDEF=1 python3 main_pipeline.py
 
-# v7 senaryo kalite kapıları
-python -m pip install -r requirements-dev.txt
-pytest -q
-mypy --strict
-ruff check
-ruff format --check
+# Kanal envanteri (GERÇEK video sayısı — API'den)
+python3 tools/kanal_envanteri.py
+
+# Mevcut videoların kapağını yenile
+python3 tools/kapak_yenile.py --azami 5
+
+# Workspace bütçe denetimi
+python3 tools/disk_bekci.py
 ```
 
-## 📺 Kanal
-- **YouTube:** [@BOBİTİVİ](https://www.youtube.com/@BOBİTİVİ)
+**Kalite kapısı:** `pytest -q`, `mypy --strict`, `ruff check`, `ruff format --check`.
+**Kural:** testler yeşil olmadan push yok.
+
+---
+
+## 📚 docs/ — 18 doküman
+
+| Doküman | İçerik |
+|---|---|
+| `KURALLAR.md` | **K1–K9 bağlayıcı kurallar** — önce bunu oku |
+| `KADANS.md` | Üretim kadansı + bağlayıcı Bölüm 5 |
+| `KAPAK_TESHIS.md` | Kapak kök nedenleri (2026-11-13) |
+| `GEMINI_WEB.md` | Tek sağlayıcı, çalışan yol |
+| `GEMINI_ENTEGRASYON.md` | Sağlayıcı karşılaştırması, eski ölçümler |
+| `AYARLAR.md` | Ayar kataloğu |
+| `KANCA_VE_KAPAK.md` | Kanca + kapak stratejisi |
+| `ILGINC_BILGI_HATTI.md` | İçerik hattı v8.0 |
+| `ETKILESIM_TAKTIKLERI.md` | Etkileşim taktikleri |
+| `OLU_KOD_TEMIZLIGI.md` | Temizlik raporu (2026-11-13) |
+| `TETIKLEYICI_KURULUM.md` | Zincirleme tetikleyici |
+| `POLLER_GECIKMESI.md` | Telegram poller kararları |
+| `MINI_APP.md`, `MINI_APP_KURULUM.md` | Mini App |
+| `WORKFLOW_DIZINI.md` | Otomatik üretilen workflow listesi |
+| `BOBI_TV_PRO_GELISTIRME_REHBERI.md` | Geliştirme rehberi |
+| `TELEGRAM_AYARLAR_TALIMAT.md` | Telegram kurulumu |
+| `logs_115683676683_analysis.md` | Log analizi |
+
+---
+
+## 📊 Kanal durumu (2026-11-13, API'den)
+
+```
+KANAL: BOBİ TV (UCJzCURUGVP3-baKe7N9FNjw)
+abone=2 · video=13 · izlenme=6136
+```
+
+> **Ders:** Kanal verisi **her zaman** YouTube Data API'den alınır.
+> `bobi_tv/archive/videos.json` kanal envanteri **değildir** — geçmiş kayıt
+> defteridir (37 `silindi_dusuk_izlenme`, 9 `kaldirildi`). Bir kez bu dosya
+> sayılıp "60 video var" dendi, kanalda 13 vardı.

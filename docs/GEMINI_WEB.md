@@ -235,4 +235,4 @@ kapak 41 karakterlik başlıktan üretiliyordu (yine de konuyla uyumlu çıktı
 `soru` + `cevap` + `sonuc` birleştirilir.
 
 **Doğrulama:** aynı konu için video metni **41 → 1660 karakter**;
-toplam istem **3192 karakter**. Testler: 812 passed.
+toplam istem **3192 karakter**. Testler: **679 passed, 1 skipped** (2026-11-13 güncel).

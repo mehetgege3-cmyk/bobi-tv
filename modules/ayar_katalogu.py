@@ -346,15 +346,18 @@ KATALOG: list[dict[str, Any]] = [
         "secret": True,
     },
     {
-        "anahtar": "ARENA_COOKIES_JSON",
-        "etiket": "Arena cookies",
+        # 2026-11-13: Arena AI çöpe atıldı (kullanıcı kararı). Panelde ölü
+        # secret göstermek yanıltıcıydı — yerine GERÇEK sağlayıcı geldi.
+        # Eski kayıt: ARENA_COOKIES_JSON ("Arena cookies").
+        "anahtar": "GEMINI_COOKIES",
+        "etiket": "Gemini web çerezi",
         "grup": "sistem",
         "tip": "sadece_goruntule",
         "secenekler": None,
         "varsayilan": None,
         "min": None,
         "max": None,
-        "env_adi": "ARENA_COOKIES_JSON",
+        "env_adi": "GEMINI_COOKIES",
         "risk": "yuksek",
         "kalici": False,
         "etkili": True,

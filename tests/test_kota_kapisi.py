@@ -226,7 +226,8 @@ def _piline_bagla(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> _Any:
     monkeypatch.setattr(mp, "ARSIV", tmp_path / "videos.json")
     monkeypatch.setattr(mp, "KUYRUK_YOLU", tmp_path / "queue")
     monkeypatch.setattr(mp, "LOG_YOLU", tmp_path / "logs")
-    monkeypatch.setattr(mp, "uretim_hatti_calistir", lambda no: _paket_sablonu(tmp_path))
+    # 2026-11-13 motor devrimi: eski hattın yerine yeni motor
+    monkeypatch.setattr(mp, "video_uret", lambda no: _paket_sablonu(tmp_path))
     monkeypatch.setattr(mp, "dusuk_izlenmeli_videolari_temizle", lambda **k: [])
     monkeypatch.setattr(mp, "notify_error", lambda *a, **k: None)
     monkeypatch.setattr(mp, "kota_state_yaz", lambda **k: None)
@@ -281,7 +282,7 @@ def test_yukleme_atla_1_iken_yukleme_cagirilmaz(monkeypatch: pytest.MonkeyPatch,
 
     monkeypatch.setattr(mp, "toplu_yukle", sahte_toplu_yukle)
     monkeypatch.setattr(mp, "send_message", lambda *a, **k: True)
-    monkeypatch.setattr(mp, "uretim_hatti_calistir", lambda no: None)  # üretim yok (kuyruk boş)
+    monkeypatch.setattr(mp, "video_uret", lambda no: None)  # üretim yok (kuyruk boş)
     with pytest.raises(SystemExit):
         mp.pipeline_calistir()
     assert cagrilar == [], "YUKLEME_ATLA=1 iken yükleme çağrılmamalı"

@@ -12,14 +12,9 @@ from PIL import Image
 # Google GenAI yerine proje gereksinimi olan çerez tabanlı gorsel_uret modülü kullanılıyor
 from modules.gemini_web import gorsel_uret
 
-# YouTube yükleyici modülü çağrısı (proje yapısındaki mevcut dosya)
-try:
-    from modules.youtube_upload import video_yukle
-except ImportError:
-    # Test ortamları veya bağımlı modülün henüz yüklenmediği durumlar için fallback
-    def video_yukle(paket):
-        print(f"[MOCK] YouTube Yükleme Simülasyonu: {paket}")
-        return True
+# YÜKLEME İMPORTU YOK (2026-11-13): yüklemeyi main_pipeline yapar.
+# Gemini ilk sürümde burada video_yukle() çağırıyordu; pipeline da çağırınca
+# aynı video YİNE yükleniyordu → çift yükleme. Tek sorumluluk: dosya üret.
 
 
 # İlginç konu havuzu (Türkçe, sade, "sen" dili)
@@ -143,9 +138,20 @@ def video_uret(video_no: int) -> dict:
         "etiketler": etiketler,
     }
 
-    # YouTube'a Yükle
-    print("[BOBİ TV] YouTube'a yükleniyor...")
-    video_yukle(paket)
+    # Yükleme YOK — pipeline `toplu_yukle()` ile yapacak.
+    print(f"[BOBİ TV] Paket hazır (yükleme pipeline'da): {baslik}")
+
+    # main_pipeline bu alanı loglar (sözdizimi sözleşmesi)
+    try:
+        import subprocess as _sp
+        _s = _sp.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+             "-of", "csv=p=0", final_video_yolu],
+            capture_output=True, text=True, timeout=60,
+        ).stdout.strip()
+        paket["video_suresi"] = round(float(_s), 2) if _s else 0
+    except Exception:
+        paket["video_suresi"] = 0
 
     print(f"[BOBİ TV] İşlem tamamlandı: {final_video_yolu}")
     return paket

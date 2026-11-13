@@ -117,20 +117,22 @@ def test_yuklenmis_paket_render_edilmeden_tuketilir(monkeypatch: pytest.MonkeyPa
     monkeypatch.setattr(mp, "zaten_yuklendi_mi", lambda dosya_adi: "vid123")
     import sys
 
-    sahte_kapak = type(sys)("modules.kapak_hatti")
-    sahte_kapak.kapak_uret_ve_yerlestir = _yasak_fonksiyon("kapak_uret_ve_yerlestir")
-    monkeypatch.setitem(sys.modules, "modules.kapak_hatti", sahte_kapak)
-    for ad in ("senaryo_seslendir", "video_render"):
-        monkeypatch.setattr(mp, ad, _yasak_fonksiyon(ad))
+    # 2026-11-13: senaryo_seslendir/video_render/kapak_hatti SİLİNDİ.
+    # Artık bu yollar hiç çağrılamaz — varlıkları bile aranmıyor.
 
     paket, dosya = mp.kuyruktan_paket_hazirla()
     assert paket is None and dosya is None
     assert not hedef.exists(), "Bayat kuyruk kaydı tüketilmeli (silinmeli)"
 
 
-def test_yuklenmemis_paket_render_yolu_korunur(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    """published kaydı yoksa mevcut davranış korunur: kota kuyruğu render edilip
-    döner ve kayıt silinmez (silme yükleme başarısından sonradır)."""
+def test_yuklenmemis_paket_dosyasiz_tuketilir(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """2026-11-13 motor devrimi sonrası: yeniden render yolu YOK.
+
+    Eski davranış: `final_video` yoksa senaryo_seslendir + video_render ile
+    yeniden üretilirdi. O zincir silindi. Yeni motor `video_uret()` kendi
+    videosunu üretir; kuyrukta videosu olmayan (silinmiş dosya) kayıt
+    kurtarılamaz → tüketilir, pipeline tıkanmaz.
+    """
     mp: Any = importlib.import_module("main_pipeline")
     kuyruk = tmp_path / "queue"
     kuyruk.mkdir()
@@ -141,14 +143,8 @@ def test_yuklenmemis_paket_render_yolu_korunur(monkeypatch: pytest.MonkeyPatch, 
     monkeypatch.setattr(mp, "KUYRUK_YOLU", kuyruk)
     monkeypatch.setattr(mp, "LOG_YOLU", tmp_path / "logs")
     monkeypatch.setattr(mp, "zaten_yuklendi_mi", lambda dosya_adi: None)
-    monkeypatch.setattr(mp, "senaryo_seslendir", lambda paket: paket)
-    monkeypatch.setattr(mp, "video_render", lambda paket: None)
-    import sys
-
-    sahte_kapak = type(sys)("modules.kapak_hatti")
-    sahte_kapak.kapak_uret_ve_yerlestir = lambda paket: None
-    monkeypatch.setitem(sys.modules, "modules.kapak_hatti", sahte_kapak)
 
     paket, dosya = mp.kuyruktan_paket_hazirla()
-    assert paket is not None and dosya is not None
-    assert hedef.exists(), "Yüklenmemiş paket tüketilmemeli (kota kuyruğu korunur)"
+    assert paket is None and dosya is None, "render edilemeyen kayıt dönmemeli"
+    assert not hedef.exists(), "kurtarılamayan kayıt tüketilmeli (pipeline tıkanmasın)"
+

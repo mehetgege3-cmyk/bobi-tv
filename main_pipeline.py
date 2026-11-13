@@ -20,9 +20,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from modules.uretim_hatti import uretim_hatti_calistir
-from modules.tts_engine import senaryo_seslendir
-from modules.video_render import video_render
+# 2026-11-13 MOTOR DEVRİMİ: eski zincir (uretim_hatti + tts_engine + video_render
+# + kapak_hatti + ilginc_bilgi) ÇÖPE ATILDI. Tek üretim yolu Gemini'nin kendi
+# yazdığı motordur. Doğrulama: docs/MOTOR_DOGRULAMA.json (1080x1920, ses var).
+from modules.yeni_motor.motor import video_uret
 from modules.telegram_notify import notify_error, send_message
 from modules.youtube_upload import (
     dusuk_izlenmeli_videolari_temizle,
@@ -197,16 +198,9 @@ def kuyruktan_paket_hazirla() -> tuple[dict | None, Path | None]:
 
         fv = paket.get("final_video", "")
         if not fv or not Path(fv).exists():
-            log_yaz(f"🔄 Kuyruktaki senaryo yeniden render ediliyor: {paket['baslik']}")
-            paket = senaryo_seslendir(paket)
-            video_render(paket)
-            # Kapak: Arena tam metni okur → görsel üretir → 1. kareye yerleşir
-            try:
-                from modules.kapak_hatti import kapak_uret_ve_yerlestir
-
-                kapak_uret_ve_yerlestir(paket)
-            except Exception as kapak_hatasi:
-                log_yaz(f"⚠️ Kapak hattı hatası: {kapak_hatasi}", "WARN")
+            log_yaz(f"🔄 Kuyruktaki video dosyası yok ({paket['baslik']}) — atlanıyor")
+            dosya.unlink(missing_ok=True)
+            return None, None
         return paket, dosya
     except Exception as e:
         log_yaz(f"Bozuk kuyruk kaydı silindi ({dosya.name}): {e}", "WARN")
@@ -337,11 +331,11 @@ def pipeline_calistir():
                 kuyruk_kaynak_dosyalari[kuyruk_paketi["dosya_adi"]] = kuyruk_dosya
             continue
 
-        log_yaz(f"🎬 Video #{video_no} ilginç bilgi hattı (8 kategori + etkileşim taktiği) başlıyor...")
-        paket = uretim_hatti_calistir(video_no)
+        log_yaz(f"🎬 Video #{video_no} — yeni motor (Gemini kendi yazdı) başlıyor...")
+        paket = video_uret(video_no)
         if paket and paket.get("final_video") and Path(paket["final_video"]).exists():
             sure_bilgi = paket.get("video_suresi", 0)
-            log_yaz(f"✅ Pro Video + 1. Kare Kapak hazır: {paket['baslik']} ({sure_bilgi}sn)")
+            log_yaz(f"✅ Video hazır: {paket['baslik']} ({sure_bilgi}sn)")
             hazir_paketler.append(paket)
         else:
             hata = f"Video #{video_no} üretimi başarısız oldu."

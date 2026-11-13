@@ -874,7 +874,7 @@
     "dosya_adi": "20261112_1228_0011_sogan_keserken_gozlerimi",
     "baslik": "Soğan keserken gözler neden yaşar? #shorts",
     "video_id": "mLosqYJ1czI",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "gunluk_yasam",
     "url": "https://www.youtube.com/shorts/mLosqYJ1czI",
     "senaryo_ozeti": "",
@@ -891,13 +891,16 @@
         "izlenme": 1,
         "zaman": "2026-11-12T16:33:56.687503+00:00"
       }
-    }
+    },
+    "silinme_izlenme": 1,
+    "silinme_yas_dk": 956.7,
+    "silinme_tarihi": "2026-11-13T04:29:25.403011+00:00"
   },
   {
     "dosya_adi": "20261112_1238_0012_bir_antik_kenti_ortaya_c",
     "baslik": "Pompeii'de Kazdıkça Şehir Yok Oluyor: Kazı Neden Geri Sayım? #shorts",
     "video_id": "0VtPAH9MOrE",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "tarih_medeniyet",
     "url": "https://www.youtube.com/shorts/0VtPAH9MOrE",
     "senaryo_ozeti": "",
@@ -914,13 +917,16 @@
         "izlenme": 1,
         "zaman": "2026-11-12T16:33:56.687503+00:00"
       }
-    }
+    },
+    "silinme_izlenme": 1,
+    "silinme_yas_dk": 947.5,
+    "silinme_tarihi": "2026-11-13T04:29:23.649958+00:00"
   },
   {
     "dosya_adi": "20261112_1630_0013_kutup_ayi_deri",
     "baslik": "Kutup Ayısının Derisi Aslında Simsiyah 🐻‍❄️ #shorts",
     "video_id": "RZOOEeDBmQQ",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "hayvanlar",
     "url": "https://www.youtube.com/shorts/RZOOEeDBmQQ",
     "senaryo_ozeti": "",
@@ -937,13 +943,16 @@
         "izlenme": 1,
         "zaman": "2026-11-12T23:33:55.896055+00:00"
       }
-    }
+    },
+    "silinme_izlenme": 1,
+    "silinme_yas_dk": 715.0,
+    "silinme_tarihi": "2026-11-13T04:29:22.609607+00:00"
   },
   {
     "dosya_adi": "20261112_1712_0014_kum_firtinasi_haber",
     "baslik": "Sahra'nın Tozu Amazon Ormanını Besliyor 🌍 #shorts",
     "video_id": "sS9LWGuMuLA",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "doga_evren",
     "url": "https://www.youtube.com/shorts/sS9LWGuMuLA",
     "senaryo_ozeti": "",
@@ -960,13 +969,16 @@
         "izlenme": 2,
         "zaman": "2026-11-12T23:33:55.896055+00:00"
       }
-    }
+    },
+    "silinme_izlenme": 2,
+    "silinme_yas_dk": 672.0,
+    "silinme_tarihi": "2026-11-13T04:29:21.569206+00:00"
   },
   {
     "dosya_adi": "20261112_1719_0015_sakiz_erimeme",
     "baslik": "Yuttuğun Sakız Gerçekten 7 Yıl Kalır mı? 🍬 #shorts",
     "video_id": "_u54iIC1I8M",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "gunluk_yasam",
     "url": "https://www.youtube.com/shorts/_u54iIC1I8M",
     "senaryo_ozeti": "",
@@ -983,7 +995,10 @@
         "izlenme": 4,
         "zaman": "2026-11-12T23:33:55.896055+00:00"
       }
-    }
+    },
+    "silinme_izlenme": 4,
+    "silinme_yas_dk": 665.0,
+    "silinme_tarihi": "2026-11-13T04:29:20.535849+00:00"
   },
   {
     "dosya_adi": "20261112_2303_0016_ekmek_kabugu",
@@ -1001,6 +1016,29 @@
     "kapak_dosyasi": "bobi_tv/output/20261112_2303_0016_ekmek_kabugu_kapak.jpg",
     "kapak_yuklendi": null,
     "hook_ust_bant": "Ekmek Neden Fırından Çıkınca Bu Ka",
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 0,
+        "zaman": "2026-11-13T04:33:52.470503+00:00"
+      }
+    }
+  },
+  {
+    "dosya_adi": "20261113_0429_0001_venedik_kazik",
+    "baslik": "Venedik Neden Milyonlarca Ağaç Kazığın Üstünde Duruyor? 🌊 #shorts",
+    "video_id": "5JmkCDxndVM",
+    "durum": "yayinda",
+    "kategori": "bilim_teknoloji",
+    "url": "https://www.youtube.com/shorts/5JmkCDxndVM",
+    "senaryo_ozeti": "",
+    "hash": "",
+    "tarih": "2026-11-13T04:33:52.106390+00:00",
+    "kanca_formu": "",
+    "kanca_ab": "",
+    "kanca_puan": null,
+    "kapak_dosyasi": "bobi_tv/output/20261113_0429_0001_venedik_kazik_kapak.jpg",
+    "kapak_yuklendi": null,
+    "hook_ust_bant": "Venedik Neden Milyonlarca Ağaç Kaz",
     "izlenme_snapshots": {}
   }
 ]

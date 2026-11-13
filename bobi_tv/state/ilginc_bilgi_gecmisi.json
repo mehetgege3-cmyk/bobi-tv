@@ -180,6 +180,16 @@
       "cevap_ozeti": "Fırından yeni çıkmış ekmeğin kokusu, çoğu insanın en sevdiği kokulardan biridir. Bu koku, hamurun içindeki şekerlerin ve proteinlerin yüksek ısıda birbirleriyle tepkimeye girmesinden doğar. Sıcak fırında yüzey hızla kurur, kahverengileşir ve kokuya neden olan yüzlerce farklı bileşik açığa çıkar. Yani ekmek kokusu, bir yiyeceğin pişerken kimyasının değişmesinin sonucudur.\n\nİşin ilginç yanı, kabuğun",
       "skor": 100,
       "tarih": "2026-11-12T23:03:56.728739+00:00"
+    },
+    {
+      "video_no": 1,
+      "kategori": "bilim_teknoloji",
+      "taktik": "T2",
+      "anahtar": "venedik_kazik",
+      "konu": "Venedik Neden Milyonlarca Ağaç Kazığın Üstünde Duruyor? 🌊",
+      "cevap_ozeti": "Venedik'i görünce insan ister istemez 'bu binalar nasıl batmıyor' diye düşünür. Cevap şaşırtıcı: şehir devasa sayıda ahşap kazığın üzerinde duruyor. Lagünün yumuşak çamuru taşımaya elverişli olmadığı için inşaatçılar önce uzun ahşap kazıkları çamura çakmış, sonra üstüne taş platformlar kurmuştur.\n\nİşin en tuhaf kısmı şu: ahşap suyun içinde çürümez. Oksijen olmayan, tuzlu ve soğuk lagün suyunda ahş",
+      "skor": 100,
+      "tarih": "2026-11-13T04:29:52.632500+00:00"
     }
   ],
   "kullanilan_yedekler": [
@@ -198,6 +208,7 @@
     "japonya_cikolata",
     "kum_firtinasi_haber",
     "sakiz_erimeme",
-    "ekmek_kabugu"
+    "ekmek_kabugu",
+    "venedik_kazik"
   ]
 }

@@ -200,6 +200,16 @@
       "cevap_ozeti": "Uykuyu genelde 'dinlenme' diye düşünürüz; sanki beyin kapanıp hiçbir şey yapmıyormuş gibi. Oysa uyku sırasında beynin en yoğun işlerinden biri başlıyor: temizlik.\n\nBeyin hücrelerinin arasında, gün içinde biriken atık proteinler var. Uyanıkken bu kanallar daralıyor; uykuya geçtiğinde hücreler arası boşluk genişliyor ve beyin-omurilik sıvısı bu aralıklardan daha rahat akıyor. Bilim insanları bu sist",
       "skor": 100,
       "tarih": "2026-11-13T06:01:15.718359+00:00"
+    },
+    {
+      "video_no": 3,
+      "kategori": "kulturler",
+      "taktik": "T4",
+      "anahtar": "izlanda_soyadi",
+      "konu": "İzlanda'da Aile Soyadı Yok — Babanın Adı Senin Soyadın! 🇮🇸",
+      "cevap_ozeti": "Bizde soyadı aileden gelir; baba, anne ve çocuklar aynı soyadını taşır. İzlanda'da ise durum bambaşka: çoğu kişinin 'soyadı' aslında babasının, bazen annesinin adıdır.\n\nSistemin adı 'patronimik'. Bir erkek çocuğun adı Jón ve babasının adı Sigurður ise, çocuğun tam adı 'Jón Sigurðsson' olur; yani 'Sigurður'un oğlu Jón'. Kız kardeşi ise 'Sigurðardóttir' olur: 'Sigurður'un kızı'. Yani kardeşler farkl",
+      "skor": 100,
+      "tarih": "2026-11-13T06:23:55.517014+00:00"
     }
   ],
   "kullanilan_yedekler": [
@@ -220,6 +230,7 @@
     "sakiz_erimeme",
     "ekmek_kabugu",
     "venedik_kazik",
-    "uykuda_beyin_temizligi"
+    "uykuda_beyin_temizligi",
+    "izlanda_soyadi"
   ]
 }

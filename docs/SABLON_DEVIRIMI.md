@@ -175,3 +175,60 @@ dolarsa.
 4. **Silme hâlâ açık.** 6 saat/100 izlenme kuralı duruyor. Yeni format yine
    100'ün altında kalırsa videolar silinmeye devam eder. **Kullanıcı kararı
    gerekli.**
+
+---
+
+## 6. KALİBRASYON DÜZELTMESİ (2026-11-13, aynı gün)
+
+### Ne oldu
+
+İlk canlı koşu (`43403370045`) **başarılı** sonuçlandı ve video yayınlandı:
+<https://www.youtube.com/shorts/wgAg-Zj_uUs>
+
+Ama logdaki TTS ölçümü hedefi tutmadı:
+
+| Ölçüm | Değer |
+|---|---|
+| Metin (tüm alanlar) | **86 kelime** |
+| TTS toplam konuşma | **31.68 sn** (6 cümle) |
+| Ortaya çıkan tempo | **163 kelime/dk** |
+| Hedef | 20-22 sn |
+
+**Video 31 sn çıktı, hedef 20-22 sn idi.**
+
+### Kök neden — iki hata
+
+1. **Varsayım ölçüm sanıldı.** İlk turda 185 kelime/dk varsayımını ölçüm diye
+   kullandım. Gerçek tempo **163 kelime/dk**. Sapma %13.
+
+2. **Yanlış alan sayıldı.** R8 kuralı yalnız `cevap` bölümünü sayıyordu.
+   TTS ise **soru + cevap + sonuç hepsini** okuyor. `cevap` 62 kelimeydi,
+   ama videoda okunan metin 86 kelimeydi.
+
+### Düzeltme
+
+| | Önce | Sonra |
+|---|---|---|
+| `KELIME_MIN` | 50 | **45** |
+| `KELIME_MAKS` | 70 | **58** |
+| R8'in saydığı | yalnız `cevap` | **tüm metin** |
+| Prompt ifadesi | "'cevap' alanı 50-70 kelime" | "TOPLAM METİN (soru+cevap+sonuç) 45-58 kelime" |
+| Tempo dayanağı | 185 kelime/dk (varsayım) | **163 kelime/dk (ölçüm)** |
+
+Hesap: 18-20 sn konuşma bütçesi × 163 kelime/dk = **49-54 kelime**;
+bant emniyet payıyla **45-58**. Kapak 1.5 sn + ~1 sn pay → toplam video
+**~20-23 sn**.
+
+### Neden bu düzeltme önemli
+
+Eski R8 yalnız `cevap`a baktığı için **31 sn'lik videoyu geçirdi** — skor 84.
+Kural, ölçmek istediği şeyi (videonun süresi) ölçmüyordu. Artık ölçüyor:
+canlı koşunun metni yeni R8'den geçseydi ihlal alacaktı
+(`test_r8_tum_metni_sayar_gercek_olcum`).
+
+### Kayıt
+
+- `tests/test_ilginc_bilgi.py::test_r8_tum_metni_sayar_gercek_olcum` — canlı
+  koşunun metnini yeniden üretir, R8'in tüm metni saydığını kanıtlar.
+- `tests/test_ilginc_bilgi.py::test_kelime_bandi_saniyeye_denk` — 163 kelime/dk
+  ölçümüne dayanır.

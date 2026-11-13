@@ -36,13 +36,23 @@ BASLIK_SONUC = "💡 Şaşırtıcı Sonuç"
 
 ZORUNLU_BASLIKLAR = (BASLIK_SORU, BASLIK_CEVAP, BASLIK_SONUC)
 
-# 2026-11-13 ŞABLON DEVRİMİ — ölçüme dayalı.
+# 2026-11-13 ŞABLON DEVRİMİ — ÖLÇÜME dayalı (tahmine değil).
+#
 # ESKİ: 200-300 kelime → TTS ile 81-134 sn video.
 # KANAL VERİSİ: 81-134 sn videolar 0-14 izlenme · 20-22 sn videolar 1.100-1.200.
-# YENİ: 50-70 kelime → ~16-23 sn. Türkçe TTS ölçümü: 250 kelime/81 sn
-# = 185 kelime/dk → 55 kelime ≈ 17.8 sn. Hedef bant 20-22 sn ile örtüşüyor.
-KELIME_MIN = 50
-KELIME_MAKS = 70
+#
+# ⚠️ KALİBRASYON HİKÂYESİ (dürüstlük notu):
+#   İlk denemede 50-70 kelime koydum, 185 kelime/dk VARSAYIMIYLA.
+#   Canlı koşu 43403370045 ölçümü: 86 kelime → 31.68 sn = 163 kelime/dk.
+#   Varsayım YANLIŞTI → video 31 sn çıktı, hedef 20-22 sn.
+#
+#   GERÇEK: TTS soru + cevap + sonuç HEPSİNİ okur (86 kelime), yalnız 'cevap'
+#   değil. Bu yüzden bant TÜM METİN üzerinden hesaplanmalı.
+#
+#   Hedef 20-22 sn; kapak 1.5 sn + ~1 sn pay → konuşma bütçesi ~18-20 sn.
+#   18-20 sn × 163 kelime/dk = 49-54 kelime TOPLAM.
+KELIME_MIN = 45
+KELIME_MAKS = 58
 
 #: İngilizce işlev kelimeleri — "tamamen Türkçe" kuralını ihlal eder.
 INGILIZCE_ISLEV = (
@@ -250,11 +260,13 @@ def k7_kategori_gecisi(metin: str, _b: dict, bag: dict) -> Ihlal | None:
 
 
 def k8_kelime_sayisi(metin: str, bolumler: dict, _bag: dict) -> Ihlal | None:
-    """K8: 50-70 kelime (cevap bölümü esas alınır). 2026-11-13: 200-300 → 50-70."""
+    """K8: 45-58 kelime TÜM METİN (2026-11-13 kalibrasyon: TTS hepsini okur)."""
     cevap = bolumler.get(BASLIK_CEVAP, "")
     if not cevap:
-        return Ihlal("R8", "200-300 kelime", "cevap bölümü yok", 3)
-    n = kelime_say(cevap)
+        return Ihlal("R8", f"{KELIME_MIN}-{KELIME_MAKS} kelime", "cevap bölümü yok", 3)
+    # 2026-11-13 KALİBRASYON (koşu 43403370045): 86 kelime / 31.68 sn.
+    # Süre 'cevap' ile değil TÜM METİN ile orantılı → hepsini say.
+    n = kelime_say(" ".join(str(v) for v in bolumler.values()))
     if n < KELIME_MIN:
         return Ihlal("R8", f"{KELIME_MIN}-{KELIME_MAKS} kelime", f"{n} kelime (< {KELIME_MIN})", 3)
     if n > KELIME_MAKS:

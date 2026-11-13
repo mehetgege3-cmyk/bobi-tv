@@ -1108,7 +1108,12 @@
     "kapak_dosyasi": "bobi_tv/output/20261113_0637_0004_kleopatra_piramit_kapak.jpg",
     "kapak_yuklendi": null,
     "hook_ust_bant": "Kleopatra, Piramitlerin Yapılışınd",
-    "izlenme_snapshots": {}
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 3,
+        "zaman": "2026-11-13T09:43:37.023633+00:00"
+      }
+    }
   },
   {
     "dosya_adi": "20261113_0654_0005_ilginc_bilgi",
@@ -1144,6 +1149,29 @@
     "kapak_dosyasi": "bobi_tv/output/20261113_0734_0006_uykuda_beyin_temizligi_kapak.jpg",
     "kapak_yuklendi": null,
     "hook_ust_bant": "Beyin Asıl Temizliğini Uyurken Yap",
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 1,
+        "zaman": "2026-11-13T09:43:37.023633+00:00"
+      }
+    }
+  },
+  {
+    "dosya_adi": "20261113_0942_0007_okyanusun_en_derin_yerin",
+    "baslik": "Okyanusun Derinliklerindeki Gizli Tehlike #shorts",
+    "video_id": "wgAg-Zj_uUs",
+    "durum": "yayinda",
+    "kategori": "doga_evren",
+    "url": "https://www.youtube.com/shorts/wgAg-Zj_uUs",
+    "senaryo_ozeti": "",
+    "hash": "",
+    "tarih": "2026-11-13T09:43:36.533895+00:00",
+    "kanca_formu": "",
+    "kanca_ab": "",
+    "kanca_puan": null,
+    "kapak_dosyasi": "bobi_tv/output/20261113_0942_0007_okyanusun_en_derin_yerin_kapak.jpg",
+    "kapak_yuklendi": null,
+    "hook_ust_bant": "ISINDIKÇA KARARIYOR",
     "izlenme_snapshots": {}
   }
 ]

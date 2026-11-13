@@ -52,6 +52,29 @@ def ses_uret(metin: str, ses_dosyasi: str):
     asyncio.run(ses_uret_async(metin, ses_dosyasi))
 
 
+#: KAPAK İSTEMİ — kullanıcının tek cümlesi, BİREBİR (K8). Değiştirme.
+def kapak_istemini_yaz(baslik: str) -> str:
+    return (
+        f"{baslik} İsimli short video için kapak fotoğrafı istiyorum; etkileşim ve "
+        "izlenme rekorları kırması için profesyonel şekilde tasarla. Kapak "
+        "fotoğrafını gören merak edip tıklasın."
+    )
+
+
+def kapak_olcekle(kaynak: str, hedef: str) -> str:
+    """Kapağı 1080x1920'ye oturt (YouTube thumbnails.set sınırı 2 MB)."""
+    from PIL import Image
+
+    img = Image.open(kaynak).convert("RGB")
+    hg, hy = img.size
+    olcek = max(1080 / hg, 1920 / hy)          # kapla (cover), boşluk bırakma
+    yg, yy = int(hg * olcek + 0.5), int(hy * olcek + 0.5)
+    img = img.resize((yg, yy), Image.LANCZOS)
+    sol, ust = (yg - 1080) // 2, (yy - 1920) // 2
+    img.crop((sol, ust, sol + 1080, ust + 1920)).save(hedef, "JPEG", quality=92)
+    return hedef
+
+
 def video_uret(video_no: int) -> dict:
     """BOBİ TV ana motor fonksiyonu.
 
@@ -128,7 +151,33 @@ def video_uret(video_no: int) -> dict:
 
     subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-    # 5. YouTube Yükleme Paketi Hazırlama (Zorunlu alanlar eklendi)
+    # 4.5. KAPAK GÖRSELİ (2026-11-13): video arka planından AYRI üretilir.
+    # NİÇİN: youtube_upload `kapak_dosyasi` alanını okuyup thumbnails.set ile
+    # yüklüyor. Bu alan boş kalırsa video kapaksız yayınlanır (kullanıcı bildirdi).
+    kapak_yolu = os.path.join(tmp_dir, f"bobi_kapak_{video_no}.jpg")
+    try:
+        ham_kapak = os.path.join(tmp_dir, f"bobi_kapak_ham_{video_no}.jpg")
+        uretildi = gorsel_uret(kapak_istemini_yaz(baslik), ham_kapak)
+        if uretildi:
+            kapak_olcekle(ham_kapak, kapak_yolu)
+            print(f"[BOBİ TV] ✅ Kapak hazır: {kapak_yolu}")
+        else:
+            print("[BOBİ TV] ⚠️ Kapak üretilemedi (Gemini), video karesi kullanılacak")
+    except Exception as e:
+        print(f"[BOBİ TV] ⚠️ Kapak hatası: {e}")
+
+    # Kapak yoksa videonun 1. karesini kapak yap (üretim durmasın)
+    if not os.path.exists(kapak_yolu):
+        try:
+            subprocess.run(
+                ["ffmpeg", "-y", "-i", final_video_yolu, "-frames:v", "1",
+                 "-q:v", "2", kapak_yolu],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=60,
+            )
+        except Exception:
+            pass
+
+    # 5. Paket hazırla (yüklemeyi main_pipeline -> toplu_yukle yapar)
     dosya_adi = os.path.splitext(os.path.basename(final_video_yolu))[0]
     paket = {
         "dosya_adi": dosya_adi,
@@ -136,6 +185,8 @@ def video_uret(video_no: int) -> dict:
         "baslik": f"{baslik} #shorts",
         "aciklama": f"{metin}\n\n#bobi #ilginçbilgiler #shorts",
         "etiketler": etiketler,
+        # youtube_upload bu alanı okur → thumbnails.set ile kapak yüklenir.
+        "kapak_dosyasi": kapak_yolu if os.path.exists(kapak_yolu) else "",
     }
 
     # Yükleme YOK — pipeline `toplu_yukle()` ile yapacak.

@@ -83,10 +83,30 @@ def main() -> int:
         if not (5.0 <= sure <= 70.0):
             raise RuntimeError(f"süre {sure:.1f} sn, 5-70 aralığı dışında")
 
+        # --- KAPAK (2026-11-13 kullanıcı bildirimi: kapak yapılmıyordu) ----
+        kapak = (paket or {}).get("kapak_dosyasi", "")
+        if not kapak or not Path(kapak).exists():
+            raise RuntimeError(
+                "kapak_dosyasi boş veya dosya yok — video kapaksız yayınlanır"
+            )
+        kboyut = Path(kapak).stat().st_size
+        if kboyut < 10_000:
+            raise RuntimeError(f"kapak çok küçük: {kboyut} bayt")
+        if kboyut > 2 * 1024 * 1024:
+            raise RuntimeError(f"kapak 2 MB üstü: {kboyut} bayt (YouTube reddeder)")
+        from PIL import Image
+
+        with Image.open(kapak) as ki:
+            kg, ky = ki.size
+        rapor["kapak"] = {"yol": Path(kapak).name, "boyut_kb": kboyut // 1024,
+                          "olcu": f"{kg}x{ky}"}
+
         rapor["gecti"] = True
         rapor["olcum"] = {"sure_sn": round(sure, 2), "cozunurluk": f"{gen}x{yuk}",
                           "ses": ses_akis[0].get("codec_name"), "boyut_kb": Path(video).stat().st_size // 1024}
-        print(f"[doğrula] ✅ GEÇTİ — {sure:.1f} sn, {gen}x{yuk}, ses={ses_akis[0].get('codec_name')}")
+        print(f"[doğrula] ✅ GEÇTİ — {sure:.1f} sn, {gen}x{yuk}, "
+              f"ses={ses_akis[0].get('codec_name')}, kapak={rapor['kapak']['olcu']} "
+              f"{rapor['kapak']['boyut_kb']}KB")
     except Exception as e:
         rapor["hata"] = f"{type(e).__name__}: {str(e)[:400]}"
         rapor["traceback"] = traceback.format_exc()[-2500:]

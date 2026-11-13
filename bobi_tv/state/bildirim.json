@@ -1,5 +1,12 @@
 {
-  "bekleyen": [],
+  "bekleyen": [
+    {
+      "baslik": "1 video yayına alındı",
+      "govde": "Stokta bekleyen: 0",
+      "seviye": "normal",
+      "zaman": "2026-11-13T21:55:34.321153+00:00"
+    }
+  ],
   "sustur_until": null,
   "son_ozet": "2026-11-13T06:03:45.847832+00:00"
 }

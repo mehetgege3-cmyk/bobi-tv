@@ -74,6 +74,10 @@
       "+24h": {
         "izlenme": 1144,
         "zaman": "2026-11-11T23:42:09.243349+00:00"
+      },
+      "+72h": {
+        "izlenme": 1163,
+        "zaman": "2026-11-13T21:55:34.093141+00:00"
       }
     }
   },
@@ -95,6 +99,10 @@
       "+24h": {
         "izlenme": 1172,
         "zaman": "2026-11-11T23:42:09.243349+00:00"
+      },
+      "+72h": {
+        "izlenme": 1201,
+        "zaman": "2026-11-13T21:55:34.093141+00:00"
       }
     }
   },
@@ -1004,7 +1012,7 @@
     "dosya_adi": "20261112_2303_0016_ekmek_kabugu",
     "baslik": "Ekmek Neden Fırından Çıkınca Bu Kadar Güzel Kokuyor? 🍞 #shorts",
     "video_id": "MO1QOKxr4NQ",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "yiyecekler",
     "url": "https://www.youtube.com/shorts/MO1QOKxr4NQ",
     "senaryo_ozeti": "",
@@ -1021,13 +1029,16 @@
         "izlenme": 0,
         "zaman": "2026-11-13T04:33:52.470503+00:00"
       }
-    }
+    },
+    "silinme_izlenme": 37,
+    "silinme_yas_dk": 1339.7,
+    "silinme_tarihi": "2026-11-13T21:54:24.037438+00:00"
   },
   {
     "dosya_adi": "20261113_0429_0001_venedik_kazik",
     "baslik": "Venedik Neden Milyonlarca Ağaç Kazığın Üstünde Duruyor? 🌊 #shorts",
     "video_id": "5JmkCDxndVM",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "bilim_teknoloji",
     "url": "https://www.youtube.com/shorts/5JmkCDxndVM",
     "senaryo_ozeti": "",
@@ -1044,7 +1055,10 @@
         "izlenme": 1,
         "zaman": "2026-11-13T06:03:45.238350+00:00"
       }
-    }
+    },
+    "silinme_izlenme": 36,
+    "silinme_yas_dk": 1039.4,
+    "silinme_tarihi": "2026-11-13T21:54:22.842102+00:00"
   },
   {
     "dosya_adi": "20261113_0601_0002_uykuda_beyin_temizligi",
@@ -1073,7 +1087,7 @@
     "dosya_adi": "20261113_0623_0003_izlanda_soyadi",
     "baslik": "İzlanda'da Aile Soyadı Yok — Babanın Adı Senin Soyadın! 🇮🇸 #shorts",
     "video_id": "pQOvBWcegNc",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "kulturler",
     "url": "https://www.youtube.com/shorts/pQOvBWcegNc",
     "senaryo_ozeti": "",
@@ -1090,13 +1104,16 @@
         "izlenme": 0,
         "zaman": "2026-11-13T07:37:54.499583+00:00"
       }
-    }
+    },
+    "silinme_izlenme": 4,
+    "silinme_yas_dk": 926.1,
+    "silinme_tarihi": "2026-11-13T21:54:21.195905+00:00"
   },
   {
     "dosya_adi": "20261113_0637_0004_kleopatra_piramit",
     "baslik": "Kleopatra, Piramitlerin Yapılışından Çok Ay'a Daha Yakındı! 🏛️ #shorts",
     "video_id": "NjywOjPzLE0",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "tarih_medeniyet",
     "url": "https://www.youtube.com/shorts/NjywOjPzLE0",
     "senaryo_ozeti": "",
@@ -1113,7 +1130,10 @@
         "izlenme": 3,
         "zaman": "2026-11-13T09:43:37.023633+00:00"
       }
-    }
+    },
+    "silinme_izlenme": 4,
+    "silinme_yas_dk": 911.7,
+    "silinme_tarihi": "2026-11-13T21:54:19.420567+00:00"
   },
   {
     "dosya_adi": "20261113_0654_0005_ilginc_bilgi",
@@ -1137,7 +1157,7 @@
     "dosya_adi": "20261113_0734_0006_uykuda_beyin_temizligi",
     "baslik": "Beyin Asıl Temizliğini Uyurken Yapıyor! 🧠 #shorts",
     "video_id": "dT-fJ7roco8",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "insan_vucudu",
     "url": "https://www.youtube.com/shorts/dT-fJ7roco8",
     "senaryo_ozeti": "",
@@ -1154,13 +1174,16 @@
         "izlenme": 1,
         "zaman": "2026-11-13T09:43:37.023633+00:00"
       }
-    }
+    },
+    "silinme_izlenme": 3,
+    "silinme_yas_dk": 856.1,
+    "silinme_tarihi": "2026-11-13T21:54:18.526468+00:00"
   },
   {
     "dosya_adi": "20261113_0942_0007_okyanusun_en_derin_yerin",
     "baslik": "Okyanusun Derinliklerindeki Gizli Tehlike #shorts",
     "video_id": "wgAg-Zj_uUs",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "doga_evren",
     "url": "https://www.youtube.com/shorts/wgAg-Zj_uUs",
     "senaryo_ozeti": "",
@@ -1177,13 +1200,16 @@
         "izlenme": 1,
         "zaman": "2026-11-13T11:45:15.208311+00:00"
       }
-    }
+    },
+    "silinme_izlenme": 6,
+    "silinme_yas_dk": 730.3,
+    "silinme_tarihi": "2026-11-13T21:54:17.566579+00:00"
   },
   {
     "dosya_adi": "20261113_0950_0008_cogumuz_taze_kahvenin_ku",
     "baslik": "Kahvenin bayatlama sırrı #shorts",
     "video_id": "BRLnqkqBQSQ",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "gunluk_yasam",
     "url": "https://www.youtube.com/shorts/BRLnqkqBQSQ",
     "senaryo_ozeti": "",
@@ -1200,13 +1226,16 @@
         "izlenme": 1,
         "zaman": "2026-11-13T11:45:15.208311+00:00"
       }
-    }
+    },
+    "silinme_izlenme": 8,
+    "silinme_yas_dk": 722.1,
+    "silinme_tarihi": "2026-11-13T21:54:16.547947+00:00"
   },
   {
     "dosya_adi": "bobi_video_9",
     "baslik": "Beyninin Asla Unutamadığı O Sır #shorts",
     "video_id": "wyjAN09NyDc",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "",
     "url": "https://www.youtube.com/shorts/wyjAN09NyDc",
     "senaryo_ozeti": "",
@@ -1218,13 +1247,16 @@
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
     "hook_ust_bant": "",
-    "izlenme_snapshots": {}
+    "izlenme_snapshots": {},
+    "silinme_izlenme": 10,
+    "silinme_yas_dk": 608.7,
+    "silinme_tarihi": "2026-11-13T21:54:15.691276+00:00"
   },
   {
     "dosya_adi": "bobi_video_10",
     "baslik": "Su İçerken Hiç Düşündün mü? #shorts",
     "video_id": "rpeNeu67VTk",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "",
     "url": "https://www.youtube.com/shorts/rpeNeu67VTk",
     "senaryo_ozeti": "",
@@ -1235,13 +1267,16 @@
     "kanca_puan": null,
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
-    "hook_ust_bant": ""
+    "hook_ust_bant": "",
+    "silinme_izlenme": 2,
+    "silinme_yas_dk": 597.0,
+    "silinme_tarihi": "2026-11-13T21:54:14.954365+00:00"
   },
   {
     "dosya_adi": "bobi_video_11",
     "baslik": "Gözlerinin Hayret Edeceği Gerçek #shorts",
     "video_id": "DjUdGWvw3FY",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "",
     "url": "https://www.youtube.com/shorts/DjUdGWvw3FY",
     "senaryo_ozeti": "",
@@ -1252,6 +1287,27 @@
     "kanca_puan": null,
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
-    "hook_ust_bant": ""
+    "hook_ust_bant": "",
+    "silinme_izlenme": 6,
+    "silinme_yas_dk": 584.8,
+    "silinme_tarihi": "2026-11-13T21:54:14.485437+00:00"
+  },
+  {
+    "dosya_adi": "bobi_video_12",
+    "baslik": "Zamanın Nasıl Akıp Gittiğini Fark Ettin mi? #shorts",
+    "video_id": "_jU-luIiEks",
+    "durum": "yayinda",
+    "kategori": "",
+    "url": "https://www.youtube.com/shorts/_jU-luIiEks",
+    "senaryo_ozeti": "",
+    "hash": "",
+    "tarih": "2026-11-13T21:55:33.565621+00:00",
+    "kanca_formu": "",
+    "kanca_ab": "",
+    "kanca_puan": null,
+    "kapak_dosyasi": "",
+    "kapak_yuklendi": null,
+    "hook_ust_bant": "",
+    "izlenme_snapshots": {}
   }
 ]

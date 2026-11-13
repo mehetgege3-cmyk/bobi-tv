@@ -210,6 +210,16 @@
       "cevap_ozeti": "Bizde soyadı aileden gelir; baba, anne ve çocuklar aynı soyadını taşır. İzlanda'da ise durum bambaşka: çoğu kişinin 'soyadı' aslında babasının, bazen annesinin adıdır.\n\nSistemin adı 'patronimik'. Bir erkek çocuğun adı Jón ve babasının adı Sigurður ise, çocuğun tam adı 'Jón Sigurðsson' olur; yani 'Sigurður'un oğlu Jón'. Kız kardeşi ise 'Sigurðardóttir' olur: 'Sigurður'un kızı'. Yani kardeşler farkl",
       "skor": 100,
       "tarih": "2026-11-13T06:23:55.517014+00:00"
+    },
+    {
+      "video_no": 4,
+      "kategori": "tarih_medeniyet",
+      "taktik": "T6",
+      "anahtar": "kleopatra_piramit",
+      "konu": "Kleopatra, Piramitlerin Yapılışından Çok Ay'a Daha Yakındı! 🏛️",
+      "cevap_ozeti": "Bu soruyu ilk duyduğunda muhtemelen hemen 'piramitlere' diyeceksin; piramitlerle Kleopatra aynı ders kitabı sayfasında durur. Ama tarih, hissettiğimizden farklı çalışıyor.\n\nBüyük Giza Piramidi yaklaşık 2.560 yılda, MÖ 2.560 civarında tamamlandı. Kleopatra ise MÖ 69'da doğdu ve MÖ 30'da öldü. Arada yaklaşık 2.500 yıl var. Apollo 11'in Ay'a inişi ise 1969 yılında gerçekleşti; Kleopatra'nın ölümünden",
+      "skor": 100,
+      "tarih": "2026-11-13T06:37:02.883598+00:00"
     }
   ],
   "kullanilan_yedekler": [
@@ -231,6 +241,7 @@
     "ekmek_kabugu",
     "venedik_kazik",
     "uykuda_beyin_temizligi",
-    "izlanda_soyadi"
+    "izlanda_soyadi",
+    "kleopatra_piramit"
   ]
 }

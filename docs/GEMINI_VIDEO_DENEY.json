@@ -1,0 +1,14 @@
+{
+  "cerez_var": true,
+  "istem": "Bana 8 saniyelik dikey (9:16) bir video üret. İçerik: gece gökyüzünde yıldızlar yavaşça kayıyor, altın renkli bir teleskop silüeti, sinematik ışık. Ses olmasın. Videoyu dosya olarak ver.",
+  "metin_yaniti": "[Aboneliğinizi yükseltirseniz](https://gemini.google/subscriptions/) bugün sizin için o videoyu oluşturabilirim.",
+  "ham_uzunluk": 112,
+  "url_sayisi": 1,
+  "url_video_izi": [],
+  "url_diger": [
+    "https://gemini.google/subscriptions/"
+  ],
+  "mime_izi": [],
+  "gorsel_denemesi": "HATA: yanıtta görsel URL yok (güvenlik/limit olabilir)",
+  "hukum": "BELIRSIZ — bağlantı döndü ama video izi yok (elle bakılmalı)"
+}

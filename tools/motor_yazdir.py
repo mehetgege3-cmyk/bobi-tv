@@ -175,7 +175,9 @@ def main() -> int:
     print(f"[motor] plan: {len(plan)} karakter", flush=True)
 
     print("[motor] 2/2 kod isteniyor...", flush=True)
-    yanit = gemini_web.metin_uret(KOD_ISTEM.format(plan=plan), sure=300)
+    # NOT: .format() KULLANMA — BRIEF içinde {"final_video": ...} var ve süslü
+    # parantez format alanı sanılıp KeyError veriyordu (koşu 43417743423).
+    yanit = gemini_web.metin_uret(KOD_ISTEM.replace("{plan}", plan), sure=300)
     if not yanit:
         print(f"[motor] ❌ kod alınamadı: {gemini_web.durum().get('hata')}", flush=True)
         return 1

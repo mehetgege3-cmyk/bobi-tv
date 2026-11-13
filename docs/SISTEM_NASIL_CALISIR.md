@@ -80,19 +80,46 @@ Her videonun kategorisi `bobi_tv/state/ilginc_bilgi_gecmisi.json`'a yazılır
   → Gemini'nin "İşte senaryonuz:" gibi ön yüzleri atılır
 - `dogruluk.py` ile doğruluk kontrolü
 
+**12 kural denetimi** (`kurallar.denetle()` → 100 üzerinden skor):
+
+```
+R1 kanca (soru veya iddia)      R7 kategori geçişi
+R2 cevabı hemen verme           R8 kelime sayısı (45-58, TÜM METİN)
+R3 sohbet tonu ("sen" dili)     R9 günlük hayat örneği
+R4 az bilinen bilgi             R10 sade Türkçe
+R5 kaynak doğruluğu             R11 emoji dengesi
+R6 tekrar etme                  R12 tamamen Türkçe
+```
+
+Reddedilirse **1 kez onarım isteği** gider (aynı Gemini çağrısı, ihlal listesiyle);
+yine geçmezse yedek bankaya düşer. Canlı örnek (koşu `43404264853`):
+1. deneme 37 kelime → R8 ihlali → onarım → 48 kelime, **skor 100**.
+
 **Gemini erişilemezse** → `yedek_bilgiler.py` / `yedek_bilgiler_2.py` havuzundan
 gerçek bilgi kullanılır. **Uydurma yok** — yedek havuz da gerçek bilgilerden oluşur.
 
-### Adım 6 — Kanca (hook) motoru
-`modules/senaryo_v7/kanca_motoru.py` + `hook_engineer.py`
+### Adım 6 — Kanca (hook)
+**Ayrı bir kanca motoru YOK.** `senaryo_v7/kanca_motoru.py` + `hook_engineer.py`
+dosyaları eski diyalog hattından kalmadır ve **ilginç-bilgi hattında çağrılmaz**
+(2026-11-13 doğrulandı: bu üç modül için `modules/ilginc_bilgi/` ve
+`uretim_hatti.py` içinde tek bir import yok).
 
-İlk 1.5 saniyede izleyiciyi tutacak form seçilir. `kalite_kapisi.py` ve
-`loop_validator.py` senaryoyu denetler (seamless loop: son cümle başa bağlanır).
+Kanca işini **iki şey** yapar:
+1. `bilgi_promptu()` kural 2 → *"'soru' = İLK 2 SANİYE KANCASI. Soru VEYA
+   sarsıcı iddia/olay olabilir."*  `soru` alanı doğrudan kanca metnidir.
+2. `kurallar.k1_soru_ile_basla()` → kanca gerçekten ilk cümle mi, `?`/iddia
+   var mı, en az 3 kelime mi denetler.
+
+Görsel tarafta `animasyon.py` bu `soru` metnini üst kanca kartı olarak çizer
+(`_ust_kanca_karti_olustur`, 1. saniyeden itibaren ekranda).
 
 ### Adım 7 — Seslendirme (TTS)
 `modules/tts_engine.py` satır 419 → `senaryo_seslendir(paket)`
 
-- `tr-TR-AhmetNeural` (erkek) + `tr-TR-EmelNeural` (kadın) çift ses
+- **TEK SES:** `tr-TR-AhmetNeural` (BOBİ, erkek).
+  (`tr-TR-EmelNeural` motor içinde duruyor ama ilginç-bilgi hattı tek anlatıcı
+  kullanır — pakette `karakterler = [BOBİ]`. Canlı log kanıtı:
+  `[TTS] #1 [BOBİ | Ahmet(E)]`.)
 - `WordBoundary` zaman damgaları alınır (karaoke altyazı için)
 - `silenceremove` ile cümle başı/sonu ölü sessizlik kırpılır
 - Zaman damgaları 0 ms kaymayla yeniden kalibre edilir
@@ -105,7 +132,7 @@ gerçek bilgi kullanılır. **Uydurma yok** — yedek havuz da gerçek bilgilerd
 ```
 
 `modules/animasyon.py` (satır 24-25: `W, H = 1080, 1920`, `FPS = 30`):
-- Vektörel karakter portreleri (emoji kutusu `□` çıkmasın diye)
+- Vektörel karakter portresi (tek: BOBİ; emoji kutusu `□` çıkmasın diye)
 - Kutulu karaoke altyazı (Türkçe `i→İ`, `ı→I` kuralına uygun)
 - SFX: `whoosh`, `pop`, `vine_boom`, `riser`, `ding`
 - Sidechain BGM → konuşma sırasında `-20 dB`, çıkış `-14 LUFS`

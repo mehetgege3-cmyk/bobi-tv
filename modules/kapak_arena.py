@@ -228,7 +228,10 @@ def ilk_kareye_yerlestir(video_yolu: str, kapak_jpg: str, cikis_mp4: str | None 
         subprocess.run(
             [
                 _ff, "-y", "-loglevel", "error",
-                "-loop", "1", "-t", "0.04", "-i", kapak_jpg,
+                # SÜRE KUSURU (2026-11-13, yt-dlp kanıtı): kapak 1 kare = 33 ms
+                # görünüyordu (ffprobe: kare0=0.000s, kare1=0.033s) → göz
+                # yakalayamaz. KULLANICI KARARI: 1.5 saniye.
+                "-loop", "1", "-t", "1.5", "-i", kapak_jpg,
                 "-vf", f"scale={gen}:{yuk}:force_original_aspect_ratio=increase,"
                        f"crop={gen}:{yuk},setsar=1",
                 "-r", "30", "-frames:v", "1", "-q:v", "2", hedef + "_kare.jpg",
@@ -241,7 +244,8 @@ def ilk_kareye_yerlestir(video_yolu: str, kapak_jpg: str, cikis_mp4: str | None 
                 _ff, "-y", "-loglevel", "error",
                 "-i", hedef + "_kare.jpg", "-i", video_yolu,
                 "-filter_complex",
-                "[0:v]fps=30,trim=end_frame=1,setpts=PTS-STARTPTS[v0];"
+                # 45 kare @ 30fps = 1.5 sn kapak süresi
+                "[0:v]fps=30,trim=end_frame=45,setpts=PTS-STARTPTS[v0];"
                 "[1:v]setpts=PTS-STARTPTS[v1];"
                 "[v0][v1]concat=n=2:v=1:a=0[v]",
                 "-map", "[v]", "-map", "1:a?",

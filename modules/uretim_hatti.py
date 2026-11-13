@@ -61,7 +61,13 @@ def uretim_hatti_calistir(video_no: int) -> dict | None:
                 from modules.kapak_hatti import kapak_uret_ve_yerlestir
 
                 kapak_sonuc = kapak_uret_ve_yerlestir(paket)
+                # KÖK NEDEN (2026-11-13, yt-dlp + artifact kanıtı): kapak
+                # `..._kapakli.mp4` dosyasına gömülüyordu ama `paket["final_video"]`
+                # GÜNCELLENMİYORDU → YouTube'a KAPAKSIZ orijinal gidiyordu.
+                # Kanıt: YouTube'daki videonun 1. karesi boş şablon ({ karakterleri),
+                # artifact'taki `_kapakli.mp4` 1. karesi ise kapak görseli.
                 video_yolu = kapak_sonuc.get("video") or video_yolu
+                paket["final_video"] = video_yolu
                 if kapak_sonuc.get("kapak"):
                     paket["kapak_dosyasi"] = kapak_sonuc["kapak"]
                     paket["kapak_yolu"] = kapak_sonuc["kapak"]

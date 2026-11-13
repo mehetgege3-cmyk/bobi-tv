@@ -12,6 +12,7 @@
 | `hourly_production.yml` | BOBİ TV v6.4 PRO — Saatlik Üretim + Kota Takibi | ✅ | 0 */8 * * * |
 | `kanal_sagligi.yml` | Kanal Sağlığı Ölçümü (günlük) | ✅ | 23 7 * * * |
 | `kanal_temizle.yml` | BOBİ TV — Kanal Temizle | ✅ | — |
+| `kapak_yenile.yml` | 🖼️ Mevcut Kapakları Yenile (Gemini) | ✅ | 15 9 * * * |
 | `mini_app_pages.yml` | Mini App yayını (GitHub Pages) | ✅ | — |
 | `mini_app_veri.yml` | Mini App verisi (salt okunur özet) | ✅ | 0 */8 * * * |
 | `telegram_bot.yml` | BOBİ TV Telegram Bot Poller (güvenlik düzeltmeli) | ✅ | */5 * * * * |

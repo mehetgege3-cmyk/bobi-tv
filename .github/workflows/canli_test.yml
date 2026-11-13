@@ -80,6 +80,10 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           ARENA_COOKIES_JSON: ${{ secrets.ARENA_COOKIES_JSON }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # Gemini WEB oturum çerezi (API anahtarı DEĞİL). Görsel üretimi
+          # bu çerezle çalışıyor: StreamGenerate → googleusercontent URL.
+          # Kanıt: kanit/gemini/modul_test.png (1408×768), dikey_test.jpg (768×1376).
+          GEMINI_COOKIES: ${{ secrets.GEMINI_COOKIES }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           GH_PAT: ${{ secrets.GH_PAT }}

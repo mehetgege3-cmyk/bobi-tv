@@ -213,6 +213,8 @@ jobs:
           # `gorsel_prompt` ile AI arka plan üretilir; yoksa 1. kare adayları
           # kullanılır (akış durmaz).
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # Gemini WEB oturum çerezi — kapak görseli (API anahtarı değil).
+          GEMINI_COOKIES: ${{ secrets.GEMINI_COOKIES }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           # Ayar sabitleri (GUNLUK_HEDEF/GUNLUK_MAKS/MOD/OTOMATIK_SIL_AKTIF)

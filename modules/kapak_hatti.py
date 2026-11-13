@@ -52,7 +52,42 @@ def kapak_uret_ve_yerlestir(paket: dict[str, Any]) -> dict[str, Any]:
     except Exception as e:
         print(f"[Kapak] Arena görsel hattı hatası: {str(e)[:140]}")
 
-    # --- 1b) GEMINI görsel yedeği (Arena çerezi ölüyken) --------------------
+    # --- 1a) GEMINI WEB görseli (ÇEREZ) — EN GÜVENİLİR YOL ------------------
+    # CANLI KANIT (2026-11-13): GEMINI_COOKIES ile StreamGenerate →
+    # HTTP 200, 238.200 bayt JPEG, 1408×768 (kanit/gemini/modul_test.png).
+    # API anahtarı DEĞİL, web oturum çerezi; abonelik kotasını kullanır.
+    if not sonuc["kapak"]:
+        try:
+            from modules import gemini_web
+
+            if gemini_web.hazir_mi():
+                from modules.kapak_gorsel import gorsel_promptu
+
+                from pathlib import Path as _P
+
+                # Shorts kapağı 1080×1920 DİKEY. Gemini varsayılanı yatay
+                # (ölçüm: 1408×768) → dikey kırpma görselin çoğunu atardı.
+                # Bu yüzden isteme dikey zorlaması eklenir.
+                istem = (
+                    gorsel_promptu(paket)
+                    + "\n\nÖNEMLİ: Görsel DİKEY (9:16, portre) olsun. "
+                    "Yazı, harf, logo koyma. Soru sorma, yap."
+                )
+                ham_w = gemini_web.gorsel_uret(
+                    istem, str(cikis / f"{dosya_adi}_gemini_web.jpg")
+                )
+                if ham_w:
+                    from modules.kapak_gorsel import gorseli_karesine_oturt
+
+                    kirp = gorseli_karesine_oturt(_P(ham_w), _P(cikis) / f"{dosya_adi}_kapak.jpg")
+                    if kirp:
+                        sonuc.update(kapak=str(kirp), kaynak="gemini_web")
+                else:
+                    print(f"[Kapak] Gemini web görsel vermedi: {gemini_web.durum().get('hata')}")
+        except Exception as e:
+            print(f"[Kapak] Gemini web yolu hatası: {str(e)[:120]}")
+
+    # --- 1b) GEMINI API görsel yedeği (kota varsa) --------------------------
     # Ölçüm 2026-11-13: görsel modelleri "limit: 0" (ücretsiz katmanda yok).
     # Kota açılırsa bu yol OTOMATİK devreye girer; ek kod gerekmez.
     if not sonuc["kapak"]:
@@ -69,7 +104,9 @@ def kapak_uret_ve_yerlestir(paket: dict[str, Any]) -> dict[str, Any]:
                 if ham_g:
                     from modules.kapak_gorsel import gorseli_karesine_oturt
 
-                    kirp = gorseli_karesine_oturt(ham_g, cikis / f"{dosya_adi}_kapak.jpg")
+                    from pathlib import Path as _P2
+
+                    kirp = gorseli_karesine_oturt(_P2(ham_g), _P2(cikis) / f"{dosya_adi}_kapak.jpg")
                     if kirp:
                         sonuc.update(kapak=str(kirp), kaynak="gemini_gorsel")
                 else:

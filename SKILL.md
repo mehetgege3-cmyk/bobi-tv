@@ -846,3 +846,35 @@ Kota açıldığı gün ek kod gerekmeden kapaklar Gemini'den gelir.
 
 **Unutma:** `gemini-2.5-flash` YENİ kullanıcılara kapalı (404); API
 `gemini-3.8-flash` öneriyor.
+
+---
+
+## 32. Gemini WEB çereziyle görsel üretimi — ÇALIŞAN YOL (2026-11-13)
+
+Detay: `docs/GEMINI_WEB.md`. **API anahtarı değil, oturum çerezi.**
+
+**Neden:** `GEMINI_API_KEY` bu projede görsel kotası `limit: 0`
+(`docs/GEMINI_ENTEGRASYON.md` §9). Web ucu **abonelik** kotasını kullanır.
+
+**Kanıt:** `kanit/gemini/modul_test.png` 1408×768 · `dikey_test.jpg` 768×1376.
+
+**Gereken:** `GEMINI_COOKIES` = `__Secure-1PSID` + `__Secure-1PSIDTS` (+ SID/NID…).
+`SNlM0e` jetonu `gemini.google.com/app` HTML'inden alınır.
+
+**EN KRİTİK TUZAK (400 hatası):**
+```python
+f_req = json.dumps([None, json.dumps(ic)])   # ✅ DOĞRU (2 öğe, iç sarmalanmış)
+# f_req = json.dumps([[None, ic, None, "!id"]])  ❌ 400 Bad Request
+```
+`ic = [None]*81`; `ic[0]=[prompt,0,None,None,None,None,0]`, `ic[1]=["tr"]`,
+`ic[2]`=10 öğeli metadata, `ic[7]=1`, `ic[79]=1`, `ic[59]=uuid`.
+
+**Görsel indirme:** yanıttaki `googleusercontent.com` URL'i + çerez.
+URL'e **`=s2048`** eklenince 286×512 → **1408×768**.
+
+**Dikey zorlaması (Shorts şart):** isteme
+`"ÖNEMLİ: Görsel DİKEY (9:16, portre) olsun. Yazı, harf, logo koyma. Soru sorma, yap."`
+→ ölçüldü 768×1376 (oran 1.79).
+
+**Kapak sırası:** Gemini WEB → Arena → Gemini API → video karesi.
+**Çerez ömrü:** `1PSIDTS` kısa; **Gemini sekmesini açık bırakma** (daha hızlı ölür).

@@ -1,0 +1,60 @@
+name: Gemini Video Probu
+
+# NİÇİN: "Motoru çöpe at, promptu Gemini'ye at video üretsin" talebi.
+# Mevcut gemini_web modülü yalnız görsel+metin biliyor. Video var mı yok mu
+# tahminle değil ÖLÇÜMLE belirlenmeli. Bu workflow probu çalıştırır ve
+# docs/GEMINI_VIDEO_DENEY.md raporunu commit eder.
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: gemini-video-prob
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  prob:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Bağımlılıklar
+        run: pip install -q -r requirements.txt
+
+      - name: Gemini video probu
+        env:
+          GEMINI_COOKIES: ${{ secrets.GEMINI_COOKIES }}
+        run: python3 tools/gemini_video_dene.py
+
+      - name: Raporu commit et
+        run: |
+          git config user.name "bobi-agent"
+          git config user.email "agent@bobi.tv"
+          git add docs/GEMINI_VIDEO_DENEY.md docs/GEMINI_VIDEO_DENEY.json || true
+          if git diff --cached --quiet; then
+            echo "Değişiklik yok"
+          else
+            git commit -m "chore(prob): Gemini video üretim ölçümü [skip ci]"
+            git push
+          fi
+
+      - name: Raporu artifact olarak sakla
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gemini-video-deny
+          path: |
+            docs/GEMINI_VIDEO_DENEY.md
+            docs/GEMINI_VIDEO_DENEY.json
+          if-no-files-found: warn
+          retention-days: 7

@@ -54,24 +54,50 @@ def ses_uret(metin: str, ses_dosyasi: str):
 
 #: KAPAK İSTEMİ — kullanıcının tek cümlesi, BİREBİR (K8). Değiştirme.
 def kapak_istemini_yaz(baslik: str) -> str:
+    """Kullanıcının kapak istemi — ŞABLON, birebir. Değiştirme, sadeleştirme yapma.
+
+    2026-11-13: yatay (16:9) istendi çünkü YouTube kapak alanı 16:9'dur.
+    9:16 görsel gönderilince YouTube %68 blur dolgu ekliyordu (ölçüldü).
+    """
     return (
         f"{baslik} İsimli short video için kapak fotoğrafı istiyorum; etkileşim ve "
         "izlenme rekorları kırması için profesyonel şekilde tasarla. Kapak "
-        "fotoğrafını gören merak edip tıklasın."
+        "fotoğrafını gören merak edip tıklasın. "
+        "YATAY (16:9) formatta, 1280x720 piksel, manşet kalitesinde üret. "
+        "Yazı yazma, sadece görsel olsun."
     )
 
 
 def kapak_olcekle(kaynak: str, hedef: str) -> str:
-    """Kapağı 1080x1920'ye oturt (YouTube thumbnails.set sınırı 2 MB)."""
+    """Kapağı 1280x720 (16:9) yapar — YouTube kapak alanı.
+
+    ÖNEMLİ: 1080x1920 (9:16) GÖNDERME. YouTube 16:9 alana oturturken yanlara
+    blur dolgu ekler; ölçüm (2026-11-13): 1280 px'in yalnız 405 px'i gerçek
+    görsel, %68'i dolgu → amatör görünüm.
+    """
     from PIL import Image
 
     img = Image.open(kaynak).convert("RGB")
     hg, hy = img.size
-    olcek = max(1080 / hg, 1920 / hy)          # kapla (cover), boşluk bırakma
-    yg, yy = int(hg * olcek + 0.5), int(hy * olcek + 0.5)
-    img = img.resize((yg, yy), Image.LANCZOS)
-    sol, ust = (yg - 1080) // 2, (yy - 1920) // 2
-    img.crop((sol, ust, sol + 1080, ust + 1920)).save(hedef, "JPEG", quality=92)
+
+    # Zaten 16:9 ise sadece ölçekle
+    if abs((hg / hy) - (16 / 9)) < 0.05:
+        img.resize((1280, 720), Image.LANCZOS).save(hedef, "JPEG", quality=93)
+        return hedef
+
+    # Değilse: 16:9 tuval oluştur, görselin TAMAMINI sığdır (contain),
+    # kenarları görselin kendi bulanık hâliyle doldur — siyah bar bırakma.
+    tuval = Image.new("RGB", (1280, 720))
+    arka = img.copy()
+    arka.thumbnail((1280, 720))
+    arka = arka.resize((1280, 720), Image.LANCZOS).filter(
+        __import__("PIL.ImageFilter", fromlist=["GaussianBlur"]).GaussianBlur(40)
+    )
+    on = img.copy()
+    on.thumbnail((1280, 720), Image.LANCZOS)
+    tuval.paste(arka, (0, 0))
+    tuval.paste(on, ((1280 - on.width) // 2, (720 - on.height) // 2))
+    tuval.save(hedef, "JPEG", quality=93)
     return hedef
 
 
@@ -96,7 +122,14 @@ def video_uret(video_no: int) -> dict:
     print(f"[BOBİ TV] Video üretiliyor: '{baslik}'")
 
     # 2. Görsel Üretimi (gorsel_uret fonksiyonu ile)
-    prompt_metin = f"A cinematic vertical background representing: {baslik}, minimalist aesthetic, engaging social media style, 9:16 aspect ratio"
+    # VİDEO ARKA PLANI: konuya özel, dikey, YAZISIZ.
+    # Eski istem İngilizce ve geneldi ("A cinematic vertical background
+    # representing: ...") → alakasız, rastgele stok görsel çıkıyordu.
+    prompt_metin = (
+        f"Dikey (9:16) sinematik fotoğraf, konu: {konu['metin'][:120]}. "
+        "Tek bir güçlü görsel, yakın plan, sıcak ışık, yüksek detay. "
+        "ÜZERİNDE YAZI OLMAYACAK, logo yok, filigran yok, insan yüzü yok."
+    )
     try:
         sonuc = gorsel_uret(prompt_metin, gorsel_yolu)
         if not sonuc or not os.path.exists(gorsel_yolu):

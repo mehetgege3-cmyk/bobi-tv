@@ -1,31 +1,17 @@
 {
-  "zaman": "2026-11-12T15:36:06.539117+00:00",
+  "zaman": "2026-11-13T14:54:04.159733+00:00",
   "olcumler": {
     "hourly_production.yml": {
       "workflow": "hourly_production.yml",
-      "durum": "olculdu",
-      "beklenen_dk": 480,
-      "son_24saat_kosu": 22,
-      "toplam_kosu": 86,
-      "medyan_aralik_dk": 15.0,
-      "son5_medyan_dk": 17.7,
-      "en_uzun_aralik_dk": 1122.1,
-      "beklenen_24saat_kosu": 3.0,
-      "oran": 7.33,
-      "son_kosu_yas_dk": 179.6
+      "durum": "bilinmiyor",
+      "sebep": "hiç koşu kaydı yok",
+      "beklenen_dk": 480
     },
     "telegram_bot.yml": {
       "workflow": "telegram_bot.yml",
-      "durum": "olculdu",
-      "beklenen_dk": 5,
-      "son_24saat_kosu": 4,
-      "toplam_kosu": 14,
-      "medyan_aralik_dk": 168.2,
-      "son5_medyan_dk": 385.1,
-      "en_uzun_aralik_dk": 488.5,
-      "beklenen_24saat_kosu": 288.0,
-      "oran": 0.01,
-      "son_kosu_yas_dk": 221.9
+      "durum": "bilinmiyor",
+      "sebep": "hiç koşu kaydı yok",
+      "beklenen_dk": 5
     }
   }
 }

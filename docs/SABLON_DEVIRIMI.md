@@ -232,3 +232,21 @@ canlı koşunun metni yeni R8'den geçseydi ihlal alacaktı
   koşunun metnini yeniden üretir, R8'in tüm metni saydığını kanıtlar.
 - `tests/test_ilginc_bilgi.py::test_kelime_bandi_saniyeye_denk` — 163 kelime/dk
   ölçümüne dayanır.
+
+### 6.1 Doğrulama koşusu (`43404264853`) — TUTTU
+
+| Ölçüm | 1. koşu (eski bant) | 2. koşu (yeni bant) |
+|---|---|---|
+| Okunan kelime | 86 | **48** |
+| TTS konuşma | 31.68 sn | **18.45 sn** |
+| + kapak 1.5 sn | ~33 sn | **~19.9 sn** |
+| Sonuç | hedefin %50 üstü | **hedef bantta** |
+| Skor | 84 (onarım) | **100** |
+| Yayın | <https://youtube.com/shorts/wgAg-Zj_uUs> | <https://youtube.com/shorts/BRLnqkqBQSQ> |
+
+Ölçülen tempo: 48 kelime / 18.45 sn = **156 kelime/dk** (ilk koşu 163).
+İki ölçüm ortalaması ~160 kelime/dk. Bant (45-58) bu tempoda
+**16.9-21.8 sn** konuşma, kapakla **18.4-23.3 sn** video demek — hedef içinde.
+
+Not: 1. deneme 37 kelimeyle R8'den döndü (`< 45`), onarım turunda 48'e çıktı.
+R8 artık hem alt hem üst sınırı gerçekten tutuyor.

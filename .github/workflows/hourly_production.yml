@@ -12,10 +12,9 @@ on:
     - cron: '0 */8 * * *'
   workflow_dispatch:
     inputs:
-      force:
-        description: 'Zorla çalıştır (kota kontrolü artık yok — zorunlu üretim)'
-        required: false
-        default: 'false'
+      # KALDIRILDI (2026-11-13 denetimi): 'force' girdisi hiçbir env'e
+      # bağlanmamıştı — seçmek hiçbir şeyi değiştirmiyordu (kota kontrolü
+      # zaten yok). workflow_dispatch yine elle tetikleme sağlar.
   repository_dispatch:
     types: [bobi-tv-produce]
 
@@ -201,6 +200,7 @@ jobs:
         if: steps.rtest.outputs.render_test != '1'
         env:
           YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -211,8 +211,6 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           # Gemini WEB oturum çerezi — kapak görseli (API anahtarı değil).
           GEMINI_COOKIES: ${{ secrets.GEMINI_COOKIES }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           # Ayar sabitleri (GUNLUK_HEDEF/GUNLUK_MAKS/MOD/OTOMATIK_SIL_AKTIF)
           # BURADAN KALDIRILDI (TODO 9): tek doğruluk kaynağı bobi_tv/state/
           # ayarlar.json → 'Ayarları state'ten yükle' adımı $GITHUB_ENV'e yazar.
@@ -539,7 +537,7 @@ jobs:
 
           try:
               istek(f"{api}/workflows/hourly_production.yml/dispatches",
-                    {"ref": "main", "inputs": {"force": "false"}}, "POST")
+                    {"ref": "main", "inputs": {}}, "POST")
               print("zincir: ✅ bir sonraki tur tetiklendi")
           except urllib.error.HTTPError as e:
               print(f"zincir: tetikleme hatası HTTP {e.code} — {e.read()[:200]!r}")

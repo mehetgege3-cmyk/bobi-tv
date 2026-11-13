@@ -20,14 +20,14 @@ on:
         description: "YouTube'a yükle (0 = yalnız üret, artifact'a koy)"
         required: false
         default: "1"
-      konu_no:
-        description: "Konu numarası (boş = otomatik sıradaki)"
+      hedef:
+        description: "Kaç video üretilsin (1-3 önerilir)"
         required: false
-        default: ""
-      force:
-        description: "Zorla üret (tek kullanımlık force bayrağı; kota kontrolü zaten yok)"
-        required: false
-        default: "true"
+        default: "1"
+      # KALDIRILDI (2026-11-13 denetimi): 'konu_no' ve 'force' girdileri yalnız
+      # VIDEO_NO / TETIK_FORCE env'ine yazılıyordu — bu iki değişkeni KODUN
+      # HİÇBİR YERİ okumuyor (grep: 0 sonuç). Kullanıcı girdiyi değiştiriyor,
+      # hiçbir şey olmuyordu. Sessiz yalan. Yerine gerçek girdi: 'hedef'.
 
 permissions:
   contents: write
@@ -69,28 +69,24 @@ jobs:
       - name: Pipeline'ı çalıştır (1 video, canlı test)
         env:
           YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           # Gemini WEB oturum çerezi (API anahtarı DEĞİL). Görsel üretimi
           # bu çerezle çalışıyor: StreamGenerate → googleusercontent URL.
           # Kanıt: kanit/gemini/modul_test.png (1408×768), dikey_test.jpg (768×1376).
           GEMINI_COOKIES: ${{ secrets.GEMINI_COOKIES }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           GH_PAT: ${{ secrets.GH_PAT }}
           # --- canlı test ayarları ---
           CANLI_TEST: "1"
-          TUR_BASINA_URETIM: "1"
-          URETIM_TAVANI: "1"
+          TUR_BASINA_URETIM: ${{ inputs.hedef || '1' }}
+          URETIM_TAVANI: ${{ inputs.hedef || '1' }}
+          GUNLUK_HEDEF: ${{ inputs.hedef || '1' }}
           # Not: YUKLEME_ATLA / force değerleri state'ten (ayarlar.json) gelir;
           # aşağıdaki iki satır onları YALNIZ bu koşu için geçersiz kılar.
           YUKLEME_ATLA: ${{ inputs.yukle == '1' && '0' || '1' }}
-          TETIK_FORCE: ${{ inputs.force }}
-          VIDEO_NO: ${{ inputs.konu_no }}
-          ARENA_IDLE_DK: "15"
-          ARENA_MAKS_DK: "45"
+          # force/konu_no kaldırıldı — kod okumuyordu (2026-11-13)
           PYTHONUNBUFFERED: "1"
         run: |
           set -o pipefail

@@ -1,0 +1,20 @@
+name: 📊 Kanal Envanteri (gerçek video sayısı)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  envanter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -q requests
+      - env:
+          YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          PYTHONPATH: .
+        run: python tools/kanal_envanteri.py

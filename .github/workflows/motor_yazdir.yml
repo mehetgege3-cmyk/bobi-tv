@@ -1,0 +1,76 @@
+name: Motor Yazdır (Gemini kendi kodlasın)
+
+# NİÇİN: Kullanıcı (2026-11-13) "mevcut motorları Gemini kendisi yazsın" dedi.
+# tools/motor_yazdir.py Gemini'ye kısa brief verir, plan + kod ister,
+# modules/yeni_motor/ altına yazar, sözdizimi/arayüz denetler.
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: "Üretilen motoru repoya commit et"
+        type: choice
+        options: ["1", "0"]
+        default: "1"
+
+concurrency:
+  group: motor-yazdir
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  yaz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Bağımlılıklar
+        run: |
+          pip install -q -r requirements.txt
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+
+      - name: Gemini motoru yazsın
+        env:
+          GEMINI_COOKIES: ${{ secrets.GEMINI_COOKIES }}
+        run: python3 tools/motor_yazdir.py || echo "::warning::motor yazımı tamamlanmadı (rapora bak)"
+
+      - name: Üretilen motoru göster
+        run: |
+          echo "=== modules/yeni_motor ==="
+          ls -la modules/yeni_motor 2>/dev/null || echo "(yok)"
+          echo "=== sözdizimi ==="
+          python3 -m compileall -q modules/yeni_motor 2>&1 | head -20 || true
+
+      - name: Commit
+        if: inputs.commit == '1'
+        run: |
+          git config user.name "bobi-agent"
+          git config user.email "agent@bobi.tv"
+          git add modules/yeni_motor docs/MOTOR_URETIMI.md docs/MOTOR_URETIMI.json 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "Değişiklik yok"
+          else
+            git commit -m "feat(motor): Gemini'nin kendi yazdığı video motoru [skip ci]"
+            git push
+          fi
+
+      - name: Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yeni-motor
+          path: |
+            modules/yeni_motor/
+            docs/MOTOR_URETIMI.md
+            docs/MOTOR_URETIMI.json
+          if-no-files-found: warn
+          retention-days: 14

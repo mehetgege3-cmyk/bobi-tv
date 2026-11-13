@@ -2,20 +2,24 @@
 
 **Arayüz:** TAMAM — video_uret mevcut
 
+**Uçtan uca doğrulama:** ✅ GEÇTİ
+`{'sure_sn': 14.28, 'cozunurluk': '1080x1920', 'ses': 'aac', 'boyut_kb': 1152}`
+
 ## Üretilen dosyalar
-- `modules/yeni_motor/motor.py`
+_YOK_
 
 ## Gemini'nin planı
 ```
-- **Kaç dosya olacak, adları ne?** 3 dosya: `motor.py`, `generator.py`, `utils.py`
-- **Her dosya ne yapacak:**
-  - `motor.py`: `video_uret(video_no)` fonksiyonunu barındırır, tüm süreci yönetir ve YouTube modülüne paket iletir.
-  - `generator.py`: Gemini ile metin/görsel üretimi, `edge-tts` ile seslendirme ve `ffmpeg` ile görseli ve sesi birleştirip dikey video haline getirme işlerini yapar.
-  - `utils.py`: Konu seçimi, dosya yönetimi ve yardımcı fonksiyonları barındırır.
-- **Video tam olarak nasıl oluşacak:**
-  1. Rastgele ilginç bir konu seçilir ve metin oluşturulur.
-  2. Metin `edge-tts` ile ses dosyasına (mp3) dönüştürülür ve süresi ölçülür.
-  3. Gemini API kullanılarak konuya uygun dikey görsel (1080x1920) üretilir.
-  4. `ffmpeg` ile görsel ve ses dosyası birleştirilerek 15-60 saniyelik dikey MP4 video elde edilir.
-- **Hangi kütüphaneler:** `google-genai`, `edge-tts`, `ffmpeg-python` (veya alt süreçler), `asyncio`
+- **Dosyalar (3 adet):**
+  1. `modules/yeni_motor/motor.py`: Ana orkestratör (`video_uret` fonksiyonu).
+  2. `modules/yeni_motor/generator.py`: İçerik üretimi (metin üretimi, Gemini görsel çağrısı, edge-tts seslendirme).
+  3. `modules/yeni_motor/assembler.py`: ffmpeg ile dikey video (1080x1920), görsel, ses ve altyazı birleştirme.
+
+- **Video Üretim Adımları:**
+  1. Rastgele ilginç bir konu seçilir ve metin (başlık, açıklama, seslendirme metni) hazırlanır.
+  2. `edge-tts` ile ses dosyası (`.mp3`) ve `gorsel_uret` ile arka plan görseli (`.png`) üretilir.
+  3. ffmpeg kullanılarak görsel ve ses dikey (1080x1920) MP4 formatında birleştirilir.
+  4. Paket sözlüğü oluşturulup `video_yukle(paket)` fonksiyonuna gönderilir.
+
+- **Kullanılan Kütüphaneler:** `edge-tts`, `ffmpeg`, `PIL` (Pillow), `modules.gemini_web`, `modules.youtube_upload`.
 ```

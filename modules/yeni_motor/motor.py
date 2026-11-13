@@ -2,13 +2,15 @@ import os
 import random
 import subprocess
 import tempfile
-from google import genai
-from google.genai import types
+import asyncio
+from io import BytesIO
 
 # Modülün gerektirdiği bağımlılıklar:
-# pip install google-genai edge-tts pillow requests (ve sistemde ffmpeg kurulu olmalı)
 import edge_tts
 from PIL import Image
+
+# Google GenAI yerine proje gereksinimi olan çerez tabanlı gorsel_uret modülü kullanılıyor
+from modules.gemini_web import gorsel_uret
 
 # YouTube yükleyici modülü çağrısı (proje yapısındaki mevcut dosya)
 try:
@@ -45,33 +47,8 @@ KONU_LISTESI = [
 ]
 
 
-def gorsel_uret(prompt_metin: str, cikis_yolu: str):
-    """Gemini API kullanarak dikey (9:16) arka plan görseli üretir."""
-    client = genai.Client()
-    # Gemini 2.5 Flash / Imagen modeli ile dikey görsel üretimi
-    response = client.models.generate_images(
-        model="imagen-3.0-generate-002",
-        prompt=f"{prompt_metin}, cinematic lighting, 8k resolution, highly detailed, vertical aspect ratio",
-        config=types.GenerateImagesConfig(
-            number_of_images=1,
-            output_mime_type="image/jpeg",
-            aspect_ratio="9:16",
-        ),
-    )
-
-    for generated_image in response.generated_images:
-        image = Image.open(BytesIO(generated_image.image.image_bytes))
-        image.save(cikis_yolu)
-        return True
-    raise RuntimeError("Görsel üretilemedi.")
-
-
-import asyncio
-from io import BytesIO
-
-
 async def ses_uret_async(metin: str, ses_dosyasi: str):
-    """Edge-tts kullanarak metni seslendirir (Türkçe - Ahmet veya Dilara)."""
+    """Edge-tts kullanarak metni seslendirir (Türkçe - AhmetNeural)."""
     communicate = edge_tts.Communicate(metin, "tr-TR-AhmetNeural")
     await communicate.save(ses_dosyasi)
 
@@ -83,7 +60,7 @@ def ses_uret(metin: str, ses_dosyasi: str):
 def video_uret(video_no: int) -> dict:
     """BOBİ TV ana motor fonksiyonu.
 
-    Konu seçer, Gemini ile görsel üretir, edge-tts ile seslendirir, ffmpeg ile
+    Konu seçer, gorsel_uret ile görsel üretir, edge-tts ile seslendirir, ffmpeg ile
     birleştirip YouTube'a yükler.
     """
     # 1. Konu Seçimi
@@ -100,14 +77,14 @@ def video_uret(video_no: int) -> dict:
 
     print(f"[BOBİ TV] Video üretiliyor: '{baslik}'")
 
-    # 2. Görsel Üretimi (Gemini)
+    # 2. Görsel Üretimi (gorsel_uret fonksiyonu ile)
+    prompt_metin = f"A cinematic vertical background representing: {baslik}, minimalist aesthetic, engaging social media style, 9:16 aspect ratio"
     try:
-        gorsel_uret(
-            f"A cinematic vertical background representing: {baslik}, minimalist aesthetic, engaging social media style",
-            gorsel_yolu,
-        )
+        sonuc = gorsel_uret(prompt_metin, gorsel_yolu)
+        if not sonuc or not os.path.exists(gorsel_yolu):
+            raise RuntimeError("gorsel_uret dosya oluşturamadı.")
     except Exception as e:
-        print(f"[Uyarı] Gemini görsel üretimi atlandı/hata aldı ({e}), düz renk oluşturuluyor.")
+        print(f"[Uyarı] Görsel üretimi atlandı/hata aldı ({e}), düz renk oluşturuluyor.")
         # Fallback: Ffmpeg ile düz arka plan oluştur
         subprocess.run(
             [
@@ -129,7 +106,6 @@ def video_uret(video_no: int) -> dict:
     ses_uret(metin, ses_yolu)
 
     # 4. FFMPEG ile Görsel ve Sesi Birleştirme (1080x1920, dikey)
-    # Ses süresine göre video süresini ayarlama
     cmd = [
         "ffmpeg",
         "-y",
@@ -157,8 +133,10 @@ def video_uret(video_no: int) -> dict:
 
     subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-    # 5. YouTube Yükleme Paketi Hazırlama
+    # 5. YouTube Yükleme Paketi Hazırlama (Zorunlu alanlar eklendi)
+    dosya_adi = os.path.splitext(os.path.basename(final_video_yolu))[0]
     paket = {
+        "dosya_adi": dosya_adi,
         "final_video": final_video_yolu,
         "baslik": f"{baslik} #shorts",
         "aciklama": f"{metin}\n\n#bobi #ilginçbilgiler #shorts",

@@ -84,14 +84,22 @@ def test_prompt_sonuna_soru_sorma_eklenir():
     assert arena_http.prompt_hazirla(bir) == bir
 
 
-def test_kapak_promptunda_soru_sorma_var():
-    import inspect
+def test_kapak_promptu_kullanicinin_tek_cumlesi():
+    """KULLANICI (2026-11-13): "Şablonu çöpe at, sadece benim dediğimi yap."
 
+    İstem artık tek cümle: başlık + kullanıcının metni. Eski 7 kurallı şablon
+    ve "Soru sorma, yap." eki KALDIRILDI.
+    """
     from modules import kapak_gorsel
 
-    kaynak = inspect.getsource(kapak_gorsel.gorsel_promptu)
-    assert "Soru sorma, yap." in kaynak
-    assert "Tek bir görsel üret" in kaynak   # iki aday sunmasın
+    prompt = kapak_gorsel.gorsel_promptu({"baslik": "Test Başlığı"})
+    assert prompt.startswith("Test Başlığı")
+    assert "İsimli short video için kapak fotoğrafı istiyorum" in prompt
+    assert "profesyonel şekilde tasarla" in prompt
+    assert "merak edip tıklasın" in prompt
+    # Eski şablon izleri OLMAMALI
+    assert "VİDEO METNİ (TAM)" not in prompt
+    assert "TASARIM KURALLARI" not in prompt
 
 
 def test_create_chat_yanitindan_chat_id_yakalanir():

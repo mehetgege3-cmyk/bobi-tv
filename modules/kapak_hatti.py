@@ -65,16 +65,13 @@ def kapak_uret_ve_yerlestir(paket: dict[str, Any]) -> dict[str, Any]:
 
                 from pathlib import Path as _P
 
-                # Shorts kapağı 1080×1920 DİKEY. Gemini varsayılanı yatay
-                # (ölçüm: 1408×768) → dikey kırpma görselin çoğunu atardı.
-                # Bu yüzden isteme dikey zorlaması eklenir.
-                istem = (
-                    gorsel_promptu(paket)
-                    + "\n\nÖNEMLİ: Görsel DİKEY (9:16, portre) olsun. "
-                    "Yazı, harf, logo koyma. Soru sorma, yap."
-                )
+                # KULLANICI (2026-11-13): "A olsun. Eski kuralları çöpe atıyoruz."
+                # İsteme HİÇBİR ek yapılmaz — ne dikey zorlaması ne "yazı koyma".
+                # Görsel, kullanıcının cümlesinin doğal sonucu olarak üretilir
+                # (yazı eklemesi serbest). Dikey kırpma yine yapılır (Shorts
+                # kapağı 1080×1920 olmak zorunda) ama istem yönlendirilmez.
                 ham_w = gemini_web.gorsel_uret(
-                    istem, str(cikis / f"{dosya_adi}_gemini_web.jpg")
+                    gorsel_promptu(paket), str(cikis / f"{dosya_adi}_gemini_web.jpg")
                 )
                 if ham_w:
                     from modules.kapak_gorsel import gorseli_karesine_oturt

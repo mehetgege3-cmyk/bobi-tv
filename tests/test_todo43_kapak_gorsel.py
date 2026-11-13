@@ -29,28 +29,33 @@ def _paket() -> dict:
     }
 
 
-def test_prompt_videonun_tam_metnini_icerir():
-    """Arena'ya giden prompt videonun TAM metnini taşımalı (kullanıcı şartı)."""
+def test_prompt_video_basligini_tasir():
+    """KULLANICI (2026-11-13): istem = "<video başlığı> + sabit cümle".
+
+    Eski "tam metin" ve 7 tasarım kuralı İPTAL edildi (kullanıcı: şablonu çöpe at).
+    """
     from modules import kapak_gorsel
 
     paket = _paket()
     prompt = kapak_gorsel.gorsel_promptu(paket)
-    assert "Ahtapotların üç kalbi vardır" in prompt
-    assert "VİDEO METNİ (TAM)" in prompt
-    # Kısa "sok başlık" şeması ARTIK YOK
+    baslik = str(paket.get("baslik") or paket.get("kapak_baslik") or "").strip()
+    assert baslik and prompt.startswith(baslik)
+    # Eski şema izleri ARTIK YOK
     assert "sok_baslik" not in prompt
     assert "vurgu_kelime" not in prompt
     assert "JSON" not in prompt
+    assert "TASARIM KURALLARI" not in prompt
 
 
-def test_prompt_gorsel_uretimi_ister_ve_yazi_yasaklar():
+def test_prompt_kullanicinin_cumlesini_icerir():
+    """İstem kullanıcının verdiği cümlenin TAMAMINI taşımalı."""
     from modules import kapak_gorsel
 
     prompt = kapak_gorsel.gorsel_promptu(_paket())
-    assert "görsel ÜRET" in prompt or "görsel üret" in prompt.lower()
-    assert "9:16" in prompt
-    assert "YAZI KOYMA" in prompt
-    assert "tıklasın" in prompt  # tıklama/izleme teşviki
+    assert "short video için kapak fotoğrafı istiyorum" in prompt
+    assert "etkileşim ve izlenme rekorları kırması" in prompt
+    assert "profesyonel şekilde tasarla" in prompt
+    assert "merak edip tıklasın" in prompt
 
 
 def test_eski_kapak_karar_hatti_silindi():

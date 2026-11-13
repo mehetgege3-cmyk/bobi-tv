@@ -79,40 +79,21 @@ def video_metni(paket: dict[str, Any]) -> str:
 
 
 def gorsel_promptu(paket: dict[str, Any]) -> str:
-    """Arena'ya giden TEK prompt: tam metni oku → profesyonel kapak görseli üret."""
-    metin = video_metni(paket)
+    """KULLANICININ BELİRLEDİĞİ TEK İSTEM (2026-11-13).
+
+    Kullanıcı: "Şablonu çöpe at. Sadece benim dediğimi yap."
+    Eski 1488 karakterlik 7 kurallı şablon İPTAL; tek kaynak bu cümle.
+    """
+    baslik = str(
+        paket.get("baslik")
+        or paket.get("kapak_baslik")
+        or (paket.get("senaryo") or {}).get("baslik")
+        or ""
+    ).strip()
     return (
-        "Sen YouTube Shorts için kapak (thumbnail) tasarlayan bir görsel "
-        "tasarımcısısın. Aşağıda bir videonun TAM METNİ var. Önce metni baştan "
-        "sona dikkatlice oku, konuyu ve en şaşırtıcı noktayı belirle; sonra bu "
-        "videoya kapak olacak TEK bir dikey (9:16) görsel ÜRET.\n\n"
-        "GÖRSELİN AMACI: izleyici akışta kaydırırken durup tıklasın, sonuna kadar "
-        "izlesin, beğenip yorum yazsın.\n\n"
-        "TASARIM KURALLARI (profesyonel, üzerine düşünülmüş):\n"
-        "1) Metnin en çarpıcı/sürpriz fikrini tek bir sahneyle anlat; soyut değil "
-        "somut bir görüntü olsun.\n"
-        "2) Güçlü görsel hiyerarşi: baskın tek bir özne, sade arka plan, yüksek "
-        "kontrast, net siluet, merkezde/üst 2/3'te özne (altta kalan alan yazı ve "
-        "arayüz için boş kalsın).\n"
-        "3) Duygu ve merak: şaşkınlık, ölçek farkı, beklenmedik detay, 'bu nasıl "
-        "olur' hissi. Abartılı sahte şok ifadeleri, korku, kan, şiddet, çıplaklık YOK.\n"
-        "4) Renk: sıcak-soğuk kontrastı, tek baskın renk + tek vurgu rengi, "
-        "doygun ama göz yormayan sinematik ışık.\n"
-        "5) Stil: modern, sinematik, 3D/fotoğrafik gerçekçilik; stok görsel gibi "
-        "jenerik değil, tek bir fikre odaklı.\n"
-        "6) GÖRSELİN İÇİNE YAZI KOYMA. Hiçbir kelime, sayı, harf, logo, filigran "
-        "olmasın (başlık sonradan eklenecek).\n"
-        "7) 9:16 dikey, telefon ekranında küçük boyutta bile anlaşılır olsun.\n\n"
-        "Şimdi görseli üret. Sadece görsel döndür; açıklama, metin veya kod yazma.\n"
-        # KULLANICI BULGUSU (2026-11-13): Arena görsel ürettikten sonra
-        # "Which image do you prefer?" diye soruyor; cevap alamayınca akış
-        # bitmiyor ve görsel teslim edilmiyordu. Bu cümle istekte varsa
-        # Arena sormadan doğrudan yapıyor.
-        "Soru sorma, yap. Tek bir görsel üret; birden fazla aday üretip "
-        "seçenek sunma, onay isteme.\n\n"
-        "=== VİDEO METNİ (TAM) ===\n"
-        f"{metin}\n"
-        "=== VİDEO METNİ SONU ==="
+        f"{baslik} İsimli short video için kapak fotoğrafı istiyorum; etkileşim "
+        "ve izlenme rekorları kırması için profesyonel şekilde tasarla. Kapak "
+        "fotoğrafını gören merak edip tıklasın."
     )
 
 

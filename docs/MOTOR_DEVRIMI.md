@@ -103,3 +103,45 @@ gerçekten koşturur, ffprobe ile denetler, `video_yukle`'i stub'lar.
 Yok. `git rm` ile silindi, `arsiv_workspace/`'e kopya alınmadı (kullanıcı
 talebi: *"Tamamen sil"*). Eski hâle dönmek için `git log`'dan
 `43419373202` öncesi commit'e bakılmalı.
+
+
+---
+
+## 7. KAPAK DÜZELTMESİ (2026-11-13, aynı gün)
+
+### Kullanıcı bildirimi
+> *"Kapak fotoğrafı yapmamış"*
+
+### Kök neden
+Motor devriminde kapak hattı (`kapak_hatti` + `kapak_arena` + `kapak_gorsel` +
+`kapak_uret`) silindi — **yerine yenisi konmadı**. `youtube_upload.py` ise hâlâ
+`kapak_dosyasi` alanını okuyup `thumbnails.set` çağırıyordu. Yeni motor bu alanı
+döndürmediği için alan boştu → **video kapaksız yayınlandı**. Hata sessizdi:
+yükleme başarılı göründü, kimse kapak sormadı.
+
+### Düzeltme
+`modules/yeni_motor/motor.py`:
+1. `kapak_istemini_yaz()` — kullanıcının tek cümlesi, birebir (K8)
+2. **Ayrı Gemini çağrısı** — video arka planından bağımsız kapak görseli
+3. `kapak_olcekle()` — 1080×1920 cover crop, JPEG q92, <2 MB (YouTube sınırı)
+4. Gemini başarısızsa **videonun 1. karesi** kapak olur (üretim durmaz)
+5. `paket["kapak_dosyasi"]` dolduruluyor
+
+`tools/motor_dogrula.py` artık kapağı da denetliyor: var mı, >10 KB, <2 MB, ölçü.
+**Kapaksız motor doğrulamayı geçemez** — bu hata bir daha sessizce geçemez.
+
+### Canlı kanıt (koşu `43420854617`)
+```
+[BOBİ TV]   Video üretiliyor: 'Su İçerken Hiç Düşündün mü?'
+[GeminiWeb] ✅ görsel indi: 200429 bayt → /tmp/bobi_kapak_ham_10.jpg
+[BOBİ TV]   ✅ Kapak hazır: /tmp/bobi_kapak_10.jpg
+[YouTube]   🖼️ Kapak yüklendi: bobi_kapak_10.jpg     ← thumbnails.set BAŞARILI
+[INFO]      === Tamamlandı: 1 yayınlandı, 0 kuyrukta (62sn) ===
+```
+https://youtube.com/shorts/rpeNeu67VTk
+
+### Not: gömme yok, ayrı yükleme
+Eski düzende kapak videonun 1. karesine 1.5 sn gömülüyordu. Yeni düzende
+**gömülmüyor**: kapak ayrı JPG olarak `thumbnails.set` ile yükleniyor. Shorts
+rafında ve öneri kartında görünen kapak budur. Log'daki yanıltıcı
+`ilk kareye gömüldü: HAYIR` satırı da düzeltildi.

@@ -1,0 +1,7 @@
+{
+  "gecti": false,
+  "paket": null,
+  "probe": null,
+  "hata": "ImportError: cannot import name 'genai' from 'google' (unknown location)",
+  "traceback": "Traceback (most recent call last):\n  File \"/home/runner/work/bobi-tv/bobi-tv/tools/motor_dogrula.py\", line 53, in main\n    from modules.yeni_motor import motor\n  File \"/home/runner/work/bobi-tv/bobi-tv/modules/yeni_motor/motor.py\", line 5, in <module>\n    from google import genai\nImportError: cannot import name 'genai' from 'google' (unknown location)\n"
+}

@@ -370,11 +370,12 @@ def pipeline_calistir():
                         (p.get("kapak_dosyasi", "") for p in hazir_paketler
                          if p.get("dosya_adi") == d_adi), "") or "")
                 )
+                # 2026-11-13 motor devrimi: kapak artık videoya GÖMÜLMÜYOR;
+                # thumbnails.set ile AYRI yükleniyor (youtube_upload içinde).
+                # Kaynak: motorun ürettiği kapak görseli ya da video karesi.
                 log_yaz(
                     f"🖼️ Kapak: {Path(kapak_yolu).name if kapak_yolu else 'YOK'} "
-                    f"| kaynak: {next((p.get('kapak_kaynagi', '') for p in hazir_paketler if p.get('dosya_adi') == d_adi), '') or '?'} "
-                    f"| ilk kareye gömüldü: "
-                    f"{next((p.get('kapak_ilk_kare', '') for p in hazir_paketler if p.get('dosya_adi') == d_adi), '') and 'EVET' or 'HAYIR'}"
+                    f"| yöntem: thumbnails.set (ayrı yükleme)"
                 )
                 send_message(
                     f"🎬 <b>BOBİ TV İLGİNÇ BİLGİ</b>\n"

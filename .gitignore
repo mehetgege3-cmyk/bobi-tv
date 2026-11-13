@@ -43,3 +43,9 @@ bobi_tv/output/
 # HAR dosyaları: 7,9 MB ve içinde GERÇEK JWT / ya29 token'ları vardı
 *.har
 har/
+
+# --- KANIT ARŞİVİ (2026-11-13) ------------------------------------------
+# kanit/2026-11/ altında tarihli kanıtlar tutulur. 1 MB'tan büyük görseller
+# repoya GİRMEZ (workspace bütçesi) — arsiv_workspace/kanit/ altında durur.
+kanit/**/*.mp4
+kanit/**/*.zip

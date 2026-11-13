@@ -78,10 +78,6 @@ bobi-tv/
 │   ├── KAPAK_TESHIS.md         # Kapak kök nedenleri ve düzeltmeleri
 │   ├── GEMINI_WEB.md           # Tek sağlayıcı: Gemini web çerezi
 │   └── AYARLAR.md              # Ayar kataloğu
-├── arena-ask.mjs               # Arena.ai çerez birleştirme (<4KB) ve Tiptap otomasyon CLI aracı
-├── arena-senaryo.mjs           # Master Loop JSON senaryo üretici Node betiği
-├── arena-self-repair.mjs       # Arena AI'dan hata için unified diff alan runner
-├── scripts/arena_self_repair.py # Log redaksiyonu, prompt hazırlama ve diff çıkarma
 ├── main_pipeline.py            # Ana orkestrasyon ve akıllı kuyruk yöneticisi
 ├── requirements.txt            # Python bağımlılıkları
 └── SKILL.md                    # BOBİ Ajan Anayasası ve v6.0 PRO Kalıcı Kuralları

@@ -718,7 +718,7 @@ BOBİ TV üretim hattında aşağıdaki teknik ve editoryal kurallar **değişme
 5. **Çok Kanallı Ses Tasarımı ve `-14 LUFS` Mastering (`modules/audio_fx.py`):**
    - Replik geçişlerinde `pop.wav`, twist öncesinde `riser.wav`, twist vuruşunda telefon hoparlöründe duyulabilir harmonikli `vine_boom.wav` ve döngü köprüsünde `ding.wav` kullanılır.
    - 118 BPM telifsiz ritmik fon müziği konuşma sırasında otomatik **`-20 dB`** seviyesine kısılır (*sidechain ducking*) ve final ses `loudnorm=I=-14:TP=-1.5:LRA=11` ile dengelenir.
-6. **%100 Dilbilgisel Kusursuz Döngü (Seamless Loop — `modules/scenario.py` & `arena-senaryo.mjs`):**
+6. **%100 Dilbilgisel Kusursuz Döngü (Seamless Loop — `modules/scenario.py` + `modules/senaryo_v7/`):**
    - Senaryolar 15–24 saniye tatlı noktasında (6–7 hızlı diyalog) kurgulanır.
    - Son cümle yarım kalarak videonun 0.0 saniyesindeki ilk cümlesine dilbilgisel olarak bağlanır (**>%100 Ortalama İzlenme Oranı / APV** hedefi).
 7. **Akıllı Yükleme Kuyruğu, Otomatik İlk Yorum ve Pik Saat Yayın (`main_pipeline.py`, `youtube_upload.py`):**

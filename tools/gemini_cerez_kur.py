@@ -176,7 +176,7 @@ def secret_yaz(baslik: str) -> int:
     gecici.write_text(baslik, encoding="utf-8")
     try:
         s = subprocess.run(
-            [sys.executable, "tools/secret_duzelt.py", "--ad", SECRET_ADI,
+            [sys.executable, "arsiv/arena_olu_kod/tools/secret_duzelt.py", "--ad", SECRET_ADI,
              "--dosya", str(gecici), "--dosya-icerik"],
             env={**os.environ, "PYTHONPATH": "."},
             capture_output=True, text=True,

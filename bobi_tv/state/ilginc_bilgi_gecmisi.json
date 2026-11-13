@@ -230,6 +230,16 @@
       "cevap_ozeti": "  \"soru\": \"Devekuşları tehlike anında kafalarını kuma mı gömer?\",\n  \"cevap\": \"Çoğumuz devekuşlarının tehlike karşısında korkup kafalarını kuma gömdüğünü sanırız, oysa gerçek bambaşka. Bu inanış, tamamen bir yanılsamadan ibarettir. Devekuşları aslında yerdeki yumurtalarını çevirmek ya da kum yutarak sindirimlerini kolaylaştırmak için kafalarını yere yaklaştırırlar. Uzaktan bakan biri ise bu devasa ",
       "skor": 84,
       "tarih": "2026-11-13T06:54:32.493055+00:00"
+    },
+    {
+      "video_no": 6,
+      "kategori": "insan_vucudu",
+      "taktik": "T2",
+      "anahtar": "uykuda_beyin_temizligi",
+      "konu": "Beyin Asıl Temizliğini Uyurken Yapıyor! 🧠",
+      "cevap_ozeti": "Uykuyu genelde 'dinlenme' diye düşünürüz; sanki beyin kapanıp hiçbir şey yapmıyormuş gibi. Oysa uyku sırasında beynin en yoğun işlerinden biri başlıyor: temizlik.\n\nBeyin hücrelerinin arasında, gün içinde biriken atık proteinler var. Uyanıkken bu kanallar daralıyor; uykuya geçtiğinde hücreler arası boşluk genişliyor ve beyin-omurilik sıvısı bu aralıklardan daha rahat akıyor. Bilim insanları bu sist",
+      "skor": 100,
+      "tarih": "2026-11-13T07:34:30.258746+00:00"
     }
   ],
   "kullanilan_yedekler": [
@@ -252,6 +262,7 @@
     "venedik_kazik",
     "uykuda_beyin_temizligi",
     "izlanda_soyadi",
-    "kleopatra_piramit"
+    "kleopatra_piramit",
+    "uykuda_beyin_temizligi"
   ]
 }

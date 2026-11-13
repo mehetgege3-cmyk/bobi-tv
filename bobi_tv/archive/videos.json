@@ -1062,7 +1062,12 @@
     "kapak_dosyasi": "bobi_tv/output/20261113_0601_0002_uykuda_beyin_temizligi_kapak.jpg",
     "kapak_yuklendi": null,
     "hook_ust_bant": "Beyin Asıl Temizliğini Uyurken Yap",
-    "izlenme_snapshots": {}
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 12,
+        "zaman": "2026-11-13T07:37:54.499583+00:00"
+      }
+    }
   },
   {
     "dosya_adi": "20261113_0623_0003_izlanda_soyadi",
@@ -1079,7 +1084,13 @@
     "kanca_puan": null,
     "kapak_dosyasi": "bobi_tv/output/20261113_0623_0003_izlanda_soyadi_kapak.jpg",
     "kapak_yuklendi": null,
-    "hook_ust_bant": "İzlanda'da Aile Soyadı Yok — Baban"
+    "hook_ust_bant": "İzlanda'da Aile Soyadı Yok — Baban",
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 0,
+        "zaman": "2026-11-13T07:37:54.499583+00:00"
+      }
+    }
   },
   {
     "dosya_adi": "20261113_0637_0004_kleopatra_piramit",
@@ -1096,7 +1107,8 @@
     "kanca_puan": null,
     "kapak_dosyasi": "bobi_tv/output/20261113_0637_0004_kleopatra_piramit_kapak.jpg",
     "kapak_yuklendi": null,
-    "hook_ust_bant": "Kleopatra, Piramitlerin Yapılışınd"
+    "hook_ust_bant": "Kleopatra, Piramitlerin Yapılışınd",
+    "izlenme_snapshots": {}
   },
   {
     "dosya_adi": "20261113_0654_0005_ilginc_bilgi",
@@ -1113,6 +1125,25 @@
     "kanca_puan": null,
     "kapak_dosyasi": "bobi_tv/output/20261113_0654_0005_ilginc_bilgi_kapak.jpg",
     "kapak_yuklendi": null,
-    "hook_ust_bant": "{"
+    "hook_ust_bant": "{",
+    "izlenme_snapshots": {}
+  },
+  {
+    "dosya_adi": "20261113_0734_0006_uykuda_beyin_temizligi",
+    "baslik": "Beyin Asıl Temizliğini Uyurken Yapıyor! 🧠 #shorts",
+    "video_id": "dT-fJ7roco8",
+    "durum": "yayinda",
+    "kategori": "insan_vucudu",
+    "url": "https://www.youtube.com/shorts/dT-fJ7roco8",
+    "senaryo_ozeti": "",
+    "hash": "",
+    "tarih": "2026-11-13T07:37:54.133614+00:00",
+    "kanca_formu": "",
+    "kanca_ab": "",
+    "kanca_puan": null,
+    "kapak_dosyasi": "bobi_tv/output/20261113_0734_0006_uykuda_beyin_temizligi_kapak.jpg",
+    "kapak_yuklendi": null,
+    "hook_ust_bant": "Beyin Asıl Temizliğini Uyurken Yap",
+    "izlenme_snapshots": {}
   }
 ]

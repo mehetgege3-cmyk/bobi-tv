@@ -1173,5 +1173,22 @@
     "kapak_yuklendi": null,
     "hook_ust_bant": "ISINDIKÇA KARARIYOR",
     "izlenme_snapshots": {}
+  },
+  {
+    "dosya_adi": "20261113_0950_0008_cogumuz_taze_kahvenin_ku",
+    "baslik": "Kahvenin bayatlama sırrı #shorts",
+    "video_id": "BRLnqkqBQSQ",
+    "durum": "yayinda",
+    "kategori": "gunluk_yasam",
+    "url": "https://www.youtube.com/shorts/BRLnqkqBQSQ",
+    "senaryo_ozeti": "",
+    "hash": "",
+    "tarih": "2026-11-13T09:51:56.945836+00:00",
+    "kanca_formu": "",
+    "kanca_ab": "",
+    "kanca_puan": null,
+    "kapak_dosyasi": "bobi_tv/output/20261113_0950_0008_cogumuz_taze_kahvenin_ku_kapak.jpg",
+    "kapak_yuklendi": null,
+    "hook_ust_bant": "Kahve Ne Zaman Bayatlar?"
   }
 ]

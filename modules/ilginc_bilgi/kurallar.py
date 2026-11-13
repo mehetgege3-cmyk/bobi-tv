@@ -36,8 +36,13 @@ BASLIK_SONUC = "💡 Şaşırtıcı Sonuç"
 
 ZORUNLU_BASLIKLAR = (BASLIK_SORU, BASLIK_CEVAP, BASLIK_SONUC)
 
-KELIME_MIN = 200
-KELIME_MAKS = 300
+# 2026-11-13 ŞABLON DEVRİMİ — ölçüme dayalı.
+# ESKİ: 200-300 kelime → TTS ile 81-134 sn video.
+# KANAL VERİSİ: 81-134 sn videolar 0-14 izlenme · 20-22 sn videolar 1.100-1.200.
+# YENİ: 50-70 kelime → ~16-23 sn. Türkçe TTS ölçümü: 250 kelime/81 sn
+# = 185 kelime/dk → 55 kelime ≈ 17.8 sn. Hedef bant 20-22 sn ile örtüşüyor.
+KELIME_MIN = 50
+KELIME_MAKS = 70
 
 #: İngilizce işlev kelimeleri — "tamamen Türkçe" kuralını ihlal eder.
 INGILIZCE_ISLEV = (
@@ -145,13 +150,17 @@ def kelime_say(metin: str) -> int:
 
 
 def k1_soru_ile_basla(metin: str, _b: dict, _bag: dict) -> Ihlal | None:
-    """K1: Metin, merak uyandıran bir SORU ile başlamalı."""
+    """K1: Metin, merak uyandıran bir KANCA ile başlamalı (soru veya iddia)."""
     bolumler = bolumleri_ayir(metin)
     soru = bolumler.get(BASLIK_SORU, "").strip()
     if not soru:
         return Ihlal("R1", "Soru ile başla", "🧠 sorusu bölümü boş", 3)
-    if "?" not in soru:
-        return Ihlal("R1", "Soru ile başla", "soru bölümünde '?' yok", 2)
+    # 2026-11-13: '?' ZORUNLULUĞU KALDIRILDI.
+    # GEREKÇE (kanal verisi): 20-22 sn'lik kazanan videoların 4'ü "Wi-Fi hırsızı
+    # kim çıktı?", "Büyülü Ayna Sandı, Etiketi Görünce Şok" gibi SORU değil
+    # İDDİA/OLAY kancası kullanıyor. '🧠 Günün Merak Uyandıran Sorusu' başlığı
+    # zorunlu kalıyor (metin/görsel işaret) ama cümlenin soru olması şart değil.
+    # Bunun yerine "kanca gücü" ölçülür: çok kısa veya boş olmasın.
     if kelime_say(soru) < 3:
         return Ihlal("R1", "Soru ile başla", f"soru çok kısa ({kelime_say(soru)} kelime)", 2)
     return None
@@ -241,15 +250,15 @@ def k7_kategori_gecisi(metin: str, _b: dict, bag: dict) -> Ihlal | None:
 
 
 def k8_kelime_sayisi(metin: str, bolumler: dict, _bag: dict) -> Ihlal | None:
-    """K8: 200–300 kelime (cevap bölümü esas alınır; toplam da kontrol edilir)."""
+    """K8: 50-70 kelime (cevap bölümü esas alınır). 2026-11-13: 200-300 → 50-70."""
     cevap = bolumler.get(BASLIK_CEVAP, "")
     if not cevap:
         return Ihlal("R8", "200-300 kelime", "cevap bölümü yok", 3)
     n = kelime_say(cevap)
     if n < KELIME_MIN:
-        return Ihlal("R8", "200-300 kelime", f"{n} kelime (< {KELIME_MIN})", 3)
+        return Ihlal("R8", f"{KELIME_MIN}-{KELIME_MAKS} kelime", f"{n} kelime (< {KELIME_MIN})", 3)
     if n > KELIME_MAKS:
-        return Ihlal("R8", "200-300 kelime", f"{n} kelime (> {KELIME_MAKS})", 2)
+        return Ihlal("R8", f"{KELIME_MIN}-{KELIME_MAKS} kelime", f"{n} kelime (> {KELIME_MAKS})", 2)
     return None
 
 

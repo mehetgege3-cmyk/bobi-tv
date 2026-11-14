@@ -48,6 +48,22 @@
       "kalite_ortalama": 74.5,
       "yorum": "🔴 akışa giriş yok — algoritma hâlâ dağıtmıyor; içerik/kanca gözden geçir",
       "kanca_en_iyi_form": ""
+    },
+    {
+      "zaman": "2026-11-14T14:18:48.412894+00:00",
+      "gun": 7,
+      "uretilen": 72,
+      "silinen": 48,
+      "izlenme_ornek": 52,
+      "ortalama_izlenme": 7.46,
+      "medyan_izlenme": 1.0,
+      "en_yuksek_izlenme": 99,
+      "akisa_giren": 0,
+      "akisa_girme_orani": 0,
+      "kalite_ornek": 2,
+      "kalite_ortalama": 74.5,
+      "yorum": "🔴 akışa giriş yok — algoritma hâlâ dağıtmıyor; içerik/kanca gözden geçir",
+      "kanca_en_iyi_form": ""
     }
   ]
 }

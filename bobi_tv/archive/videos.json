@@ -1080,6 +1080,10 @@
       "+1h": {
         "izlenme": 12,
         "zaman": "2026-11-13T07:37:54.499583+00:00"
+      },
+      "+24h": {
+        "izlenme": 493,
+        "zaman": "2026-11-14T14:57:58.957937+00:00"
       }
     }
   },
@@ -1317,7 +1321,7 @@
     "dosya_adi": "bobi_video_1",
     "baslik": "Beyninin Asla Unutamadığı O Sır #shorts",
     "video_id": "NgoQpmZCtpc",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "",
     "url": "https://www.youtube.com/shorts/NgoQpmZCtpc",
     "senaryo_ozeti": "",
@@ -1328,6 +1332,27 @@
     "kanca_puan": null,
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
-    "hook_ust_bant": ""
+    "hook_ust_bant": "",
+    "silinme_izlenme": 32,
+    "silinme_yas_dk": 534.7,
+    "silinme_tarihi": "2026-11-14T14:56:56.955051+00:00"
+  },
+  {
+    "dosya_adi": "bobi_video_2",
+    "baslik": "Su İçerken Hiç Düşündün mü? #shorts",
+    "video_id": "vFAahA1Ax1A",
+    "durum": "yayinda",
+    "kategori": "",
+    "url": "https://www.youtube.com/shorts/vFAahA1Ax1A",
+    "senaryo_ozeti": "",
+    "hash": "",
+    "tarih": "2026-11-14T14:57:58.537046+00:00",
+    "kanca_formu": "",
+    "kanca_ab": "",
+    "kanca_puan": null,
+    "kapak_dosyasi": "",
+    "kapak_yuklendi": null,
+    "hook_ust_bant": "",
+    "izlenme_snapshots": {}
   }
 ]

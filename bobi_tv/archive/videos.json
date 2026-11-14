@@ -1296,7 +1296,7 @@
     "dosya_adi": "bobi_video_12",
     "baslik": "Zamanın Nasıl Akıp Gittiğini Fark Ettin mi? #shorts",
     "video_id": "_jU-luIiEks",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "",
     "url": "https://www.youtube.com/shorts/_jU-luIiEks",
     "senaryo_ozeti": "",
@@ -1308,6 +1308,26 @@
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
     "hook_ust_bant": "",
-    "izlenme_snapshots": {}
+    "izlenme_snapshots": {},
+    "silinme_izlenme": 27,
+    "silinme_yas_dk": 485.1,
+    "silinme_tarihi": "2026-11-14T06:00:54.871404+00:00"
+  },
+  {
+    "dosya_adi": "bobi_video_1",
+    "baslik": "Beyninin Asla Unutamadığı O Sır #shorts",
+    "video_id": "NgoQpmZCtpc",
+    "durum": "yayinda",
+    "kategori": "",
+    "url": "https://www.youtube.com/shorts/NgoQpmZCtpc",
+    "senaryo_ozeti": "",
+    "hash": "",
+    "tarih": "2026-11-14T06:02:05.481318+00:00",
+    "kanca_formu": "",
+    "kanca_ab": "",
+    "kanca_puan": null,
+    "kapak_dosyasi": "",
+    "kapak_yuklendi": null,
+    "hook_ust_bant": ""
   }
 ]

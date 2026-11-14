@@ -1353,6 +1353,29 @@
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
     "hook_ust_bant": "",
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 216,
+        "zaman": "2026-11-14T20:36:25.811424+00:00"
+      }
+    }
+  },
+  {
+    "dosya_adi": "bobi_video_3",
+    "baslik": "Gözlerinin Hayret Edeceği Gerçek #shorts",
+    "video_id": "3OAbcGx5sPI",
+    "durum": "yayinda",
+    "kategori": "",
+    "url": "https://www.youtube.com/shorts/3OAbcGx5sPI",
+    "senaryo_ozeti": "",
+    "hash": "",
+    "tarih": "2026-11-14T20:36:25.163350+00:00",
+    "kanca_formu": "",
+    "kanca_ab": "",
+    "kanca_puan": null,
+    "kapak_dosyasi": "",
+    "kapak_yuklendi": null,
+    "hook_ust_bant": "",
     "izlenme_snapshots": {}
   }
 ]

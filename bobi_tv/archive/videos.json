@@ -1364,7 +1364,7 @@
     "dosya_adi": "bobi_video_3",
     "baslik": "Gözlerinin Hayret Edeceği Gerçek #shorts",
     "video_id": "3OAbcGx5sPI",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "",
     "url": "https://www.youtube.com/shorts/3OAbcGx5sPI",
     "senaryo_ozeti": "",
@@ -1376,6 +1376,26 @@
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
     "hook_ust_bant": "",
-    "izlenme_snapshots": {}
+    "izlenme_snapshots": {},
+    "silinme_izlenme": 3,
+    "silinme_yas_dk": 568.6,
+    "silinme_tarihi": "2026-11-15T06:05:15.844758+00:00"
+  },
+  {
+    "dosya_adi": "bobi_video_1",
+    "baslik": "Beyninin Asla Unutamadığı O Sır #shorts",
+    "video_id": "FXSjgNSjqjE",
+    "durum": "yayinda",
+    "kategori": "",
+    "url": "https://www.youtube.com/shorts/FXSjgNSjqjE",
+    "senaryo_ozeti": "",
+    "hash": "",
+    "tarih": "2026-11-15T06:06:18.720606+00:00",
+    "kanca_formu": "",
+    "kanca_ab": "",
+    "kanca_puan": null,
+    "kapak_dosyasi": "",
+    "kapak_yuklendi": null,
+    "hook_ust_bant": ""
   }
 ]

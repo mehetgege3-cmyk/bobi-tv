@@ -1,0 +1,117 @@
+name: "Notebook Hattı — konu → kapak → video → kırp → yükle"
+
+# KULLANICI İSTEĞİ (2026-11-08):
+#   "tümünü bitirince yeni konu ile bir video üretip youtube ye yükle bakalım
+#    sorunsuz olacakmı."
+#
+# HAT (tamamı bu workflow'da):
+#   1) KONU    — Gemini web, docs/SABLON_ISTEM.md şablonu birebir
+#   2) KAPAK   — Gemini web, kapak_istemini_yaz() (kullanıcının kendi cümlesi)
+#   3) VİDEO   — NotebookLM (notebooklm-py), VideoFormat.SHORT, dikey 720×1280
+#   4) KIRP    — sonundaki "Gemini Notebook" yazısı kesilir (ölçülerek bulunur)
+#   5) KAPAK   — kapak videonun ilk 1.5 sn'sine gömülür + thumbnails.set
+#   6) YÜKLE   — YouTube public
+#
+# ÖLÇÜLEN SÜRE (2026-11-08, canlı): konu ~30 sn, kapak ~60 sn,
+# video 285-632 sn, işleme ~25 sn → toplam 6-13 dk. Job tavanı 60 dk.
+
+on:
+  workflow_dispatch:
+    inputs:
+      video_no:
+        description: "Video numarası (kategori/taktik rotasyonu için)"
+        required: false
+        default: "0"
+      kategori:
+        description: "Kategori (boş = otomatik rotasyon)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  hatt:
+    name: Konu → kapak → NotebookLM video → yükle
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Repo'yu çek
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT || github.token }}
+
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: FFmpeg kur
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          ffmpeg -version | head -1
+          ffprobe -version | head -1
+
+      - name: Python bağımlılıkları
+        run: |
+          python -m pip install -q --upgrade pip
+          if [ -f requirements.txt ]; then pip install -q -r requirements.txt; fi
+
+      - name: Klasör yapısı
+        run: mkdir -p bobi_tv/output bobi_tv/state bobi_tv/archive
+
+      - name: Hattı çalıştır (konu → video → işleme)
+        env:
+          GEMINI_COOKIES: ${{ secrets.GEMINI_COOKIES }}
+          NOTEBOOK_GOOGLE: ${{ secrets.NOTEBOOK_GOOGLE }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          set -o pipefail
+          python3 tools/notebook_hat.py \
+            --video-no "${{ inputs.video_no || '0' }}" \
+            --kategori "${{ inputs.kategori }}" \
+            2>&1 | tee /tmp/hat.log
+
+      - name: YouTube'a yükle
+        env:
+          YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GH_PAT: ${{ secrets.GH_PAT }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          set -o pipefail
+          python3 tools/hat_yukle.py 2>&1 | tee /tmp/yukle.log
+
+      - name: Özet
+        if: always()
+        run: |
+          {
+            echo "## Hat sonucu"
+            echo '```json'
+            cat /tmp/hat.log 2>/dev/null | tail -40 || echo "(log yok)"
+            echo '```'
+            echo "## Yükleme"
+            echo '```'
+            cat /tmp/yukle.log 2>/dev/null | tail -25 || echo "(log yok)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Çıktılar (artifact)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: notebook-hat-cikti
+          path: |
+            /tmp/bobi_*.mp4
+            /tmp/bobi_kapak_*.jpg
+            /tmp/hat.log
+            /tmp/yukle.log
+            /tmp/hat_sonuc.json
+          if-no-files-found: warn
+          retention-days: 7

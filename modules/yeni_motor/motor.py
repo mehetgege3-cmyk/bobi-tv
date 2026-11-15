@@ -225,7 +225,11 @@ def video_uret(video_no: int) -> dict:
         final_video_yolu,
     ]
 
-    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    if r.returncode != 0:
+        print(f"[BOBİ TV] ❌ ffmpeg birleştirme hatası: {r.stderr[-300:]}")
+    else:
+        print(f"[BOBİ TV] 🎬 Videoya çevrildi: {os.path.basename(final_video_yolu)}")
 
     # 4.5. KAPAK GÖRSELİ (2026-11-13): video arka planından AYRI üretilir.
     # NİÇİN: youtube_upload `kapak_dosyasi` alanını okuyup thumbnails.set ile
@@ -246,7 +250,12 @@ def video_uret(video_no: int) -> dict:
     # thumbnails.set `oar2.jpg`'yi değiştiremiyor; kanal ön izlemesinde görünen
     # kare videonun 1. karesidir. Bu yüzden kapak videoya da girmeli.
     if os.path.exists(kapak_yolu):
-        final_video_yolu = ilk_kareye_gom(final_video_yolu, kapak_yolu)
+        yeni_yol = ilk_kareye_gom(final_video_yolu, kapak_yolu)
+        if yeni_yol == final_video_yolu:
+            print("[BOBİ TV] ❌ KAPAK GÖMÜLEMEDİ — video kapaksız gidiyor")
+        else:
+            final_video_yolu = yeni_yol
+            print(f"[BOBİ TV] 📼 Gömülü dosya: {os.path.basename(final_video_yolu)}")
 
     # Kapak yoksa videonun 1. karesini kapak yap (üretim durmasın)
     if not os.path.exists(kapak_yolu):

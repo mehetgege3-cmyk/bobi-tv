@@ -190,26 +190,13 @@ def main() -> int:
     yaz = "--secret-yazma" not in sys.argv
     DURUM.unlink(missing_ok=True)
 
-    # ---- A) storage_state (tercih edilen) --------------------------------
-    ham = (os.environ.get("NOTEBOOKLM_AUTH_JSON") or "").strip()
-    if ham:
-        print("=== kimlik modu: STORAGE_STATE (39 çerez, tarayıcı çıktısı) ===")
-        _storage_state_yaz(ham)
-        if not _tazele():
-            print("⚠️ tazeleme başarısız — mevcut çerezle doğrulanıyor")
-        adet = _dogrula()
-        if adet <= 0:
-            print("❌ kimlik geçersiz")
-            return 1
-        print(f"✅ kimlik geçerli — {adet} defter")
-        if yaz:
-            _secret_guncelle("NOTEBOOKLM_AUTH_JSON",
-                             DURUM.read_text(encoding="utf-8"))
-        return 0
+    # NİÇİN önce master token: 2026-11-08'de ölü NOTEBOOKLM_AUTH_JSON secret'ı
+    # master token'ın önüne geçti ve koşu boşa gitti. Kalıcı kimlik daima
+    # önce denenir; çerez yalnız yedektir.
 
-    # ---- B) master token (kalıcı) ---------------------------------------
+    # ---- A) master token (KALICI — önce bu denenir, çünkü ölü çerez onu gölgelemesin) ---------------------------------------
     if (os.environ.get("NOTEBOOKLM_MASTER_TOKEN_JSON") or "").strip():
-        print("=== kimlik modu: MASTER TOKEN ===")
+        print("=== kimlik modu: MASTER TOKEN (kalıcı) ===")
         d = _profil_dizini()
         d.mkdir(parents=True, exist_ok=True)
         (d / "master_token.json").write_text(
@@ -229,6 +216,23 @@ def main() -> int:
         if adet <= 0:
             return 1
         print(f"✅ kimlik geçerli — {adet} defter")
+        return 0
+
+    # ---- B) storage_state (tek kullanımlık tohum) --------------------------------
+    ham = (os.environ.get("NOTEBOOKLM_AUTH_JSON") or "").strip()
+    if ham:
+        print("=== kimlik modu: STORAGE_STATE (tohum çerez) ===")
+        _storage_state_yaz(ham)
+        if not _tazele():
+            print("⚠️ tazeleme başarısız — mevcut çerezle doğrulanıyor")
+        adet = _dogrula()
+        if adet <= 0:
+            print("❌ kimlik geçersiz")
+            return 1
+        print(f"✅ kimlik geçerli — {adet} defter")
+        if yaz:
+            _secret_guncelle("NOTEBOOKLM_AUTH_JSON",
+                             DURUM.read_text(encoding="utf-8"))
         return 0
 
     # ---- C) kısmi çerez (yedek) -----------------------------------------

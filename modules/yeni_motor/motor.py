@@ -18,35 +18,7 @@ from modules.gemini_web import gorsel_uret
 # aynı video YİNE yükleniyordu → çift yükleme. Tek sorumluluk: dosya üret.
 
 
-# İlginç konu havuzu (Türkçe, sade, "sen" dili)
-KONU_LISTESI = [
-    {
-        "baslik": "Zamanın Nasıl Akıp Gittiğini Fark Ettin mi?",
-        "metin": "Göz kırpma süren ortalama 100 milisaniyedir. Eğer hayatın boyunca göz kırptığın tüm süreleri toplarsan, yaklaşık 5 yılını karanlıkta geçirmiş olursun. Şaşırtıcı değil mi?",
-        "etiketler": ["ilginçbilgiler", "shorts", "zaman", "bilgi"],
-    },
-    {
-        "baslik": "Beyninin Asla Unutamadığı O Sır",
-        "metin": "Yatmadan hemen önce izlediğin veya okuduğun şeyler, beynin tarafından gece boyunca uzun süreli belleğe aktarılır. Yani uykun, aslında senin gizli çalışma masandır.",
-        "etiketler": ["beyin", "ilginçbilgiler", "psikoloji", "shorts"],
-    },
-    {
-        "baslik": "Su İçerken Hiç Düşündün mü?",
-        "metin": "İçtiğin bir bardak sudaki moleküllerin bir kısmının dinozorlar tarafından milyonlarca yıl önce içilmiş olabileceğini biliyor muydun? Su döngüsü sayesinde dünyadaki su hep aynı kalır.",
-        "etiketler": ["su", "bilim", "ilginçbilgiler", "shorts"],
-    },
-    {
-        "baslik": "Gözlerinin Hayret Edeceği Gerçek",
-        "metin": "Gözlerimiz doğduğumuz andan itibaren neredeyse hiç büyümez; ancak burun ve kulaklarımız ömür boyu büyümeye devam eder. Vücudumuzdaki bu detay seni de şaşırttı mı?",
-        "etiketler": ["vücut", "ilginçbilgiler", "şaşırtıcı", "shorts"],
-    },
-]
-
-
-async def ses_uret_async(metin: str, ses_dosyasi: str):
-    """Edge-tts kullanarak metni seslendirir (Türkçe - AhmetNeural)."""
-    communicate = edge_tts.Communicate(metin, "tr-TR-AhmetNeural")
-    await communicate.save(ses_dosyasi)
+KONU_URETILEMEDI = "KONU_URETILEMEDI"
 
 
 def ses_uret(metin: str, ses_dosyasi: str):
@@ -170,17 +142,30 @@ def ilk_kareye_gom(video: str, kapak_jpg: str, sn: float = 1.5) -> str:
     return hedef
 
 
-def video_uret(video_no: int) -> dict:
+def konu_uret(video_no: int) -> dict | None:
+    """Konuyu üretir. Kaynak henüz bağlı değil.
+
+    Dönmeli: {"baslik": str, "metin": str, "etiketler": list[str]}
+    Bağlanana kadar video üretimi durur — sabit/yedek havuz YOK (kullanıcı kararı).
+    """
+    return None
+
+
+def video_uret(video_no: int, konu: dict | None = None) -> dict:
     """BOBİ TV ana motor fonksiyonu.
 
-    Konu seçer, gorsel_uret ile görsel üretir, edge-tts ile seslendirir, ffmpeg ile
-    birleştirip YouTube'a yükler.
+    Konuyu alır (parametre veya konu_uret), görsel üretir, seslendirir, ffmpeg ile
+    birleştirir, kapağı ilk 1.5 sn'ye gömer. Yükleme main_pipeline'da.
     """
-    # 1. Konu Seçimi
-    konu = KONU_LISTESI[video_no % len(KONU_LISTESI)]
+    # 1. KONU — dışarıdan verilmediyse konu_uret()'ten alınır.
+    # Sabit konu havuzu YOK (kullanıcı kararı 2026-11-15).
+    if konu is None:
+        konu = konu_uret(video_no)
+    if not konu:
+        raise RuntimeError(f"{KONU_URETILEMEDI}: konu üretilemedi (video_no={video_no})")
     baslik = konu["baslik"]
     metin = konu["metin"]
-    etiketler = konu["etiketler"]
+    etiketler = konu.get("etiketler", ["shorts"])
 
     # Geçici dosya yolları
     tmp_dir = tempfile.gettempdir()

@@ -2,6 +2,7 @@ import os
 import random
 import subprocess
 import tempfile
+from pathlib import Path
 import asyncio
 from io import BytesIO
 
@@ -67,35 +68,21 @@ def kapak_istemini_yaz(baslik: str) -> str:
 
 
 def kapak_olcekle(kaynak: str, hedef: str) -> str:
-    """Kapağı 1280x720 (16:9) yapar — YouTube kapak alanı.
+    """Kapağı YouTube'a hazırlar — GÖRSELE DOKUNMADAN.
 
-    ÖNEMLİ: 1080x1920 (9:16) GÖNDERME. YouTube 16:9 alana oturturken yanlara
-    blur dolgu ekler; ölçüm (2026-11-13): 1280 px'in yalnız 405 px'i gerçek
-    görsel, %68'i dolgu → amatör görünüm.
+    Gemini dikey (9:16) üretiyor; yazı ve kompozisyon ona göre kurulmuş.
+    16:9 tuvale sıkıştırınca yanlara blur dolgu ekleniyordu (kullanıcı bildirdi:
+    "çok amatörce"). Artık tuval oluşturulmuyor, kırpılmıyor: görsel olduğu
+    gibi JPEG'e çevrilip yükleniyor. YouTube gerekirse kendisi kırpar.
     """
     from PIL import Image
 
     img = Image.open(kaynak).convert("RGB")
-    hg, hy = img.size
-
-    # Zaten 16:9 ise sadece ölçekle
-    if abs((hg / hy) - (16 / 9)) < 0.05:
-        img.resize((1280, 720), Image.LANCZOS).save(hedef, "JPEG", quality=93)
-        return hedef
-
-    # Değilse: 16:9 tuval oluştur, görselin TAMAMINI sığdır (contain),
-    # kenarları görselin kendi bulanık hâliyle doldur — siyah bar bırakma.
-    tuval = Image.new("RGB", (1280, 720))
-    arka = img.copy()
-    arka.thumbnail((1280, 720))
-    arka = arka.resize((1280, 720), Image.LANCZOS).filter(
-        __import__("PIL.ImageFilter", fromlist=["GaussianBlur"]).GaussianBlur(40)
-    )
-    on = img.copy()
-    on.thumbnail((1280, 720), Image.LANCZOS)
-    tuval.paste(arka, (0, 0))
-    tuval.paste(on, ((1280 - on.width) // 2, (720 - on.height) // 2))
-    tuval.save(hedef, "JPEG", quality=93)
+    # 2 MB sınırı (YouTube thumbnails.set). Gerekirse kaliteyi düşür.
+    for kalite in (92, 88, 84, 78, 70):
+        img.save(hedef, "JPEG", quality=kalite, optimize=True)
+        if Path(hedef).stat().st_size <= 2 * 1024 * 1024:
+            break
     return hedef
 
 

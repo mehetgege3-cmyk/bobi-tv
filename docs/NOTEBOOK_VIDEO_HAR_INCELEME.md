@@ -162,3 +162,71 @@ geriden geliyor.
 3. **Süre kontrolü var mı?** 75 sn çıkmış. Daha uzun/kısa istenebilir mi?
 4. **`lh3` URL'i ne kadar yaşıyor?** IP'ye kilitli değil ama token süreli olabilir.
    Üretimden hemen sonra indirilirse sorun yok.
+
+---
+
+# EK — Kullanıcının anlattığı akışla karşılaştırma (2026-11-15)
+
+Kullanıcı akışı:
+1. Gemini'ye prompt → genel kültür sorusu + cevabı
+2. NotebookLM'de **yeni not defteri** oluştur
+3. Gemini metnini **"Not oluştur"** ile ekle (kaynak değil, **not**)
+4. Studio → **Video Özeti** → **Kısa video** → Hemen oluştur
+
+## HAR hangisini kapsıyor?
+
+`ogs.google.com_2026_11_15_19_46_29.har` = `1.md` içinden çıkan `1.har`.
+SHA256 birebir aynı → **daha önce incelediğim dosya, yeni bilgi yok.**
+
+| Olay | Zaman | HAR'da |
+|---|---|---|
+| Not defteri oluşturuldu | **16:31:18** | ❌ YOK |
+| Not (artifact) eklendi — "Buruşan Parmakların Sırrı" | **16:31:46** | ❌ YOK |
+| HAR kaydı başladı | 16:32:35 | — |
+| `R7cb6c` — video üretimi başladı | 16:34:42 | ✅ |
+| Video hazır (`gArtLc` indeks 4 = 3) | 16:42:55 | ✅ |
+| İndirme (`drum.usercontent`) | 16:46:08 | ✅ |
+
+**Kritik boşluk:** HAR kayda başladığında not defteri (16:31:18) ve not (16:31:46)
+**zaten oluşturulmuştu**. Yani **defter açma ve not ekleme RPC'leri HAR'da yok.**
+
+HAR'da toplam 23 farklı RPC var, hiçbiri "oluştur" değil:
+`EEr8Nb ESY5D EylDcb Fxmvse HpN0Ub I3xc3c JFMDGd R7cb6c VfAZjd VxUbXb
+ZwVcOc cFji9 e3bVqc gArtLc hPTbtc khqZz otmP3b ozz5Z rLM1Ne sODAg sqTeoe
+ub2Bae vB2zic`
+
+## "Kısa video" seçimi nerede?
+
+`R7cb6c` yükü:
+```
+[[2,null,null,[1,...]], "<DEFTER_ID>",
+ [null, null, 3, [[null,...,["<NOT_ID>", 2]]], null,null,null,null,
+  [null,null,[[["<NOT_ID>"]], "tr", "", null, 4, null,null, 1]]]]
+```
+- **`3`** → arayüzde seçtiğin **"Kısa"** formatı (varsayılan `2` olurdu). *Hipotez — tek çağrı olduğu için karşılaştırma yok.*
+- **`"tr"`** → dil
+- `"<NOT_ID>", 2` → hangi notun videoya çevrileceği
+
+## İlerleme okuma kuralı (kanıtlı)
+
+`gArtLc` yanıtındaki yük dizisinde:
+- **indeks 4 = 2** → üretiliyor (yanıt ~600 krkt)
+- **indeks 4 = 3** → hazır (yanıt ~1962 krkt, video URL'leri dolu)
+- **indeks 9 = `[75, 167000000]`** → süre 75 sn
+- **indeks 8[1..4]** → `,22` / `,hls` / `,dash` / `,m22-dv` URL'leri
+
+## Studio menüsü çelişkisi
+
+`sqTeoe` yanıtı (2 kez, 16:32:43 ve 16:43:10) bu hesapta **Video Özeti ve Sesli
+Özet listelemiyor**. Sadece şunlar var:
+
+| Grup | Seçenekler |
+|---|---|
+| Canlı/sohbet | Ayrıntılı inceleme, Özet, Eleştiri, Tartışma |
+| Raporlar | Açıklayıcı, Özet, Kısa |
+| Sunumlar | Ayrıntılı Sunu, Sunucu Slaytları |
+| Belgeler | Özet Belgesi, Çalışma Kılavuzu, Blog Yayını |
+
+Yani video **menü listesinde yok ama üretildi**. Muhtemel açıklama: video/ses
+özetleri bu RPC'nin kapsamı dışında, ayrı bir bayrakla yönetiliyor.
+**Bu çelişki çözülmedi — kullanıcıya sorulacak.**

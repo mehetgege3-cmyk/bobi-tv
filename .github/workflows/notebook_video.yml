@@ -1,0 +1,47 @@
+name: Notebook video üret
+
+# NİÇİN: notebooklm-py ile konu metninden dikey kısa video üretir.
+# Ölçüldü (2026-11-15): 632 sn üretim, 720x1280 dikey, ~74 sn, ~9.7 MB.
+on:
+  workflow_dispatch:
+    inputs:
+      baslik:
+        description: "Video başlığı"
+        required: true
+        default: "Kediler Neden Kutulara Girer?"
+      metin_yolu:
+        description: "Metin dosyası yolu"
+        required: true
+        default: "docs/ornek/kediler.txt"
+
+jobs:
+  uret:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Bağımlılıklar
+        run: pip install --quiet notebooklm-py
+
+      - name: Kimlik kontrolü
+        env:
+          NOTEBOOK_GOOGLE: ${{ secrets.NOTEBOOK_GOOGLE }}
+        run: python3 tools/notebook_kimlik_kontrol.py
+
+      - name: Video üret
+        env:
+          NOTEBOOK_GOOGLE: ${{ secrets.NOTEBOOK_GOOGLE }}
+        run: python3 tools/notebook_video.py "${{ inputs.metin_yolu }}" "${{ inputs.baslik }}"
+
+      - name: Videoyu yükle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: notebook-video
+          path: /tmp/*.mp4
+          if-no-files-found: warn

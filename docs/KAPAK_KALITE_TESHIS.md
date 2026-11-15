@@ -86,3 +86,45 @@ Kullanıcı bunu istemedi. Kapakta kanca metni olmaması doğrudan bunun sonucu.
 
 **Bu üç karar kullanıcının. Ben tek başıma seçmiyorum** — çünkü 2. maddede
 zaten yanlış varsayım yapıp isteme kendi kuralımı ekledim.
+
+
+---
+
+## 5. ÇÖZÜM — istem birebir, kanıt kapak
+
+Kullanıcı kararı (2026-11-13):
+> *"Şablonu çöpe at. Sadece benim dediğimi yap. Tüm kapak fotoğrafları için
+> bunu kullan."*
+
+### İstem — BİREBİR, hiçbir ek yok
+```
+{başlık} İsimli short video için kapak fotoğrafı istiyorum etkileşim ve izlenme
+rekorları kırması için profesyonel şekilde tasarla kapak fotoğrafını gören merak
+edip tıklasın.
+```
+
+Kaldırılan ekler (hepsi benim uydurmamdı):
+- ❌ `Yazı yazma, sadece görsel olsun`
+- ❌ `YATAY (16:9) formatta, 1280x720 piksel, manşet kalitesinde üret`
+
+16:9 dönüşümü **istemde değil kodda** (`kapak_olcekle`). YouTube kapak alanı
+16:9; istem kullanıcının, teknik dönüşüm motorun işi. İstemde geometri
+emretmek, modelin kompozisyonunu da bozuyordu.
+
+### Kilit
+`tests/test_kapak_istemi.py` — 15 test:
+- birebir metin eşleşmesi
+- 12 yasak kelime (`yazı yaz`/`yazma`, `16:9`, `yatay`, `sinematik`, `stil`,
+  `piksel`, `manşet`, `sadece görsel`…)
+- uzunluk sınırı (ekleme yapılırsa test kırılır)
+
+### Kanıt (koşu `43726398786`)
+Video: <https://youtube.com/shorts/vFAahA1Ax1A>
+Kapak: **konuyla alakalı** — bardak suyun içinde damla, damlanın içinde
+mikroorganizmalar. Dekoratif kristal mağara değil, dehşet yüzü değil.
+`thumbnails.set` onayı: `🖼️ Kapak: bobi_kapak_2.jpg`
+
+⚠️ Ölçüm notu: bu kapağın "net alan" oranı %51 çıkıyor ama bu YouTube dolgusu
+DEĞİL — görselin kendi sinematik alan derinliği (bokeh). Görsel kenardan kenara
+uzanıyor. İlk hatada %32 çıkıyordu çünkü gerçekten yanlarda dolgu vardı; iki
+durumu ayırt etmenin yolu görseli gözle görmek.

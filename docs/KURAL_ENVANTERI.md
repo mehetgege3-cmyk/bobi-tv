@@ -23,9 +23,8 @@ Her satırda: **kod** · nerede durduğu · ne yaptığı · neyi engellediği.
 | A7 | `AKIS_ESIGI = 100` | `kanal_sagligi.py:36` | "akışa girdi" sayılma eşiği | — (sadece ölçüm) |
 | A8 | `KITLE_ESIGI = 25` / `HEPSI_ESIGI = 5` | `arsiv_esitleme.py:48-52` | Arşiv eşitleme eşiği | — |
 | A9 | Kapak 16:9 zorlaması | `motor.py` `kapak_olcekle()` | Kapağı 1280x720'ye çevirir | — (teknik, YouTube alanı) |
-| A10 | Video görsel isteminde **"ÜZERİNDE YAZI OLMAYACAK, logo yok, filigran yok, insan yüzü yok"** | `motor.py:129` | Görselde yazı/yüz yasak | Yazılı/yüzlü görselleri |
-| A11 | Video 1080x1920 zorlaması | `motor.py` ffmpeg `-s 1080x1920` | Dikey format | Yatay videoyu |
-| A12 | Ses `tr-TR-AhmetNeural` sabit | `motor.py:ses_uret` | Tek erkek ses | Başka sesleri |
+| A10 | Video 1080x1920 zorlaması | `motor.py` ffmpeg `-s 1080x1920` | Dikey format | Yatay videoyu |
+| A11 | Ses `tr-TR-AhmetNeural` sabit | `motor.py:ses_uret` | Tek erkek ses | Başka sesleri |
 
 ## B. GEMINI'YE VERDİĞİM KISITLAR (`tools/motor_yazdir.py` BRIEF)
 
@@ -76,8 +75,7 @@ ben hallederim. Birden fazla seçebilirsin.
 
 - **A3 + A4** → otomatik silme tamamen kapansın (videolar kanalda kalsın)
 - **A6** → 15 sn alt sınırı kalksın
-- **A10** → görsel istemindeki "yazı yok / yüz yok" yasakları kalksın
-- **A12** → ses değiştirilebilir olsun
+- **A11** → ses değiştirilebilir olsun
 - **B1–B8** → Gemini'ye kısıt koymayı bırakayım, motoru serbest yazdırayım
 - **C1–C11** → SKILL.md'deki ilgili maddeler silinsin
 - **Hepsi** → "sadece benim dediklerim kalsın" dersen, yukarıdakilerin tamamını

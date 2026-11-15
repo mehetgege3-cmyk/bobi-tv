@@ -202,7 +202,6 @@ TASARIM KURALLARI (profesyonel, üzerine düşünülmüş):
    Abartılı sahte şok, korku, kan, şiddet, çıplaklık YOK.
 4) Renk: sıcak-soğuk kontrastı, tek baskın renk + tek vurgu rengi, sinematik ışık.
 5) Stil: modern, sinematik, 3D/fotoğrafik gerçekçilik; jenerik stok görsel değil.
-6) GÖRSELİN İÇİNE YAZI KOYMA. Kelime, sayı, harf, logo, filigran olmasın.
 7) 9:16 dikey, telefon ekranında küçük boyutta bile anlaşılır olsun.
 
 Şimdi görseli üret. Sadece görsel döndür; açıklama, metin veya kod yazma.

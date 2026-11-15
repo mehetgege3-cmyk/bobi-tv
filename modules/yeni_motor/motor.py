@@ -120,13 +120,9 @@ def video_uret(video_no: int) -> dict:
     print(f"[BOBİ TV] Video üretiliyor: '{baslik}'")
 
     # 2. Görsel Üretimi (gorsel_uret fonksiyonu ile)
-    # VİDEO ARKA PLANI: konuya özel, dikey, YAZISIZ.
-    # Eski istem İngilizce ve geneldi ("A cinematic vertical background
-    # representing: ...") → alakasız, rastgele stok görsel çıkıyordu.
     prompt_metin = (
         f"Dikey (9:16) sinematik fotoğraf, konu: {konu['metin'][:120]}. "
-        "Tek bir güçlü görsel, yakın plan, sıcak ışık, yüksek detay. "
-        "ÜZERİNDE YAZI OLMAYACAK, logo yok, filigran yok, insan yüzü yok."
+        "Tek bir güçlü görsel, yakın plan, sıcak ışık, yüksek detay."
     )
     try:
         sonuc = gorsel_uret(prompt_metin, gorsel_yolu)

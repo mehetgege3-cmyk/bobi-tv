@@ -1,0 +1,26 @@
+name: Kapak Akış Probu
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  prob:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q -r requirements.txt && pip install -q edge-tts pillow
+      - name: Prob
+        env:
+          GEMINI_COOKIES: ${{ secrets.GEMINI_COOKIES }}
+        run: python3 tools/kapak_akis_prob.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kapak-akis
+          path: out/kapak_akis/
+          if-no-files-found: warn
+          retention-days: 7

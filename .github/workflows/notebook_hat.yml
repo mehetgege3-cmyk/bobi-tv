@@ -85,6 +85,21 @@ jobs:
           PYTHONUNBUFFERED: "1"
         run: python3 tools/notebook_cerez_tazele.py
 
+      # ------------------------------------------------------------------
+      # DEFTER TEMİZLİĞİ (kullanıcı kararı 2026-11-08):
+      #   "otomatik silme olsun ama benim eski defterlerime dokunmadan"
+      # Yalnız bobi_tv/state/notebook_kayit.json içindeki — yani HATTIN
+      # açtığı — defterler silinir. Kullanıcının elle açtığı defterler
+      # listeye hiç girmediği için ASLA silinmez.
+      # ------------------------------------------------------------------
+      - name: Eski hat defterlerini temizle
+        continue-on-error: true
+        env:
+          NOTEBOOKLM_MASTER_TOKEN_JSON: ${{ secrets.NOTEBOOKLM_MASTER_TOKEN_JSON }}
+          NOTEBOOK_GOOGLE: ${{ secrets.NOTEBOOK_GOOGLE }}
+          PYTHONUNBUFFERED: "1"
+        run: python3 tools/notebook_temizle.py --kuru || python3 tools/notebook_temizle.py
+
       - name: Hattı çalıştır (konu → video → işleme)
         env:
           GEMINI_COOKIES: ${{ secrets.GEMINI_COOKIES }}
@@ -108,6 +123,16 @@ jobs:
         run: |
           set -o pipefail
           python3 tools/hat_yukle.py 2>&1 | tee /tmp/yukle.log
+
+      - name: Defter kaydını commit et
+        if: always()
+        continue-on-error: true
+        run: |
+          git config user.name "bobi-bot"
+          git config user.email "bot@bobi.tv"
+          git add bobi_tv/state/notebook_kayit.json 2>/dev/null || true
+          git diff --quiet --cached || git commit -m "chore: notebook kaydi [skip ci]"
+          git push || true
 
       - name: Özet
         if: always()

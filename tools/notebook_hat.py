@@ -103,7 +103,8 @@ def calistir(video_no: int = 0, kategori: str | None = None,
         rapor["asamalar"]["konu"] = round(time.time() - t, 1)
         if not konu:
             return {**rapor, "hata": "konu üretilemedi (Gemini cevap yok/JSON bozuk)"}
-    print(f"→ {konu['baslik']}  [{konu.get('kategori')} · {konu.get('kelime')} kelime]")
+    print(f"→ {konu['baslik']}  [{konu.get('kategori')} · {konu.get('kelime')} kelime "
+          f"({konu.get('kelime_bandi', '?')})]")
     rapor["konu"] = konu
 
     # --- 2) KAPAK (Gemini web) --------------------------------------------

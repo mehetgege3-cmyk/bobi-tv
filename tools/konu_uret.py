@@ -217,8 +217,11 @@ def konu_uret(video_no: int = 0, kategori: str | None = None) -> dict | None:
 
     metin = str(d["cevap"]).strip()
     kelime = len(metin.split())
-    if kelime < 120:
-        print(f"[konu] ⚠️ cevap kısa: {kelime} kelime (hedef 200-300)")
+    # KULLANICI KARARI (2026-11-08): "kural esnek olsun, gemininin cevabı ne
+    # ise ona uyulsun." Şablon 200-300 kelime İSTİYOR ama cevap ne gelirse
+    # kabul edilir — kırpma, yeniden isteme veya reddetme YOK.
+    # Yalnız ölçüm loglanır (aşağıda) ki kalite takip edilebilsin.
+    print(f"[konu] cevap {kelime} kelime (şablon 200-300 istiyor — esnek)")
 
     return {
         "baslik": str(d.get("baslik") or d.get("soru") or "İlginç Bilgi").strip()[:95],
@@ -232,6 +235,7 @@ def konu_uret(video_no: int = 0, kategori: str | None = None) -> dict | None:
         "taktik": tak,
         "etiketler": KATEGORILER[kat]["etiket"],
         "kelime": kelime,
+        "kelime_bandi": "icinde" if 200 <= kelime <= 300 else "disinda",
     }
 
 

@@ -105,6 +105,14 @@ async def _uret(metin: str, baslik: str, cikti: str) -> dict:
         nb = await c.notebooks.create(baslik)
         sonuc["defter_id"] = nb.id
         print(f"1) ✅ defter: {nb.id} — {nb.title}")
+        # Otomatik silme yalnız HATTIN açtığı defterlere dokunur
+        # (kullanıcı kararı 2026-11-08). Bu yüzden her defter kayda geçer.
+        try:
+            from tools.notebook_kayit import kaydet
+
+            kaydet(nb.id, baslik)
+        except Exception as e:
+            print(f"[uyarı] defter kaydedilemedi: {e}")
 
         # 2) Metin kaynağı
         src = await c.sources.add_text(nb.id, baslik, metin, wait=True)

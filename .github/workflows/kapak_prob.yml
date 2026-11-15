@@ -1,0 +1,37 @@
+name: Kapak Probu
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  prob:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q -r requirements.txt && pip install -q edge-tts pillow
+      - name: Prob
+        env:
+          GEMINI_COOKIES: ${{ secrets.GEMINI_COOKIES }}
+        run: python3 tools/kapak_prob.py || echo "::warning::prob tamamlanmadı"
+      - name: Raporu commit et
+        run: |
+          git config user.name "bobi-agent"
+          git config user.email "agent@bobi.tv"
+          git add docs/KAPAK_PROB.md || true
+          git diff --cached --quiet || { git commit -m "chore(prob): kapak probu [skip ci]"; git push; }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kapak-adaylari
+          path: out/kapak_prob/
+          if-no-files-found: warn
+          retention-days: 7

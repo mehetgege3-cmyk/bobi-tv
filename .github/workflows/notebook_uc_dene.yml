@@ -1,0 +1,36 @@
+name: Notebook uç dene
+
+# NİÇİN: HAR'dan (2026-11-15) çıkan at-token + f.req formülünü CANLI doğrular.
+# Hiçbir şey oluşturmaz/silmez — sadece hangi RPC kimliğinin 200 döndüğünü söyler.
+on:
+  workflow_dispatch:
+
+jobs:
+  dene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Uçları dene
+        env:
+          NOTEBOOK_GOOGLE: ${{ secrets.NOTEBOOK_GOOGLE }}
+        run: python3 tools/notebook_uc_dene.py
+
+      - name: Raporu commit'le
+        if: always()
+        run: |
+          git config user.name=bobi-agent
+          git config user.email=agent@bobi.tv
+          git add docs/NOTEBOOK_UC_DENEME.md || true
+          git diff --staged --quiet || git commit -m "docs: notebook uç denemesi raporu"
+          git push || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: notebook-uc-denenme
+          path: docs/NOTEBOOK_UC_DENEME.md

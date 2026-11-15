@@ -77,9 +77,12 @@ jobs:
       # ------------------------------------------------------------------
       - name: NotebookLM kimliğini kur ve tazele
         env:
-          # A) MASTER TOKEN varsa o kullanılır (kalıcı, kendini yeniler).
+          # A) TERCİH: tarayıcının tam çerez durumu (39 çerez). Kütüphane her
+          #    koşuda tazeler ve taze değeri geri yazar (kendini iyileştirme).
+          NOTEBOOKLM_AUTH_JSON: ${{ secrets.NOTEBOOKLM_AUTH_JSON }}
+          # B) tarayıcısız alternatif (kalıcı token).
           NOTEBOOKLM_MASTER_TOKEN_JSON: ${{ secrets.NOTEBOOKLM_MASTER_TOKEN_JSON }}
-          # B) yoksa çerez yolu (geçici — saatlik döndürmede kırılır).
+          # C) eski kısmi çerez listesi (yedek).
           NOTEBOOK_GOOGLE: ${{ secrets.NOTEBOOK_GOOGLE }}
           GH_PAT: ${{ secrets.GH_PAT }}
           PYTHONUNBUFFERED: "1"
@@ -95,6 +98,7 @@ jobs:
       - name: Eski hat defterlerini temizle
         continue-on-error: true
         env:
+          NOTEBOOKLM_AUTH_JSON: ${{ secrets.NOTEBOOKLM_AUTH_JSON }}
           NOTEBOOKLM_MASTER_TOKEN_JSON: ${{ secrets.NOTEBOOKLM_MASTER_TOKEN_JSON }}
           NOTEBOOK_GOOGLE: ${{ secrets.NOTEBOOK_GOOGLE }}
           PYTHONUNBUFFERED: "1"

@@ -140,8 +140,21 @@ yükleme başarılı göründü, kimse kapak sormadı.
 ```
 https://youtube.com/shorts/rpeNeu67VTk
 
-### Not: gömme yok, ayrı yükleme
-Eski düzende kapak videonun 1. karesine 1.5 sn gömülüyordu. Yeni düzende
-**gömülmüyor**: kapak ayrı JPG olarak `thumbnails.set` ile yükleniyor. Shorts
-rafında ve öneri kartında görünen kapak budur. Log'daki yanıltıcı
-`ilk kareye gömüldü: HAYIR` satırı da düzeltildi.
+### Kapak İKİ yere gider — kullanıcı kararı (2026-11-11, hâlâ geçerli)
+
+| Yer | Ne görünür | Nasıl |
+|---|---|---|
+| **Videonun ilk 1.5 saniyesi** | Kanal **ön izlemesi**, Shorts rafı (`oar2.jpg`) | `ilk_kareye_gom()` — ffmpeg concat |
+| **`thumbnails.set`** | Kanal listesi, arama sonuçları (`maxresdefault`) | `_kapak_yukle()` |
+
+**Neden ikisi de gerekli:** YouTube Shorts iki ayrı görsel tutuyor.
+`thumbnails.set` yalnız `maxresdefault`/`hqdefault`'yu değiştirir;
+Shorts rafındaki `oar2.jpg`'ye **API ile dokunulamaz**
+(detay: `docs/KAPAK_TESHIS.md` §KÖK NEDEN 3).
+
+Tek çözüm kapağı videonun başına gömmek. **1 kare (33 ms) YETMEZ** — ölçüldü,
+göz görmüyor; en az **1.5 saniye** olmalı.
+
+Motor devriminde bu adım silinmişti → kanal ön izlemesinde kapak görünmüyordu
+(kullanıcı aynı sorunu tekrar bildirdi). Geri eklendi ve test edildi:
+`0.2 sn` + `1.4 sn` → kapak, `2.0 sn` → video, süre 10 → 11.53 sn.

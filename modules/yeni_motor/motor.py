@@ -68,21 +68,79 @@ def kapak_istemini_yaz(baslik: str) -> str:
 
 
 def kapak_olcekle(kaynak: str, hedef: str) -> str:
-    """Kapağı YouTube'a hazırlar — GÖRSELE DOKUNMADAN.
+    """Kapağı 1080x1920 (9:16) tuvalde ortalar — görseli KIRPMAZ, uzatMАZ.
 
-    Gemini dikey (9:16) üretiyor; yazı ve kompozisyon ona göre kurulmuş.
-    16:9 tuvale sıkıştırınca yanlara blur dolgu ekleniyordu (kullanıcı bildirdi:
-    "çok amatörce"). Artık tuval oluşturulmuyor, kırpılmıyor: görsel olduğu
-    gibi JPEG'e çevrilip yükleniyor. YouTube gerekirse kendisi kırpar.
+    Kapak iki yere gidiyor:
+      1) videonun İLK 1.5 SANİYESİ (kullanıcı kararı) → dikey olmalı
+      2) YouTube thumbnails.set                      → aynı dosya
+    9:16 görsel zaten dikey; tuval yalnızca tam 1080x1920 olsun diye.
+    Kenarlar bulanıklaştırılmaz, siyah bar konmaz — görselin kendisi kaplar.
     """
     from PIL import Image
 
     img = Image.open(kaynak).convert("RGB")
-    # 2 MB sınırı (YouTube thumbnails.set). Gerekirse kaliteyi düşür.
+    if img.size != (1080, 1920):
+        # en-boy oranını koruyarak 1080x1920'yi KAPLA (cover), ortadan kırp
+        olcek = max(1080 / img.width, 1920 / img.height)
+        yeni_g, yeni_y = int(img.width * olcek + 0.5), int(img.height * olcek + 0.5)
+        img = img.resize((yeni_g, yeni_y), Image.LANCZOS)
+        sol, ust = (yeni_g - 1080) // 2, (yeni_y - 1920) // 2
+        img = img.crop((sol, ust, sol + 1080, ust + 1920))
     for kalite in (92, 88, 84, 78, 70):
         img.save(hedef, "JPEG", quality=kalite, optimize=True)
         if Path(hedef).stat().st_size <= 2 * 1024 * 1024:
             break
+    return hedef
+
+
+def _ffmpeg() -> str:
+    """ffmpeg yolunu çöz: PATH'te varsa onu, yoksa imageio paketini kullan."""
+    import shutil as _sh
+
+    yol = _sh.which("ffmpeg")
+    if yol:
+        return yol
+    try:
+        import imageio_ffmpeg
+
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception:
+        return "ffmpeg"
+
+
+def ilk_kareye_gom(video: str, kapak_jpg: str, sn: float = 1.5) -> str:
+    """Kapağı videonun İLK `sn` SANİYESİNE göm — kullanıcı kararı (2026-11-11).
+
+    NİÇİN: Kanal ön izlemesinde ve Shorts rafında `oar2.jpg` görünür;
+    `thumbnails.set` ona dokunamaz (docs/KAPAK_TESHIS.md §KÖK NEDEN 3).
+    Tek çözüm: kapağı videonun başına koymak → YouTube onu ilk kare olarak alır.
+
+    ⚠️ 1 kare (33 ms) YETMEZ — ölçüldü, göz görmüyor. En az 1.5 sn olmalı.
+    """
+    from pathlib import Path
+
+    hedef = str(Path(video).with_name(Path(video).stem + "_kapakli.mp4"))
+    filtre = (
+        f"[1:v]scale=1080:1920,trim=duration={sn},setpts=PTS-STARTPTS[ilk];"
+        f"[ilk][0:v]concat=n=2:v=1:a=0[v];"
+        f"[0:a]adelay={int(sn * 1000)}|{int(sn * 1000)},asetpts=PTS-STARTPTS[a]"
+    )
+    cmd = [
+        _ffmpeg(), "-y",
+        "-i", video,
+        "-loop", "1", "-i", kapak_jpg,
+        "-filter_complex", filtre,
+        "-map", "[v]", "-map", "[a]",
+        "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "30",
+        "-c:a", "aac", "-b:a", "192k",
+        "-movflags", "+faststart",
+        hedef,
+    ]
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+    if r.returncode != 0 or not Path(hedef).exists():
+        print(f"[BOBİ TV] ⚠️ kapak gömme hatası: {r.stderr[-200:]}")
+        return video
+    print(f"[BOBİ TV] ✅ Kapak videonun ilk {sn} sn'sine gömüldü")
     return hedef
 
 
@@ -183,6 +241,12 @@ def video_uret(video_no: int) -> dict:
             print("[BOBİ TV] ⚠️ Kapak üretilemedi (Gemini), video karesi kullanılacak")
     except Exception as e:
         print(f"[BOBİ TV] ⚠️ Kapak hatası: {e}")
+
+    # Kapağı videonun İLK 1.5 SANİYESİNE göm (kullanıcı kararı 2026-11-11).
+    # thumbnails.set `oar2.jpg`'yi değiştiremiyor; kanal ön izlemesinde görünen
+    # kare videonun 1. karesidir. Bu yüzden kapak videoya da girmeli.
+    if os.path.exists(kapak_yolu):
+        final_video_yolu = ilk_kareye_gom(final_video_yolu, kapak_yolu)
 
     # Kapak yoksa videonun 1. karesini kapak yap (üretim durmasın)
     if not os.path.exists(kapak_yolu):

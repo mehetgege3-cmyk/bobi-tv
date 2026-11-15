@@ -111,36 +111,62 @@ def _ffmpeg() -> str:
 def ilk_kareye_gom(video: str, kapak_jpg: str, sn: float = 1.5) -> str:
     """Kapağı videonun İLK `sn` SANİYESİNE göm — kullanıcı kararı (2026-11-11).
 
-    NİÇİN: Kanal ön izlemesinde ve Shorts rafında `oar2.jpg` görünür;
-    `thumbnails.set` ona dokunamaz (docs/KAPAK_TESHIS.md §KÖK NEDEN 3).
-    Tek çözüm: kapağı videonun başına koymak → YouTube onu ilk kare olarak alır.
+    NİÇİN: YouTube Shorts iki görsel tutar. `thumbnails.set` yalnız
+    maxresdefault/hqdefault'yu değiştirir; Shorts rafındaki `oar2.jpg`'ye API
+    ile DOKUNULAMAZ (docs/KAPAK_TESHIS.md §KÖK NEDEN 3). Tek çözüm: kapağı
+    videonun başına koymak.
 
-    ⚠️ 1 kare (33 ms) YETMEZ — ölçüldü, göz görmüyor. En az 1.5 sn olmalı.
+    ⚠️ 1 kare (33 ms) YETMEZ — ölçüldü, göz görmüyor. En az 1.5 sn.
+
+    YÖNTEM: tek filter_complex yerine İKİ ADIM (daha sağlam).
+      1) kapağı sn saniyelik, sessiz ama SES KANALLI bir mp4'e çevir
+      2) concat demuxer ile [kapak mp4] + [video] birleştir
+    Tek adımlı filter_complex runner'da "streams received no packets" ile
+    düşüyordu (koşu 43732515084). İki adım her ffmpeg sürümünde çalışır.
     """
     from pathlib import Path
 
+    ff = _ffmpeg()
+    calisma = str(Path(video).parent)
+    sessiz = str(Path(video).with_name("_kapak_sessiz.mp4"))
+    liste = str(Path(video).with_name("_concat.txt"))
     hedef = str(Path(video).with_name(Path(video).stem + "_kapakli.mp4"))
-    filtre = (
-        f"[1:v]scale=1080:1920,trim=duration={sn},setpts=PTS-STARTPTS[ilk];"
-        f"[ilk][0:v]concat=n=2:v=1:a=0[v];"
-        f"[0:a]adelay={int(sn * 1000)}|{int(sn * 1000)},asetpts=PTS-STARTPTS[a]"
+
+    # 1) kapak → sn saniyelik video (sessiz ses kanalı dâhil)
+    r1 = subprocess.run(
+        [
+            ff, "-y",
+            "-loop", "1", "-t", str(sn), "-i", kapak_jpg,
+            "-f", "lavfi", "-t", str(sn), "-i", "anullsrc=r=44100:cl=stereo",
+            "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,"
+                   "crop=1080:1920,fps=30,setsar=1",
+            "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "30",
+            "-c:a", "aac", "-b:a", "192k", "-shortest",
+            "-movflags", "+faststart",
+            sessiz,
+        ],
+        capture_output=True, text=True, timeout=300,
     )
-    cmd = [
-        _ffmpeg(), "-y",
-        "-i", video,
-        "-loop", "1", "-i", kapak_jpg,
-        "-filter_complex", filtre,
-        "-map", "[v]", "-map", "[a]",
-        "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "30",
-        "-c:a", "aac", "-b:a", "192k",
-        "-movflags", "+faststart",
-        hedef,
-    ]
-    r = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
-    if r.returncode != 0 or not Path(hedef).exists():
-        print(f"[BOBİ TV] ⚠️ kapak gömme hatası: {r.stderr[-200:]}")
+    if r1.returncode != 0 or not Path(sessiz).exists():
+        print(f"[BOBİ TV] ⚠️ kapak klibi üretilemedi: {r1.stderr[-200:]}")
         return video
-    print(f"[BOBİ TV] ✅ Kapak videonun ilk {sn} sn'sine gömüldü")
+
+    # 2) concat demuxer: kapak ÖNCE, video SONRA
+    Path(liste).write_text(
+        f"file '{sessiz}'\nfile '{video}'\n", encoding="utf-8"
+    )
+    r2 = subprocess.run(
+        [ff, "-y", "-f", "concat", "-safe", "0", "-i", liste,
+         "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "30",
+         "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", hedef],
+        capture_output=True, text=True, timeout=600,
+    )
+    for gecici in (sessiz, liste):
+        Path(gecici).unlink(missing_ok=True)
+    if r2.returncode != 0 or not Path(hedef).exists():
+        print(f"[BOBİ TV] ⚠️ kapak birleştirme hatası: {r2.stderr[-200:]}")
+        return video
+    print(f"[BOBİ TV] ✅ Kapak ilk {sn} sn'ye gömüldü")
     return hedef
 
 

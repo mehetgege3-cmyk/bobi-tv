@@ -174,6 +174,7 @@ def main() -> int:
          f'["{DEFTER}",{CERCEVE}]'),
     ]
 
+    HAM: dict[str, tuple[int, str]] = {}
     d("## Sonuçlar")
     d("")
     d("| RPC | İş | HTTP | Durum |")
@@ -182,6 +183,7 @@ def main() -> int:
     for rpc, ne, ic in denemeler:
         kod, govde = _rpc(at, fsid, cerez, rpc, ic)
         durum, veri = _yuk(govde, rpc)
+        HAM[rpc] = (kod, govde)
         if durum == "OK" and veri not in (None, [], ""):
             durum = "GERCEK"
             sonuc[rpc] = veri
@@ -231,6 +233,17 @@ def main() -> int:
                 d(f"| {i} | `{k}` | — | — |")
         d("")
         d("✅ **`otmP3b` çalışıyor → konu üretimi için kullanılabilir.**")
+        d("")
+
+    # — Ham yanıtlar (hata ayıklama) —
+    d("## Ham yanıtlar")
+    d("")
+    for rpc, (kod, govde) in HAM.items():
+        d(f"### `{rpc}` · HTTP {kod} · {len(govde)} krkt")
+        d("")
+        d("```")
+        d(govde[:600])
+        d("```")
         d("")
 
     RAPOR.write_text("\n".join(out) + "\n", encoding="utf-8")

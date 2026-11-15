@@ -71,14 +71,15 @@ def _paket(konu: dict, video: str, kapak: str, damga: str) -> dict:
         "etiketler": konu.get("etiketler", ["shorts"]),
         "kapak_dosyasi": kapak,
         "senaryo": {
-            "aciklama_metni": konu["metin"],
-            "kaynaklar": [konu["kaynak"]] if konu.get("kaynak") else [],
+            # Promptun AÇIKLAMA bölümü (merak cümlesi + yorum sorusu +
+            # "Bunu bilmeyen bir arkadaşını etiketle!").
+            "aciklama_metni": konu.get("aciklama") or konu["metin"],
+            "kaynaklar": [],
             "kategori": konu.get("kategori", ""),
-            "sabit_yorum": "Sen olsan ne yapardın? Yorumlara yaz 👇",
+            "sabit_yorum": konu.get("konu", ""),
             "etkilesim": "Bunu bilmeyen bir arkadaşını etiketle!",
         },
         "kategori": konu.get("kategori", ""),
-        "kaynak": konu.get("kaynak", ""),
         "damga": damga,
     }
 
@@ -97,14 +98,20 @@ def calistir(video_no: int = 0, kategori: str | None = None,
 
     # --- 1) KONU -----------------------------------------------------------
     if konu is None:
-        print("\n=== 1/4 KONU (Gemini web) ===")
+        print("\n=== 1/4 KONU (Gemini web — kullanıcının promptu) ===")
         t = time.time()
         konu = konu_uret(video_no, kategori)
         rapor["asamalar"]["konu"] = round(time.time() - t, 1)
         if not konu:
             return {**rapor, "hata": "konu üretilemedi (Gemini cevap yok/JSON bozuk)"}
-    print(f"→ {konu['baslik']}  [{konu.get('kategori')} · {konu.get('kelime')} kelime "
-          f"({konu.get('kelime_bandi', '?')})]")
+    print(f"→ {konu['baslik']}  [{konu.get('kelime')} kelime]")
+    print(f"→ konu: {konu.get('konu', '')}")
+    try:
+        from tools.konu_uret import konu_kaydet
+
+        konu_kaydet(konu.get("konu", ""))
+    except Exception as e:
+        print(f"[uyarı] konu kaydedilemedi: {e}")
     rapor["konu"] = konu
 
     # --- 2) KAPAK (Gemini web) --------------------------------------------

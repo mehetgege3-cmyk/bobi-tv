@@ -134,7 +134,7 @@ jobs:
         run: |
           git config user.name "bobi-bot"
           git config user.email "bot@bobi.tv"
-          git add bobi_tv/state/notebook_kayit.json 2>/dev/null || true
+          git add bobi_tv/state/notebook_kayit.json bobi_tv/state/konular.json 2>/dev/null || true
           git diff --quiet --cached || git commit -m "chore: notebook kaydi [skip ci]"
           git push || true
 

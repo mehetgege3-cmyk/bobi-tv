@@ -1,0 +1,36 @@
+name: Notebook RPC doğrula
+
+# NİÇİN: HAR'daki 65 batchexecute çağrısının TAM gövdelerini canlı gönderir.
+# SADECE OKUR — defter/kaynak oluşturmaz, silmez.
+on:
+  workflow_dispatch:
+
+jobs:
+  dogrula:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: RPC'leri doğrula
+        env:
+          NOTEBOOK_GOOGLE: ${{ secrets.NOTEBOOK_GOOGLE }}
+        run: python3 tools/notebook_rpc_dogrula.py
+
+      - name: Raporu commit'le
+        if: always()
+        run: |
+          git config user.name "bobi-agent"
+          git config user.email "agent@bobi.tv"
+          git add docs/NOTEBOOK_RPC_DOGRULAMA.md || true
+          git diff --staged --quiet || git commit -m "docs: notebook RPC dogrulama raporu"
+          git push origin HEAD:main || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: notebook-rpc-dogrulama
+          path: docs/NOTEBOOK_RPC_DOGRULAMA.md

@@ -54,17 +54,21 @@ def ses_uret(metin: str, ses_dosyasi: str):
 
 #: KAPAK İSTEMİ — kullanıcının tek cümlesi, BİREBİR (K8). Değiştirme.
 def kapak_istemini_yaz(baslik: str) -> str:
-    """Kullanıcının kapak istemi — ŞABLON, birebir. Değiştirme, sadeleştirme yapma.
+    """KULLANICININ KAPAK İSTEMİ — BİREBİR. TÜM KAPAKLAR İÇİN BU.
 
-    2026-11-13: yatay (16:9) istendi çünkü YouTube kapak alanı 16:9'dur.
-    9:16 görsel gönderilince YouTube %68 blur dolgu ekliyordu (ölçüldü).
+    2026-11-13 kullanıcı talimatı: "Şablonu çöpe at. Sadece benim dediğimi yap.
+    Tüm kapak fotoğrafları için bunu kullan."
+
+    ⛔ BU FONKSİYONA HİÇBİR EK KURAL EKLEME:
+       - "yazı yaz" / "yazı yazma" EKLEME
+       - "16:9" / "1280x720" / "yatay" EKLEME
+       - "fotogerçekçi", "sinematik", "stil" EKLEME
+    Sadece {baslik} yerine video başlığı konur. Gerisi kullanıcının cümlesi.
     """
     return (
-        f"{baslik} İsimli short video için kapak fotoğrafı istiyorum; etkileşim ve "
-        "izlenme rekorları kırması için profesyonel şekilde tasarla. Kapak "
-        "fotoğrafını gören merak edip tıklasın. "
-        "YATAY (16:9) formatta, 1280x720 piksel, manşet kalitesinde üret. "
-        "Yazı yazma, sadece görsel olsun."
+        f"{baslik} İsimli short video için kapak fotoğrafı istiyorum etkileşim ve "
+        "izlenme rekorları kırması için profesyonel şekilde tasarla kapak "
+        "fotoğrafını gören merak edip tıklasın."
     )
 
 

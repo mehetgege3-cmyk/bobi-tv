@@ -100,9 +100,13 @@ def video_uret(video_no: int) -> dict:
 
     # Geçici dosya yolları
     tmp_dir = tempfile.gettempdir()
-    gorsel_yolu = os.path.join(tmp_dir, f"bobi_gorsel_{video_no}.jpg")
-    ses_yolu = os.path.join(tmp_dir, f"bobi_ses_{video_no}.mp3")
-    final_video_yolu = os.path.join(tmp_dir, f"bobi_video_{video_no}.mp4")
+    # BENZERSİZ damga: aynı video_no ile tekrar koşulduğunda dosya adı çakışmasın.
+    # Çakışınca arşiv "zaten yayında" diyor ve yeni video hiç yüklenmiyordu.
+    from datetime import datetime as _dt
+    damga = _dt.now().strftime("%Y%m%d_%H%M%S")
+    gorsel_yolu = os.path.join(tmp_dir, f"bobi_gorsel_{damga}.jpg")
+    ses_yolu = os.path.join(tmp_dir, f"bobi_ses_{damga}.mp3")
+    final_video_yolu = os.path.join(tmp_dir, f"bobi_{damga}.mp4")
 
     print(f"[BOBİ TV] Video üretiliyor: '{baslik}'")
 
@@ -168,9 +172,9 @@ def video_uret(video_no: int) -> dict:
     # 4.5. KAPAK GÖRSELİ (2026-11-13): video arka planından AYRI üretilir.
     # NİÇİN: youtube_upload `kapak_dosyasi` alanını okuyup thumbnails.set ile
     # yüklüyor. Bu alan boş kalırsa video kapaksız yayınlanır (kullanıcı bildirdi).
-    kapak_yolu = os.path.join(tmp_dir, f"bobi_kapak_{video_no}.jpg")
+    kapak_yolu = os.path.join(tmp_dir, f"bobi_kapak_{damga}.jpg")
     try:
-        ham_kapak = os.path.join(tmp_dir, f"bobi_kapak_ham_{video_no}.jpg")
+        ham_kapak = os.path.join(tmp_dir, f"bobi_kapak_ham_{damga}.jpg")
         uretildi = gorsel_uret(kapak_istemini_yaz(baslik), ham_kapak)
         if uretildi:
             kapak_olcekle(ham_kapak, kapak_yolu)

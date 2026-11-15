@@ -60,9 +60,27 @@ jobs:
         run: |
           python -m pip install -q --upgrade pip
           if [ -f requirements.txt ]; then pip install -q -r requirements.txt; fi
+          # pynacl: secret'a tazelenmiş çerez yazmak için (libsodium sealed box)
+          pip install -q pynacl
 
       - name: Klasör yapısı
         run: mkdir -p bobi_tv/output bobi_tv/state bobi_tv/archive
+
+      # ------------------------------------------------------------------
+      # KİMLİK TAZELEME (2026-11-08): Google `__Secure-1PSIDTS` çerezini
+      # ~saatte bir döndürüyor. Secret'taki kopya eskiyince NotebookLM
+      # "signed-out page" veriyor. Kanıt: 18:13'te aynı secret 22 defter
+      # gördü, 18:32'de AuthError verdi — arada koşu değeri döndürdü.
+      #
+      # Bu adım çerezi tazeler, doğrular ve TAZE değeri secret'a geri yazar.
+      # Sonraki koşu taze çerezle başlar (kendi kendini iyileştiren kimlik).
+      # ------------------------------------------------------------------
+      - name: NotebookLM çerezini tazele
+        env:
+          NOTEBOOK_GOOGLE: ${{ secrets.NOTEBOOK_GOOGLE }}
+          GH_PAT: ${{ secrets.GH_PAT }}
+          PYTHONUNBUFFERED: "1"
+        run: python3 tools/notebook_cerez_tazele.py
 
       - name: Hattı çalıştır (konu → video → işleme)
         env:

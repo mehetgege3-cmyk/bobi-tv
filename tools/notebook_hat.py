@@ -38,6 +38,30 @@ from tools import video_son_isle as son  # noqa: E402
 UST_SN = 179.0
 
 
+def _kimlik_kur() -> str:
+    """NotebookLM kimliğini kur — TAZELENMIŞ çerezi tercih eder.
+
+    NİÇİN: `__Secure-1PSIDTS` saatte bir dönüyor. `notebook_cerez_tazele.py`
+    tazelenmiş storage_state'i /tmp/nb_state.json'a yazar. O dosya varsa
+    onu kullanırız; yoksa secret'tan doğrudan kurarız (eski davranış).
+    """
+    from tools.notebook_video import _depo_hazirla
+
+    taze = Path("/tmp/nb_state.json")
+    if taze.exists():
+        try:
+            veri = json.loads(taze.read_text(encoding="utf-8"))
+            if veri.get("cookies"):
+                os.environ["NOTEBOOKLM_AUTH_JSON"] = taze.read_text(encoding="utf-8")
+                print(f"→ kimlik: tazelenmiş çerez ({len(veri['cookies'])} adet)")
+                return "taze"
+        except Exception as e:
+            print(f"[hat] taze çerez okunamadı ({e}) — secret'a düşülüyor")
+    os.environ["NOTEBOOKLM_AUTH_JSON"] = json.dumps(_depo_hazirla())
+    print("→ kimlik: secret çerezi (tazelenmemiş)")
+    return "secret"
+
+
 def _paket(konu: dict, video: str, kapak: str, damga: str) -> dict:
     """main_pipeline / youtube_upload sözleşmesine uygun paket."""
     return {
@@ -99,7 +123,7 @@ def calistir(video_no: int = 0, kategori: str | None = None,
     # --- 3) VİDEO (NotebookLM) --------------------------------------------
     print("\n=== 3/4 VİDEO (NotebookLM) ===")
     ham = f"/tmp/nb_{_slug(konu['baslik'])}_{damga}.mp4"
-    os.environ["NOTEBOOKLM_AUTH_JSON"] = json.dumps(_depo_hazirla())
+    _kimlik_kur()
     os.environ.setdefault("NOTEBOOKLM_QUIET_DEPRECATIONS", "1")
     t = time.time()
     try:

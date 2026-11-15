@@ -1412,6 +1412,12 @@
     "kanca_puan": null,
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
-    "hook_ust_bant": ""
+    "hook_ust_bant": "",
+    "izlenme_snapshots": {
+      "+1h": {
+        "izlenme": 22,
+        "zaman": "2026-11-15T14:50:51.374764+00:00"
+      }
+    }
   }
 ]

@@ -1405,7 +1405,7 @@
     "dosya_adi": "bobi_video_1",
     "baslik": "Beyninin Asla Unutamadığı O Sır #shorts",
     "video_id": "FXSjgNSjqjE",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "",
     "url": "https://www.youtube.com/shorts/FXSjgNSjqjE",
     "senaryo_ozeti": "",
@@ -1422,6 +1422,9 @@
         "izlenme": 22,
         "zaman": "2026-11-15T14:50:51.374764+00:00"
       }
-    }
+    },
+    "silinme_izlenme": 22,
+    "silinme_yas_dk": 568.4,
+    "silinme_tarihi": "2026-11-15T15:34:54.796973+00:00"
   }
 ]

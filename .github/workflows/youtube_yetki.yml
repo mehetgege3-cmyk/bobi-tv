@@ -1,0 +1,58 @@
+name: "YouTube Yetki — yeni refresh token al"
+
+# NİÇİN: Google, "Testing" modundaki OAuth uygulamasının refresh token'ını
+# 7 günde geçersiz kılıyor. Yükleme `invalid_grant / Token has been expired
+# or revoked` verdi (2026-11-08). Bu workflow bir kez çalıştırılıp yeni
+# refresh token alınır ve YOUTUBE_TOKEN secret'ı kendiliğinden güncellenir.
+#
+# KULLANIM (iki adım):
+#   1) Bu workflow'u çalıştır → log'da İZİN ADRESİ çıkar
+#   2) Adrese git, Google hesabıyla izin ver, çıkan KOD'u bu workflow'a
+#      ikinci kez çalıştırırken "kod" alanına yapıştır
+#   → secret yazılır, doğrulanır, biter.
+
+on:
+  workflow_dispatch:
+    inputs:
+      kod:
+        description: "Tarayıcıda çıkan yetkilendirme kodu (1. koşuda boş bırak)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  yetki:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Bağımlılıklar
+        run: pip install -q pynacl
+
+      - name: İzin adresi / kod değişimi
+        env:
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          GH_PAT: ${{ secrets.GH_PAT }}
+          KOD: ${{ inputs.kod }}
+        run: |
+          if [ -z "$KOD" ]; then
+            echo "## 1. Adım — izin adresi"
+            echo ""
+            echo "Aşağıdaki adresi tarayıcında aç, hesabına giriş yap, izin ver."
+            echo "Sonra çıkan KODU kopyala ve bu workflow'u 'kod' alanına"
+            echo "yapıştırıp TEKRAR çalıştır."
+            echo ""
+            echo '```'
+            python3 tools/youtube_yetki.py --adres
+            echo '```'
+          else
+            echo "## 2. Adım — kod değiştiriliyor"
+            python3 tools/youtube_yetki.py --kod "$KOD"
+          fi

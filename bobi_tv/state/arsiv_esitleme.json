@@ -1,9 +1,18 @@
 {
-  "zaman": "2026-11-11T06:31:23.472165+00:00",
-  "kontrol_edilen": 9,
-  "isaretlenen": [],
+  "zaman": "2026-11-15T11:55:44.476401+00:00",
+  "kontrol_edilen": 16,
+  "isaretlenen": [
+    "YMKYPhzaHNU",
+    "eyfXa3EJvX0",
+    "EwwPcPuKQ3M",
+    "NtqDShSSWoY",
+    "jKEPXkzoyLs",
+    "XSoVlWV304s",
+    "n0eAv9DG5cA",
+    "EQPd1GlVCMw"
+  ],
   "supheli": [],
   "bilinmeyen": [],
   "durduruldu": "",
-  "ozet": "🔎 9 kayıt kontrol edildi · 🗑 0 yeni kaldırıldı · ❔ 0 bilinmiyor"
+  "ozet": "🔎 16 kayıt kontrol edildi · 🗑 8 yeni kaldırıldı · ❔ 0 bilinmiyor"
 }

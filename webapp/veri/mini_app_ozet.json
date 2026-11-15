@@ -1,8 +1,8 @@
 {
-  "guncelleme": "2026-11-14T20:19:21.857202+00:00",
+  "guncelleme": "2026-11-15T04:26:23.315511+00:00",
   "bugun": {
-    "uretilen": 2,
-    "yayinda": 1
+    "uretilen": 0,
+    "yayinda": 0
   },
   "kuyruk": {
     "toplam": 0,
@@ -11,13 +11,13 @@
     "video_yok": 0
   },
   "trend7": [
-    0,
     4,
     11,
     26,
     16,
     12,
-    2
+    3,
+    0
   ],
   "denetim": [],
   "sinirlar": {

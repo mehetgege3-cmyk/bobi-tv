@@ -1,20 +1,22 @@
-"""NotebookLM'i Playwright ile gerçek tarayıcıda sürmeyi dene.
+"""NotebookLM tam akış — Playwright ile gerçek kullanıcı gibi.
 
-NİÇİN: `batchexecute` RPC'leri elle çağrıldığında `wrb.fr` yükü `null` dönüyor.
-HAR'dan çıkan şey şu: not defteri AÇMA ve NOT EKLEME adımlarının RPC'leri
-HAR'da YOK (kayıt 16:32:35'te başladı, defter 16:31:18'de açılmıştı).
-Yani o iki adımı bilmiyoruz. Tahminle uç yazmak yerine **gerçek tarayıcı**
-kullanıyoruz: çerezleri yükle, kullanıcı gibi tıkla, her adımda ekran görüntüsü al.
+NİÇİN: `batchexecute` elle çağrıldığında `wrb.fr` yükü `null` dönüyor.
+Defter açma ve not ekleme RPC'leri HAR'da yok. Bu yüzden gerçek tarayıcı:
+çerezleri yükle, kullanıcı gibi tıkla, her adımda ekran görüntüsü al.
 
-Akış (her adımda screenshot):
-  0. Çerezleri yükle → notebook.google.com → giriş kontrolü
+Doğrulanmış çalışma koşulu (2026-11-15):
+  HAR'daki TAM çerez seti (20 çerez, SID+HSID+APISID dahil) gerekiyor.
+  Eksik sette Google `CookieMismatch` verip anonim `/trynow` sayfasına atıyor.
+  Ayrıca `__Secure-` çerezlerinde `httpOnly: True` şart.
+
+AKIŞ:
+  0. Giriş kontrolü  → "Yeni not defteri" görünmeli
   1. Yeni not defteri oluştur
-  2. Kaynak/not ekle (Gemini metni)
+  2. Metni "not" olarak ekle (kaynak değil — kullanıcı akışı böyle)
   3. Studio → Video Özeti → Kısa → Oluştur
   4. Üretimi bekle, indirme bağlantısını yakala
 
 ÇIKTI: docs/pw/<adim>.png + docs/pw/rapor.md
-Sır yazılmaz: çerez değerleri maskelenir, screenshot'larda oturum bilgisi yok.
 """
 from __future__ import annotations
 
@@ -27,16 +29,14 @@ from pathlib import Path
 
 CIKTI = Path("docs/pw")
 CIKTI.mkdir(parents=True, exist_ok=True)
-
 TABAN = "https://notebook.google.com"
 UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36"
 )
 
-#: Gemini'den geldiği varsayılan örnek metin. Kullanıcının promptuyla üretilmiş
-#: formatta: başlık + soru + cevap + şaşırtıcı gerçek.
-ORNEK_METIN = """**Kategori:** İnsan Vücudu 🧬
+BASLIK = "Parmaklarımız Neden Buruşur?"
+METIN = """**Kategori:** İnsan Vücudu 🧬
 
 **Sudan Çıkmış Balığa Dönen Parmaklarımızın Sırrı!** 🛁
 
@@ -66,11 +66,8 @@ aralardan dışarı atarak ıslak nesneleri kavrama gücümüzü artırır.
 💡 **Şaşırtıcı Gerçek:** Derimiz kendini o kadar hızlı yeniler ki, ortalama bir
 insan hayatı boyunca yaklaşık 35 kilogram ağırlığında ölü deri hücresi döker!"""
 
-BASLIK = "Parmaklarımız Neden Buruşur?"
-
 
 def _cerezler() -> list[dict]:
-    """NOTEBOOK_GOOGLE → ham çerez listesi (alanlar korunur)."""
     ham = (os.environ.get("NOTEBOOK_GOOGLE") or "").strip()
     if not ham:
         raise SystemExit("HATA: NOTEBOOK_GOOGLE boş.")
@@ -89,43 +86,31 @@ def _cerezler() -> list[dict]:
     return out
 
 
-def _pw_cerezleri(ham: list[dict]) -> tuple[list[dict], list[str]]:
-    """Çerezleri Playwright biçimine çevir.
+def _pw_cerezleri(ham: list[dict]) -> list[dict]:
+    """Google `CookieMismatch` hatasını önleyen dönüşüm.
 
-    NİÇİN dikkat: Google `CookieMismatch` hatası, aynı çerezi İKİ farklı
-    domain'e yazınca ya da `__Secure-` önekli çerezleri `httpOnly` olmadan
-    yazınca çıkıyor. Bu yüzden:
-      - çerez TEK domain'e yazılır (mümkünse verideki gerçek domain)
-      - `__Secure-` önekli olanlar `httpOnly: True` + `secure: True`
-      - `sameSite: None` (üçüncü taraf akışları için gerekli)
+    Kural: `__Secure-` önekli çerezler `httpOnly: True` + `secure: True`
+    olmadan yazılırsa Google oturumu tanımıyor. Ayrıca çerez TEK domain'e
+    yazılır — aynı çerezi iki domain'e koymak da tutarsızlık sayılıyor.
     """
-    out: list[dict] = []
-    notlar: list[str] = []
+    out = []
     for c in ham:
         ad = str(c["name"])
         deger = str(c.get("value", ""))
         if not deger:
             continue
         domain = c.get("domain") or ".google.com"
-        if domain.startswith(".") is False and not domain.startswith("http"):
+        if not domain.startswith("."):
             domain = "." + domain.lstrip(".")
-        guvenli = ad.startswith("__Secure-") or ad.startswith("__Host-") or bool(
-            c.get("secure", True))
         kayit = {
-            "name": ad,
-            "value": deger,
-            "domain": domain,
-            "path": c.get("path") or "/",
-            "secure": True if guvenli else bool(c.get("secure", False)),
-            "httpOnly": bool(c.get("httpOnly", ad.startswith("__Secure-"))),
-            "sameSite": "None",
+            "name": ad, "value": deger, "domain": domain,
+            "path": c.get("path") or "/", "secure": True,
+            "httpOnly": True, "sameSite": "None",
         }
         if isinstance(c.get("expires"), (int, float)) and c["expires"] > 0:
             kayit["expires"] = c["expires"]
         out.append(kayit)
-        notlar.append(f"{ad} @ {domain}"
-                      + (" [__Secure]" if ad.startswith("__Secure-") else ""))
-    return out, notlar
+    return out
 
 
 def main() -> int:
@@ -133,25 +118,15 @@ def main() -> int:
 
     rapor: list[str] = []
     d = rapor.append
-    d("# NotebookLM Playwright Denemesi")
+    d("# NotebookLM Tam Akış — Playwright")
     d("")
 
-    cerez_ham = _cerezler()
-    pw_cerez, notlar = _pw_cerezleri(cerez_ham)
-    d(f"- Çerez sayısı: **{len(cerez_ham)}** → yazılan: **{len(pw_cerez)}**")
-    d("")
-    d("| Çerez | Domain | Not |")
-    d("|---|---|---|")
-    for n in notlar:
-        ad, _, kalan = n.partition(" @ ")
-        dom, _, ek = kalan.partition(" ")
-        d(f"| `{ad}` | `{dom}` | {ek or '—'} |")
-    d("")
-    # KRİTİK: CookieMismatch için gereken imza üçlüsü
-    adlar = {c["name"] for c in cerez_ham}
-    gerekli = ["SID", "HSID", "SSID", "APISID", "SAPISID"]
-    eksik = [g for g in gerekli if g not in adlar]
-    d(f"- İmza çerezleri: {'✅ tam' if not eksik else '❌ EKSİK → ' + str(eksik)}")
+    cerez = _cerezler()
+    adlar = {c["name"] for c in cerez}
+    imza = ["SID", "HSID", "SSID", "APISID", "SAPISID"]
+    eksik = [a for a in imza if a not in adlar]
+    d(f"- Çerez: **{len(cerez)}**")
+    d(f"- İmza çerezleri: {'✅ tam' if not eksik else '❌ EKSİK ' + str(eksik)}")
     d("")
 
     with sync_playwright() as p:
@@ -164,152 +139,226 @@ def main() -> int:
             user_agent=UA, viewport={"width": 1440, "height": 900},
             locale="tr-TR", timezone_id="Europe/Istanbul",
         )
-        # otomasyon izini azalt
         baglam.add_init_script(
             "Object.defineProperty(navigator,'webdriver',{get:()=>undefined})"
         )
-        baglam.add_cookies(pw_cerez)
+        baglam.add_cookies(_pw_cerezleri(cerez))
         sayfa = baglam.new_page()
+        sayfa.set_default_timeout(20000)
 
         def ss(ad: str) -> None:
             try:
-                sayfa.screenshot(path=str(CIKTI / f"{ad}.png"), full_page=False)
+                sayfa.screenshot(path=str(CIKTI / f"{ad}.png"))
                 d(f"- 📷 `{ad}.png`")
             except Exception as e:
-                d(f"- ⚠️ screenshot `{ad}` alınamadı: {e}")
+                d(f"- ⚠️ `{ad}` alınamadı: {e}")
 
-        # ---------- 0. GİRİŞ ----------
+        def metin() -> str:
+            try:
+                return " ".join(sayfa.inner_text("body").split())
+            except Exception:
+                return ""
+
+        # ================= 0. GİRİŞ =================
         d("## 0. Giriş")
         d("")
-        try:
-            sayfa.goto(TABAN + "/", wait_until="domcontentloaded", timeout=60000)
-            sayfa.wait_for_timeout(4000)
-            url = sayfa.url
-            baslik = sayfa.title()
-            d(f"- Adres: `{url[:90]}`")
-            d(f"- Sayfa başlığı: `{baslik[:80]}`")
-            ss("00_giris")
-            giris_yok = ("accounts.google.com" in url
-                         or "Sign in" in baslik or "Oturum" in baslik)
-            d(f"- Giriş durumu: **{'❌ GİRİŞ YOK' if giris_yok else '✅ GİRİŞ VAR'}**")
-            if giris_yok:
-                d("")
-                d("**DURDURULDU:** çerezler tarayıcıda oturum açmadı.")
-                (CIKTI / "rapor.md").write_text("\n".join(rapor) + "\n",
-                                                encoding="utf-8")
-                print("\n".join(rapor))
-                tarayici.close()
-                return 1
-        except Exception as e:
-            d(f"- ❌ Açılamadı: {e}")
-            (CIKTI / "rapor.md").write_text("\n".join(rapor) + "\n",
-                                            encoding="utf-8")
+        sayfa.goto(TABAN + "/", wait_until="domcontentloaded", timeout=60000)
+        sayfa.wait_for_timeout(6000)
+        girdi = "Yeni not defteri" in metin() or "Not defterlerim" in metin()
+        d(f"- Adres: `{sayfa.url[:80]}`")
+        d(f"- Giriş: **{'✅ VAR' if girdi else '❌ YOK'}**")
+        ss("00_giris")
+        if not girdi:
+            d("")
+            d("**DURDURULDU:** oturum açılmadı. Çerez seti eksik veya süresi geçmiş.")
+            (CIKTI / "rapor.md").write_text("\n".join(rapor) + "\n", encoding="utf-8")
             print("\n".join(rapor))
             tarayici.close()
             return 1
         d("")
 
-        # ---------- 1. YENİ NOT DEFTERİ ----------
+        # ================= 1. YENİ NOT DEFTERİ =================
         d("## 1. Yeni not defteri")
         d("")
+        yeni_id = None
         try:
-            # "Oluştur" / "Yeni not defteri" düğmesini ara
-            adaylar = [
-                'button:has-text("Oluştur")',
-                'button:has-text("Yeni not defteri")',
-                'a:has-text("Yeni not defteri")',
-                '[aria-label*="Oluştur"]',
-                'button:has-text("Create")',
-                'button:has-text("Create new")',
-            ]
-            bulundu = None
-            for sec in adaylar:
-                try:
-                    if sayfa.locator(sec).first.is_visible(timeout=1500):
-                        bulundu = sec
-                        break
-                except Exception:
-                    continue
-            if bulundu:
-                d(f"- Düğme bulundu: `{bulundu}`")
-                sayfa.locator(bulundu).first.click()
-                sayfa.wait_for_timeout(3000)
-                ss("01_defter_olustur")
-                d(f"- Yeni adres: `{sayfa.url[:90]}`")
-                m = re.search(r"/notebook/([0-9a-f-]{36})", sayfa.url)
-                if m:
-                    d(f"- ✅ **Yeni defter ID: `{m.group(1)}`**")
+            dugme = sayfa.get_by_role("button", name=re.compile("Yeni not defteri", re.I))
+            dugme.first.click()
+            sayfa.wait_for_timeout(4000)
+            ss("01a_defter_olustur")
+            d(f"- Tıkladıktan sonra adres: `{sayfa.url[:80]}`")
+            m = re.search(r"/notebook/([0-9a-f-]{36})", sayfa.url)
+            if m:
+                yeni_id = m.group(1)
+                d(f"- ✅ **Defter ID: `{yeni_id}`**")
             else:
-                d("- ❌ Oluştur düğmesi bulunamadı. Ekrandaki düğmeler:")
-                for t in sayfa.locator("button").all_text_contents()[:25]:
-                    if t.strip():
-                        d(f"    - `{t.strip()[:50]}`")
+                d("- Defter sayfasına geçilmedi, ekrandaki metin:")
+                d(f"  `{metin()[:300]}`")
         except Exception as e:
-            d(f"- ⚠️ Hata: {e}")
+            d(f"- ❌ {type(e).__name__}: {e}")
             ss("01_hata")
         d("")
 
-        # ---------- 2. İÇERİK EKLE ----------
-        d("## 2. İçerik ekleme alanı")
+        # ================= 2. İÇERİK EKLE =================
+        d("## 2. İçerik ekle")
         d("")
-        try:
-            alanlar = [
-                'textarea', '[contenteditable="true"]',
-                'input[type="text"]',
-            ]
-            for sel in alanlar:
-                n = sayfa.locator(sel).count()
-                if n:
-                    d(f"- `{sel}` → {n} adet")
-            ss("02_icerik_alani")
+        if yeni_id:
+            try:
+                s = metin()
+                d(f"- Sayfadaki metin (ilk 300): `{s[:300]}`")
+                ss("02a_defter_bos")
 
-            # "Kopyala yapıştır" / "Metin" seçeneği
-            for metin in ["Kopyalanan metin", "Metin", "Paste text",
-                          "Copy text", "Not ekle"]:
-                loc = sayfa.locator(f':text("{metin}")').first
-                try:
-                    if loc.is_visible(timeout=1200):
-                        d(f"- Seçenek göründü: `{metin}`")
+                # "Kaynak ekle" / "Not ekle" düğmesi
+                ekle = None
+                for ad in ["Kaynak ekle", "Not ekle", "Kaynak veya not ekle",
+                           "Metin ekle", "Ekle"]:
+                    try:
+                        loc = sayfa.get_by_role("button", name=re.compile(ad, re.I))
+                        if loc.first.is_visible(timeout=1500):
+                            ekle = ad
+                            break
+                    except Exception:
+                        continue
+                d(f"- Ekle düğmesi: `{ekle or 'BULUNAMADI'}`")
+                if ekle:
+                    sayfa.get_by_role("button", name=re.compile(ekle, re.I)).first.click()
+                    sayfa.wait_for_timeout(2500)
+                    ss("02b_ekle_menusu")
+                    d(f"- Menü sonrası metin: `{metin()[:250]}`")
+
+                    # "Kopyalanan metin" seçeneği
+                    for sec in ["Kopyalanan metin", "Metin", "Panodan"]:
+                        try:
+                            loc = sayfa.get_by_text(re.compile(sec, re.I))
+                            if loc.first.is_visible(timeout=1500):
+                                loc.first.click()
+                                sayfa.wait_for_timeout(2000)
+                                d(f"- Seçildi: `{sec}`")
+                                break
+                        except Exception:
+                            continue
+                    ss("02c_metin_secildi")
+
+                    # Metni yaz
+                    for sel in ['textarea', '[contenteditable="true"]']:
+                        try:
+                            alan = sayfa.locator(sel).first
+                            if alan.is_visible(timeout=2000):
+                                alan.fill(METIN)
+                                d(f"- Metin yazıldı (`{sel}`, {len(METIN)} krkt)")
+                                ss("02d_metin_yazildi")
+                                break
+                        except Exception:
+                            continue
+
+                    # Gönder / Kaydet
+                    for ad in ["Ekle", "Kaydet", "Gönder", "Tamam", "Oluştur"]:
+                        try:
+                            b = sayfa.get_by_role("button", name=re.compile(f"^{ad}$", re.I))
+                            if b.first.is_visible(timeout=1200):
+                                b.first.click()
+                                d(f"- Gönderildi: `{ad}`")
+                                sayfa.wait_for_timeout(6000)
+                                break
+                        except Exception:
+                            continue
+                    ss("02e_eklendi")
+            except Exception as e:
+                d(f"- ⚠️ {type(e).__name__}: {e}")
+                ss("02_hata")
+        else:
+            d("- Atlanıyor: defter açılmadı.")
+        d("")
+
+        # ================= 3. STUDIO / VİDEO =================
+        d("## 3. Studio → Video Özeti")
+        d("")
+        if yeni_id:
+            try:
+                s = metin()
+                for kw in ["Video Özeti", "Video", "Sesli Özet", "Studio"]:
+                    d(f"- Metinde `{kw}`: {'✅' if kw in s else '—'}")
+                ss("03a_studio")
+
+                # Studio panelini aç
+                for ad in ["Studio", "Studio paneli"]:
+                    try:
+                        b = sayfa.get_by_role("button", name=re.compile(ad, re.I))
+                        if b.first.is_visible(timeout=1500):
+                            b.first.click()
+                            sayfa.wait_for_timeout(2500)
+                            d(f"- Studio açıldı: `{ad}`")
+                            break
+                    except Exception:
+                        continue
+                ss("03b_studio_acik")
+
+                # Video Özeti kartını bul
+                for sec in ["Video Özeti", "Video", "Videolu Özet"]:
+                    try:
+                        loc = sayfa.get_by_text(re.compile(sec, re.I))
+                        if loc.first.is_visible(timeout=1500):
+                            loc.first.click()
+                            sayfa.wait_for_timeout(2500)
+                            d(f"- Video kartı: `{sec}`")
+                            break
+                    except Exception:
+                        continue
+                ss("03c_video_karti")
+
+                # Kısa seçeneği
+                for sec in ["Kısa", "Kısa video"]:
+                    try:
+                        loc = sayfa.get_by_text(re.compile(f"^{sec}$", re.I))
+                        if loc.first.is_visible(timeout=1500):
+                            loc.first.click()
+                            d(f"- Format: `{sec}`")
+                            break
+                    except Exception:
+                        continue
+                ss("03d_kisa_secildi")
+
+                # Oluştur
+                for ad in ["Oluştur", "Hemen oluştur", "Üret"]:
+                    try:
+                        b = sayfa.get_by_role("button", name=re.compile(ad, re.I))
+                        if b.first.is_visible(timeout=1500):
+                            b.first.click()
+                            d(f"- ✅ **Oluştur tıklandı: `{ad}`**")
+                            break
+                    except Exception:
+                        continue
+                ss("03e_olusturuldu")
+
+                # Üretimi bekle
+                d("")
+                d("### Üretim bekleniyor")
+                d("")
+                for tur in range(20):
+                    sayfa.wait_for_timeout(30000)
+                    s = metin()
+                    hazir = any(k in s for k in ["indir", "İndir", "hazır"])
+                    d(f"- {tur + 1}. tur ({(tur + 1) * 30} sn): "
+                      f"{'✅ hazır' if hazir else '⏳ üretiliyor'}")
+                    if tur == 0 or hazir:
+                        ss(f"04_bekleme_{tur + 1}")
+                    if hazir:
                         break
-                except Exception:
-                    continue
-        except Exception as e:
-            d(f"- ⚠️ Hata: {e}")
+            except Exception as e:
+                d(f"- ⚠️ {type(e).__name__}: {e}")
+                ss("03_hata")
         d("")
 
-        # ---------- 3. STUDIO / VİDEO ----------
-        d("## 3. Studio paneli")
+        # ================= ÖZET =================
+        d("## Sayfadaki düğmeler")
         d("")
         try:
-            # Studio düğmesi
-            for sel in ['button:has-text("Studio")',
-                        ':text("Studio")']:
-                try:
-                    if sayfa.locator(sel).first.is_visible(timeout=1500):
-                        sayfa.locator(sel).first.click()
-                        sayfa.wait_for_timeout(2500)
-                        d(f"- Studio açıldı: `{sel}`")
-                        break
-                except Exception:
-                    continue
-            ss("03_studio")
-            # Video Özeti var mı
-            for kw in ["Video Özeti", "Video Overview", "Video",
-                       "Sesli Özet", "Audio Overview"]:
-                sayfa_metni = sayfa.inner_text("body")[:20000]
-                d(f"- Metinde `{kw}`: {'✅ var' if kw in sayfa_metni else '— yok'}")
-        except Exception as e:
-            d(f"- ⚠️ Hata: {e}")
-        d("")
-
-        # ---------- ÖZET ----------
-        d("## Ekrandaki tüm düğmeler")
-        d("")
-        try:
-            for i, t in enumerate(sayfa.locator("button").all_text_contents()):
+            gorulen = set()
+            for t in sayfa.locator("button").all_text_contents():
                 t = " ".join(t.split())
-                if t:
-                    d(f"{i}. `{t[:60]}`")
+                if t and t not in gorulen:
+                    gorulen.add(t)
+                    d(f"- `{t[:60]}`")
         except Exception:
             pass
 

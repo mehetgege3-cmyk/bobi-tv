@@ -1,0 +1,36 @@
+name: Notebook Çerez İncele
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  incele:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q requests
+      - name: Çerezi incele (salt okunur)
+        env:
+          NOTEBOOK_GOOGLE: ${{ secrets.NOTEBOOK_GOOGLE }}
+        run: python3 tools/notebook_cerez_incele.py || echo "::warning::inceleme tamamlanmadı"
+      - name: Raporu commit et
+        run: |
+          git config user.name "bobi-agent"
+          git config user.email "agent@bobi.tv"
+          git add docs/NOTEBOOK_CEREZ_INCELEME.md || true
+          git diff --cached --quiet || { git commit -m "chore(incele): notebook çerez raporu [skip ci]"; git push; }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: notebook-cerez-raporu
+          path: docs/NOTEBOOK_CEREZ_INCELEME.md
+          if-no-files-found: warn

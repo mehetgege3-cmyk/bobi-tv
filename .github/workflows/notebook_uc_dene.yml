@@ -23,11 +23,11 @@ jobs:
       - name: Raporu commit'le
         if: always()
         run: |
-          git config user.name=bobi-agent
-          git config user.email=agent@bobi.tv
+          git config user.name "bobi-agent"
+          git config user.email "agent@bobi.tv"
           git add docs/NOTEBOOK_UC_DENEME.md || true
           git diff --staged --quiet || git commit -m "docs: notebook uç denemesi raporu"
-          git push || true
+          git push origin HEAD:main || true
 
       - uses: actions/upload-artifact@v4
         if: always()

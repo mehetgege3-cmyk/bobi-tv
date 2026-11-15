@@ -134,6 +134,15 @@ def _rpc(at: str, fsid: str | None, cerez: dict[str, str], rpc: str,
     }, veri)
 
 
+#: at token'ı aranacak sayfalar. SIRA ÖNEMLİ: ana sayfa at İÇERMİYOR
+#: (2026-11-15 denemesi: `/` → 200 ama SNlM0e yok), not defteri sayfası içeriyor.
+SAYFALAR = [
+    "/notebook/18547767-c4b2-47a3-8d2e-d62513426959",  # HAR'daki gerçek defter
+    "/",
+    "/?hl=tr",
+]
+
+
 def main() -> int:
     cerez = _cerezler()
     satirlar: list[str] = []
@@ -145,17 +154,24 @@ def main() -> int:
     d("- Kaynak: `notebook.google.com_2026_11_15_20_03_28.har`")
     d("")
 
-    # — 1. Sayfayı aç, at token'ı çek —
-    d("## 1. Sayfa + `at` token")
+    # — 1. at token'ı sayfalarda ara —
+    d("## 1. `at` token avı")
     d("")
-    kod, html = _get(TABAN + "/", cerez)
-    d(f"- `GET /` → **HTTP {kod}**")
-    at, fsid = _at_bul(html) if kod == 200 else (None, None)
+    d("| Sayfa | HTTP | `SNlM0e` (at) | `FdrFJe` (f.sid) |")
+    d("|---|---|---|---|")
+    at = fsid = None
+    for yol in SAYFALAR:
+        kod, html = _get(TABAN + yol, cerez)
+        a, f = _at_bul(html) if kod == 200 else (None, None)
+        d(f"| `{yol}` | {kod} | {'✅ BULUNDU' if a else '❌ yok'} "
+          f"| {'✅' if f else '❌'} |")
+        if a and not at:
+            at, fsid = a, f
+    d("")
     if at:
-        d(f"- `SNlM0e` (at) → **BULUNDU** (`{at[:14]}…`, {len(at)} krkt)")
+        d(f"- Seçilen `at`: `{at[:14]}…` ({len(at)} karakter)")
     else:
-        d("- `SNlM0e` (at) → **YOK** (oturum geçersiz olabilir)")
-    d(f"- `FdrFJe` (f.sid) → {'BULUNDU' if fsid else 'YOK'}")
+        d("- Hiçbir sayfada `at` yok → oturum çerezi geçersiz.")
     d("")
 
     if not at:

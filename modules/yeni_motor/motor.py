@@ -52,18 +52,12 @@ def ses_uret(metin: str, ses_dosyasi: str):
     asyncio.run(ses_uret_async(metin, ses_dosyasi))
 
 
-#: KAPAK İSTEMİ — kullanıcının tek cümlesi, BİREBİR (K8). Değiştirme.
+#: KAPAK İSTEMİ — kullanıcının kendi cümlesi (2026-11-13).
 def kapak_istemini_yaz(baslik: str) -> str:
-    """KULLANICININ KAPAK İSTEMİ — BİREBİR. TÜM KAPAKLAR İÇİN BU.
+    """Kapak istemi: video başlığı + kullanıcının cümlesi.
 
-    2026-11-13 kullanıcı talimatı: "Şablonu çöpe at. Sadece benim dediğimi yap.
+    2026-11-13 kullanıcı: "Şablonu çöpe at. Sadece benim dediğimi yap.
     Tüm kapak fotoğrafları için bunu kullan."
-
-    ⛔ BU FONKSİYONA HİÇBİR EK KURAL EKLEME:
-       - "yazı yaz" / "yazı yazma" EKLEME
-       - "16:9" / "1280x720" / "yatay" EKLEME
-       - "fotogerçekçi", "sinematik", "stil" EKLEME
-    Sadece {baslik} yerine video başlığı konur. Gerisi kullanıcının cümlesi.
     """
     return (
         f"{baslik} İsimli short video için kapak fotoğrafı istiyorum etkileşim ve "

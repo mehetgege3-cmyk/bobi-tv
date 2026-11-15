@@ -70,7 +70,7 @@ BASLIK = "Parmaklarımız Neden Buruşur?"
 
 
 def _cerezler() -> list[dict]:
-    """NOTEBOOK_GOOGLE → Playwright cookie listesi."""
+    """NOTEBOOK_GOOGLE → ham çerez listesi (alanlar korunur)."""
     ham = (os.environ.get("NOTEBOOK_GOOGLE") or "").strip()
     if not ham:
         raise SystemExit("HATA: NOTEBOOK_GOOGLE boş.")
@@ -89,18 +89,43 @@ def _cerezler() -> list[dict]:
     return out
 
 
-def _pw_cerezleri(ham: list[dict]) -> list[dict]:
-    """Google çerezlerini hem .google.com hem notebook.google.com için yaz."""
-    out = []
+def _pw_cerezleri(ham: list[dict]) -> tuple[list[dict], list[str]]:
+    """Çerezleri Playwright biçimine çevir.
+
+    NİÇİN dikkat: Google `CookieMismatch` hatası, aynı çerezi İKİ farklı
+    domain'e yazınca ya da `__Secure-` önekli çerezleri `httpOnly` olmadan
+    yazınca çıkıyor. Bu yüzden:
+      - çerez TEK domain'e yazılır (mümkünse verideki gerçek domain)
+      - `__Secure-` önekli olanlar `httpOnly: True` + `secure: True`
+      - `sameSite: None` (üçüncü taraf akışları için gerekli)
+    """
+    out: list[dict] = []
+    notlar: list[str] = []
     for c in ham:
-        ad, deger = str(c["name"]), str(c.get("value", ""))
-        for alan in (".google.com", "notebook.google.com"):
-            out.append({
-                "name": ad, "value": deger, "domain": alan,
-                "path": "/", "secure": True, "httpOnly": False,
-                "sameSite": "None",
-            })
-    return out
+        ad = str(c["name"])
+        deger = str(c.get("value", ""))
+        if not deger:
+            continue
+        domain = c.get("domain") or ".google.com"
+        if domain.startswith(".") is False and not domain.startswith("http"):
+            domain = "." + domain.lstrip(".")
+        guvenli = ad.startswith("__Secure-") or ad.startswith("__Host-") or bool(
+            c.get("secure", True))
+        kayit = {
+            "name": ad,
+            "value": deger,
+            "domain": domain,
+            "path": c.get("path") or "/",
+            "secure": True if guvenli else bool(c.get("secure", False)),
+            "httpOnly": bool(c.get("httpOnly", ad.startswith("__Secure-"))),
+            "sameSite": "None",
+        }
+        if isinstance(c.get("expires"), (int, float)) and c["expires"] > 0:
+            kayit["expires"] = c["expires"]
+        out.append(kayit)
+        notlar.append(f"{ad} @ {domain}"
+                      + (" [__Secure]" if ad.startswith("__Secure-") else ""))
+    return out, notlar
 
 
 def main() -> int:
@@ -112,7 +137,21 @@ def main() -> int:
     d("")
 
     cerez_ham = _cerezler()
-    d(f"- Çerez sayısı: **{len(cerez_ham)}**")
+    pw_cerez, notlar = _pw_cerezleri(cerez_ham)
+    d(f"- Çerez sayısı: **{len(cerez_ham)}** → yazılan: **{len(pw_cerez)}**")
+    d("")
+    d("| Çerez | Domain | Not |")
+    d("|---|---|---|")
+    for n in notlar:
+        ad, _, kalan = n.partition(" @ ")
+        dom, _, ek = kalan.partition(" ")
+        d(f"| `{ad}` | `{dom}` | {ek or '—'} |")
+    d("")
+    # KRİTİK: CookieMismatch için gereken imza üçlüsü
+    adlar = {c["name"] for c in cerez_ham}
+    gerekli = ["SID", "HSID", "SSID", "APISID", "SAPISID"]
+    eksik = [g for g in gerekli if g not in adlar]
+    d(f"- İmza çerezleri: {'✅ tam' if not eksik else '❌ EKSİK → ' + str(eksik)}")
     d("")
 
     with sync_playwright() as p:
@@ -129,7 +168,7 @@ def main() -> int:
         baglam.add_init_script(
             "Object.defineProperty(navigator,'webdriver',{get:()=>undefined})"
         )
-        baglam.add_cookies(_pw_cerezleri(cerez_ham))
+        baglam.add_cookies(pw_cerez)
         sayfa = baglam.new_page()
 
         def ss(ad: str) -> None:

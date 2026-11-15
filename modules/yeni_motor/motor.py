@@ -40,24 +40,45 @@ def kapak_istemini_yaz(baslik: str) -> str:
 
 
 def kapak_olcekle(kaynak: str, hedef: str) -> str:
-    """Kapağı 1080x1920 (9:16) tuvalde ortalar — görseli KIRPMAZ, uzatMАZ.
+    """Kapağı 1080x1920 (9:16) tuvalde ortalar — METNİ ASLA KESMEZ.
 
-    Kapak iki yere gidiyor:
-      1) videonun İLK 1.5 SANİYESİ (kullanıcı kararı) → dikey olmalı
-      2) YouTube thumbnails.set                      → aynı dosya
-    9:16 görsel zaten dikey; tuval yalnızca tam 1080x1920 olsun diye.
-    Kenarlar bulanıklaştırılmaz, siyah bar konmaz — görselin kendisi kaplar.
+    REGRESYON DÜZELTMESİ (2026-11-08). Geçmiş ölçümü:
+
+    | Tarih | Yöntem | Sonuç |
+    |---|---|---|
+    | 2026-11-14 (21868da) | GÖRSELE DOKUNMA | 9:16 kapaklar kusursuz geçti |
+    | 2026-11-15 (8f7398a) | 1080×1920 COVER + crop | **kırpma eklendi** |
+    | bugün | 1:1 kapak + crop | metnin %44'ü kesildi: "İNİZ", "DİNİ NASIL YİY" |
+
+    Kök neden: 8f7398a'da videonun ilk 1.5 sn'sine gömme eklenirken bu
+    fonksiyona da "cover" kırpması kondu. İlk 1.5 sn için tuval 1080×1920
+    olmalı — doğru — ama görseli KIRPMADAN oturtmak gerekiyordu.
+
+    YÖNTEM (2 gün önce çalışan yol): görselin TAMAMINI sığdır (contain),
+    boş kalan kenarları görselin kendi bulanık hâliyle doldur. Metin kesilmez,
+    siyah bar olmaz. YouTube'un kendi 16:9 kırpması ayrı dosyada yapılır.
     """
     from PIL import Image
 
     img = Image.open(kaynak).convert("RGB")
+    oran = img.width / img.height
     if img.size != (1080, 1920):
-        # en-boy oranını koruyarak 1080x1920'yi KAPLA (cover), ortadan kırp
-        olcek = max(1080 / img.width, 1920 / img.height)
-        yeni_g, yeni_y = int(img.width * olcek + 0.5), int(img.height * olcek + 0.5)
-        img = img.resize((yeni_g, yeni_y), Image.LANCZOS)
-        sol, ust = (yeni_g - 1080) // 2, (yeni_y - 1920) // 2
-        img = img.crop((sol, ust, sol + 1080, ust + 1920))
+        if abs(oran - (9 / 16)) < 0.02:
+            # Zaten 9:16 → sadece ölçekle, hiç kırpma yok.
+            img = img.resize((1080, 1920), Image.LANCZOS)
+        else:
+            # CONTAIN: görselin tamamı sığar, kenarlar bulanık dolgu.
+            # KIRPMA YOK → metin korunur.
+            from PIL import ImageFilter
+
+            arka = img.resize((1080, 1920), Image.LANCZOS).filter(
+                ImageFilter.GaussianBlur(45))
+            olcek = min(1080 / img.width, 1920 / img.height)
+            ig = max(1, int(img.width * olcek + 0.5))
+            iy = max(1, int(img.height * olcek + 0.5))
+            on = img.resize((ig, iy), Image.LANCZOS)
+            arka.paste(on, ((1080 - ig) // 2, (1920 - iy) // 2))
+            img = arka
     for kalite in (92, 88, 84, 78, 70):
         img.save(hedef, "JPEG", quality=kalite, optimize=True)
         if Path(hedef).stat().st_size <= 2 * 1024 * 1024:
@@ -139,6 +160,39 @@ def ilk_kareye_gom(video: str, kapak_jpg: str, sn: float = 1.5) -> str:
         print(f"[BOBİ TV] ⚠️ kapak birleştirme hatası: {r2.stderr[-200:]}")
         return video
     print(f"[BOBİ TV] ✅ Kapak ilk {sn} sn'ye gömüldü")
+    return hedef
+
+
+def kapak_youtube_surumu(kaynak: str, hedef: str) -> str:
+    """Aynı kapağın 16:9 (1280×720) sürümü — YouTube kapak alanı için.
+
+    NİÇİN AYRI DOSYA (2026-11-08):
+      Video 9:16 → kapağın dikey sürümü kullanılır (ilk 1.5 sn).
+      YouTube kapak alanı 16:9 → dikey görseli verince YouTube %68 blur dolgu
+      ekliyordu (2026-11-13 ölçümü, d4ee933). 2 gün önceki videolarda doğru
+      yöntem buydu: ORTADA net görsel, kenarlarda bulanık dolgu (ölçüm: net
+      alan %32, ama metin TAM).
+
+    YÖNTEM: 1280×720 tuval + görselin tamamı ortada (contain) + kendi bulanık
+    hâliyle dolgu. Kırpma YOK, siyah bar YOK.
+    """
+    from PIL import Image, ImageFilter
+
+    img = Image.open(kaynak).convert("RGB")
+    tuval = Image.new("RGB", (1280, 720))
+    arka = img.resize((1280, 720), Image.LANCZOS).filter(
+        ImageFilter.GaussianBlur(45))
+    tuval.paste(arka, (0, 0))
+    olcek = min(1280 / img.width, 720 / img.height)
+    g = max(1, int(img.width * olcek + 0.5))
+    y = max(1, int(img.height * olcek + 0.5))
+    on = img.resize((g, y), Image.LANCZOS)
+    tuval.paste(on, ((1280 - g) // 2, (720 - y) // 2))
+
+    for kalite in (92, 88, 84, 78, 70):
+        tuval.save(hedef, "JPEG", quality=kalite, optimize=True)
+        if Path(hedef).stat().st_size <= 2 * 1024 * 1024:
+            break
     return hedef
 
 

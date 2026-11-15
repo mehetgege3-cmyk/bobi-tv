@@ -115,18 +115,38 @@ def calistir(video_no: int = 0, kategori: str | None = None,
     rapor["konu"] = konu
 
     # --- 2) KAPAK (Gemini web) --------------------------------------------
-    kapak = f"/tmp/bobi_kapak_{damga}.jpg"
+    ham_kapak = f"/tmp/bobi_kapak_ham_{damga}.jpg"
+    kapak = f"/tmp/bobi_kapak_{damga}.jpg"          # 9:16 — videoya gömülür
+    kapak_yt = f"/tmp/bobi_kapak_yt_{damga}.jpg"    # 16:9 — thumbnails.set
     print("\n=== 2/4 KAPAK (Gemini web) ===")
     t = time.time()
     try:
-        uretildi = gorsel_uret(kapak_istemini_yaz(konu["baslik"]), kapak)
+        uretildi = gorsel_uret(kapak_istemini_yaz(konu["baslik"]), ham_kapak)
     except Exception as e:
         uretildi = None
         print(f"[hat] kapak istisnası: {type(e).__name__}: {e}")
     rapor["asamalar"]["kapak"] = round(time.time() - t, 1)
-    if not uretildi or not Path(kapak).exists():
+    if not uretildi or not Path(ham_kapak).exists():
         # KAPAK OLMADAN YAYIN YOK (kullanıcı kararı) → hat burada durur.
         return {**rapor, "hata": "kapak üretilemedi — kapaksız video yayınlanmaz"}
+
+    # İKİ SÜRÜM (2026-11-08 regresyon düzeltmesi):
+    #   dikey : 1080x1920, görselin TAMAMI (contain) → videonun ilk 1.5 sn'si.
+    #           Kırpma YOK; 8f7398a'daki "cover" kırpması metnin %44'ünü
+    #           kesiyordu ("İNİZ", "DİNİ NASIL YİY").
+    #   16:9   : 1280x720, ortada net görsel + kenarlarda bulanık dolgu
+    #           → thumbnails.set (2 gün önceki videolarla aynı görünüm).
+    from modules.yeni_motor.motor import kapak_olcekle, kapak_youtube_surumu
+
+    try:
+        kapak_olcekle(ham_kapak, kapak)
+        kapak_youtube_surumu(ham_kapak, kapak_yt)
+        from PIL import Image
+
+        print(f"[hat] kapak ham {Image.open(ham_kapak).size} → "
+              f"dikey {Image.open(kapak).size} + 16:9 {Image.open(kapak_yt).size}")
+    except Exception as e:
+        return {**rapor, "hata": f"kapak biçimlendirme hatası: {e}"}
 
     # --- 3) VİDEO (NotebookLM) --------------------------------------------
     print("\n=== 3/4 VİDEO (NotebookLM) ===")
@@ -160,7 +180,7 @@ def calistir(video_no: int = 0, kategori: str | None = None,
     if bilgi["sure"] > UST_SN:
         return {**rapor, "hata": f"video çok uzun: {bilgi['sure']} sn > {UST_SN}"}
 
-    paket = _paket(konu, final, kapak, damga)
+    paket = _paket(konu, final, kapak_yt, damga)
     rapor["asamalar"]["toplam"] = round(time.time() - t0, 1)
     rapor["paket"] = paket
     return rapor

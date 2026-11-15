@@ -6,7 +6,23 @@ SORUN (2026-11-08'de ölçüldü):
   Kanıt: 18:13'te aynı secret çalıştı (22 defter), 18:32'de aynı secret
   AuthError verdi. Secret bozulmadı — arasındaki koşu değeri döndürdü.
 
-ÇÖZÜM (kütüphanenin kendi önerisi, `notebooklm auth refresh --help`):
+KÜTÜPHANENİN KENDİ BELGESİ (`data/SKILL.md`), birebir:
+    "For unattended or headless work, prefer durable profile-backed
+     master-token auth over a copied cookie snapshot... A sibling master token
+     can automatically re-mint expired file-backed cookies. Inline
+     NOTEBOOKLM_AUTH_JSON is only a short-lived fallback; it bypasses this
+     recovery path."
+
+  Yani çerez kopyası CI için YETERSİZ: her döndürmede ölüyor ve kurtarma yolu
+  (master token) devre dışı kalıyor. İki mod destekleniyor:
+
+  A) **MASTER TOKEN (kalıcı, önerilen)** — `NOTEBOOKLM_MASTER_TOKEN_JSON`
+     secret'ı varsa profile yazılır (0600), `notebooklm auth refresh`
+     çerezleri kendisi üretir. Oturum ölse bile kendini yeniler.
+  B) **ÇEREZ (geçici)** — `NOTEBOOK_GOOGLE` varsa eski yol. Saatlik
+     döndürmede kırılır; yalnız A yoksa kullanılır.
+
+ÇEREZ TAZELEME (B modu, kütüphanenin önerisi):
   * storage_state.json dosya olarak tutulur,
   * `notebooklm auth refresh --verify` dönen çerezi tazeler ve doğrular,
   * tazelenmiş çerez secret'a GERİ YAZILIR → sonraki koşu taze değerle başlar.
@@ -36,6 +52,35 @@ DURUM = Path("/tmp/nb_state.json")
 #: GitHub deposu / secret adı.
 REPO = "mehetgege3-cmyk/bobi-tv"
 SECRET_ADI = "NOTEBOOK_GOOGLE"
+
+
+def _profil_dizini() -> Path:
+    """`notebooklm` profil dizini (NOTEBOOKLM_HOME / NOTEBOOKLM_PROFILE)."""
+    kok = Path(os.environ.get("NOTEBOOKLM_HOME") or (Path.home() / ".notebooklm"))
+    return kok / "profiles" / (os.environ.get("NOTEBOOKLM_PROFILE") or "default")
+
+
+def _master_token_kur() -> Path | None:
+    """`NOTEBOOKLM_MASTER_TOKEN_JSON` → profil master_token.json (0600).
+
+    Belge: "Write its exact value to the selected profile's master_token.json
+    with mode 0600, unset it, then run `notebooklm auth refresh` to mint
+    storage_state.json."
+
+    Döner: kurulan dosya yolu (yoksa None).
+    """
+    ham = (os.environ.get("NOTEBOOKLM_MASTER_TOKEN_JSON") or "").strip()
+    if not ham:
+        return None
+    d = _profil_dizini()
+    d.mkdir(parents=True, exist_ok=True)
+    hedef = d / "master_token.json"
+    hedef.write_text(ham, encoding="utf-8")
+    hedef.chmod(0o600)
+    # Belge şartı: değişkeni bırakma.
+    os.environ.pop("NOTEBOOKLM_MASTER_TOKEN_JSON", None)
+    print(f"→ master token kuruldu: {hedef} (0600)")
+    return hedef
 
 
 def durum_yaz(ham: str) -> dict:
@@ -110,42 +155,72 @@ def _secret_guncelle(deger: str) -> bool:
 
 
 def main() -> int:
+    # ---- A) MASTER TOKEN: kalıcı, kendini yenileyen kimlik ----------------
+    if (os.environ.get("NOTEBOOKLM_MASTER_TOKEN_JSON") or "").strip():
+        print("=== kimlik modu: MASTER TOKEN (kalıcı) ===")
+        if not _master_token_kur():
+            print("❌ master token yazılamadı")
+            return 1
+        # Çerezleri token'dan üret. inline NOTEBOOKLM_AUTH_JSON kurtarma yolunu
+        # kapatıyor (belge) — burada hiç kullanmıyoruz.
+        os.environ.pop("NOTEBOOKLM_AUTH_JSON", None)
+        r = subprocess.run(
+            ["notebooklm", "auth", "refresh", "--verify"],
+            capture_output=True, text=True, timeout=300,
+        )
+        cikti = ((r.stdout or "") + (r.stderr or "")).strip()
+        print(cikti[-1500:] if cikti else "(çıktı yok)")
+        if r.returncode != 0:
+            print("❌ master token ile çerez üretilemedi")
+            return 1
+        durum = _profil_dizini() / "storage_state.json"
+        if not durum.exists():
+            print(f"❌ {durum} oluşmadı")
+            return 1
+        return _dogrula(durum, secret_yazma=True, master=True)
+
+    # ---- B) ÇEREZ: geçici yol --------------------------------------------
     ham = (os.environ.get("NOTEBOOK_GOOGLE") or "").strip()
     if not ham:
-        print("❌ NOTEBOOK_GOOGLE boş")
+        print("❌ ne NOTEBOOKLM_MASTER_TOKEN_JSON ne NOTEBOOK_GOOGLE var")
         return 2
 
+    print("=== kimlik modu: ÇEREZ (geçici — master token önerilir) ===")
     DURUM.unlink(missing_ok=True)
     durum_yaz(ham)
 
     if not tazele():
         print("❌ çerez tazelenemedi — oturum gerçekten ölü, yeniden giriş gerekli")
         return 1
+    return _dogrula(DURUM, secret_yazma="--secret-yazma" not in sys.argv, master=False)
 
-    # Doğrulama: tazelenmiş çerezle defter listesi okunabiliyor mu?
+
+def _dogrula(durum: Path, secret_yazma: bool, master: bool) -> int:
+    """Tazelenmiş çerezle gerçek bir okuma yap — kimlik gerçekten çalışıyor mu?"""
     from notebooklm import NotebookLMClient
     import asyncio
 
+    metin = durum.read_text(encoding="utf-8")
+    os.environ["NOTEBOOKLM_AUTH_JSON"] = metin
+
     async def _dene() -> int:
-        async with NotebookLMClient.from_storage(path=str(DURUM)) as c:
+        async with NotebookLMClient.from_storage() as c:
             nbs = await c.notebooks.list()
-            print(f"✅ kimlik geçerli — {len(nbs)} defter")
             return len(nbs)
 
-    os.environ.pop("NOTEBOOKLM_AUTH_JSON", None)
-    os.environ["NOTEBOOKLM_AUTH_JSON"] = DURUM.read_text(encoding="utf-8")
     try:
         adet = asyncio.run(_dene())
     except Exception as e:
-        print(f"❌ tazeleme sonrası kimlik hatası: {type(e).__name__}: {e}")
+        print(f"❌ doğrulama hatası: {type(e).__name__}: {e}")
         return 1
     if adet <= 0:
         print("❌ defter listesi boş")
         return 1
+    print(f"✅ kimlik geçerli — {adet} defter")
 
-    if "--secret-yazma" not in sys.argv:
-        yeni = DURUM.read_text(encoding="utf-8")
-        _secret_guncelle(yeni)
+    # Master token modunda secret yazmaya gerek YOK: token kendini yeniliyor.
+    if secret_yazma and not master:
+        _secret_guncelle(metin)
     return 0
 
 

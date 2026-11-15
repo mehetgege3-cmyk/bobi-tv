@@ -61,7 +61,7 @@ jobs:
           python -m pip install -q --upgrade pip
           if [ -f requirements.txt ]; then pip install -q -r requirements.txt; fi
           # pynacl: secret'a tazelenmiş çerez yazmak için (libsodium sealed box)
-          pip install -q pynacl
+          pip install -q pynacl 'notebooklm-py[headless]'
 
       - name: Klasör yapısı
         run: mkdir -p bobi_tv/output bobi_tv/state bobi_tv/archive
@@ -75,8 +75,11 @@ jobs:
       # Bu adım çerezi tazeler, doğrular ve TAZE değeri secret'a geri yazar.
       # Sonraki koşu taze çerezle başlar (kendi kendini iyileştiren kimlik).
       # ------------------------------------------------------------------
-      - name: NotebookLM çerezini tazele
+      - name: NotebookLM kimliğini kur ve tazele
         env:
+          # A) MASTER TOKEN varsa o kullanılır (kalıcı, kendini yeniler).
+          NOTEBOOKLM_MASTER_TOKEN_JSON: ${{ secrets.NOTEBOOKLM_MASTER_TOKEN_JSON }}
+          # B) yoksa çerez yolu (geçici — saatlik döndürmede kırılır).
           NOTEBOOK_GOOGLE: ${{ secrets.NOTEBOOK_GOOGLE }}
           GH_PAT: ${{ secrets.GH_PAT }}
           PYTHONUNBUFFERED: "1"

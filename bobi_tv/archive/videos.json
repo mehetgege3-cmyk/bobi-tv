@@ -1448,7 +1448,7 @@
     "dosya_adi": "bobi_20261115_155245",
     "baslik": "Gözlerinin Hayret Edeceği Gerçek #shorts",
     "video_id": "qyr-vyloauk",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "",
     "url": "https://www.youtube.com/shorts/qyr-vyloauk",
     "senaryo_ozeti": "",
@@ -1459,13 +1459,16 @@
     "kanca_puan": null,
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
-    "hook_ust_bant": ""
+    "hook_ust_bant": "",
+    "silinme_izlenme": 95,
+    "silinme_yas_dk": 850.9,
+    "silinme_tarihi": "2026-11-16T06:05:15.169777+00:00"
   },
   {
     "dosya_adi": "bobi_20261115_155546",
     "baslik": "Zamanın Nasıl Akıp Gittiğini Fark Ettin mi? #shorts",
     "video_id": "21in6kjxwa0",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "",
     "url": "https://www.youtube.com/shorts/21in6kjxwa0",
     "senaryo_ozeti": "",
@@ -1476,13 +1479,16 @@
     "kanca_puan": null,
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
-    "hook_ust_bant": ""
+    "hook_ust_bant": "",
+    "silinme_izlenme": 32,
+    "silinme_yas_dk": 847.8,
+    "silinme_tarihi": "2026-11-16T06:05:14.040481+00:00"
   },
   {
     "dosya_adi": "bobi_20261115_155935_kapakli",
     "baslik": "Beyninin Asla Unutamadığı O Sır #shorts",
     "video_id": "ws1UlvWsFNg",
-    "durum": "yayinda",
+    "durum": "silindi_dusuk_izlenme",
     "kategori": "",
     "url": "https://www.youtube.com/shorts/ws1UlvWsFNg",
     "senaryo_ozeti": "",
@@ -1493,6 +1499,9 @@
     "kanca_puan": null,
     "kapak_dosyasi": "",
     "kapak_yuklendi": null,
-    "hook_ust_bant": ""
+    "hook_ust_bant": "",
+    "silinme_izlenme": 5,
+    "silinme_yas_dk": 844.2,
+    "silinme_tarihi": "2026-11-16T06:05:12.990459+00:00"
   }
 ]

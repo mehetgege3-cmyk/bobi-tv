@@ -112,6 +112,22 @@
       "kalite_ortalama": 74.5,
       "yorum": "🔴 akışa giriş yok — algoritma hâlâ dağıtmıyor; içerik/kanca gözden geçir",
       "kanca_en_iyi_form": ""
+    },
+    {
+      "zaman": "2026-11-18T16:33:57.185187+00:00",
+      "gun": 7,
+      "uretilen": 39,
+      "silinen": 32,
+      "izlenme_ornek": 32,
+      "ortalama_izlenme": 16.19,
+      "medyan_izlenme": 4.0,
+      "en_yuksek_izlenme": 99,
+      "akisa_giren": 0,
+      "akisa_girme_orani": 0,
+      "kalite_ornek": 0,
+      "kalite_ortalama": null,
+      "yorum": "🔴 akışa giriş yok — algoritma hâlâ dağıtmıyor; içerik/kanca gözden geçir",
+      "kanca_en_iyi_form": ""
     }
   ]
 }

@@ -1,16 +1,16 @@
 {
-  "zaman": "2026-11-17T16:57:31.247653+00:00",
+  "zaman": "2026-11-18T16:33:57.185187+00:00",
   "gun": 7,
-  "uretilen": 75,
-  "silinen": 54,
-  "izlenme_ornek": 56,
-  "ortalama_izlenme": 9.57,
-  "medyan_izlenme": 2.0,
+  "uretilen": 39,
+  "silinen": 32,
+  "izlenme_ornek": 32,
+  "ortalama_izlenme": 16.19,
+  "medyan_izlenme": 4.0,
   "en_yuksek_izlenme": 99,
   "akisa_giren": 0,
   "akisa_girme_orani": 0,
-  "kalite_ornek": 2,
-  "kalite_ortalama": 74.5,
+  "kalite_ornek": 0,
+  "kalite_ortalama": null,
   "kanca": {
     "form_verisi": {
       "iddia": {

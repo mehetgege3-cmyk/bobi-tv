@@ -1,25 +1,20 @@
 {
-  "zaman": "2026-11-18T16:33:57.185187+00:00",
+  "zaman": "2026-11-19T16:39:54.672804+00:00",
   "gun": 7,
-  "uretilen": 39,
-  "silinen": 32,
-  "izlenme_ornek": 32,
-  "ortalama_izlenme": 16.19,
-  "medyan_izlenme": 4.0,
-  "en_yuksek_izlenme": 99,
+  "uretilen": 25,
+  "silinen": 19,
+  "izlenme_ornek": 19,
+  "ortalama_izlenme": 17.79,
+  "medyan_izlenme": 6,
+  "en_yuksek_izlenme": 95,
   "akisa_giren": 0,
   "akisa_girme_orani": 0,
   "kalite_ornek": 0,
   "kalite_ortalama": null,
   "kanca": {
-    "form_verisi": {
-      "iddia": {
-        "video": 1,
-        "ortalama": 4
-      }
-    },
+    "form_verisi": {},
     "en_iyi_form": "",
-    "ornek": 1
+    "ornek": 0
   },
   "yorum": "🔴 akışa giriş yok — algoritma hâlâ dağıtmıyor; içerik/kanca gözden geçir"
 }

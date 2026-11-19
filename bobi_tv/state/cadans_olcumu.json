@@ -1,31 +1,31 @@
 {
-  "zaman": "2026-11-18T15:57:41.928640+00:00",
+  "zaman": "2026-11-19T16:03:16.297399+00:00",
   "olcumler": {
     "hourly_production.yml": {
       "workflow": "hourly_production.yml",
       "durum": "olculdu",
       "beklenen_dk": 480,
       "son_24saat_kosu": 2,
-      "toplam_kosu": 12,
-      "medyan_aralik_dk": 569.5,
-      "son5_medyan_dk": 734.6,
-      "en_uzun_aralik_dk": 811.7,
+      "toplam_kosu": 14,
+      "medyan_aralik_dk": 570.4,
+      "son5_medyan_dk": 802.6,
+      "en_uzun_aralik_dk": 835.2,
       "beklenen_24saat_kosu": 3.0,
       "oran": 0.67,
-      "son_kosu_yas_dk": 534.1
+      "son_kosu_yas_dk": 539.2
     },
     "telegram_bot.yml": {
       "workflow": "telegram_bot.yml",
       "durum": "olculdu",
       "beklenen_dk": 5,
-      "son_24saat_kosu": 7,
-      "toplam_kosu": 39,
-      "medyan_aralik_dk": 174.4,
-      "son5_medyan_dk": 165.8,
-      "en_uzun_aralik_dk": 300.6,
+      "son_24saat_kosu": 6,
+      "toplam_kosu": 45,
+      "medyan_aralik_dk": 188.8,
+      "son5_medyan_dk": 219.9,
+      "en_uzun_aralik_dk": 440.9,
       "beklenen_24saat_kosu": 288.0,
       "oran": 0.02,
-      "son_kosu_yas_dk": 252.8
+      "son_kosu_yas_dk": 205.0
     }
   }
 }
